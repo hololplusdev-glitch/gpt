@@ -149,12 +149,25 @@ class MasterDataSyncContext {
       params['p_last_update'] = lastUpdate;
     }
 
+    final branch = branchNo?.trim();
+    if (branch != null && branch.isNotEmpty) {
+      params['p_bra_nbr'] = branch;
+    }
+
+    final machine = terminalNo?.trim();
+    if (machine != null && machine.isNotEmpty) {
+      params['p_mchn_nbr'] = machine;
+    }
+
     if (type == MasterDataType.itemPrice) {
-      if (priceLevelId != null && priceLevelId!.isNotEmpty) {
-        params['p_price_lvl_id'] = priceLevelId;
+      final priceLevel = priceLevelId?.trim();
+      if (priceLevel != null && priceLevel.isNotEmpty) {
+        params['p_price_lvl_id'] = priceLevel;
       }
-      if (storeId != null && storeId!.isNotEmpty) {
-        params['p_st_id'] = storeId;
+
+      final store = storeId?.trim();
+      if (store != null && store.isNotEmpty) {
+        params['p_st_id'] = store;
       }
     }
 

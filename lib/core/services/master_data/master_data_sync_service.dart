@@ -610,12 +610,18 @@ class MasterDataSyncService {
     MasterDataSyncContext context,
   ) {
     if (type != MasterDataType.itemPrice) return;
-    if (context.storeId == null ||
-        context.storeId!.isEmpty ||
-        context.priceLevelId == null ||
-        context.priceLevelId!.isEmpty) {
+    final storeId = context.storeId?.trim();
+    final priceLevelId = context.priceLevelId?.trim();
+    final terminalNo = context.terminalNo?.trim();
+
+    if (storeId == null ||
+        storeId.isEmpty ||
+        priceLevelId == null ||
+        priceLevelId.isEmpty ||
+        terminalNo == null ||
+        terminalNo.isEmpty) {
       throw const SyncException(
-        'ITEM_PRICE sync requires p_st_id and p_price_lvl_id derived from POS_MACHINE.',
+        'ITEM_PRICE sync requires p_mchn_nbr, p_st_id and p_price_lvl_id derived from POS_MACHINE.',
         code: 'MASTER_DATA_MISSING_PRICE_CONTEXT',
       );
     }
@@ -1078,7 +1084,7 @@ class MasterDataSyncService {
   }
 
   Future<String?> _lastServerTime(MasterDataType type, MasterDataSyncContext context) async {
-    return _masterDataDao.lastServerTime(type.code, tenantCode: context.custCode);
+    return _masterDataDao.lastServerTime(type.code, context: context);
   }
 
   Future<void> _saveSyncState(

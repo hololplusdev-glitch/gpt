@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
+import 'package:pos_flutter/core/errors/app_exception.dart';
 import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/core/services/master_data/master_data_mapper.dart';
 import 'package:pos_flutter/core/services/master_data/master_data_contract.dart';
@@ -72,24 +73,67 @@ class MasterDataDao {
     String? terminalNo,
     String? branchNo,
   }) async {
-    final query = _db.select(_db.posMachines)
-      ..where((machine) => machine.custCode.equals(tenantCode))
-      ..orderBy([(machine) => OrderingTerm.asc(machine.machineNo)]);
-
     final machineNo = terminalNo?.trim();
+
     if (machineNo != null && machineNo.isNotEmpty) {
-      query.where((machine) => machine.machineNo.equals(machineNo));
+      final row = await (_db.select(_db.posMachines)..where(
+            (machine) =>
+                machine.custCode.equals(tenantCode) &
+                machine.machineNo.equals(machineNo),
+          ))
+          .getSingleOrNull();
+
+      if (row == null ||
+          !(row.storeId?.trim().isNotEmpty ?? false) ||
+          !(row.priceLevelId?.trim().isNotEmpty ?? false)) {
+        throw const SyncException(
+          'Selected POS machine has no usable store/price level defaults.',
+          code: 'MASTER_DATA_MACHINE_DEFAULTS_MISSING',
+        );
+      }
+
+      return TerminalBootstrapDefaults(
+        custCode: row.custCode,
+        terminalNo: row.machineNo,
+        branchNo: row.branchNo ?? branchNo ?? '',
+        braYear: row.branchYear,
+        defaultStoreId: row.storeId,
+        priceLevelId: row.priceLevelId,
+        useTax: row.useTax,
+        defaultBankId: row.defaultBankId,
+        defaultCardTypeId: row.defaultCardTypeId,
+        printerName: row.printerName,
+      );
     }
 
-    final rows = await query.get();
-    if (rows.isEmpty) return null;
+    final rows = await (_db.select(_db.posMachines)
+          ..where((machine) => machine.custCode.equals(tenantCode))
+          ..orderBy([(machine) => OrderingTerm.asc(machine.machineNo)]))
+        .get();
 
-    final row = rows.firstWhere(
-      (machine) =>
-          (machine.storeId?.trim().isNotEmpty ?? false) &&
-          (machine.priceLevelId?.trim().isNotEmpty ?? false),
-      orElse: () => rows.first,
-    );
+    final validRows = rows
+        .where(
+          (machine) =>
+              (machine.storeId?.trim().isNotEmpty ?? false) &&
+              (machine.priceLevelId?.trim().isNotEmpty ?? false),
+        )
+        .toList();
+
+    if (validRows.isEmpty) {
+      throw const SyncException(
+        'No POS machine with usable store/price level defaults exists.',
+        code: 'MASTER_DATA_MACHINE_DEFAULTS_MISSING',
+      );
+    }
+
+    if (validRows.length > 1) {
+      throw const SyncException(
+        'Multiple POS machines exist. Select a machine before scoped sync.',
+        code: 'MULTIPLE_POS_MACHINES_REQUIRE_SELECTION',
+      );
+    }
+
+    final row = validRows.single;
 
     return TerminalBootstrapDefaults(
       custCode: row.custCode,
@@ -219,21 +263,24 @@ class MasterDataDao {
 
   String _syncKey(String typeCode, MasterDataSyncContext context) {
     final parts = <String>[
-      context.custCode.trim(),
       typeCode,
+      'cust=${context.custCode.trim()}',
+      'usr=${context.syncUserId.trim()}',
     ];
 
+    final terminalNo = (context.terminalNo ?? '').trim();
+
     if (typeCode == MasterDataType.itemPrice.code) {
-      parts.add('store:${(context.storeId ?? '').trim()}');
-      parts.add('price:${(context.priceLevelId ?? '').trim()}');
+      parts.add('st=${(context.storeId ?? '').trim()}');
+      parts.add('priceLevel=${(context.priceLevelId ?? '').trim()}');
+      if (terminalNo.isNotEmpty) {
+        parts.add('machine=$terminalNo');
+      }
     }
 
-    if (typeCode == MasterDataType.devicePrivilege.code) {
-      parts.add('user:${context.syncUserId.trim()}');
-      final terminalNo = (context.terminalNo ?? '').trim();
-      if (terminalNo.isNotEmpty) {
-        parts.add('machine:$terminalNo');
-      }
+    if (typeCode == MasterDataType.devicePrivilege.code &&
+        terminalNo.isNotEmpty) {
+      parts.add('machine=$terminalNo');
     }
 
     return parts.join('|');

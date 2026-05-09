@@ -157,17 +157,18 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       }
     }
 
-    final session = ref.read(activeMachineProvider);
+    final session = ref.read(activePosSessionProvider).valueOrNull;
+    if (session != null) {
+      for (final id in [
+        session.activeDefaultBankId ?? '',
+        session.activeDefaultCardTypeId ?? '',
+        session.cashId ?? '',
+      ]) {
+        if (id.isEmpty) continue;
 
-    for (final id in [
-      session.activeDefaultBankId ?? '',
-      session.activeDefaultCardTypeId ?? '',
-      session.cashId ?? '',
-    ]) {
-      if (id.isEmpty) continue;
-
-      for (final method in methods) {
-        if (method.id == id) return method;
+        for (final method in methods) {
+          if (method.id == id) return method;
+        }
       }
     }
 

@@ -219,6 +219,17 @@ class SaleCheckout {
       ),
     );
 
+    final warnings = <String>[];
+    var invoiceArchived = false;
+    var printQueued = false;
+
+    try {
+      await _invoiceDocumentBuilder.getOrCreateOriginal(saleId);
+      invoiceArchived = true;
+    } catch (_) {
+      warnings.add('Original invoice document could not be archived.');
+    }
+
     if (_config.autoPrintAfterSale) {
       try {
         final document = await _invoiceDocumentBuilder.getOrCreateOriginal(saleId);
@@ -230,9 +241,9 @@ class SaleCheckout {
         );
 
         await _salesDao.enqueuePrintJobs(printJobs);
+        printQueued = printJobs.isNotEmpty;
       } catch (_) {
-        // Print enqueue/document snapshot failures must not fail checkout.
-        // The sale and upload outbox event are already persisted.
+        warnings.add('Print job could not be queued.');
       }
     }
 
@@ -240,9 +251,13 @@ class SaleCheckout {
 
     return SaleCheckoutResult(
       saleId: saleId,
-      invoiceNo: localInvoiceNo,
+      localSaleNo: localInvoiceNo,
       selectedPaymentType: resolved.type,
       change: change,
+      uploadQueued: true,
+      printQueued: printQueued,
+      invoiceArchived: invoiceArchived,
+      nonFatalWarnings: warnings,
     );
   }
 
@@ -357,6 +372,7 @@ class SaleCheckout {
       storeId: Value(session.activeStoreId),
       priceLevelId: Value(session.activePriceLevelId),
       useTax: Value(session.activeUseTax),
+      priceIncludesTax: Value(session.priceIncludesTax),
       sourceUserId: Value(session.activeUserId),
       cashierNameSnapshot: Value(session.activeUserName),
       customerId: Value(customerId),
@@ -616,16 +632,26 @@ CheckoutPaymentRequirements checkoutPaymentRequirements(
 
 class SaleCheckoutResult {
   final String saleId;
-  final String invoiceNo;
+  final String localSaleNo;
   final PaymentMethodType selectedPaymentType;
   final double change;
+  final bool uploadQueued;
+  final bool printQueued;
+  final bool invoiceArchived;
+  final List<String> nonFatalWarnings;
 
   const SaleCheckoutResult({
     required this.saleId,
-    required this.invoiceNo,
+    required this.localSaleNo,
     required this.selectedPaymentType,
     required this.change,
+    required this.uploadQueued,
+    required this.printQueued,
+    required this.invoiceArchived,
+    this.nonFatalWarnings = const [],
   });
+
+  String get invoiceNo => localSaleNo;
 }
 
 class SaleCheckoutException extends BusinessException {
