@@ -3,8 +3,9 @@ import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/core/services/time/clock.dart';
 import 'package:uuid/uuid.dart';
 
-/// Public POS runtime facade. The table stores only pointers; this model is
-/// derived from the active row + POS user + POS machine + machine access.
+/// Public POS runtime facade.
+/// The DB row stores only pointers; business runtime values are derived
+/// from pos_users + pos_machines + pos_user_machine_access.
 class ActivePosSession {
   final String? sessionId;
   final String custCode;
@@ -50,7 +51,7 @@ class ActivePosSession {
     required this.loginAt,
   });
 
-  // Temporary compatibility for UI files while auth screens are thinned out.
+  // Temporary UI compatibility until all screens stop reading authProvider.
   String get userId => activeUserId;
   String get username => activeUserId;
   String get displayName => activeUserName;
@@ -77,11 +78,14 @@ class ActivePosSessionDao {
   }
 
   Future<ActivePosSession?> getActive() async {
-    final row = await (_db.select(_db.activePosSessions)
-          ..where((row) => row.id.equals(1)))
-        .getSingleOrNull();
+    final row = await _readActiveRow();
     if (row == null) return null;
     return _derive(row);
+  }
+
+  Future<ActivePosSessionRow?> _readActiveRow() {
+    return (_db.select(_db.activePosSessions)..where((row) => row.id.equals(1)))
+        .getSingleOrNull();
   }
 
   Future<List<PosUser>> listCashiers() {
@@ -110,9 +114,11 @@ class ActivePosSessionDao {
     required String custCode,
     required String machineNo,
   }) {
-    return (_db.select(_db.posMachines)..where(
-          (row) => row.custCode.equals(custCode) & row.machineNo.equals(machineNo),
-        ))
+    return (_db.select(_db.posMachines)
+          ..where(
+            (row) =>
+                row.custCode.equals(custCode) & row.machineNo.equals(machineNo),
+          ))
         .getSingleOrNull();
   }
 
@@ -122,19 +128,23 @@ class ActivePosSessionDao {
   }) async {
     _validateUser(user);
     _validateMachine(machine);
+
     if (user.custCode != machine.custCode) {
       throw StateError('Selected user and POS machine belong to different tenants.');
     }
+
     final allowed = await _canUseMachine(
       custCode: user.custCode,
       userId: user.id,
       machineNo: machine.machineNo,
     );
+
     if (!allowed) {
       throw StateError('User is not allowed to use this POS machine.');
     }
 
     final now = _clock.now();
+
     await _db.into(_db.activePosSessions).insertOnConflictUpdate(
           ActivePosSessionsCompanion(
             id: const Value(1),
@@ -147,21 +157,36 @@ class ActivePosSessionDao {
             updatedAt: Value(now),
           ),
         );
+
     final session = await getActive();
-    if (session == null) throw StateError('Failed to create active POS session.');
+    if (session == null) {
+      throw StateError('Failed to create active POS session.');
+    }
+
     return session;
   }
 
   Future<void> attachOpenShift(String shiftId) async {
     await (_db.update(_db.activePosSessions)..where((row) => row.id.equals(1)))
-        .write(ActivePosSessionsCompanion(openShiftId: Value(shiftId), updatedAt: Value(_clock.now())));
+        .write(
+      ActivePosSessionsCompanion(
+        openShiftId: Value(shiftId),
+        updatedAt: Value(_clock.now()),
+      ),
+    );
   }
 
   Future<void> clearOpenShift(String shiftId) async {
-    final row = await (_db.select(_db.activePosSessions)..where((row) => row.id.equals(1))).getSingleOrNull();
+    final row = await _readActiveRow();
     if (row == null || row.openShiftId != shiftId) return;
+
     await (_db.update(_db.activePosSessions)..where((row) => row.id.equals(1)))
-        .write(ActivePosSessionsCompanion(openShiftId: const Value(null), updatedAt: Value(_clock.now())));
+        .write(
+      ActivePosSessionsCompanion(
+        openShiftId: const Value(null),
+        updatedAt: Value(_clock.now()),
+      ),
+    );
   }
 
   Future<void> clearActive() async {
@@ -170,15 +195,35 @@ class ActivePosSessionDao {
 
   Future<ActivePosSession> _derive(ActivePosSessionRow row) async {
     final user = await (_db.select(_db.posUsers)
-          ..where((u) => u.custCode.equals(row.custCode) & u.id.equals(row.activeUserId)))
+          ..where(
+            (u) => u.custCode.equals(row.custCode) & u.id.equals(row.activeUserId),
+          ))
         .getSingleOrNull();
-    final machine = await getMachine(custCode: row.custCode, machineNo: row.activeMachineNo);
-    if (user == null) throw StateError('Active POS session user no longer exists.');
-    if (machine == null) throw StateError('Active POS session machine no longer exists.');
+
+    final machine = await getMachine(
+      custCode: row.custCode,
+      machineNo: row.activeMachineNo,
+    );
+
+    if (user == null) {
+      throw StateError('Active POS session user no longer exists.');
+    }
+    if (machine == null) {
+      throw StateError('Active POS session machine no longer exists.');
+    }
+
     _validateUser(user);
     _validateMachine(machine);
-    final allowed = await _canUseMachine(custCode: row.custCode, userId: row.activeUserId, machineNo: row.activeMachineNo);
-    if (!allowed) throw StateError('Active POS session machine access is no longer valid.');
+
+    final allowed = await _canUseMachine(
+      custCode: row.custCode,
+      userId: row.activeUserId,
+      machineNo: row.activeMachineNo,
+    );
+
+    if (!allowed) {
+      throw StateError('Active POS session machine access is no longer valid.');
+    }
 
     return ActivePosSession(
       sessionId: row.sessionId,
@@ -204,28 +249,47 @@ class ActivePosSessionDao {
     );
   }
 
-  Future<bool> _canUseMachine({required String custCode, required String userId, required String machineNo}) async {
+  Future<bool> _canUseMachine({
+    required String custCode,
+    required String userId,
+    required String machineNo,
+  }) async {
     final access = await (_db.select(_db.posUserMachineAccess)
-          ..where((row) =>
-              row.custCode.equals(custCode) &
-              row.userId.equals(userId) &
-              row.machineNo.equals(machineNo) &
-              row.canUseMachine.equals(true)))
+          ..where(
+            (row) =>
+                row.custCode.equals(custCode) &
+                row.userId.equals(userId) &
+                row.machineNo.equals(machineNo) &
+                row.canUseMachine.equals(true),
+          ))
         .getSingleOrNull();
+
     return access != null;
   }
 
   void _validateUser(PosUser user) {
-    if (!user.isActive || !user.canLoginPos) throw StateError('User is not authorized for POS login.');
+    if (!user.isActive || !user.canLoginPos) {
+      throw StateError('User is not authorized for POS login.');
+    }
   }
 
   void _validateMachine(PosMachine machine) {
-    if (!machine.isActive) throw StateError('Selected POS machine is inactive.');
+    if (!machine.isActive) {
+      throw StateError('Selected POS machine is inactive.');
+    }
+
     final storeId = machine.storeId?.trim();
     final priceLevelId = machine.priceLevelId?.trim();
     final branchNo = machine.branchNo?.trim();
-    if (storeId == null || storeId.isEmpty) throw StateError('Selected POS machine has no default store.');
-    if (priceLevelId == null || priceLevelId.isEmpty) throw StateError('Selected POS machine has no price level.');
-    if (branchNo == null || branchNo.isEmpty) throw StateError('Selected POS machine has no branch number.');
+
+    if (storeId == null || storeId.isEmpty) {
+      throw StateError('Selected POS machine has no default store.');
+    }
+    if (priceLevelId == null || priceLevelId.isEmpty) {
+      throw StateError('Selected POS machine has no price level.');
+    }
+    if (branchNo == null || branchNo.isEmpty) {
+      throw StateError('Selected POS machine has no branch number.');
+    }
   }
 }

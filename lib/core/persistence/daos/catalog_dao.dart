@@ -125,7 +125,7 @@ EXISTS (
   WHERE p.item_id = $itemAlias.id
     AND p.price_level_id = ?
     AND p.unit_price > 0
-    AND (p.store_id = ? OR p.store_id IS NULL OR trim(p.store_id) = '')
+    AND p.store_id = ?
     AND (p.from_qty IS NULL OR p.from_qty <= 1)
     AND (p.to_qty IS NULL OR p.to_qty = 0 OR p.to_qty >= 1)
 )
@@ -312,28 +312,14 @@ EXISTS (
     required String storeId,
     required String unitId,
     double quantity = 1,
-  }) async {
-    final exact = await _resolveItemPriceRow(
+  }) {
+    return _resolveItemPriceRow(
       itemId: itemId,
       priceLevelId: priceLevelId,
       storeId: storeId,
       unitId: unitId,
       quantity: quantity,
-      genericStore: false,
     );
-    if (exact != null) return exact;
-
-    final genericUnit = await _resolveItemPriceRow(
-      itemId: itemId,
-      priceLevelId: priceLevelId,
-      storeId: storeId,
-      unitId: unitId,
-      quantity: quantity,
-      genericStore: true,
-    );
-    if (genericUnit != null) return genericUnit;
-
-    return null;
   }
 
   Future<Map<ItemUnitPriceKey, ResolvedItemPrice>> resolveItemPricesForUnits(
@@ -398,14 +384,9 @@ EXISTS (
           )
           .where((price) => _matchesQty(price, quantity))
           .toList();
-      var candidates = allCandidates
-          .where((price) => _matchesStore(price, storeId, genericStore: false))
+      final candidates = allCandidates
+          .where((price) => _matchesStore(price, storeId))
           .toList();
-      if (candidates.isEmpty) {
-        candidates = allCandidates
-            .where((price) => _matchesStore(price, storeId, genericStore: true))
-            .toList();
-      }
       if (candidates.isEmpty) {
         continue;
       }
@@ -466,7 +447,6 @@ EXISTS (
     required String storeId,
     required String unitId,
     required double quantity,
-    required bool genericStore,
   }) async {
     final item = await getItemById(itemId);
     if (item == null) return null;
@@ -488,9 +468,7 @@ EXISTS (
         .where(
           (price) => price.unitId != null && unitIds.contains(price.unitId),
         )
-        .where(
-          (price) => _matchesStore(price, storeId, genericStore: genericStore),
-        )
+        .where((price) => _matchesStore(price, storeId))
         .where((price) => _matchesQty(price, quantity))
         .toList();
     if (candidates.isEmpty) return null;
@@ -670,14 +648,8 @@ EXISTS (
     return unit.sourceUnitId ?? _sourceUnitIdFromLocalId(unit.id);
   }
 
-  bool _matchesStore(
-    ItemPrice price,
-    String storeId, {
-    required bool genericStore,
-  }) {
-    final priceStore = price.storeId?.trim();
-    if (genericStore) return priceStore == null || priceStore.isEmpty;
-    return priceStore == storeId;
+  bool _matchesStore(ItemPrice price, String storeId) {
+    return price.storeId?.trim() == storeId;
   }
 
   bool _matchesQty(ItemPrice price, double quantity) {

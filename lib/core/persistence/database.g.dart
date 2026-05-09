@@ -3919,7 +3919,7 @@ class PosMachinesCompanion extends UpdateCompanion<PosMachine> {
 }
 
 class $ActivePosSessionsTable extends ActivePosSessions
-    with TableInfo<$ActivePosSessionsTable, ActivePosSession> {
+    with TableInfo<$ActivePosSessionsTable, ActivePosSessionRow> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
@@ -3967,17 +3967,6 @@ class $ActivePosSessionsTable extends ActivePosSessions
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _activeUserNameMeta = const VerificationMeta(
-    'activeUserName',
-  );
-  @override
-  late final GeneratedColumn<String> activeUserName = GeneratedColumn<String>(
-    'active_user_name',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _activeMachineNoMeta = const VerificationMeta(
     'activeMachineNo',
   );
@@ -3989,155 +3978,16 @@ class $ActivePosSessionsTable extends ActivePosSessions
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _activeMachineNameMeta = const VerificationMeta(
-    'activeMachineName',
+  static const VerificationMeta _openShiftIdMeta = const VerificationMeta(
+    'openShiftId',
   );
   @override
-  late final GeneratedColumn<String> activeMachineName =
-      GeneratedColumn<String>(
-        'active_machine_name',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: true,
-      );
-  static const VerificationMeta _activeBranchNoMeta = const VerificationMeta(
-    'activeBranchNo',
-  );
-  @override
-  late final GeneratedColumn<String> activeBranchNo = GeneratedColumn<String>(
-    'active_branch_no',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _activeBranchYearMeta = const VerificationMeta(
-    'activeBranchYear',
-  );
-  @override
-  late final GeneratedColumn<String> activeBranchYear = GeneratedColumn<String>(
-    'active_branch_year',
+  late final GeneratedColumn<String> openShiftId = GeneratedColumn<String>(
+    'open_shift_id',
     aliasedName,
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
-  );
-  static const VerificationMeta _activeStoreIdMeta = const VerificationMeta(
-    'activeStoreId',
-  );
-  @override
-  late final GeneratedColumn<String> activeStoreId = GeneratedColumn<String>(
-    'active_store_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _activePriceLevelIdMeta =
-      const VerificationMeta('activePriceLevelId');
-  @override
-  late final GeneratedColumn<String> activePriceLevelId =
-      GeneratedColumn<String>(
-        'active_price_level_id',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: true,
-      );
-  static const VerificationMeta _activeUseTaxMeta = const VerificationMeta(
-    'activeUseTax',
-  );
-  @override
-  late final GeneratedColumn<bool> activeUseTax = GeneratedColumn<bool>(
-    'active_use_tax',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("active_use_tax" IN (0, 1))',
-    ),
-    defaultValue: const Constant(true),
-  );
-  static const VerificationMeta _activeDefaultBankIdMeta =
-      const VerificationMeta('activeDefaultBankId');
-  @override
-  late final GeneratedColumn<String> activeDefaultBankId =
-      GeneratedColumn<String>(
-        'active_default_bank_id',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
-  static const VerificationMeta _activeDefaultCardTypeIdMeta =
-      const VerificationMeta('activeDefaultCardTypeId');
-  @override
-  late final GeneratedColumn<String> activeDefaultCardTypeId =
-      GeneratedColumn<String>(
-        'active_default_card_type_id',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
-  static const VerificationMeta _cashIdMeta = const VerificationMeta('cashId');
-  @override
-  late final GeneratedColumn<String> cashId = GeneratedColumn<String>(
-    'cash_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _accountIdMeta = const VerificationMeta(
-    'accountId',
-  );
-  @override
-  late final GeneratedColumn<String> accountId = GeneratedColumn<String>(
-    'account_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _costCenterIdMeta = const VerificationMeta(
-    'costCenterId',
-  );
-  @override
-  late final GeneratedColumn<String> costCenterId = GeneratedColumn<String>(
-    'cost_center_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _printerNameMeta = const VerificationMeta(
-    'printerName',
-  );
-  @override
-  late final GeneratedColumn<String> printerName = GeneratedColumn<String>(
-    'printer_name',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _priceIncludesTaxMeta = const VerificationMeta(
-    'priceIncludesTax',
-  );
-  @override
-  late final GeneratedColumn<bool> priceIncludesTax = GeneratedColumn<bool>(
-    'price_includes_tax',
-    aliasedName,
-    false,
-    type: DriftSqlType.bool,
-    requiredDuringInsert: false,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'CHECK ("price_includes_tax" IN (0, 1))',
-    ),
-    defaultValue: const Constant(false),
   );
   static const VerificationMeta _loginAtMeta = const VerificationMeta(
     'loginAt',
@@ -4150,28 +4000,27 @@ class $ActivePosSessionsTable extends ActivePosSessions
     type: DriftSqlType.dateTime,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     sessionId,
     custCode,
     activeUserId,
-    activeUserName,
     activeMachineNo,
-    activeMachineName,
-    activeBranchNo,
-    activeBranchYear,
-    activeStoreId,
-    activePriceLevelId,
-    activeUseTax,
-    activeDefaultBankId,
-    activeDefaultCardTypeId,
-    cashId,
-    accountId,
-    costCenterId,
-    printerName,
-    priceIncludesTax,
+    openShiftId,
     loginAt,
+    updatedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -4180,7 +4029,7 @@ class $ActivePosSessionsTable extends ActivePosSessions
   static const String $name = 'active_pos_sessions';
   @override
   VerificationContext validateIntegrity(
-    Insertable<ActivePosSession> instance, {
+    Insertable<ActivePosSessionRow> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -4213,17 +4062,6 @@ class $ActivePosSessionsTable extends ActivePosSessions
     } else if (isInserting) {
       context.missing(_activeUserIdMeta);
     }
-    if (data.containsKey('active_user_name')) {
-      context.handle(
-        _activeUserNameMeta,
-        activeUserName.isAcceptableOrUnknown(
-          data['active_user_name']!,
-          _activeUserNameMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_activeUserNameMeta);
-    }
     if (data.containsKey('active_machine_no')) {
       context.handle(
         _activeMachineNoMeta,
@@ -4235,122 +4073,12 @@ class $ActivePosSessionsTable extends ActivePosSessions
     } else if (isInserting) {
       context.missing(_activeMachineNoMeta);
     }
-    if (data.containsKey('active_machine_name')) {
+    if (data.containsKey('open_shift_id')) {
       context.handle(
-        _activeMachineNameMeta,
-        activeMachineName.isAcceptableOrUnknown(
-          data['active_machine_name']!,
-          _activeMachineNameMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_activeMachineNameMeta);
-    }
-    if (data.containsKey('active_branch_no')) {
-      context.handle(
-        _activeBranchNoMeta,
-        activeBranchNo.isAcceptableOrUnknown(
-          data['active_branch_no']!,
-          _activeBranchNoMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_activeBranchNoMeta);
-    }
-    if (data.containsKey('active_branch_year')) {
-      context.handle(
-        _activeBranchYearMeta,
-        activeBranchYear.isAcceptableOrUnknown(
-          data['active_branch_year']!,
-          _activeBranchYearMeta,
-        ),
-      );
-    }
-    if (data.containsKey('active_store_id')) {
-      context.handle(
-        _activeStoreIdMeta,
-        activeStoreId.isAcceptableOrUnknown(
-          data['active_store_id']!,
-          _activeStoreIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_activeStoreIdMeta);
-    }
-    if (data.containsKey('active_price_level_id')) {
-      context.handle(
-        _activePriceLevelIdMeta,
-        activePriceLevelId.isAcceptableOrUnknown(
-          data['active_price_level_id']!,
-          _activePriceLevelIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_activePriceLevelIdMeta);
-    }
-    if (data.containsKey('active_use_tax')) {
-      context.handle(
-        _activeUseTaxMeta,
-        activeUseTax.isAcceptableOrUnknown(
-          data['active_use_tax']!,
-          _activeUseTaxMeta,
-        ),
-      );
-    }
-    if (data.containsKey('active_default_bank_id')) {
-      context.handle(
-        _activeDefaultBankIdMeta,
-        activeDefaultBankId.isAcceptableOrUnknown(
-          data['active_default_bank_id']!,
-          _activeDefaultBankIdMeta,
-        ),
-      );
-    }
-    if (data.containsKey('active_default_card_type_id')) {
-      context.handle(
-        _activeDefaultCardTypeIdMeta,
-        activeDefaultCardTypeId.isAcceptableOrUnknown(
-          data['active_default_card_type_id']!,
-          _activeDefaultCardTypeIdMeta,
-        ),
-      );
-    }
-    if (data.containsKey('cash_id')) {
-      context.handle(
-        _cashIdMeta,
-        cashId.isAcceptableOrUnknown(data['cash_id']!, _cashIdMeta),
-      );
-    }
-    if (data.containsKey('account_id')) {
-      context.handle(
-        _accountIdMeta,
-        accountId.isAcceptableOrUnknown(data['account_id']!, _accountIdMeta),
-      );
-    }
-    if (data.containsKey('cost_center_id')) {
-      context.handle(
-        _costCenterIdMeta,
-        costCenterId.isAcceptableOrUnknown(
-          data['cost_center_id']!,
-          _costCenterIdMeta,
-        ),
-      );
-    }
-    if (data.containsKey('printer_name')) {
-      context.handle(
-        _printerNameMeta,
-        printerName.isAcceptableOrUnknown(
-          data['printer_name']!,
-          _printerNameMeta,
-        ),
-      );
-    }
-    if (data.containsKey('price_includes_tax')) {
-      context.handle(
-        _priceIncludesTaxMeta,
-        priceIncludesTax.isAcceptableOrUnknown(
-          data['price_includes_tax']!,
-          _priceIncludesTaxMeta,
+        _openShiftIdMeta,
+        openShiftId.isAcceptableOrUnknown(
+          data['open_shift_id']!,
+          _openShiftIdMeta,
         ),
       );
     }
@@ -4362,15 +4090,23 @@ class $ActivePosSessionsTable extends ActivePosSessions
     } else if (isInserting) {
       context.missing(_loginAtMeta);
     }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
     return context;
   }
 
   @override
   Set<GeneratedColumn> get $primaryKey => {id};
   @override
-  ActivePosSession map(Map<String, dynamic> data, {String? tablePrefix}) {
+  ActivePosSessionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return ActivePosSession(
+    return ActivePosSessionRow(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}id'],
@@ -4387,69 +4123,21 @@ class $ActivePosSessionsTable extends ActivePosSessions
         DriftSqlType.string,
         data['${effectivePrefix}active_user_id'],
       )!,
-      activeUserName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}active_user_name'],
-      )!,
       activeMachineNo: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}active_machine_no'],
       )!,
-      activeMachineName: attachedDatabase.typeMapping.read(
+      openShiftId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}active_machine_name'],
-      )!,
-      activeBranchNo: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}active_branch_no'],
-      )!,
-      activeBranchYear: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}active_branch_year'],
+        data['${effectivePrefix}open_shift_id'],
       ),
-      activeStoreId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}active_store_id'],
-      )!,
-      activePriceLevelId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}active_price_level_id'],
-      )!,
-      activeUseTax: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}active_use_tax'],
-      )!,
-      activeDefaultBankId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}active_default_bank_id'],
-      ),
-      activeDefaultCardTypeId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}active_default_card_type_id'],
-      ),
-      cashId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}cash_id'],
-      ),
-      accountId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}account_id'],
-      ),
-      costCenterId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}cost_center_id'],
-      ),
-      printerName: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}printer_name'],
-      ),
-      priceIncludesTax: attachedDatabase.typeMapping.read(
-        DriftSqlType.bool,
-        data['${effectivePrefix}price_includes_tax'],
-      )!,
       loginAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}login_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
       )!,
     );
   }
@@ -4460,49 +4148,25 @@ class $ActivePosSessionsTable extends ActivePosSessions
   }
 }
 
-class ActivePosSession extends DataClass
-    implements Insertable<ActivePosSession> {
+class ActivePosSessionRow extends DataClass
+    implements Insertable<ActivePosSessionRow> {
   final int id;
   final String? sessionId;
   final String custCode;
   final String activeUserId;
-  final String activeUserName;
   final String activeMachineNo;
-  final String activeMachineName;
-  final String activeBranchNo;
-  final String? activeBranchYear;
-  final String activeStoreId;
-  final String activePriceLevelId;
-  final bool activeUseTax;
-  final String? activeDefaultBankId;
-  final String? activeDefaultCardTypeId;
-  final String? cashId;
-  final String? accountId;
-  final String? costCenterId;
-  final String? printerName;
-  final bool priceIncludesTax;
+  final String? openShiftId;
   final DateTime loginAt;
-  const ActivePosSession({
+  final DateTime updatedAt;
+  const ActivePosSessionRow({
     required this.id,
     this.sessionId,
     required this.custCode,
     required this.activeUserId,
-    required this.activeUserName,
     required this.activeMachineNo,
-    required this.activeMachineName,
-    required this.activeBranchNo,
-    this.activeBranchYear,
-    required this.activeStoreId,
-    required this.activePriceLevelId,
-    required this.activeUseTax,
-    this.activeDefaultBankId,
-    this.activeDefaultCardTypeId,
-    this.cashId,
-    this.accountId,
-    this.costCenterId,
-    this.printerName,
-    required this.priceIncludesTax,
+    this.openShiftId,
     required this.loginAt,
+    required this.updatedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4513,38 +4177,12 @@ class ActivePosSession extends DataClass
     }
     map['cust_code'] = Variable<String>(custCode);
     map['active_user_id'] = Variable<String>(activeUserId);
-    map['active_user_name'] = Variable<String>(activeUserName);
     map['active_machine_no'] = Variable<String>(activeMachineNo);
-    map['active_machine_name'] = Variable<String>(activeMachineName);
-    map['active_branch_no'] = Variable<String>(activeBranchNo);
-    if (!nullToAbsent || activeBranchYear != null) {
-      map['active_branch_year'] = Variable<String>(activeBranchYear);
+    if (!nullToAbsent || openShiftId != null) {
+      map['open_shift_id'] = Variable<String>(openShiftId);
     }
-    map['active_store_id'] = Variable<String>(activeStoreId);
-    map['active_price_level_id'] = Variable<String>(activePriceLevelId);
-    map['active_use_tax'] = Variable<bool>(activeUseTax);
-    if (!nullToAbsent || activeDefaultBankId != null) {
-      map['active_default_bank_id'] = Variable<String>(activeDefaultBankId);
-    }
-    if (!nullToAbsent || activeDefaultCardTypeId != null) {
-      map['active_default_card_type_id'] = Variable<String>(
-        activeDefaultCardTypeId,
-      );
-    }
-    if (!nullToAbsent || cashId != null) {
-      map['cash_id'] = Variable<String>(cashId);
-    }
-    if (!nullToAbsent || accountId != null) {
-      map['account_id'] = Variable<String>(accountId);
-    }
-    if (!nullToAbsent || costCenterId != null) {
-      map['cost_center_id'] = Variable<String>(costCenterId);
-    }
-    if (!nullToAbsent || printerName != null) {
-      map['printer_name'] = Variable<String>(printerName);
-    }
-    map['price_includes_tax'] = Variable<bool>(priceIncludesTax);
     map['login_at'] = Variable<DateTime>(loginAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
   }
 
@@ -4556,71 +4194,29 @@ class ActivePosSession extends DataClass
           : Value(sessionId),
       custCode: Value(custCode),
       activeUserId: Value(activeUserId),
-      activeUserName: Value(activeUserName),
       activeMachineNo: Value(activeMachineNo),
-      activeMachineName: Value(activeMachineName),
-      activeBranchNo: Value(activeBranchNo),
-      activeBranchYear: activeBranchYear == null && nullToAbsent
+      openShiftId: openShiftId == null && nullToAbsent
           ? const Value.absent()
-          : Value(activeBranchYear),
-      activeStoreId: Value(activeStoreId),
-      activePriceLevelId: Value(activePriceLevelId),
-      activeUseTax: Value(activeUseTax),
-      activeDefaultBankId: activeDefaultBankId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(activeDefaultBankId),
-      activeDefaultCardTypeId: activeDefaultCardTypeId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(activeDefaultCardTypeId),
-      cashId: cashId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(cashId),
-      accountId: accountId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(accountId),
-      costCenterId: costCenterId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(costCenterId),
-      printerName: printerName == null && nullToAbsent
-          ? const Value.absent()
-          : Value(printerName),
-      priceIncludesTax: Value(priceIncludesTax),
+          : Value(openShiftId),
       loginAt: Value(loginAt),
+      updatedAt: Value(updatedAt),
     );
   }
 
-  factory ActivePosSession.fromJson(
+  factory ActivePosSessionRow.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return ActivePosSession(
+    return ActivePosSessionRow(
       id: serializer.fromJson<int>(json['id']),
       sessionId: serializer.fromJson<String?>(json['sessionId']),
       custCode: serializer.fromJson<String>(json['custCode']),
       activeUserId: serializer.fromJson<String>(json['activeUserId']),
-      activeUserName: serializer.fromJson<String>(json['activeUserName']),
       activeMachineNo: serializer.fromJson<String>(json['activeMachineNo']),
-      activeMachineName: serializer.fromJson<String>(json['activeMachineName']),
-      activeBranchNo: serializer.fromJson<String>(json['activeBranchNo']),
-      activeBranchYear: serializer.fromJson<String?>(json['activeBranchYear']),
-      activeStoreId: serializer.fromJson<String>(json['activeStoreId']),
-      activePriceLevelId: serializer.fromJson<String>(
-        json['activePriceLevelId'],
-      ),
-      activeUseTax: serializer.fromJson<bool>(json['activeUseTax']),
-      activeDefaultBankId: serializer.fromJson<String?>(
-        json['activeDefaultBankId'],
-      ),
-      activeDefaultCardTypeId: serializer.fromJson<String?>(
-        json['activeDefaultCardTypeId'],
-      ),
-      cashId: serializer.fromJson<String?>(json['cashId']),
-      accountId: serializer.fromJson<String?>(json['accountId']),
-      costCenterId: serializer.fromJson<String?>(json['costCenterId']),
-      printerName: serializer.fromJson<String?>(json['printerName']),
-      priceIncludesTax: serializer.fromJson<bool>(json['priceIncludesTax']),
+      openShiftId: serializer.fromJson<String?>(json['openShiftId']),
       loginAt: serializer.fromJson<DateTime>(json['loginAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
   }
   @override
@@ -4631,152 +4227,62 @@ class ActivePosSession extends DataClass
       'sessionId': serializer.toJson<String?>(sessionId),
       'custCode': serializer.toJson<String>(custCode),
       'activeUserId': serializer.toJson<String>(activeUserId),
-      'activeUserName': serializer.toJson<String>(activeUserName),
       'activeMachineNo': serializer.toJson<String>(activeMachineNo),
-      'activeMachineName': serializer.toJson<String>(activeMachineName),
-      'activeBranchNo': serializer.toJson<String>(activeBranchNo),
-      'activeBranchYear': serializer.toJson<String?>(activeBranchYear),
-      'activeStoreId': serializer.toJson<String>(activeStoreId),
-      'activePriceLevelId': serializer.toJson<String>(activePriceLevelId),
-      'activeUseTax': serializer.toJson<bool>(activeUseTax),
-      'activeDefaultBankId': serializer.toJson<String?>(activeDefaultBankId),
-      'activeDefaultCardTypeId': serializer.toJson<String?>(
-        activeDefaultCardTypeId,
-      ),
-      'cashId': serializer.toJson<String?>(cashId),
-      'accountId': serializer.toJson<String?>(accountId),
-      'costCenterId': serializer.toJson<String?>(costCenterId),
-      'printerName': serializer.toJson<String?>(printerName),
-      'priceIncludesTax': serializer.toJson<bool>(priceIncludesTax),
+      'openShiftId': serializer.toJson<String?>(openShiftId),
       'loginAt': serializer.toJson<DateTime>(loginAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
   }
 
-  ActivePosSession copyWith({
+  ActivePosSessionRow copyWith({
     int? id,
     Value<String?> sessionId = const Value.absent(),
     String? custCode,
     String? activeUserId,
-    String? activeUserName,
     String? activeMachineNo,
-    String? activeMachineName,
-    String? activeBranchNo,
-    Value<String?> activeBranchYear = const Value.absent(),
-    String? activeStoreId,
-    String? activePriceLevelId,
-    bool? activeUseTax,
-    Value<String?> activeDefaultBankId = const Value.absent(),
-    Value<String?> activeDefaultCardTypeId = const Value.absent(),
-    Value<String?> cashId = const Value.absent(),
-    Value<String?> accountId = const Value.absent(),
-    Value<String?> costCenterId = const Value.absent(),
-    Value<String?> printerName = const Value.absent(),
-    bool? priceIncludesTax,
+    Value<String?> openShiftId = const Value.absent(),
     DateTime? loginAt,
-  }) => ActivePosSession(
+    DateTime? updatedAt,
+  }) => ActivePosSessionRow(
     id: id ?? this.id,
     sessionId: sessionId.present ? sessionId.value : this.sessionId,
     custCode: custCode ?? this.custCode,
     activeUserId: activeUserId ?? this.activeUserId,
-    activeUserName: activeUserName ?? this.activeUserName,
     activeMachineNo: activeMachineNo ?? this.activeMachineNo,
-    activeMachineName: activeMachineName ?? this.activeMachineName,
-    activeBranchNo: activeBranchNo ?? this.activeBranchNo,
-    activeBranchYear: activeBranchYear.present
-        ? activeBranchYear.value
-        : this.activeBranchYear,
-    activeStoreId: activeStoreId ?? this.activeStoreId,
-    activePriceLevelId: activePriceLevelId ?? this.activePriceLevelId,
-    activeUseTax: activeUseTax ?? this.activeUseTax,
-    activeDefaultBankId: activeDefaultBankId.present
-        ? activeDefaultBankId.value
-        : this.activeDefaultBankId,
-    activeDefaultCardTypeId: activeDefaultCardTypeId.present
-        ? activeDefaultCardTypeId.value
-        : this.activeDefaultCardTypeId,
-    cashId: cashId.present ? cashId.value : this.cashId,
-    accountId: accountId.present ? accountId.value : this.accountId,
-    costCenterId: costCenterId.present ? costCenterId.value : this.costCenterId,
-    printerName: printerName.present ? printerName.value : this.printerName,
-    priceIncludesTax: priceIncludesTax ?? this.priceIncludesTax,
+    openShiftId: openShiftId.present ? openShiftId.value : this.openShiftId,
     loginAt: loginAt ?? this.loginAt,
+    updatedAt: updatedAt ?? this.updatedAt,
   );
-  ActivePosSession copyWithCompanion(ActivePosSessionsCompanion data) {
-    return ActivePosSession(
+  ActivePosSessionRow copyWithCompanion(ActivePosSessionsCompanion data) {
+    return ActivePosSessionRow(
       id: data.id.present ? data.id.value : this.id,
       sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
       custCode: data.custCode.present ? data.custCode.value : this.custCode,
       activeUserId: data.activeUserId.present
           ? data.activeUserId.value
           : this.activeUserId,
-      activeUserName: data.activeUserName.present
-          ? data.activeUserName.value
-          : this.activeUserName,
       activeMachineNo: data.activeMachineNo.present
           ? data.activeMachineNo.value
           : this.activeMachineNo,
-      activeMachineName: data.activeMachineName.present
-          ? data.activeMachineName.value
-          : this.activeMachineName,
-      activeBranchNo: data.activeBranchNo.present
-          ? data.activeBranchNo.value
-          : this.activeBranchNo,
-      activeBranchYear: data.activeBranchYear.present
-          ? data.activeBranchYear.value
-          : this.activeBranchYear,
-      activeStoreId: data.activeStoreId.present
-          ? data.activeStoreId.value
-          : this.activeStoreId,
-      activePriceLevelId: data.activePriceLevelId.present
-          ? data.activePriceLevelId.value
-          : this.activePriceLevelId,
-      activeUseTax: data.activeUseTax.present
-          ? data.activeUseTax.value
-          : this.activeUseTax,
-      activeDefaultBankId: data.activeDefaultBankId.present
-          ? data.activeDefaultBankId.value
-          : this.activeDefaultBankId,
-      activeDefaultCardTypeId: data.activeDefaultCardTypeId.present
-          ? data.activeDefaultCardTypeId.value
-          : this.activeDefaultCardTypeId,
-      cashId: data.cashId.present ? data.cashId.value : this.cashId,
-      accountId: data.accountId.present ? data.accountId.value : this.accountId,
-      costCenterId: data.costCenterId.present
-          ? data.costCenterId.value
-          : this.costCenterId,
-      printerName: data.printerName.present
-          ? data.printerName.value
-          : this.printerName,
-      priceIncludesTax: data.priceIncludesTax.present
-          ? data.priceIncludesTax.value
-          : this.priceIncludesTax,
+      openShiftId: data.openShiftId.present
+          ? data.openShiftId.value
+          : this.openShiftId,
       loginAt: data.loginAt.present ? data.loginAt.value : this.loginAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('ActivePosSession(')
+    return (StringBuffer('ActivePosSessionRow(')
           ..write('id: $id, ')
           ..write('sessionId: $sessionId, ')
           ..write('custCode: $custCode, ')
           ..write('activeUserId: $activeUserId, ')
-          ..write('activeUserName: $activeUserName, ')
           ..write('activeMachineNo: $activeMachineNo, ')
-          ..write('activeMachineName: $activeMachineName, ')
-          ..write('activeBranchNo: $activeBranchNo, ')
-          ..write('activeBranchYear: $activeBranchYear, ')
-          ..write('activeStoreId: $activeStoreId, ')
-          ..write('activePriceLevelId: $activePriceLevelId, ')
-          ..write('activeUseTax: $activeUseTax, ')
-          ..write('activeDefaultBankId: $activeDefaultBankId, ')
-          ..write('activeDefaultCardTypeId: $activeDefaultCardTypeId, ')
-          ..write('cashId: $cashId, ')
-          ..write('accountId: $accountId, ')
-          ..write('costCenterId: $costCenterId, ')
-          ..write('printerName: $printerName, ')
-          ..write('priceIncludesTax: $priceIncludesTax, ')
-          ..write('loginAt: $loginAt')
+          ..write('openShiftId: $openShiftId, ')
+          ..write('loginAt: $loginAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -4787,168 +4293,77 @@ class ActivePosSession extends DataClass
     sessionId,
     custCode,
     activeUserId,
-    activeUserName,
     activeMachineNo,
-    activeMachineName,
-    activeBranchNo,
-    activeBranchYear,
-    activeStoreId,
-    activePriceLevelId,
-    activeUseTax,
-    activeDefaultBankId,
-    activeDefaultCardTypeId,
-    cashId,
-    accountId,
-    costCenterId,
-    printerName,
-    priceIncludesTax,
+    openShiftId,
     loginAt,
+    updatedAt,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is ActivePosSession &&
+      (other is ActivePosSessionRow &&
           other.id == this.id &&
           other.sessionId == this.sessionId &&
           other.custCode == this.custCode &&
           other.activeUserId == this.activeUserId &&
-          other.activeUserName == this.activeUserName &&
           other.activeMachineNo == this.activeMachineNo &&
-          other.activeMachineName == this.activeMachineName &&
-          other.activeBranchNo == this.activeBranchNo &&
-          other.activeBranchYear == this.activeBranchYear &&
-          other.activeStoreId == this.activeStoreId &&
-          other.activePriceLevelId == this.activePriceLevelId &&
-          other.activeUseTax == this.activeUseTax &&
-          other.activeDefaultBankId == this.activeDefaultBankId &&
-          other.activeDefaultCardTypeId == this.activeDefaultCardTypeId &&
-          other.cashId == this.cashId &&
-          other.accountId == this.accountId &&
-          other.costCenterId == this.costCenterId &&
-          other.printerName == this.printerName &&
-          other.priceIncludesTax == this.priceIncludesTax &&
-          other.loginAt == this.loginAt);
+          other.openShiftId == this.openShiftId &&
+          other.loginAt == this.loginAt &&
+          other.updatedAt == this.updatedAt);
 }
 
-class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSession> {
+class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSessionRow> {
   final Value<int> id;
   final Value<String?> sessionId;
   final Value<String> custCode;
   final Value<String> activeUserId;
-  final Value<String> activeUserName;
   final Value<String> activeMachineNo;
-  final Value<String> activeMachineName;
-  final Value<String> activeBranchNo;
-  final Value<String?> activeBranchYear;
-  final Value<String> activeStoreId;
-  final Value<String> activePriceLevelId;
-  final Value<bool> activeUseTax;
-  final Value<String?> activeDefaultBankId;
-  final Value<String?> activeDefaultCardTypeId;
-  final Value<String?> cashId;
-  final Value<String?> accountId;
-  final Value<String?> costCenterId;
-  final Value<String?> printerName;
-  final Value<bool> priceIncludesTax;
+  final Value<String?> openShiftId;
   final Value<DateTime> loginAt;
+  final Value<DateTime> updatedAt;
   const ActivePosSessionsCompanion({
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
     this.custCode = const Value.absent(),
     this.activeUserId = const Value.absent(),
-    this.activeUserName = const Value.absent(),
     this.activeMachineNo = const Value.absent(),
-    this.activeMachineName = const Value.absent(),
-    this.activeBranchNo = const Value.absent(),
-    this.activeBranchYear = const Value.absent(),
-    this.activeStoreId = const Value.absent(),
-    this.activePriceLevelId = const Value.absent(),
-    this.activeUseTax = const Value.absent(),
-    this.activeDefaultBankId = const Value.absent(),
-    this.activeDefaultCardTypeId = const Value.absent(),
-    this.cashId = const Value.absent(),
-    this.accountId = const Value.absent(),
-    this.costCenterId = const Value.absent(),
-    this.printerName = const Value.absent(),
-    this.priceIncludesTax = const Value.absent(),
+    this.openShiftId = const Value.absent(),
     this.loginAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
   });
   ActivePosSessionsCompanion.insert({
     this.id = const Value.absent(),
     this.sessionId = const Value.absent(),
     required String custCode,
     required String activeUserId,
-    required String activeUserName,
     required String activeMachineNo,
-    required String activeMachineName,
-    required String activeBranchNo,
-    this.activeBranchYear = const Value.absent(),
-    required String activeStoreId,
-    required String activePriceLevelId,
-    this.activeUseTax = const Value.absent(),
-    this.activeDefaultBankId = const Value.absent(),
-    this.activeDefaultCardTypeId = const Value.absent(),
-    this.cashId = const Value.absent(),
-    this.accountId = const Value.absent(),
-    this.costCenterId = const Value.absent(),
-    this.printerName = const Value.absent(),
-    this.priceIncludesTax = const Value.absent(),
+    this.openShiftId = const Value.absent(),
     required DateTime loginAt,
+    required DateTime updatedAt,
   }) : custCode = Value(custCode),
        activeUserId = Value(activeUserId),
-       activeUserName = Value(activeUserName),
        activeMachineNo = Value(activeMachineNo),
-       activeMachineName = Value(activeMachineName),
-       activeBranchNo = Value(activeBranchNo),
-       activeStoreId = Value(activeStoreId),
-       activePriceLevelId = Value(activePriceLevelId),
-       loginAt = Value(loginAt);
-  static Insertable<ActivePosSession> custom({
+       loginAt = Value(loginAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<ActivePosSessionRow> custom({
     Expression<int>? id,
     Expression<String>? sessionId,
     Expression<String>? custCode,
     Expression<String>? activeUserId,
-    Expression<String>? activeUserName,
     Expression<String>? activeMachineNo,
-    Expression<String>? activeMachineName,
-    Expression<String>? activeBranchNo,
-    Expression<String>? activeBranchYear,
-    Expression<String>? activeStoreId,
-    Expression<String>? activePriceLevelId,
-    Expression<bool>? activeUseTax,
-    Expression<String>? activeDefaultBankId,
-    Expression<String>? activeDefaultCardTypeId,
-    Expression<String>? cashId,
-    Expression<String>? accountId,
-    Expression<String>? costCenterId,
-    Expression<String>? printerName,
-    Expression<bool>? priceIncludesTax,
+    Expression<String>? openShiftId,
     Expression<DateTime>? loginAt,
+    Expression<DateTime>? updatedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (sessionId != null) 'session_id': sessionId,
       if (custCode != null) 'cust_code': custCode,
       if (activeUserId != null) 'active_user_id': activeUserId,
-      if (activeUserName != null) 'active_user_name': activeUserName,
       if (activeMachineNo != null) 'active_machine_no': activeMachineNo,
-      if (activeMachineName != null) 'active_machine_name': activeMachineName,
-      if (activeBranchNo != null) 'active_branch_no': activeBranchNo,
-      if (activeBranchYear != null) 'active_branch_year': activeBranchYear,
-      if (activeStoreId != null) 'active_store_id': activeStoreId,
-      if (activePriceLevelId != null)
-        'active_price_level_id': activePriceLevelId,
-      if (activeUseTax != null) 'active_use_tax': activeUseTax,
-      if (activeDefaultBankId != null)
-        'active_default_bank_id': activeDefaultBankId,
-      if (activeDefaultCardTypeId != null)
-        'active_default_card_type_id': activeDefaultCardTypeId,
-      if (cashId != null) 'cash_id': cashId,
-      if (accountId != null) 'account_id': accountId,
-      if (costCenterId != null) 'cost_center_id': costCenterId,
-      if (printerName != null) 'printer_name': printerName,
-      if (priceIncludesTax != null) 'price_includes_tax': priceIncludesTax,
+      if (openShiftId != null) 'open_shift_id': openShiftId,
       if (loginAt != null) 'login_at': loginAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
     });
   }
 
@@ -4957,45 +4372,20 @@ class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSession> {
     Value<String?>? sessionId,
     Value<String>? custCode,
     Value<String>? activeUserId,
-    Value<String>? activeUserName,
     Value<String>? activeMachineNo,
-    Value<String>? activeMachineName,
-    Value<String>? activeBranchNo,
-    Value<String?>? activeBranchYear,
-    Value<String>? activeStoreId,
-    Value<String>? activePriceLevelId,
-    Value<bool>? activeUseTax,
-    Value<String?>? activeDefaultBankId,
-    Value<String?>? activeDefaultCardTypeId,
-    Value<String?>? cashId,
-    Value<String?>? accountId,
-    Value<String?>? costCenterId,
-    Value<String?>? printerName,
-    Value<bool>? priceIncludesTax,
+    Value<String?>? openShiftId,
     Value<DateTime>? loginAt,
+    Value<DateTime>? updatedAt,
   }) {
     return ActivePosSessionsCompanion(
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
       custCode: custCode ?? this.custCode,
       activeUserId: activeUserId ?? this.activeUserId,
-      activeUserName: activeUserName ?? this.activeUserName,
       activeMachineNo: activeMachineNo ?? this.activeMachineNo,
-      activeMachineName: activeMachineName ?? this.activeMachineName,
-      activeBranchNo: activeBranchNo ?? this.activeBranchNo,
-      activeBranchYear: activeBranchYear ?? this.activeBranchYear,
-      activeStoreId: activeStoreId ?? this.activeStoreId,
-      activePriceLevelId: activePriceLevelId ?? this.activePriceLevelId,
-      activeUseTax: activeUseTax ?? this.activeUseTax,
-      activeDefaultBankId: activeDefaultBankId ?? this.activeDefaultBankId,
-      activeDefaultCardTypeId:
-          activeDefaultCardTypeId ?? this.activeDefaultCardTypeId,
-      cashId: cashId ?? this.cashId,
-      accountId: accountId ?? this.accountId,
-      costCenterId: costCenterId ?? this.costCenterId,
-      printerName: printerName ?? this.printerName,
-      priceIncludesTax: priceIncludesTax ?? this.priceIncludesTax,
+      openShiftId: openShiftId ?? this.openShiftId,
       loginAt: loginAt ?? this.loginAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
@@ -5014,57 +4404,17 @@ class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSession> {
     if (activeUserId.present) {
       map['active_user_id'] = Variable<String>(activeUserId.value);
     }
-    if (activeUserName.present) {
-      map['active_user_name'] = Variable<String>(activeUserName.value);
-    }
     if (activeMachineNo.present) {
       map['active_machine_no'] = Variable<String>(activeMachineNo.value);
     }
-    if (activeMachineName.present) {
-      map['active_machine_name'] = Variable<String>(activeMachineName.value);
-    }
-    if (activeBranchNo.present) {
-      map['active_branch_no'] = Variable<String>(activeBranchNo.value);
-    }
-    if (activeBranchYear.present) {
-      map['active_branch_year'] = Variable<String>(activeBranchYear.value);
-    }
-    if (activeStoreId.present) {
-      map['active_store_id'] = Variable<String>(activeStoreId.value);
-    }
-    if (activePriceLevelId.present) {
-      map['active_price_level_id'] = Variable<String>(activePriceLevelId.value);
-    }
-    if (activeUseTax.present) {
-      map['active_use_tax'] = Variable<bool>(activeUseTax.value);
-    }
-    if (activeDefaultBankId.present) {
-      map['active_default_bank_id'] = Variable<String>(
-        activeDefaultBankId.value,
-      );
-    }
-    if (activeDefaultCardTypeId.present) {
-      map['active_default_card_type_id'] = Variable<String>(
-        activeDefaultCardTypeId.value,
-      );
-    }
-    if (cashId.present) {
-      map['cash_id'] = Variable<String>(cashId.value);
-    }
-    if (accountId.present) {
-      map['account_id'] = Variable<String>(accountId.value);
-    }
-    if (costCenterId.present) {
-      map['cost_center_id'] = Variable<String>(costCenterId.value);
-    }
-    if (printerName.present) {
-      map['printer_name'] = Variable<String>(printerName.value);
-    }
-    if (priceIncludesTax.present) {
-      map['price_includes_tax'] = Variable<bool>(priceIncludesTax.value);
+    if (openShiftId.present) {
+      map['open_shift_id'] = Variable<String>(openShiftId.value);
     }
     if (loginAt.present) {
       map['login_at'] = Variable<DateTime>(loginAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
     }
     return map;
   }
@@ -5076,22 +4426,10 @@ class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSession> {
           ..write('sessionId: $sessionId, ')
           ..write('custCode: $custCode, ')
           ..write('activeUserId: $activeUserId, ')
-          ..write('activeUserName: $activeUserName, ')
           ..write('activeMachineNo: $activeMachineNo, ')
-          ..write('activeMachineName: $activeMachineName, ')
-          ..write('activeBranchNo: $activeBranchNo, ')
-          ..write('activeBranchYear: $activeBranchYear, ')
-          ..write('activeStoreId: $activeStoreId, ')
-          ..write('activePriceLevelId: $activePriceLevelId, ')
-          ..write('activeUseTax: $activeUseTax, ')
-          ..write('activeDefaultBankId: $activeDefaultBankId, ')
-          ..write('activeDefaultCardTypeId: $activeDefaultCardTypeId, ')
-          ..write('cashId: $cashId, ')
-          ..write('accountId: $accountId, ')
-          ..write('costCenterId: $costCenterId, ')
-          ..write('printerName: $printerName, ')
-          ..write('priceIncludesTax: $priceIncludesTax, ')
-          ..write('loginAt: $loginAt')
+          ..write('openShiftId: $openShiftId, ')
+          ..write('loginAt: $loginAt, ')
+          ..write('updatedAt: $updatedAt')
           ..write(')'))
         .toString();
   }
@@ -10018,18 +9356,6 @@ class $ItemUnitsTable extends ItemUnits
     type: DriftSqlType.double,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _fallbackUnitPriceMeta = const VerificationMeta(
-    'fallbackUnitPrice',
-  );
-  @override
-  late final GeneratedColumn<double> fallbackUnitPrice =
-      GeneratedColumn<double>(
-        'fallback_unit_price',
-        aliasedName,
-        true,
-        type: DriftSqlType.double,
-        requiredDuringInsert: false,
-      );
   static const VerificationMeta _inactiveMeta = const VerificationMeta(
     'inactive',
   );
@@ -10105,7 +9431,6 @@ class $ItemUnitsTable extends ItemUnits
     nameAr,
     conversionFactor,
     unitSize,
-    fallbackUnitPrice,
     inactive,
     noSale,
     isDefault,
@@ -10181,15 +9506,6 @@ class $ItemUnitsTable extends ItemUnits
       context.handle(
         _unitSizeMeta,
         unitSize.isAcceptableOrUnknown(data['unit_size']!, _unitSizeMeta),
-      );
-    }
-    if (data.containsKey('fallback_unit_price')) {
-      context.handle(
-        _fallbackUnitPriceMeta,
-        fallbackUnitPrice.isAcceptableOrUnknown(
-          data['fallback_unit_price']!,
-          _fallbackUnitPriceMeta,
-        ),
       );
     }
     if (data.containsKey('inactive')) {
@@ -10268,10 +9584,6 @@ class $ItemUnitsTable extends ItemUnits
         DriftSqlType.double,
         data['${effectivePrefix}unit_size'],
       ),
-      fallbackUnitPrice: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}fallback_unit_price'],
-      ),
       inactive: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}inactive'],
@@ -10310,7 +9622,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
   final String? nameAr;
   final double conversionFactor;
   final double? unitSize;
-  final double? fallbackUnitPrice;
   final bool inactive;
   final bool noSale;
   final bool isDefault;
@@ -10325,7 +9636,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
     this.nameAr,
     required this.conversionFactor,
     this.unitSize,
-    this.fallbackUnitPrice,
     required this.inactive,
     required this.noSale,
     required this.isDefault,
@@ -10348,9 +9658,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
     map['conversion_factor'] = Variable<double>(conversionFactor);
     if (!nullToAbsent || unitSize != null) {
       map['unit_size'] = Variable<double>(unitSize);
-    }
-    if (!nullToAbsent || fallbackUnitPrice != null) {
-      map['fallback_unit_price'] = Variable<double>(fallbackUnitPrice);
     }
     map['inactive'] = Variable<bool>(inactive);
     map['no_sale'] = Variable<bool>(noSale);
@@ -10378,9 +9685,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
       unitSize: unitSize == null && nullToAbsent
           ? const Value.absent()
           : Value(unitSize),
-      fallbackUnitPrice: fallbackUnitPrice == null && nullToAbsent
-          ? const Value.absent()
-          : Value(fallbackUnitPrice),
       inactive: Value(inactive),
       noSale: Value(noSale),
       isDefault: Value(isDefault),
@@ -10405,9 +9709,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
       nameAr: serializer.fromJson<String?>(json['nameAr']),
       conversionFactor: serializer.fromJson<double>(json['conversionFactor']),
       unitSize: serializer.fromJson<double?>(json['unitSize']),
-      fallbackUnitPrice: serializer.fromJson<double?>(
-        json['fallbackUnitPrice'],
-      ),
       inactive: serializer.fromJson<bool>(json['inactive']),
       noSale: serializer.fromJson<bool>(json['noSale']),
       isDefault: serializer.fromJson<bool>(json['isDefault']),
@@ -10427,7 +9728,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
       'nameAr': serializer.toJson<String?>(nameAr),
       'conversionFactor': serializer.toJson<double>(conversionFactor),
       'unitSize': serializer.toJson<double?>(unitSize),
-      'fallbackUnitPrice': serializer.toJson<double?>(fallbackUnitPrice),
       'inactive': serializer.toJson<bool>(inactive),
       'noSale': serializer.toJson<bool>(noSale),
       'isDefault': serializer.toJson<bool>(isDefault),
@@ -10445,7 +9745,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
     Value<String?> nameAr = const Value.absent(),
     double? conversionFactor,
     Value<double?> unitSize = const Value.absent(),
-    Value<double?> fallbackUnitPrice = const Value.absent(),
     bool? inactive,
     bool? noSale,
     bool? isDefault,
@@ -10460,9 +9759,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
     nameAr: nameAr.present ? nameAr.value : this.nameAr,
     conversionFactor: conversionFactor ?? this.conversionFactor,
     unitSize: unitSize.present ? unitSize.value : this.unitSize,
-    fallbackUnitPrice: fallbackUnitPrice.present
-        ? fallbackUnitPrice.value
-        : this.fallbackUnitPrice,
     inactive: inactive ?? this.inactive,
     noSale: noSale ?? this.noSale,
     isDefault: isDefault ?? this.isDefault,
@@ -10487,9 +9783,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
           ? data.conversionFactor.value
           : this.conversionFactor,
       unitSize: data.unitSize.present ? data.unitSize.value : this.unitSize,
-      fallbackUnitPrice: data.fallbackUnitPrice.present
-          ? data.fallbackUnitPrice.value
-          : this.fallbackUnitPrice,
       inactive: data.inactive.present ? data.inactive.value : this.inactive,
       noSale: data.noSale.present ? data.noSale.value : this.noSale,
       isDefault: data.isDefault.present ? data.isDefault.value : this.isDefault,
@@ -10511,7 +9804,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
           ..write('nameAr: $nameAr, ')
           ..write('conversionFactor: $conversionFactor, ')
           ..write('unitSize: $unitSize, ')
-          ..write('fallbackUnitPrice: $fallbackUnitPrice, ')
           ..write('inactive: $inactive, ')
           ..write('noSale: $noSale, ')
           ..write('isDefault: $isDefault, ')
@@ -10531,7 +9823,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
     nameAr,
     conversionFactor,
     unitSize,
-    fallbackUnitPrice,
     inactive,
     noSale,
     isDefault,
@@ -10550,7 +9841,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
           other.nameAr == this.nameAr &&
           other.conversionFactor == this.conversionFactor &&
           other.unitSize == this.unitSize &&
-          other.fallbackUnitPrice == this.fallbackUnitPrice &&
           other.inactive == this.inactive &&
           other.noSale == this.noSale &&
           other.isDefault == this.isDefault &&
@@ -10567,7 +9857,6 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
   final Value<String?> nameAr;
   final Value<double> conversionFactor;
   final Value<double?> unitSize;
-  final Value<double?> fallbackUnitPrice;
   final Value<bool> inactive;
   final Value<bool> noSale;
   final Value<bool> isDefault;
@@ -10583,7 +9872,6 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
     this.nameAr = const Value.absent(),
     this.conversionFactor = const Value.absent(),
     this.unitSize = const Value.absent(),
-    this.fallbackUnitPrice = const Value.absent(),
     this.inactive = const Value.absent(),
     this.noSale = const Value.absent(),
     this.isDefault = const Value.absent(),
@@ -10600,7 +9888,6 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
     this.nameAr = const Value.absent(),
     this.conversionFactor = const Value.absent(),
     this.unitSize = const Value.absent(),
-    this.fallbackUnitPrice = const Value.absent(),
     this.inactive = const Value.absent(),
     this.noSale = const Value.absent(),
     this.isDefault = const Value.absent(),
@@ -10621,7 +9908,6 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
     Expression<String>? nameAr,
     Expression<double>? conversionFactor,
     Expression<double>? unitSize,
-    Expression<double>? fallbackUnitPrice,
     Expression<bool>? inactive,
     Expression<bool>? noSale,
     Expression<bool>? isDefault,
@@ -10638,7 +9924,6 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
       if (nameAr != null) 'name_ar': nameAr,
       if (conversionFactor != null) 'conversion_factor': conversionFactor,
       if (unitSize != null) 'unit_size': unitSize,
-      if (fallbackUnitPrice != null) 'fallback_unit_price': fallbackUnitPrice,
       if (inactive != null) 'inactive': inactive,
       if (noSale != null) 'no_sale': noSale,
       if (isDefault != null) 'is_default': isDefault,
@@ -10657,7 +9942,6 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
     Value<String?>? nameAr,
     Value<double>? conversionFactor,
     Value<double?>? unitSize,
-    Value<double?>? fallbackUnitPrice,
     Value<bool>? inactive,
     Value<bool>? noSale,
     Value<bool>? isDefault,
@@ -10674,7 +9958,6 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
       nameAr: nameAr ?? this.nameAr,
       conversionFactor: conversionFactor ?? this.conversionFactor,
       unitSize: unitSize ?? this.unitSize,
-      fallbackUnitPrice: fallbackUnitPrice ?? this.fallbackUnitPrice,
       inactive: inactive ?? this.inactive,
       noSale: noSale ?? this.noSale,
       isDefault: isDefault ?? this.isDefault,
@@ -10711,9 +9994,6 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
     if (unitSize.present) {
       map['unit_size'] = Variable<double>(unitSize.value);
     }
-    if (fallbackUnitPrice.present) {
-      map['fallback_unit_price'] = Variable<double>(fallbackUnitPrice.value);
-    }
     if (inactive.present) {
       map['inactive'] = Variable<bool>(inactive.value);
     }
@@ -10746,7 +10026,6 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
           ..write('nameAr: $nameAr, ')
           ..write('conversionFactor: $conversionFactor, ')
           ..write('unitSize: $unitSize, ')
-          ..write('fallbackUnitPrice: $fallbackUnitPrice, ')
           ..write('inactive: $inactive, ')
           ..write('noSale: $noSale, ')
           ..write('isDefault: $isDefault, ')
@@ -14534,16 +13813,71 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, Shift> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _terminalIdMeta = const VerificationMeta(
-    'terminalId',
+  static const VerificationMeta _custCodeMeta = const VerificationMeta(
+    'custCode',
   );
   @override
-  late final GeneratedColumn<String> terminalId = GeneratedColumn<String>(
-    'terminal_id',
+  late final GeneratedColumn<String> custCode = GeneratedColumn<String>(
+    'cust_code',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _branchNoMeta = const VerificationMeta(
+    'branchNo',
+  );
+  @override
+  late final GeneratedColumn<String> branchNo = GeneratedColumn<String>(
+    'branch_no',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _branchYearMeta = const VerificationMeta(
+    'branchYear',
+  );
+  @override
+  late final GeneratedColumn<String> branchYear = GeneratedColumn<String>(
+    'branch_year',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _machineNoMeta = const VerificationMeta(
+    'machineNo',
+  );
+  @override
+  late final GeneratedColumn<String> machineNo = GeneratedColumn<String>(
+    'machine_no',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _storeIdMeta = const VerificationMeta(
+    'storeId',
+  );
+  @override
+  late final GeneratedColumn<String> storeId = GeneratedColumn<String>(
+    'store_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _priceLevelIdMeta = const VerificationMeta(
+    'priceLevelId',
+  );
+  @override
+  late final GeneratedColumn<String> priceLevelId = GeneratedColumn<String>(
+    'price_level_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
   );
   static const VerificationMeta _cashierIdMeta = const VerificationMeta(
     'cashierId',
@@ -14704,7 +14038,12 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, Shift> {
   List<GeneratedColumn> get $columns => [
     id,
     serverId,
-    terminalId,
+    custCode,
+    branchNo,
+    branchYear,
+    machineNo,
+    storeId,
+    priceLevelId,
     cashierId,
     shiftTypeId,
     openingCash,
@@ -14743,13 +14082,44 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, Shift> {
         serverId.isAcceptableOrUnknown(data['server_id']!, _serverIdMeta),
       );
     }
-    if (data.containsKey('terminal_id')) {
+    if (data.containsKey('cust_code')) {
       context.handle(
-        _terminalIdMeta,
-        terminalId.isAcceptableOrUnknown(data['terminal_id']!, _terminalIdMeta),
+        _custCodeMeta,
+        custCode.isAcceptableOrUnknown(data['cust_code']!, _custCodeMeta),
       );
-    } else if (isInserting) {
-      context.missing(_terminalIdMeta);
+    }
+    if (data.containsKey('branch_no')) {
+      context.handle(
+        _branchNoMeta,
+        branchNo.isAcceptableOrUnknown(data['branch_no']!, _branchNoMeta),
+      );
+    }
+    if (data.containsKey('branch_year')) {
+      context.handle(
+        _branchYearMeta,
+        branchYear.isAcceptableOrUnknown(data['branch_year']!, _branchYearMeta),
+      );
+    }
+    if (data.containsKey('machine_no')) {
+      context.handle(
+        _machineNoMeta,
+        machineNo.isAcceptableOrUnknown(data['machine_no']!, _machineNoMeta),
+      );
+    }
+    if (data.containsKey('store_id')) {
+      context.handle(
+        _storeIdMeta,
+        storeId.isAcceptableOrUnknown(data['store_id']!, _storeIdMeta),
+      );
+    }
+    if (data.containsKey('price_level_id')) {
+      context.handle(
+        _priceLevelIdMeta,
+        priceLevelId.isAcceptableOrUnknown(
+          data['price_level_id']!,
+          _priceLevelIdMeta,
+        ),
+      );
     }
     if (data.containsKey('cashier_id')) {
       context.handle(
@@ -14882,10 +14252,30 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, Shift> {
         DriftSqlType.string,
         data['${effectivePrefix}server_id'],
       ),
-      terminalId: attachedDatabase.typeMapping.read(
+      custCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}terminal_id'],
-      )!,
+        data['${effectivePrefix}cust_code'],
+      ),
+      branchNo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}branch_no'],
+      ),
+      branchYear: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}branch_year'],
+      ),
+      machineNo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}machine_no'],
+      ),
+      storeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}store_id'],
+      ),
+      priceLevelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}price_level_id'],
+      ),
       cashierId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}cashier_id'],
@@ -14954,7 +14344,12 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, Shift> {
 class Shift extends DataClass implements Insertable<Shift> {
   final String id;
   final String? serverId;
-  final String terminalId;
+  final String? custCode;
+  final String? branchNo;
+  final String? branchYear;
+  final String? machineNo;
+  final String? storeId;
+  final String? priceLevelId;
   final String cashierId;
   final String? shiftTypeId;
   final double openingCash;
@@ -14972,7 +14367,12 @@ class Shift extends DataClass implements Insertable<Shift> {
   const Shift({
     required this.id,
     this.serverId,
-    required this.terminalId,
+    this.custCode,
+    this.branchNo,
+    this.branchYear,
+    this.machineNo,
+    this.storeId,
+    this.priceLevelId,
     required this.cashierId,
     this.shiftTypeId,
     required this.openingCash,
@@ -14995,7 +14395,24 @@ class Shift extends DataClass implements Insertable<Shift> {
     if (!nullToAbsent || serverId != null) {
       map['server_id'] = Variable<String>(serverId);
     }
-    map['terminal_id'] = Variable<String>(terminalId);
+    if (!nullToAbsent || custCode != null) {
+      map['cust_code'] = Variable<String>(custCode);
+    }
+    if (!nullToAbsent || branchNo != null) {
+      map['branch_no'] = Variable<String>(branchNo);
+    }
+    if (!nullToAbsent || branchYear != null) {
+      map['branch_year'] = Variable<String>(branchYear);
+    }
+    if (!nullToAbsent || machineNo != null) {
+      map['machine_no'] = Variable<String>(machineNo);
+    }
+    if (!nullToAbsent || storeId != null) {
+      map['store_id'] = Variable<String>(storeId);
+    }
+    if (!nullToAbsent || priceLevelId != null) {
+      map['price_level_id'] = Variable<String>(priceLevelId);
+    }
     map['cashier_id'] = Variable<String>(cashierId);
     if (!nullToAbsent || shiftTypeId != null) {
       map['shift_type_id'] = Variable<String>(shiftTypeId);
@@ -15029,7 +14446,24 @@ class Shift extends DataClass implements Insertable<Shift> {
       serverId: serverId == null && nullToAbsent
           ? const Value.absent()
           : Value(serverId),
-      terminalId: Value(terminalId),
+      custCode: custCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(custCode),
+      branchNo: branchNo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(branchNo),
+      branchYear: branchYear == null && nullToAbsent
+          ? const Value.absent()
+          : Value(branchYear),
+      machineNo: machineNo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(machineNo),
+      storeId: storeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(storeId),
+      priceLevelId: priceLevelId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(priceLevelId),
       cashierId: Value(cashierId),
       shiftTypeId: shiftTypeId == null && nullToAbsent
           ? const Value.absent()
@@ -15065,7 +14499,12 @@ class Shift extends DataClass implements Insertable<Shift> {
     return Shift(
       id: serializer.fromJson<String>(json['id']),
       serverId: serializer.fromJson<String?>(json['serverId']),
-      terminalId: serializer.fromJson<String>(json['terminalId']),
+      custCode: serializer.fromJson<String?>(json['custCode']),
+      branchNo: serializer.fromJson<String?>(json['branchNo']),
+      branchYear: serializer.fromJson<String?>(json['branchYear']),
+      machineNo: serializer.fromJson<String?>(json['machineNo']),
+      storeId: serializer.fromJson<String?>(json['storeId']),
+      priceLevelId: serializer.fromJson<String?>(json['priceLevelId']),
       cashierId: serializer.fromJson<String>(json['cashierId']),
       shiftTypeId: serializer.fromJson<String?>(json['shiftTypeId']),
       openingCash: serializer.fromJson<double>(json['openingCash']),
@@ -15088,7 +14527,12 @@ class Shift extends DataClass implements Insertable<Shift> {
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
       'serverId': serializer.toJson<String?>(serverId),
-      'terminalId': serializer.toJson<String>(terminalId),
+      'custCode': serializer.toJson<String?>(custCode),
+      'branchNo': serializer.toJson<String?>(branchNo),
+      'branchYear': serializer.toJson<String?>(branchYear),
+      'machineNo': serializer.toJson<String?>(machineNo),
+      'storeId': serializer.toJson<String?>(storeId),
+      'priceLevelId': serializer.toJson<String?>(priceLevelId),
       'cashierId': serializer.toJson<String>(cashierId),
       'shiftTypeId': serializer.toJson<String?>(shiftTypeId),
       'openingCash': serializer.toJson<double>(openingCash),
@@ -15109,7 +14553,12 @@ class Shift extends DataClass implements Insertable<Shift> {
   Shift copyWith({
     String? id,
     Value<String?> serverId = const Value.absent(),
-    String? terminalId,
+    Value<String?> custCode = const Value.absent(),
+    Value<String?> branchNo = const Value.absent(),
+    Value<String?> branchYear = const Value.absent(),
+    Value<String?> machineNo = const Value.absent(),
+    Value<String?> storeId = const Value.absent(),
+    Value<String?> priceLevelId = const Value.absent(),
     String? cashierId,
     Value<String?> shiftTypeId = const Value.absent(),
     double? openingCash,
@@ -15127,7 +14576,12 @@ class Shift extends DataClass implements Insertable<Shift> {
   }) => Shift(
     id: id ?? this.id,
     serverId: serverId.present ? serverId.value : this.serverId,
-    terminalId: terminalId ?? this.terminalId,
+    custCode: custCode.present ? custCode.value : this.custCode,
+    branchNo: branchNo.present ? branchNo.value : this.branchNo,
+    branchYear: branchYear.present ? branchYear.value : this.branchYear,
+    machineNo: machineNo.present ? machineNo.value : this.machineNo,
+    storeId: storeId.present ? storeId.value : this.storeId,
+    priceLevelId: priceLevelId.present ? priceLevelId.value : this.priceLevelId,
     cashierId: cashierId ?? this.cashierId,
     shiftTypeId: shiftTypeId.present ? shiftTypeId.value : this.shiftTypeId,
     openingCash: openingCash ?? this.openingCash,
@@ -15149,9 +14603,16 @@ class Shift extends DataClass implements Insertable<Shift> {
     return Shift(
       id: data.id.present ? data.id.value : this.id,
       serverId: data.serverId.present ? data.serverId.value : this.serverId,
-      terminalId: data.terminalId.present
-          ? data.terminalId.value
-          : this.terminalId,
+      custCode: data.custCode.present ? data.custCode.value : this.custCode,
+      branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
+      branchYear: data.branchYear.present
+          ? data.branchYear.value
+          : this.branchYear,
+      machineNo: data.machineNo.present ? data.machineNo.value : this.machineNo,
+      storeId: data.storeId.present ? data.storeId.value : this.storeId,
+      priceLevelId: data.priceLevelId.present
+          ? data.priceLevelId.value
+          : this.priceLevelId,
       cashierId: data.cashierId.present ? data.cashierId.value : this.cashierId,
       shiftTypeId: data.shiftTypeId.present
           ? data.shiftTypeId.value
@@ -15192,7 +14653,12 @@ class Shift extends DataClass implements Insertable<Shift> {
     return (StringBuffer('Shift(')
           ..write('id: $id, ')
           ..write('serverId: $serverId, ')
-          ..write('terminalId: $terminalId, ')
+          ..write('custCode: $custCode, ')
+          ..write('branchNo: $branchNo, ')
+          ..write('branchYear: $branchYear, ')
+          ..write('machineNo: $machineNo, ')
+          ..write('storeId: $storeId, ')
+          ..write('priceLevelId: $priceLevelId, ')
           ..write('cashierId: $cashierId, ')
           ..write('shiftTypeId: $shiftTypeId, ')
           ..write('openingCash: $openingCash, ')
@@ -15212,10 +14678,15 @@ class Shift extends DataClass implements Insertable<Shift> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
     serverId,
-    terminalId,
+    custCode,
+    branchNo,
+    branchYear,
+    machineNo,
+    storeId,
+    priceLevelId,
     cashierId,
     shiftTypeId,
     openingCash,
@@ -15230,14 +14701,19 @@ class Shift extends DataClass implements Insertable<Shift> {
     closingNotes,
     idempotencyKey,
     closeSummaryJson,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Shift &&
           other.id == this.id &&
           other.serverId == this.serverId &&
-          other.terminalId == this.terminalId &&
+          other.custCode == this.custCode &&
+          other.branchNo == this.branchNo &&
+          other.branchYear == this.branchYear &&
+          other.machineNo == this.machineNo &&
+          other.storeId == this.storeId &&
+          other.priceLevelId == this.priceLevelId &&
           other.cashierId == this.cashierId &&
           other.shiftTypeId == this.shiftTypeId &&
           other.openingCash == this.openingCash &&
@@ -15257,7 +14733,12 @@ class Shift extends DataClass implements Insertable<Shift> {
 class ShiftsCompanion extends UpdateCompanion<Shift> {
   final Value<String> id;
   final Value<String?> serverId;
-  final Value<String> terminalId;
+  final Value<String?> custCode;
+  final Value<String?> branchNo;
+  final Value<String?> branchYear;
+  final Value<String?> machineNo;
+  final Value<String?> storeId;
+  final Value<String?> priceLevelId;
   final Value<String> cashierId;
   final Value<String?> shiftTypeId;
   final Value<double> openingCash;
@@ -15276,7 +14757,12 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
   const ShiftsCompanion({
     this.id = const Value.absent(),
     this.serverId = const Value.absent(),
-    this.terminalId = const Value.absent(),
+    this.custCode = const Value.absent(),
+    this.branchNo = const Value.absent(),
+    this.branchYear = const Value.absent(),
+    this.machineNo = const Value.absent(),
+    this.storeId = const Value.absent(),
+    this.priceLevelId = const Value.absent(),
     this.cashierId = const Value.absent(),
     this.shiftTypeId = const Value.absent(),
     this.openingCash = const Value.absent(),
@@ -15296,7 +14782,12 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
   ShiftsCompanion.insert({
     required String id,
     this.serverId = const Value.absent(),
-    required String terminalId,
+    this.custCode = const Value.absent(),
+    this.branchNo = const Value.absent(),
+    this.branchYear = const Value.absent(),
+    this.machineNo = const Value.absent(),
+    this.storeId = const Value.absent(),
+    this.priceLevelId = const Value.absent(),
     required String cashierId,
     this.shiftTypeId = const Value.absent(),
     required double openingCash,
@@ -15313,7 +14804,6 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
     this.closeSummaryJson = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       terminalId = Value(terminalId),
        cashierId = Value(cashierId),
        openingCash = Value(openingCash),
        status = Value(status),
@@ -15323,7 +14813,12 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
   static Insertable<Shift> custom({
     Expression<String>? id,
     Expression<String>? serverId,
-    Expression<String>? terminalId,
+    Expression<String>? custCode,
+    Expression<String>? branchNo,
+    Expression<String>? branchYear,
+    Expression<String>? machineNo,
+    Expression<String>? storeId,
+    Expression<String>? priceLevelId,
     Expression<String>? cashierId,
     Expression<String>? shiftTypeId,
     Expression<double>? openingCash,
@@ -15343,7 +14838,12 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (serverId != null) 'server_id': serverId,
-      if (terminalId != null) 'terminal_id': terminalId,
+      if (custCode != null) 'cust_code': custCode,
+      if (branchNo != null) 'branch_no': branchNo,
+      if (branchYear != null) 'branch_year': branchYear,
+      if (machineNo != null) 'machine_no': machineNo,
+      if (storeId != null) 'store_id': storeId,
+      if (priceLevelId != null) 'price_level_id': priceLevelId,
       if (cashierId != null) 'cashier_id': cashierId,
       if (shiftTypeId != null) 'shift_type_id': shiftTypeId,
       if (openingCash != null) 'opening_cash': openingCash,
@@ -15365,7 +14865,12 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
   ShiftsCompanion copyWith({
     Value<String>? id,
     Value<String?>? serverId,
-    Value<String>? terminalId,
+    Value<String?>? custCode,
+    Value<String?>? branchNo,
+    Value<String?>? branchYear,
+    Value<String?>? machineNo,
+    Value<String?>? storeId,
+    Value<String?>? priceLevelId,
     Value<String>? cashierId,
     Value<String?>? shiftTypeId,
     Value<double>? openingCash,
@@ -15385,7 +14890,12 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
     return ShiftsCompanion(
       id: id ?? this.id,
       serverId: serverId ?? this.serverId,
-      terminalId: terminalId ?? this.terminalId,
+      custCode: custCode ?? this.custCode,
+      branchNo: branchNo ?? this.branchNo,
+      branchYear: branchYear ?? this.branchYear,
+      machineNo: machineNo ?? this.machineNo,
+      storeId: storeId ?? this.storeId,
+      priceLevelId: priceLevelId ?? this.priceLevelId,
       cashierId: cashierId ?? this.cashierId,
       shiftTypeId: shiftTypeId ?? this.shiftTypeId,
       openingCash: openingCash ?? this.openingCash,
@@ -15413,8 +14923,23 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
     if (serverId.present) {
       map['server_id'] = Variable<String>(serverId.value);
     }
-    if (terminalId.present) {
-      map['terminal_id'] = Variable<String>(terminalId.value);
+    if (custCode.present) {
+      map['cust_code'] = Variable<String>(custCode.value);
+    }
+    if (branchNo.present) {
+      map['branch_no'] = Variable<String>(branchNo.value);
+    }
+    if (branchYear.present) {
+      map['branch_year'] = Variable<String>(branchYear.value);
+    }
+    if (machineNo.present) {
+      map['machine_no'] = Variable<String>(machineNo.value);
+    }
+    if (storeId.present) {
+      map['store_id'] = Variable<String>(storeId.value);
+    }
+    if (priceLevelId.present) {
+      map['price_level_id'] = Variable<String>(priceLevelId.value);
     }
     if (cashierId.present) {
       map['cashier_id'] = Variable<String>(cashierId.value);
@@ -15469,7 +14994,12 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
     return (StringBuffer('ShiftsCompanion(')
           ..write('id: $id, ')
           ..write('serverId: $serverId, ')
-          ..write('terminalId: $terminalId, ')
+          ..write('custCode: $custCode, ')
+          ..write('branchNo: $branchNo, ')
+          ..write('branchYear: $branchYear, ')
+          ..write('machineNo: $machineNo, ')
+          ..write('storeId: $storeId, ')
+          ..write('priceLevelId: $priceLevelId, ')
           ..write('cashierId: $cashierId, ')
           ..write('shiftTypeId: $shiftTypeId, ')
           ..write('openingCash: $openingCash, ')
@@ -22107,16 +21637,83 @@ class $HeldOrdersTable extends HeldOrders
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _terminalIdMeta = const VerificationMeta(
-    'terminalId',
+  static const VerificationMeta _custCodeMeta = const VerificationMeta(
+    'custCode',
   );
   @override
-  late final GeneratedColumn<String> terminalId = GeneratedColumn<String>(
-    'terminal_id',
+  late final GeneratedColumn<String> custCode = GeneratedColumn<String>(
+    'cust_code',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _branchNoMeta = const VerificationMeta(
+    'branchNo',
+  );
+  @override
+  late final GeneratedColumn<String> branchNo = GeneratedColumn<String>(
+    'branch_no',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _branchYearMeta = const VerificationMeta(
+    'branchYear',
+  );
+  @override
+  late final GeneratedColumn<String> branchYear = GeneratedColumn<String>(
+    'branch_year',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _machineNoMeta = const VerificationMeta(
+    'machineNo',
+  );
+  @override
+  late final GeneratedColumn<String> machineNo = GeneratedColumn<String>(
+    'machine_no',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _storeIdMeta = const VerificationMeta(
+    'storeId',
+  );
+  @override
+  late final GeneratedColumn<String> storeId = GeneratedColumn<String>(
+    'store_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _priceLevelIdMeta = const VerificationMeta(
+    'priceLevelId',
+  );
+  @override
+  late final GeneratedColumn<String> priceLevelId = GeneratedColumn<String>(
+    'price_level_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _useTaxMeta = const VerificationMeta('useTax');
+  @override
+  late final GeneratedColumn<bool> useTax = GeneratedColumn<bool>(
+    'use_tax',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("use_tax" IN (0, 1))',
+    ),
   );
   static const VerificationMeta _shiftIdMeta = const VerificationMeta(
     'shiftId',
@@ -22284,7 +21881,13 @@ class $HeldOrdersTable extends HeldOrders
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    terminalId,
+    custCode,
+    branchNo,
+    branchYear,
+    machineNo,
+    storeId,
+    priceLevelId,
+    useTax,
     shiftId,
     cashierId,
     customerId,
@@ -22318,13 +21921,50 @@ class $HeldOrdersTable extends HeldOrders
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('terminal_id')) {
+    if (data.containsKey('cust_code')) {
       context.handle(
-        _terminalIdMeta,
-        terminalId.isAcceptableOrUnknown(data['terminal_id']!, _terminalIdMeta),
+        _custCodeMeta,
+        custCode.isAcceptableOrUnknown(data['cust_code']!, _custCodeMeta),
       );
-    } else if (isInserting) {
-      context.missing(_terminalIdMeta);
+    }
+    if (data.containsKey('branch_no')) {
+      context.handle(
+        _branchNoMeta,
+        branchNo.isAcceptableOrUnknown(data['branch_no']!, _branchNoMeta),
+      );
+    }
+    if (data.containsKey('branch_year')) {
+      context.handle(
+        _branchYearMeta,
+        branchYear.isAcceptableOrUnknown(data['branch_year']!, _branchYearMeta),
+      );
+    }
+    if (data.containsKey('machine_no')) {
+      context.handle(
+        _machineNoMeta,
+        machineNo.isAcceptableOrUnknown(data['machine_no']!, _machineNoMeta),
+      );
+    }
+    if (data.containsKey('store_id')) {
+      context.handle(
+        _storeIdMeta,
+        storeId.isAcceptableOrUnknown(data['store_id']!, _storeIdMeta),
+      );
+    }
+    if (data.containsKey('price_level_id')) {
+      context.handle(
+        _priceLevelIdMeta,
+        priceLevelId.isAcceptableOrUnknown(
+          data['price_level_id']!,
+          _priceLevelIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('use_tax')) {
+      context.handle(
+        _useTaxMeta,
+        useTax.isAcceptableOrUnknown(data['use_tax']!, _useTaxMeta),
+      );
     }
     if (data.containsKey('shift_id')) {
       context.handle(
@@ -22451,10 +22091,34 @@ class $HeldOrdersTable extends HeldOrders
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      terminalId: attachedDatabase.typeMapping.read(
+      custCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}terminal_id'],
-      )!,
+        data['${effectivePrefix}cust_code'],
+      ),
+      branchNo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}branch_no'],
+      ),
+      branchYear: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}branch_year'],
+      ),
+      machineNo: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}machine_no'],
+      ),
+      storeId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}store_id'],
+      ),
+      priceLevelId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}price_level_id'],
+      ),
+      useTax: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}use_tax'],
+      ),
       shiftId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}shift_id'],
@@ -22526,7 +22190,13 @@ class $HeldOrdersTable extends HeldOrders
 
 class HeldOrder extends DataClass implements Insertable<HeldOrder> {
   final String id;
-  final String terminalId;
+  final String? custCode;
+  final String? branchNo;
+  final String? branchYear;
+  final String? machineNo;
+  final String? storeId;
+  final String? priceLevelId;
+  final bool? useTax;
   final String shiftId;
   final String cashierId;
   final String? customerId;
@@ -22544,7 +22214,13 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
   final DateTime? resumedAt;
   const HeldOrder({
     required this.id,
-    required this.terminalId,
+    this.custCode,
+    this.branchNo,
+    this.branchYear,
+    this.machineNo,
+    this.storeId,
+    this.priceLevelId,
+    this.useTax,
     required this.shiftId,
     required this.cashierId,
     this.customerId,
@@ -22565,7 +22241,27 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['terminal_id'] = Variable<String>(terminalId);
+    if (!nullToAbsent || custCode != null) {
+      map['cust_code'] = Variable<String>(custCode);
+    }
+    if (!nullToAbsent || branchNo != null) {
+      map['branch_no'] = Variable<String>(branchNo);
+    }
+    if (!nullToAbsent || branchYear != null) {
+      map['branch_year'] = Variable<String>(branchYear);
+    }
+    if (!nullToAbsent || machineNo != null) {
+      map['machine_no'] = Variable<String>(machineNo);
+    }
+    if (!nullToAbsent || storeId != null) {
+      map['store_id'] = Variable<String>(storeId);
+    }
+    if (!nullToAbsent || priceLevelId != null) {
+      map['price_level_id'] = Variable<String>(priceLevelId);
+    }
+    if (!nullToAbsent || useTax != null) {
+      map['use_tax'] = Variable<bool>(useTax);
+    }
     map['shift_id'] = Variable<String>(shiftId);
     map['cashier_id'] = Variable<String>(cashierId);
     if (!nullToAbsent || customerId != null) {
@@ -22599,7 +22295,27 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
   HeldOrdersCompanion toCompanion(bool nullToAbsent) {
     return HeldOrdersCompanion(
       id: Value(id),
-      terminalId: Value(terminalId),
+      custCode: custCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(custCode),
+      branchNo: branchNo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(branchNo),
+      branchYear: branchYear == null && nullToAbsent
+          ? const Value.absent()
+          : Value(branchYear),
+      machineNo: machineNo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(machineNo),
+      storeId: storeId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(storeId),
+      priceLevelId: priceLevelId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(priceLevelId),
+      useTax: useTax == null && nullToAbsent
+          ? const Value.absent()
+          : Value(useTax),
       shiftId: Value(shiftId),
       cashierId: Value(cashierId),
       customerId: customerId == null && nullToAbsent
@@ -22637,7 +22353,13 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return HeldOrder(
       id: serializer.fromJson<String>(json['id']),
-      terminalId: serializer.fromJson<String>(json['terminalId']),
+      custCode: serializer.fromJson<String?>(json['custCode']),
+      branchNo: serializer.fromJson<String?>(json['branchNo']),
+      branchYear: serializer.fromJson<String?>(json['branchYear']),
+      machineNo: serializer.fromJson<String?>(json['machineNo']),
+      storeId: serializer.fromJson<String?>(json['storeId']),
+      priceLevelId: serializer.fromJson<String?>(json['priceLevelId']),
+      useTax: serializer.fromJson<bool?>(json['useTax']),
       shiftId: serializer.fromJson<String>(json['shiftId']),
       cashierId: serializer.fromJson<String>(json['cashierId']),
       customerId: serializer.fromJson<String?>(json['customerId']),
@@ -22662,7 +22384,13 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'terminalId': serializer.toJson<String>(terminalId),
+      'custCode': serializer.toJson<String?>(custCode),
+      'branchNo': serializer.toJson<String?>(branchNo),
+      'branchYear': serializer.toJson<String?>(branchYear),
+      'machineNo': serializer.toJson<String?>(machineNo),
+      'storeId': serializer.toJson<String?>(storeId),
+      'priceLevelId': serializer.toJson<String?>(priceLevelId),
+      'useTax': serializer.toJson<bool?>(useTax),
       'shiftId': serializer.toJson<String>(shiftId),
       'cashierId': serializer.toJson<String>(cashierId),
       'customerId': serializer.toJson<String?>(customerId),
@@ -22683,7 +22411,13 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
 
   HeldOrder copyWith({
     String? id,
-    String? terminalId,
+    Value<String?> custCode = const Value.absent(),
+    Value<String?> branchNo = const Value.absent(),
+    Value<String?> branchYear = const Value.absent(),
+    Value<String?> machineNo = const Value.absent(),
+    Value<String?> storeId = const Value.absent(),
+    Value<String?> priceLevelId = const Value.absent(),
+    Value<bool?> useTax = const Value.absent(),
     String? shiftId,
     String? cashierId,
     Value<String?> customerId = const Value.absent(),
@@ -22701,7 +22435,13 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
     Value<DateTime?> resumedAt = const Value.absent(),
   }) => HeldOrder(
     id: id ?? this.id,
-    terminalId: terminalId ?? this.terminalId,
+    custCode: custCode.present ? custCode.value : this.custCode,
+    branchNo: branchNo.present ? branchNo.value : this.branchNo,
+    branchYear: branchYear.present ? branchYear.value : this.branchYear,
+    machineNo: machineNo.present ? machineNo.value : this.machineNo,
+    storeId: storeId.present ? storeId.value : this.storeId,
+    priceLevelId: priceLevelId.present ? priceLevelId.value : this.priceLevelId,
+    useTax: useTax.present ? useTax.value : this.useTax,
     shiftId: shiftId ?? this.shiftId,
     cashierId: cashierId ?? this.cashierId,
     customerId: customerId.present ? customerId.value : this.customerId,
@@ -22725,9 +22465,17 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
   HeldOrder copyWithCompanion(HeldOrdersCompanion data) {
     return HeldOrder(
       id: data.id.present ? data.id.value : this.id,
-      terminalId: data.terminalId.present
-          ? data.terminalId.value
-          : this.terminalId,
+      custCode: data.custCode.present ? data.custCode.value : this.custCode,
+      branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
+      branchYear: data.branchYear.present
+          ? data.branchYear.value
+          : this.branchYear,
+      machineNo: data.machineNo.present ? data.machineNo.value : this.machineNo,
+      storeId: data.storeId.present ? data.storeId.value : this.storeId,
+      priceLevelId: data.priceLevelId.present
+          ? data.priceLevelId.value
+          : this.priceLevelId,
+      useTax: data.useTax.present ? data.useTax.value : this.useTax,
       shiftId: data.shiftId.present ? data.shiftId.value : this.shiftId,
       cashierId: data.cashierId.present ? data.cashierId.value : this.cashierId,
       customerId: data.customerId.present
@@ -22762,7 +22510,13 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
   String toString() {
     return (StringBuffer('HeldOrder(')
           ..write('id: $id, ')
-          ..write('terminalId: $terminalId, ')
+          ..write('custCode: $custCode, ')
+          ..write('branchNo: $branchNo, ')
+          ..write('branchYear: $branchYear, ')
+          ..write('machineNo: $machineNo, ')
+          ..write('storeId: $storeId, ')
+          ..write('priceLevelId: $priceLevelId, ')
+          ..write('useTax: $useTax, ')
           ..write('shiftId: $shiftId, ')
           ..write('cashierId: $cashierId, ')
           ..write('customerId: $customerId, ')
@@ -22783,9 +22537,15 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
   }
 
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     id,
-    terminalId,
+    custCode,
+    branchNo,
+    branchYear,
+    machineNo,
+    storeId,
+    priceLevelId,
+    useTax,
     shiftId,
     cashierId,
     customerId,
@@ -22801,13 +22561,19 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
     heldAt,
     expiresAt,
     resumedAt,
-  );
+  ]);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is HeldOrder &&
           other.id == this.id &&
-          other.terminalId == this.terminalId &&
+          other.custCode == this.custCode &&
+          other.branchNo == this.branchNo &&
+          other.branchYear == this.branchYear &&
+          other.machineNo == this.machineNo &&
+          other.storeId == this.storeId &&
+          other.priceLevelId == this.priceLevelId &&
+          other.useTax == this.useTax &&
           other.shiftId == this.shiftId &&
           other.cashierId == this.cashierId &&
           other.customerId == this.customerId &&
@@ -22827,7 +22593,13 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
 
 class HeldOrdersCompanion extends UpdateCompanion<HeldOrder> {
   final Value<String> id;
-  final Value<String> terminalId;
+  final Value<String?> custCode;
+  final Value<String?> branchNo;
+  final Value<String?> branchYear;
+  final Value<String?> machineNo;
+  final Value<String?> storeId;
+  final Value<String?> priceLevelId;
+  final Value<bool?> useTax;
   final Value<String> shiftId;
   final Value<String> cashierId;
   final Value<String?> customerId;
@@ -22846,7 +22618,13 @@ class HeldOrdersCompanion extends UpdateCompanion<HeldOrder> {
   final Value<int> rowid;
   const HeldOrdersCompanion({
     this.id = const Value.absent(),
-    this.terminalId = const Value.absent(),
+    this.custCode = const Value.absent(),
+    this.branchNo = const Value.absent(),
+    this.branchYear = const Value.absent(),
+    this.machineNo = const Value.absent(),
+    this.storeId = const Value.absent(),
+    this.priceLevelId = const Value.absent(),
+    this.useTax = const Value.absent(),
     this.shiftId = const Value.absent(),
     this.cashierId = const Value.absent(),
     this.customerId = const Value.absent(),
@@ -22866,7 +22644,13 @@ class HeldOrdersCompanion extends UpdateCompanion<HeldOrder> {
   });
   HeldOrdersCompanion.insert({
     required String id,
-    required String terminalId,
+    this.custCode = const Value.absent(),
+    this.branchNo = const Value.absent(),
+    this.branchYear = const Value.absent(),
+    this.machineNo = const Value.absent(),
+    this.storeId = const Value.absent(),
+    this.priceLevelId = const Value.absent(),
+    this.useTax = const Value.absent(),
     required String shiftId,
     required String cashierId,
     this.customerId = const Value.absent(),
@@ -22884,7 +22668,6 @@ class HeldOrdersCompanion extends UpdateCompanion<HeldOrder> {
     this.resumedAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       terminalId = Value(terminalId),
        shiftId = Value(shiftId),
        cashierId = Value(cashierId),
        snapshotJson = Value(snapshotJson),
@@ -22892,7 +22675,13 @@ class HeldOrdersCompanion extends UpdateCompanion<HeldOrder> {
        heldAt = Value(heldAt);
   static Insertable<HeldOrder> custom({
     Expression<String>? id,
-    Expression<String>? terminalId,
+    Expression<String>? custCode,
+    Expression<String>? branchNo,
+    Expression<String>? branchYear,
+    Expression<String>? machineNo,
+    Expression<String>? storeId,
+    Expression<String>? priceLevelId,
+    Expression<bool>? useTax,
     Expression<String>? shiftId,
     Expression<String>? cashierId,
     Expression<String>? customerId,
@@ -22912,7 +22701,13 @@ class HeldOrdersCompanion extends UpdateCompanion<HeldOrder> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (terminalId != null) 'terminal_id': terminalId,
+      if (custCode != null) 'cust_code': custCode,
+      if (branchNo != null) 'branch_no': branchNo,
+      if (branchYear != null) 'branch_year': branchYear,
+      if (machineNo != null) 'machine_no': machineNo,
+      if (storeId != null) 'store_id': storeId,
+      if (priceLevelId != null) 'price_level_id': priceLevelId,
+      if (useTax != null) 'use_tax': useTax,
       if (shiftId != null) 'shift_id': shiftId,
       if (cashierId != null) 'cashier_id': cashierId,
       if (customerId != null) 'customer_id': customerId,
@@ -22935,7 +22730,13 @@ class HeldOrdersCompanion extends UpdateCompanion<HeldOrder> {
 
   HeldOrdersCompanion copyWith({
     Value<String>? id,
-    Value<String>? terminalId,
+    Value<String?>? custCode,
+    Value<String?>? branchNo,
+    Value<String?>? branchYear,
+    Value<String?>? machineNo,
+    Value<String?>? storeId,
+    Value<String?>? priceLevelId,
+    Value<bool?>? useTax,
     Value<String>? shiftId,
     Value<String>? cashierId,
     Value<String?>? customerId,
@@ -22955,7 +22756,13 @@ class HeldOrdersCompanion extends UpdateCompanion<HeldOrder> {
   }) {
     return HeldOrdersCompanion(
       id: id ?? this.id,
-      terminalId: terminalId ?? this.terminalId,
+      custCode: custCode ?? this.custCode,
+      branchNo: branchNo ?? this.branchNo,
+      branchYear: branchYear ?? this.branchYear,
+      machineNo: machineNo ?? this.machineNo,
+      storeId: storeId ?? this.storeId,
+      priceLevelId: priceLevelId ?? this.priceLevelId,
+      useTax: useTax ?? this.useTax,
       shiftId: shiftId ?? this.shiftId,
       cashierId: cashierId ?? this.cashierId,
       customerId: customerId ?? this.customerId,
@@ -22981,8 +22788,26 @@ class HeldOrdersCompanion extends UpdateCompanion<HeldOrder> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (terminalId.present) {
-      map['terminal_id'] = Variable<String>(terminalId.value);
+    if (custCode.present) {
+      map['cust_code'] = Variable<String>(custCode.value);
+    }
+    if (branchNo.present) {
+      map['branch_no'] = Variable<String>(branchNo.value);
+    }
+    if (branchYear.present) {
+      map['branch_year'] = Variable<String>(branchYear.value);
+    }
+    if (machineNo.present) {
+      map['machine_no'] = Variable<String>(machineNo.value);
+    }
+    if (storeId.present) {
+      map['store_id'] = Variable<String>(storeId.value);
+    }
+    if (priceLevelId.present) {
+      map['price_level_id'] = Variable<String>(priceLevelId.value);
+    }
+    if (useTax.present) {
+      map['use_tax'] = Variable<bool>(useTax.value);
     }
     if (shiftId.present) {
       map['shift_id'] = Variable<String>(shiftId.value);
@@ -23041,7 +22866,13 @@ class HeldOrdersCompanion extends UpdateCompanion<HeldOrder> {
   String toString() {
     return (StringBuffer('HeldOrdersCompanion(')
           ..write('id: $id, ')
-          ..write('terminalId: $terminalId, ')
+          ..write('custCode: $custCode, ')
+          ..write('branchNo: $branchNo, ')
+          ..write('branchYear: $branchYear, ')
+          ..write('machineNo: $machineNo, ')
+          ..write('storeId: $storeId, ')
+          ..write('priceLevelId: $priceLevelId, ')
+          ..write('useTax: $useTax, ')
           ..write('shiftId: $shiftId, ')
           ..write('cashierId: $cashierId, ')
           ..write('customerId: $customerId, ')
@@ -33766,9 +33597,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_item_prices_lookup',
     'CREATE INDEX idx_item_prices_lookup ON item_prices (item_id, unit_id, store_id, price_level_id)',
   );
-  late final Index idxShiftsTerminalStatus = Index(
-    'idx_shifts_terminal_status',
-    'CREATE INDEX idx_shifts_terminal_status ON shifts (terminal_id, status)',
+  late final Index idxShiftsMachineStatus = Index(
+    'idx_shifts_machine_status',
+    'CREATE INDEX idx_shifts_machine_status ON shifts (machine_no, status)',
   );
   late final Index idxShiftsOpenedAt = Index(
     'idx_shifts_opened_at',
@@ -33911,7 +33742,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxItemUnitsItemId,
     idxItemBarcodesBarcode,
     idxItemPricesLookup,
-    idxShiftsTerminalStatus,
+    idxShiftsMachineStatus,
     idxShiftsOpenedAt,
     idxSalesShiftId,
     idxSalesCompletedAt,
@@ -35712,22 +35543,10 @@ typedef $$ActivePosSessionsTableCreateCompanionBuilder =
       Value<String?> sessionId,
       required String custCode,
       required String activeUserId,
-      required String activeUserName,
       required String activeMachineNo,
-      required String activeMachineName,
-      required String activeBranchNo,
-      Value<String?> activeBranchYear,
-      required String activeStoreId,
-      required String activePriceLevelId,
-      Value<bool> activeUseTax,
-      Value<String?> activeDefaultBankId,
-      Value<String?> activeDefaultCardTypeId,
-      Value<String?> cashId,
-      Value<String?> accountId,
-      Value<String?> costCenterId,
-      Value<String?> printerName,
-      Value<bool> priceIncludesTax,
+      Value<String?> openShiftId,
       required DateTime loginAt,
+      required DateTime updatedAt,
     });
 typedef $$ActivePosSessionsTableUpdateCompanionBuilder =
     ActivePosSessionsCompanion Function({
@@ -35735,22 +35554,10 @@ typedef $$ActivePosSessionsTableUpdateCompanionBuilder =
       Value<String?> sessionId,
       Value<String> custCode,
       Value<String> activeUserId,
-      Value<String> activeUserName,
       Value<String> activeMachineNo,
-      Value<String> activeMachineName,
-      Value<String> activeBranchNo,
-      Value<String?> activeBranchYear,
-      Value<String> activeStoreId,
-      Value<String> activePriceLevelId,
-      Value<bool> activeUseTax,
-      Value<String?> activeDefaultBankId,
-      Value<String?> activeDefaultCardTypeId,
-      Value<String?> cashId,
-      Value<String?> accountId,
-      Value<String?> costCenterId,
-      Value<String?> printerName,
-      Value<bool> priceIncludesTax,
+      Value<String?> openShiftId,
       Value<DateTime> loginAt,
+      Value<DateTime> updatedAt,
     });
 
 class $$ActivePosSessionsTableFilterComposer
@@ -35782,83 +35589,23 @@ class $$ActivePosSessionsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get activeUserName => $composableBuilder(
-    column: $table.activeUserName,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get activeMachineNo => $composableBuilder(
     column: $table.activeMachineNo,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get activeMachineName => $composableBuilder(
-    column: $table.activeMachineName,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get activeBranchNo => $composableBuilder(
-    column: $table.activeBranchNo,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get activeBranchYear => $composableBuilder(
-    column: $table.activeBranchYear,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get activeStoreId => $composableBuilder(
-    column: $table.activeStoreId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get activePriceLevelId => $composableBuilder(
-    column: $table.activePriceLevelId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get activeUseTax => $composableBuilder(
-    column: $table.activeUseTax,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get activeDefaultBankId => $composableBuilder(
-    column: $table.activeDefaultBankId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get activeDefaultCardTypeId => $composableBuilder(
-    column: $table.activeDefaultCardTypeId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get cashId => $composableBuilder(
-    column: $table.cashId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get costCenterId => $composableBuilder(
-    column: $table.costCenterId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get printerName => $composableBuilder(
-    column: $table.printerName,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<bool> get priceIncludesTax => $composableBuilder(
-    column: $table.priceIncludesTax,
+  ColumnFilters<String> get openShiftId => $composableBuilder(
+    column: $table.openShiftId,
     builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<DateTime> get loginAt => $composableBuilder(
     column: $table.loginAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -35892,83 +35639,23 @@ class $$ActivePosSessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get activeUserName => $composableBuilder(
-    column: $table.activeUserName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get activeMachineNo => $composableBuilder(
     column: $table.activeMachineNo,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get activeMachineName => $composableBuilder(
-    column: $table.activeMachineName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get activeBranchNo => $composableBuilder(
-    column: $table.activeBranchNo,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get activeBranchYear => $composableBuilder(
-    column: $table.activeBranchYear,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get activeStoreId => $composableBuilder(
-    column: $table.activeStoreId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get activePriceLevelId => $composableBuilder(
-    column: $table.activePriceLevelId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get activeUseTax => $composableBuilder(
-    column: $table.activeUseTax,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get activeDefaultBankId => $composableBuilder(
-    column: $table.activeDefaultBankId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get activeDefaultCardTypeId => $composableBuilder(
-    column: $table.activeDefaultCardTypeId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get cashId => $composableBuilder(
-    column: $table.cashId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get accountId => $composableBuilder(
-    column: $table.accountId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get costCenterId => $composableBuilder(
-    column: $table.costCenterId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get printerName => $composableBuilder(
-    column: $table.printerName,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<bool> get priceIncludesTax => $composableBuilder(
-    column: $table.priceIncludesTax,
+  ColumnOrderings<String> get openShiftId => $composableBuilder(
+    column: $table.openShiftId,
     builder: (column) => ColumnOrderings(column),
   );
 
   ColumnOrderings<DateTime> get loginAt => $composableBuilder(
     column: $table.loginAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -35996,79 +35683,21 @@ class $$ActivePosSessionsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get activeUserName => $composableBuilder(
-    column: $table.activeUserName,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<String> get activeMachineNo => $composableBuilder(
     column: $table.activeMachineNo,
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get activeMachineName => $composableBuilder(
-    column: $table.activeMachineName,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get activeBranchNo => $composableBuilder(
-    column: $table.activeBranchNo,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get activeBranchYear => $composableBuilder(
-    column: $table.activeBranchYear,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get activeStoreId => $composableBuilder(
-    column: $table.activeStoreId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get activePriceLevelId => $composableBuilder(
-    column: $table.activePriceLevelId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get activeUseTax => $composableBuilder(
-    column: $table.activeUseTax,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get activeDefaultBankId => $composableBuilder(
-    column: $table.activeDefaultBankId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get activeDefaultCardTypeId => $composableBuilder(
-    column: $table.activeDefaultCardTypeId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get cashId =>
-      $composableBuilder(column: $table.cashId, builder: (column) => column);
-
-  GeneratedColumn<String> get accountId =>
-      $composableBuilder(column: $table.accountId, builder: (column) => column);
-
-  GeneratedColumn<String> get costCenterId => $composableBuilder(
-    column: $table.costCenterId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get printerName => $composableBuilder(
-    column: $table.printerName,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<bool> get priceIncludesTax => $composableBuilder(
-    column: $table.priceIncludesTax,
+  GeneratedColumn<String> get openShiftId => $composableBuilder(
+    column: $table.openShiftId,
     builder: (column) => column,
   );
 
   GeneratedColumn<DateTime> get loginAt =>
       $composableBuilder(column: $table.loginAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
 }
 
 class $$ActivePosSessionsTableTableManager
@@ -36076,21 +35705,21 @@ class $$ActivePosSessionsTableTableManager
         RootTableManager<
           _$AppDatabase,
           $ActivePosSessionsTable,
-          ActivePosSession,
+          ActivePosSessionRow,
           $$ActivePosSessionsTableFilterComposer,
           $$ActivePosSessionsTableOrderingComposer,
           $$ActivePosSessionsTableAnnotationComposer,
           $$ActivePosSessionsTableCreateCompanionBuilder,
           $$ActivePosSessionsTableUpdateCompanionBuilder,
           (
-            ActivePosSession,
+            ActivePosSessionRow,
             BaseReferences<
               _$AppDatabase,
               $ActivePosSessionsTable,
-              ActivePosSession
+              ActivePosSessionRow
             >,
           ),
-          ActivePosSession,
+          ActivePosSessionRow,
           PrefetchHooks Function()
         > {
   $$ActivePosSessionsTableTableManager(
@@ -36115,43 +35744,19 @@ class $$ActivePosSessionsTableTableManager
                 Value<String?> sessionId = const Value.absent(),
                 Value<String> custCode = const Value.absent(),
                 Value<String> activeUserId = const Value.absent(),
-                Value<String> activeUserName = const Value.absent(),
                 Value<String> activeMachineNo = const Value.absent(),
-                Value<String> activeMachineName = const Value.absent(),
-                Value<String> activeBranchNo = const Value.absent(),
-                Value<String?> activeBranchYear = const Value.absent(),
-                Value<String> activeStoreId = const Value.absent(),
-                Value<String> activePriceLevelId = const Value.absent(),
-                Value<bool> activeUseTax = const Value.absent(),
-                Value<String?> activeDefaultBankId = const Value.absent(),
-                Value<String?> activeDefaultCardTypeId = const Value.absent(),
-                Value<String?> cashId = const Value.absent(),
-                Value<String?> accountId = const Value.absent(),
-                Value<String?> costCenterId = const Value.absent(),
-                Value<String?> printerName = const Value.absent(),
-                Value<bool> priceIncludesTax = const Value.absent(),
+                Value<String?> openShiftId = const Value.absent(),
                 Value<DateTime> loginAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
               }) => ActivePosSessionsCompanion(
                 id: id,
                 sessionId: sessionId,
                 custCode: custCode,
                 activeUserId: activeUserId,
-                activeUserName: activeUserName,
                 activeMachineNo: activeMachineNo,
-                activeMachineName: activeMachineName,
-                activeBranchNo: activeBranchNo,
-                activeBranchYear: activeBranchYear,
-                activeStoreId: activeStoreId,
-                activePriceLevelId: activePriceLevelId,
-                activeUseTax: activeUseTax,
-                activeDefaultBankId: activeDefaultBankId,
-                activeDefaultCardTypeId: activeDefaultCardTypeId,
-                cashId: cashId,
-                accountId: accountId,
-                costCenterId: costCenterId,
-                printerName: printerName,
-                priceIncludesTax: priceIncludesTax,
+                openShiftId: openShiftId,
                 loginAt: loginAt,
+                updatedAt: updatedAt,
               ),
           createCompanionCallback:
               ({
@@ -36159,43 +35764,19 @@ class $$ActivePosSessionsTableTableManager
                 Value<String?> sessionId = const Value.absent(),
                 required String custCode,
                 required String activeUserId,
-                required String activeUserName,
                 required String activeMachineNo,
-                required String activeMachineName,
-                required String activeBranchNo,
-                Value<String?> activeBranchYear = const Value.absent(),
-                required String activeStoreId,
-                required String activePriceLevelId,
-                Value<bool> activeUseTax = const Value.absent(),
-                Value<String?> activeDefaultBankId = const Value.absent(),
-                Value<String?> activeDefaultCardTypeId = const Value.absent(),
-                Value<String?> cashId = const Value.absent(),
-                Value<String?> accountId = const Value.absent(),
-                Value<String?> costCenterId = const Value.absent(),
-                Value<String?> printerName = const Value.absent(),
-                Value<bool> priceIncludesTax = const Value.absent(),
+                Value<String?> openShiftId = const Value.absent(),
                 required DateTime loginAt,
+                required DateTime updatedAt,
               }) => ActivePosSessionsCompanion.insert(
                 id: id,
                 sessionId: sessionId,
                 custCode: custCode,
                 activeUserId: activeUserId,
-                activeUserName: activeUserName,
                 activeMachineNo: activeMachineNo,
-                activeMachineName: activeMachineName,
-                activeBranchNo: activeBranchNo,
-                activeBranchYear: activeBranchYear,
-                activeStoreId: activeStoreId,
-                activePriceLevelId: activePriceLevelId,
-                activeUseTax: activeUseTax,
-                activeDefaultBankId: activeDefaultBankId,
-                activeDefaultCardTypeId: activeDefaultCardTypeId,
-                cashId: cashId,
-                accountId: accountId,
-                costCenterId: costCenterId,
-                printerName: printerName,
-                priceIncludesTax: priceIncludesTax,
+                openShiftId: openShiftId,
                 loginAt: loginAt,
+                updatedAt: updatedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
@@ -36209,21 +35790,21 @@ typedef $$ActivePosSessionsTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
       $ActivePosSessionsTable,
-      ActivePosSession,
+      ActivePosSessionRow,
       $$ActivePosSessionsTableFilterComposer,
       $$ActivePosSessionsTableOrderingComposer,
       $$ActivePosSessionsTableAnnotationComposer,
       $$ActivePosSessionsTableCreateCompanionBuilder,
       $$ActivePosSessionsTableUpdateCompanionBuilder,
       (
-        ActivePosSession,
+        ActivePosSessionRow,
         BaseReferences<
           _$AppDatabase,
           $ActivePosSessionsTable,
-          ActivePosSession
+          ActivePosSessionRow
         >,
       ),
-      ActivePosSession,
+      ActivePosSessionRow,
       PrefetchHooks Function()
     >;
 typedef $$TerminalLocalSettingsTableCreateCompanionBuilder =
@@ -38548,7 +38129,6 @@ typedef $$ItemUnitsTableCreateCompanionBuilder =
       Value<String?> nameAr,
       Value<double> conversionFactor,
       Value<double?> unitSize,
-      Value<double?> fallbackUnitPrice,
       Value<bool> inactive,
       Value<bool> noSale,
       Value<bool> isDefault,
@@ -38566,7 +38146,6 @@ typedef $$ItemUnitsTableUpdateCompanionBuilder =
       Value<String?> nameAr,
       Value<double> conversionFactor,
       Value<double?> unitSize,
-      Value<double?> fallbackUnitPrice,
       Value<bool> inactive,
       Value<bool> noSale,
       Value<bool> isDefault,
@@ -38621,11 +38200,6 @@ class $$ItemUnitsTableFilterComposer
 
   ColumnFilters<double> get unitSize => $composableBuilder(
     column: $table.unitSize,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get fallbackUnitPrice => $composableBuilder(
-    column: $table.fallbackUnitPrice,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -38704,11 +38278,6 @@ class $$ItemUnitsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get fallbackUnitPrice => $composableBuilder(
-    column: $table.fallbackUnitPrice,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<bool> get inactive => $composableBuilder(
     column: $table.inactive,
     builder: (column) => ColumnOrderings(column),
@@ -38774,11 +38343,6 @@ class $$ItemUnitsTableAnnotationComposer
   GeneratedColumn<double> get unitSize =>
       $composableBuilder(column: $table.unitSize, builder: (column) => column);
 
-  GeneratedColumn<double> get fallbackUnitPrice => $composableBuilder(
-    column: $table.fallbackUnitPrice,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<bool> get inactive =>
       $composableBuilder(column: $table.inactive, builder: (column) => column);
 
@@ -38833,7 +38397,6 @@ class $$ItemUnitsTableTableManager
                 Value<String?> nameAr = const Value.absent(),
                 Value<double> conversionFactor = const Value.absent(),
                 Value<double?> unitSize = const Value.absent(),
-                Value<double?> fallbackUnitPrice = const Value.absent(),
                 Value<bool> inactive = const Value.absent(),
                 Value<bool> noSale = const Value.absent(),
                 Value<bool> isDefault = const Value.absent(),
@@ -38849,7 +38412,6 @@ class $$ItemUnitsTableTableManager
                 nameAr: nameAr,
                 conversionFactor: conversionFactor,
                 unitSize: unitSize,
-                fallbackUnitPrice: fallbackUnitPrice,
                 inactive: inactive,
                 noSale: noSale,
                 isDefault: isDefault,
@@ -38867,7 +38429,6 @@ class $$ItemUnitsTableTableManager
                 Value<String?> nameAr = const Value.absent(),
                 Value<double> conversionFactor = const Value.absent(),
                 Value<double?> unitSize = const Value.absent(),
-                Value<double?> fallbackUnitPrice = const Value.absent(),
                 Value<bool> inactive = const Value.absent(),
                 Value<bool> noSale = const Value.absent(),
                 Value<bool> isDefault = const Value.absent(),
@@ -38883,7 +38444,6 @@ class $$ItemUnitsTableTableManager
                 nameAr: nameAr,
                 conversionFactor: conversionFactor,
                 unitSize: unitSize,
-                fallbackUnitPrice: fallbackUnitPrice,
                 inactive: inactive,
                 noSale: noSale,
                 isDefault: isDefault,
@@ -40667,7 +40227,12 @@ typedef $$ShiftsTableCreateCompanionBuilder =
     ShiftsCompanion Function({
       required String id,
       Value<String?> serverId,
-      required String terminalId,
+      Value<String?> custCode,
+      Value<String?> branchNo,
+      Value<String?> branchYear,
+      Value<String?> machineNo,
+      Value<String?> storeId,
+      Value<String?> priceLevelId,
       required String cashierId,
       Value<String?> shiftTypeId,
       required double openingCash,
@@ -40688,7 +40253,12 @@ typedef $$ShiftsTableUpdateCompanionBuilder =
     ShiftsCompanion Function({
       Value<String> id,
       Value<String?> serverId,
-      Value<String> terminalId,
+      Value<String?> custCode,
+      Value<String?> branchNo,
+      Value<String?> branchYear,
+      Value<String?> machineNo,
+      Value<String?> storeId,
+      Value<String?> priceLevelId,
       Value<String> cashierId,
       Value<String?> shiftTypeId,
       Value<double> openingCash,
@@ -40725,8 +40295,33 @@ class $$ShiftsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get terminalId => $composableBuilder(
-    column: $table.terminalId,
+  ColumnFilters<String> get custCode => $composableBuilder(
+    column: $table.custCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get branchNo => $composableBuilder(
+    column: $table.branchNo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get branchYear => $composableBuilder(
+    column: $table.branchYear,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get machineNo => $composableBuilder(
+    column: $table.machineNo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get storeId => $composableBuilder(
+    column: $table.storeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get priceLevelId => $composableBuilder(
+    column: $table.priceLevelId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -40820,8 +40415,33 @@ class $$ShiftsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get terminalId => $composableBuilder(
-    column: $table.terminalId,
+  ColumnOrderings<String> get custCode => $composableBuilder(
+    column: $table.custCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get branchNo => $composableBuilder(
+    column: $table.branchNo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get branchYear => $composableBuilder(
+    column: $table.branchYear,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get machineNo => $composableBuilder(
+    column: $table.machineNo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get storeId => $composableBuilder(
+    column: $table.storeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get priceLevelId => $composableBuilder(
+    column: $table.priceLevelId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -40911,8 +40531,25 @@ class $$ShiftsTableAnnotationComposer
   GeneratedColumn<String> get serverId =>
       $composableBuilder(column: $table.serverId, builder: (column) => column);
 
-  GeneratedColumn<String> get terminalId => $composableBuilder(
-    column: $table.terminalId,
+  GeneratedColumn<String> get custCode =>
+      $composableBuilder(column: $table.custCode, builder: (column) => column);
+
+  GeneratedColumn<String> get branchNo =>
+      $composableBuilder(column: $table.branchNo, builder: (column) => column);
+
+  GeneratedColumn<String> get branchYear => $composableBuilder(
+    column: $table.branchYear,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get machineNo =>
+      $composableBuilder(column: $table.machineNo, builder: (column) => column);
+
+  GeneratedColumn<String> get storeId =>
+      $composableBuilder(column: $table.storeId, builder: (column) => column);
+
+  GeneratedColumn<String> get priceLevelId => $composableBuilder(
+    column: $table.priceLevelId,
     builder: (column) => column,
   );
 
@@ -41007,7 +40644,12 @@ class $$ShiftsTableTableManager
               ({
                 Value<String> id = const Value.absent(),
                 Value<String?> serverId = const Value.absent(),
-                Value<String> terminalId = const Value.absent(),
+                Value<String?> custCode = const Value.absent(),
+                Value<String?> branchNo = const Value.absent(),
+                Value<String?> branchYear = const Value.absent(),
+                Value<String?> machineNo = const Value.absent(),
+                Value<String?> storeId = const Value.absent(),
+                Value<String?> priceLevelId = const Value.absent(),
                 Value<String> cashierId = const Value.absent(),
                 Value<String?> shiftTypeId = const Value.absent(),
                 Value<double> openingCash = const Value.absent(),
@@ -41026,7 +40668,12 @@ class $$ShiftsTableTableManager
               }) => ShiftsCompanion(
                 id: id,
                 serverId: serverId,
-                terminalId: terminalId,
+                custCode: custCode,
+                branchNo: branchNo,
+                branchYear: branchYear,
+                machineNo: machineNo,
+                storeId: storeId,
+                priceLevelId: priceLevelId,
                 cashierId: cashierId,
                 shiftTypeId: shiftTypeId,
                 openingCash: openingCash,
@@ -41047,7 +40694,12 @@ class $$ShiftsTableTableManager
               ({
                 required String id,
                 Value<String?> serverId = const Value.absent(),
-                required String terminalId,
+                Value<String?> custCode = const Value.absent(),
+                Value<String?> branchNo = const Value.absent(),
+                Value<String?> branchYear = const Value.absent(),
+                Value<String?> machineNo = const Value.absent(),
+                Value<String?> storeId = const Value.absent(),
+                Value<String?> priceLevelId = const Value.absent(),
                 required String cashierId,
                 Value<String?> shiftTypeId = const Value.absent(),
                 required double openingCash,
@@ -41066,7 +40718,12 @@ class $$ShiftsTableTableManager
               }) => ShiftsCompanion.insert(
                 id: id,
                 serverId: serverId,
-                terminalId: terminalId,
+                custCode: custCode,
+                branchNo: branchNo,
+                branchYear: branchYear,
+                machineNo: machineNo,
+                storeId: storeId,
+                priceLevelId: priceLevelId,
                 cashierId: cashierId,
                 shiftTypeId: shiftTypeId,
                 openingCash: openingCash,
@@ -45386,7 +45043,13 @@ typedef $$InvoiceDocumentsTableProcessedTableManager =
 typedef $$HeldOrdersTableCreateCompanionBuilder =
     HeldOrdersCompanion Function({
       required String id,
-      required String terminalId,
+      Value<String?> custCode,
+      Value<String?> branchNo,
+      Value<String?> branchYear,
+      Value<String?> machineNo,
+      Value<String?> storeId,
+      Value<String?> priceLevelId,
+      Value<bool?> useTax,
       required String shiftId,
       required String cashierId,
       Value<String?> customerId,
@@ -45407,7 +45070,13 @@ typedef $$HeldOrdersTableCreateCompanionBuilder =
 typedef $$HeldOrdersTableUpdateCompanionBuilder =
     HeldOrdersCompanion Function({
       Value<String> id,
-      Value<String> terminalId,
+      Value<String?> custCode,
+      Value<String?> branchNo,
+      Value<String?> branchYear,
+      Value<String?> machineNo,
+      Value<String?> storeId,
+      Value<String?> priceLevelId,
+      Value<bool?> useTax,
       Value<String> shiftId,
       Value<String> cashierId,
       Value<String?> customerId,
@@ -45440,8 +45109,38 @@ class $$HeldOrdersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get terminalId => $composableBuilder(
-    column: $table.terminalId,
+  ColumnFilters<String> get custCode => $composableBuilder(
+    column: $table.custCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get branchNo => $composableBuilder(
+    column: $table.branchNo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get branchYear => $composableBuilder(
+    column: $table.branchYear,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get machineNo => $composableBuilder(
+    column: $table.machineNo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get storeId => $composableBuilder(
+    column: $table.storeId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get priceLevelId => $composableBuilder(
+    column: $table.priceLevelId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get useTax => $composableBuilder(
+    column: $table.useTax,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -45535,8 +45234,38 @@ class $$HeldOrdersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get terminalId => $composableBuilder(
-    column: $table.terminalId,
+  ColumnOrderings<String> get custCode => $composableBuilder(
+    column: $table.custCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get branchNo => $composableBuilder(
+    column: $table.branchNo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get branchYear => $composableBuilder(
+    column: $table.branchYear,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get machineNo => $composableBuilder(
+    column: $table.machineNo,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get storeId => $composableBuilder(
+    column: $table.storeId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get priceLevelId => $composableBuilder(
+    column: $table.priceLevelId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get useTax => $composableBuilder(
+    column: $table.useTax,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -45628,10 +45357,30 @@ class $$HeldOrdersTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get terminalId => $composableBuilder(
-    column: $table.terminalId,
+  GeneratedColumn<String> get custCode =>
+      $composableBuilder(column: $table.custCode, builder: (column) => column);
+
+  GeneratedColumn<String> get branchNo =>
+      $composableBuilder(column: $table.branchNo, builder: (column) => column);
+
+  GeneratedColumn<String> get branchYear => $composableBuilder(
+    column: $table.branchYear,
     builder: (column) => column,
   );
+
+  GeneratedColumn<String> get machineNo =>
+      $composableBuilder(column: $table.machineNo, builder: (column) => column);
+
+  GeneratedColumn<String> get storeId =>
+      $composableBuilder(column: $table.storeId, builder: (column) => column);
+
+  GeneratedColumn<String> get priceLevelId => $composableBuilder(
+    column: $table.priceLevelId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get useTax =>
+      $composableBuilder(column: $table.useTax, builder: (column) => column);
 
   GeneratedColumn<String> get shiftId =>
       $composableBuilder(column: $table.shiftId, builder: (column) => column);
@@ -45723,7 +45472,13 @@ class $$HeldOrdersTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> terminalId = const Value.absent(),
+                Value<String?> custCode = const Value.absent(),
+                Value<String?> branchNo = const Value.absent(),
+                Value<String?> branchYear = const Value.absent(),
+                Value<String?> machineNo = const Value.absent(),
+                Value<String?> storeId = const Value.absent(),
+                Value<String?> priceLevelId = const Value.absent(),
+                Value<bool?> useTax = const Value.absent(),
                 Value<String> shiftId = const Value.absent(),
                 Value<String> cashierId = const Value.absent(),
                 Value<String?> customerId = const Value.absent(),
@@ -45742,7 +45497,13 @@ class $$HeldOrdersTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => HeldOrdersCompanion(
                 id: id,
-                terminalId: terminalId,
+                custCode: custCode,
+                branchNo: branchNo,
+                branchYear: branchYear,
+                machineNo: machineNo,
+                storeId: storeId,
+                priceLevelId: priceLevelId,
+                useTax: useTax,
                 shiftId: shiftId,
                 cashierId: cashierId,
                 customerId: customerId,
@@ -45763,7 +45524,13 @@ class $$HeldOrdersTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String terminalId,
+                Value<String?> custCode = const Value.absent(),
+                Value<String?> branchNo = const Value.absent(),
+                Value<String?> branchYear = const Value.absent(),
+                Value<String?> machineNo = const Value.absent(),
+                Value<String?> storeId = const Value.absent(),
+                Value<String?> priceLevelId = const Value.absent(),
+                Value<bool?> useTax = const Value.absent(),
                 required String shiftId,
                 required String cashierId,
                 Value<String?> customerId = const Value.absent(),
@@ -45782,7 +45549,13 @@ class $$HeldOrdersTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => HeldOrdersCompanion.insert(
                 id: id,
-                terminalId: terminalId,
+                custCode: custCode,
+                branchNo: branchNo,
+                branchYear: branchYear,
+                machineNo: machineNo,
+                storeId: storeId,
+                priceLevelId: priceLevelId,
+                useTax: useTax,
                 shiftId: shiftId,
                 cashierId: cashierId,
                 customerId: customerId,

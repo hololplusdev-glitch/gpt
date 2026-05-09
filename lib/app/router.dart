@@ -8,7 +8,6 @@ import 'package:go_router/go_router.dart';
 import 'package:pos_flutter/core/design_system/colors.dart';
 import 'package:pos_flutter/core/design_system/spacing.dart';
 import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/features/auth/application/auth_notifier.dart';
 import 'package:pos_flutter/features/auth/presentation/login_screen.dart';
 import 'package:pos_flutter/features/cashier/presentation/cashier_screen.dart';
 import 'package:pos_flutter/features/history/presentation/history_screen.dart';
@@ -50,7 +49,6 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   ref
     ..onDispose(refreshNotifier.dispose)
-    ..listen(authProvider, (_, __) => refreshNotifier.refresh())
     ..listen(setupProvider, (_, __) => refreshNotifier.refresh())
     ..listen(shiftProvider, (_, __) => refreshNotifier.refresh())
     ..listen(posConfigRevisionProvider, (_, __) => refreshNotifier.refresh())
@@ -60,13 +58,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.boot,
     refreshListenable: refreshNotifier,
     redirect: (BuildContext context, GoRouterState state) {
-      final authState = ref.read(authProvider);
       final setupAsync = ref.read(setupProvider);
       final isSetupComplete = setupAsync.valueOrNull?.isSetupComplete ?? false;
       final shiftState = ref.read(shiftProvider);
       final useShift = ref.read(posConfigProvider).useShift;
 
-      final isAuthenticated = authState.isAuthenticated;
+      final isAuthenticated = ref.read(activePosSessionProvider).valueOrNull != null;
       final isBootRoute = state.matchedLocation == AppRoutes.boot;
       final isLoginRoute = state.matchedLocation == AppRoutes.login;
       final isSetupRoute = state.matchedLocation == AppRoutes.setup;
