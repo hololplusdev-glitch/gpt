@@ -51,13 +51,6 @@ class ActivePosSession {
     required this.loginAt,
   });
 
-  // Temporary UI compatibility until all screens stop reading authProvider.
-  String get userId => activeUserId;
-  String get username => activeUserId;
-  String get displayName => activeUserName;
-  String get sessionLogId => sessionId ?? '';
-  bool get isSupervisor => false;
-  Set<String> get permissionCodes => const <String>{};
 }
 
 class ActivePosSessionDao {

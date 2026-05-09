@@ -11,7 +11,6 @@ import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/core/persistence/pos_config_repository.dart';
 import 'package:pos_flutter/core/services/invoice_number_service.dart';
 import 'package:pos_flutter/core/services/invoices/invoice_document_builder.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_output_coordinator.dart';
 import 'package:pos_flutter/core/services/payments/payment_method_resolver.dart';
 import 'package:pos_flutter/core/services/pos_devices/payment_profile_service.dart';
 import 'package:pos_flutter/core/services/pos_devices/print_queue.dart';
@@ -239,7 +238,6 @@ class SaleCheckout {
       invoiceNo: localInvoiceNo,
       selectedPaymentType: resolved.type,
       change: change,
-      printResult: null,
     );
   }
 
@@ -616,14 +614,12 @@ class SaleCheckoutResult {
   final String invoiceNo;
   final PaymentMethodType selectedPaymentType;
   final double change;
-  final InvoicePrintResult? printResult;
 
   const SaleCheckoutResult({
     required this.saleId,
     required this.invoiceNo,
     required this.selectedPaymentType,
     required this.change,
-    this.printResult,
   });
 }
 

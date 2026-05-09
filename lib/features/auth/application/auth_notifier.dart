@@ -8,17 +8,14 @@ import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 
 /// Thin auth facade. ActivePosSession is the runtime truth.
-class AuthState {
-  final ActivePosSession? session;
+class CashierSelectionState {
   final bool isLoading;
   final String? errorMessage;
 
-  const AuthState({this.session, this.isLoading = false, this.errorMessage});
-
-  bool get isAuthenticated => session != null;
+  const CashierSelectionState({this.isLoading = false, this.errorMessage});
 }
 
-class AuthNotifier extends StateNotifier<AuthState> {
+class AuthNotifier extends StateNotifier<CashierSelectionState> {
   final AuthDao _authDao;
   final AuditDao _auditDao;
   final ActivePosSessionDao _sessionDao;
@@ -32,20 +29,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }) : _authDao = authDao,
        _auditDao = auditDao,
        _sessionDao = sessionDao,
-       super(const AuthState());
+       super(const CashierSelectionState());
 
   Future<bool> selectCashier(String username) async {
-    state = const AuthState(isLoading: true);
+    state = const CashierSelectionState(isLoading: true);
 
     try {
       final user = await _authDao.findByUsername(username);
       if (user == null) {
-        state = const AuthState(errorMessage: 'User not found in synced data.');
+        state = const CashierSelectionState(errorMessage: 'User not found in synced data.');
         return false;
       }
 
       if (!user.isActive || !user.canLoginPos) {
-        state = const AuthState(errorMessage: 'User not authorized for POS.');
+        state = const CashierSelectionState(errorMessage: 'User not authorized for POS.');
         return false;
       }
 
@@ -55,14 +52,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
 
       if (accesses.isEmpty) {
-        state = const AuthState(
+        state = const CashierSelectionState(
           errorMessage: 'No POS machine access found for this user.',
         );
         return false;
       }
 
       if (accesses.length > 1) {
-        state = const AuthState(
+        state = const CashierSelectionState(
           errorMessage:
               'Multiple POS machines are allowed. Select a machine explicitly.',
         );
@@ -71,23 +68,23 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       return selectCashierAndMachine(username, accesses.single.machineNo);
     } catch (e) {
-      state = AuthState(errorMessage: ErrorMapper.userMessage(e));
+      state = CashierSelectionState(errorMessage: ErrorMapper.userMessage(e));
       return false;
     }
   }
 
   Future<bool> selectCashierAndMachine(String username, String machineNo) async {
-    state = const AuthState(isLoading: true);
+    state = const CashierSelectionState(isLoading: true);
 
     try {
       final user = await _authDao.findByUsername(username);
       if (user == null) {
-        state = const AuthState(errorMessage: 'User not found in synced data.');
+        state = const CashierSelectionState(errorMessage: 'User not found in synced data.');
         return false;
       }
 
       if (!user.isActive || !user.canLoginPos) {
-        state = const AuthState(errorMessage: 'User not authorized for POS.');
+        state = const CashierSelectionState(errorMessage: 'User not authorized for POS.');
         return false;
       }
 
@@ -97,7 +94,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       );
 
       if (machine == null) {
-        state = const AuthState(errorMessage: 'Selected POS machine not found.');
+        state = const CashierSelectionState(errorMessage: 'Selected POS machine not found.');
         return false;
       }
 
@@ -123,16 +120,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
         terminalId: session.activeMachineNo,
       );
 
-      state = AuthState(session: session);
+      state = const CashierSelectionState();
       return true;
     } catch (e) {
-      state = AuthState(errorMessage: ErrorMapper.userMessage(e));
+      state = CashierSelectionState(errorMessage: ErrorMapper.userMessage(e));
       return false;
     }
-  }
-
-  Future<bool> login(String username, String password) {
-    return selectCashier(username);
   }
 
   Future<void> logout() async {
@@ -143,12 +136,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     await _sessionDao.clearActive();
-    state = const AuthState();
+    state = const CashierSelectionState();
   }
 
   void clearError() {
     if (state.errorMessage != null) {
-      state = AuthState(session: state.session);
+      state = const CashierSelectionState();
     }
   }
 }
