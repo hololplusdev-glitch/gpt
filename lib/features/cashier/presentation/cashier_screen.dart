@@ -24,7 +24,7 @@ import 'package:pos_flutter/features/cashier/application/product_providers.dart'
 import 'package:pos_flutter/features/cashier/presentation/widgets/barcode_scanner_overlay.dart';
 import 'package:pos_flutter/features/cashier/presentation/widgets/cart_panel.dart';
 import 'package:pos_flutter/features/cashier/presentation/widgets/product_grid.dart';
-import 'package:pos_flutter/features/sales/application/sales_service.dart';
+import 'package:pos_flutter/features/sales/application/held_orders_service.dart';
 import 'package:pos_flutter/features/shift/application/shift_notifier.dart';
 import 'package:pos_flutter/shared/presentation/utils/app_snackbar.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
@@ -218,10 +218,10 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     if (activeSession == null || !shiftState.hasOpenShift) return;
 
     final shift = shiftState.activeShift!;
-    final salesService = ref.read(salesServiceProvider);
+    final heldOrdersService = ref.read(heldOrdersServiceProvider);
 
     try {
-      await salesService.holdOrder(
+      await heldOrdersService.holdOrder(
         shiftId: shift.id,
         items: cart.toSaleLineInputs(),
       );

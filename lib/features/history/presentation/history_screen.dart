@@ -14,7 +14,7 @@ import 'package:pos_flutter/core/design_system/spacing.dart';
 import 'package:pos_flutter/core/errors/app_exception.dart';
 import 'package:pos_flutter/core/l10n/app_localizations.dart';
 import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
-import 'package:pos_flutter/features/sales/application/sales_service.dart';
+import 'package:pos_flutter/features/sales/application/sales_history_service.dart';
 import 'package:pos_flutter/shared/models/sales_history.dart';
 import 'package:pos_flutter/shared/presentation/presenters/sale_status_presenter.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_empty_state.dart';
@@ -31,9 +31,9 @@ final historySalesProvider = FutureProvider.autoDispose<List<SaleSummary>>((
   ref,
 ) async {
   final query = ref.watch(historySearchQueryProvider);
-  final salesService = ref.watch(salesServiceProvider);
+  final salesHistoryService = ref.watch(salesHistoryServiceProvider);
 
-  return salesService.searchSalesHistory(query: query, limit: 100);
+  return salesHistoryService.searchSalesHistory(query: query, limit: 100);
 });
 
 class HistoryScreen extends ConsumerStatefulWidget {
