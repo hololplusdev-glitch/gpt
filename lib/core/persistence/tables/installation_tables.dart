@@ -29,12 +29,6 @@ class AppInstallation extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-// =============================================================================
-// BRANCH PROFILE — server-derived branch/company context
-// =============================================================================
-
-/// Cached branch profile from backend BRANCH p_type.
-/// Maps from API: BRANCH → branch_profile.
 class BranchProfile extends Table {
   TextColumn get id => text()();
   TextColumn get tenantCode => text()();
@@ -61,13 +55,6 @@ class BranchProfile extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-// =============================================================================
-// TERMINAL PROFILE — server-derived POS machine configuration
-// =============================================================================
-
-/// Cached POS machine profile from backend POS_MACHINE p_type.
-/// Maps from API: POS_MACHINE → terminal_profile.
-/// Replaces BackendPosMachines + parts of TerminalIdentity.
 class SyncProfileTable extends Table {
   IntColumn get id => integer().withDefault(const Constant(1))();
   TextColumn get baseUrl => text()();
@@ -117,39 +104,21 @@ class PosMachines extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+@DataClassName('ActivePosSessionRow')
 class ActivePosSessions extends Table {
   IntColumn get id => integer().withDefault(const Constant(1))();
   TextColumn get sessionId => text().nullable()();
   TextColumn get custCode => text()();
   TextColumn get activeUserId => text()();
-  TextColumn get activeUserName => text()();
   TextColumn get activeMachineNo => text()();
-  TextColumn get activeMachineName => text()();
-  TextColumn get activeBranchNo => text()();
-  TextColumn get activeBranchYear => text().nullable()();
-  TextColumn get activeStoreId => text()();
-  TextColumn get activePriceLevelId => text()();
-  BoolColumn get activeUseTax => boolean().withDefault(const Constant(true))();
-  TextColumn get activeDefaultBankId => text().nullable()();
-  TextColumn get activeDefaultCardTypeId => text().nullable()();
-  TextColumn get cashId => text().nullable()();
-  TextColumn get accountId => text().nullable()();
-  TextColumn get costCenterId => text().nullable()();
-  TextColumn get printerName => text().nullable()();
-  BoolColumn get priceIncludesTax =>
-      boolean().withDefault(const Constant(false))();
+  TextColumn get openShiftId => text().nullable()();
   DateTimeColumn get loginAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id};
 }
 
-// =============================================================================
-// TERMINAL LOCAL SETTINGS — key/value config for local runtime behavior
-// =============================================================================
-
-/// Key-value store for local terminal settings.
-/// Replaces PosConfigCache — same function, cleaner naming.
 class TerminalLocalSettings extends Table {
   TextColumn get key => text()();
   TextColumn get value => text()();
@@ -160,11 +129,6 @@ class TerminalLocalSettings extends Table {
   Set<Column> get primaryKey => {key};
 }
 
-// =============================================================================
-// INVOICE SEQUENCES — per-terminal, per-date invoice counters
-// =============================================================================
-
-/// Local invoice sequence counter per terminal and business date.
 class InvoiceSequences extends Table {
   TextColumn get id => text()();
   TextColumn get custCode => text()();
