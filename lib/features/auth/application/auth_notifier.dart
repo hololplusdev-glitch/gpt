@@ -7,22 +7,26 @@ import 'package:pos_flutter/shared/models/enums.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 
-/// Thin auth facade. ActivePosSession is the runtime truth.
+/// UI state for cashier selection only.
+/// This is not runtime truth. Runtime truth is activePosSessionProvider.
 class CashierSelectionState {
   final bool isLoading;
   final String? errorMessage;
 
-  const CashierSelectionState({this.isLoading = false, this.errorMessage});
+  const CashierSelectionState({
+    this.isLoading = false,
+    this.errorMessage,
+  });
 }
 
-class AuthNotifier extends StateNotifier<CashierSelectionState> {
+class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
   final AuthDao _authDao;
   final AuditDao _auditDao;
   final ActivePosSessionDao _sessionDao;
 
   static const _uuid = Uuid();
 
-  AuthNotifier({
+  CashierSelectionNotifier({
     required AuthDao authDao,
     required AuditDao auditDao,
     required ActivePosSessionDao sessionDao,
@@ -37,12 +41,16 @@ class AuthNotifier extends StateNotifier<CashierSelectionState> {
     try {
       final user = await _authDao.findByUsername(username);
       if (user == null) {
-        state = const CashierSelectionState(errorMessage: 'User not found in synced data.');
+        state = const CashierSelectionState(
+          errorMessage: 'User not found in synced data.',
+        );
         return false;
       }
 
       if (!user.isActive || !user.canLoginPos) {
-        state = const CashierSelectionState(errorMessage: 'User not authorized for POS.');
+        state = const CashierSelectionState(
+          errorMessage: 'User not authorized for POS.',
+        );
         return false;
       }
 
@@ -79,12 +87,16 @@ class AuthNotifier extends StateNotifier<CashierSelectionState> {
     try {
       final user = await _authDao.findByUsername(username);
       if (user == null) {
-        state = const CashierSelectionState(errorMessage: 'User not found in synced data.');
+        state = const CashierSelectionState(
+          errorMessage: 'User not found in synced data.',
+        );
         return false;
       }
 
       if (!user.isActive || !user.canLoginPos) {
-        state = const CashierSelectionState(errorMessage: 'User not authorized for POS.');
+        state = const CashierSelectionState(
+          errorMessage: 'User not authorized for POS.',
+        );
         return false;
       }
 
@@ -94,7 +106,9 @@ class AuthNotifier extends StateNotifier<CashierSelectionState> {
       );
 
       if (machine == null) {
-        state = const CashierSelectionState(errorMessage: 'Selected POS machine not found.');
+        state = const CashierSelectionState(
+          errorMessage: 'Selected POS machine not found.',
+        );
         return false;
       }
 
@@ -129,10 +143,10 @@ class AuthNotifier extends StateNotifier<CashierSelectionState> {
   }
 
   Future<void> logout() async {
-    final session = state.session;
+    final session = await _sessionDao.getActive();
 
-    if (session != null && session.sessionId != null) {
-      await _authDao.updateSessionLogout(session.sessionId!);
+    if (session?.sessionId != null) {
+      await _authDao.updateSessionLogout(session!.sessionId!);
     }
 
     await _sessionDao.clearActive();
@@ -146,10 +160,15 @@ class AuthNotifier extends StateNotifier<CashierSelectionState> {
   }
 }
 
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier(
+final cashierSelectionProvider =
+    StateNotifierProvider<CashierSelectionNotifier, CashierSelectionState>((ref) {
+  return CashierSelectionNotifier(
     authDao: ref.watch(authDaoProvider),
     auditDao: ref.watch(auditDaoProvider),
     sessionDao: ref.watch(activePosSessionDaoProvider),
   );
 });
+
+/// Temporary alias for legacy UI imports.
+/// Do not use for runtime decisions.
+final authProvider = cashierSelectionProvider;

@@ -124,7 +124,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final config = ref.read(posConfigProvider);
 
     final success = await ref
-        .read(authProvider.notifier)
+        .read(cashierSelectionProvider.notifier)
         .selectCashier(username);
 
     if (!mounted || !success) {
@@ -144,7 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
+    final cashierSelection = ref.watch(cashierSelectionProvider);
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -205,7 +205,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: AppSpacing.xl),
                   const _LoginIdentityCard(),
                   const SizedBox(height: AppSpacing.xxl),
-                  if (authState.errorMessage != null) ...[
+                  if (cashierSelection.errorMessage != null) ...[
                     Container(
                       width: double.infinity,
                       padding: AppSpacing.paddingMd,
@@ -226,7 +226,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: Text(
-                              authState.errorMessage!,
+                              cashierSelection.errorMessage!,
                               style: const TextStyle(
                                 color: AppColors.error,
                                 fontSize: 13,
@@ -252,8 +252,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     width: double.infinity,
                     height: AppSpacing.jumbo + AppSpacing.xs,
                     child: AppButton.primary(
-                      onPressed: authState.isLoading ? null : _handleSelect,
-                      isLoading: authState.isLoading,
+                      onPressed: cashierSelection.isLoading ? null : _handleSelect,
+                      isLoading: cashierSelection.isLoading,
                       label: l10n.selectCashier,
                     ),
                   ),
