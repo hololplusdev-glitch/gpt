@@ -7,6 +7,8 @@ import 'package:pos_flutter/core/services/invoices/invoice_document_builder.dart
 import 'package:pos_flutter/core/services/invoices/invoice_pdf_exporter.dart';
 import 'package:pos_flutter/core/services/pos_devices/print_job_processor.dart';
 import 'package:pos_flutter/core/services/pos_devices/print_job_service.dart';
+import 'package:pos_flutter/core/services/pos_devices/print_queue.dart';
+import 'package:pos_flutter/core/services/time/clock.dart';
 import 'package:pos_flutter/shared/models/enums.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:share_plus/share_plus.dart';
@@ -14,21 +16,27 @@ import 'package:share_plus/share_plus.dart';
 class InvoiceOutputCoordinator {
   final InvoiceDocumentBuilder _documentBuilder;
   final InvoicePdfExporter _pdfExporter;
+  final PrintQueue _printQueue;
   final PrintJobService _printJobService;
   final PrintJobProcessor _printJobProcessor;
   final PrintJobDao _printJobDao;
+  final Clock _clock;
 
   const InvoiceOutputCoordinator({
     required InvoiceDocumentBuilder documentBuilder,
     required InvoicePdfExporter pdfExporter,
+    required PrintQueue printQueue,
     required PrintJobService printJobService,
     required PrintJobProcessor printJobProcessor,
     required PrintJobDao printJobDao,
+    Clock clock = const SystemClock(),
   }) : _documentBuilder = documentBuilder,
        _pdfExporter = pdfExporter,
+       _printQueue = printQueue,
        _printJobService = printJobService,
        _printJobProcessor = printJobProcessor,
-       _printJobDao = printJobDao;
+       _printJobDao = printJobDao,
+       _clock = clock;
 
   Future<InvoiceDocument> getOrCreateOriginal(String saleId) {
     return _documentBuilder.getOrCreateOriginal(saleId);
@@ -45,8 +53,9 @@ class InvoiceOutputCoordinator {
     }
 
     final document = await getOrCreateOriginal(saleId);
-    final jobIds = await _printJobService.enqueueDocument(
+    final jobIds = await _printQueue.enqueueInvoiceReceipt(
       document: document,
+      createdAt: _clock.now(),
       createdBy: createdBy,
       requireAutoPrint: requireAutoPrint,
     );
@@ -66,8 +75,9 @@ class InvoiceOutputCoordinator {
       InvoiceCopyInfo.reprint(copyNumber: copyNumber, reason: reason),
     );
 
-    final jobIds = await _printJobService.enqueueDocument(
+    final jobIds = await _printQueue.enqueueInvoiceReceipt(
       document: copy,
+      createdAt: _clock.now(),
       createdBy: createdBy,
       documentType: PrintDocumentType.invoiceReceiptCopy,
     );
@@ -158,8 +168,10 @@ final invoiceOutputCoordinatorProvider = Provider<InvoiceOutputCoordinator>((
   return InvoiceOutputCoordinator(
     documentBuilder: ref.watch(invoiceDocumentBuilderProvider),
     pdfExporter: ref.watch(invoicePdfExporterProvider),
+    printQueue: ref.watch(printQueueProvider),
     printJobService: ref.watch(printJobServiceProvider),
     printJobProcessor: ref.watch(printJobProcessorProvider),
     printJobDao: ref.watch(printJobDaoProvider),
+    clock: ref.watch(clockProvider),
   );
 });
