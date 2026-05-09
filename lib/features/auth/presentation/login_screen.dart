@@ -142,7 +142,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (accesses.length == 1) {
       selectedMachineNo = accesses.single.machineNo;
     } else if (accesses.length > 1) {
-      selectedMachineNo = await _chooseMachine(accesses.map((e) => e.machineNo).toList());
+      selectedMachineNo = await _chooseMachine(
+        accesses.map((e) => e.machineNo).toList(),
+      );
       if (selectedMachineNo == null) return;
     } else {
       await ref.read(cashierSelectionProvider.notifier).selectCashier(username);

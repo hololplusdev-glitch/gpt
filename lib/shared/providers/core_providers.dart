@@ -61,12 +61,6 @@ final activePosSessionProvider = StreamProvider<ActivePosSession?>((ref) {
   return ref.watch(activePosSessionDaoProvider).watchActive();
 });
 
-final activeMachineProvider = Provider<ActivePosSession>((ref) {
-  final session = ref.watch(activePosSessionProvider).valueOrNull;
-  if (session == null) throw StateError('Active POS session is not selected.');
-  return session;
-});
-
 final authDaoProvider = Provider<AuthDao>((ref) {
   return AuthDao(ref.watch(databaseProvider));
 });

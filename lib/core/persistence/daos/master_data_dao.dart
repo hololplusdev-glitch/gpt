@@ -112,7 +112,7 @@ class MasterDataDao {
     required DateTime now,
     String? serverTime,
   }) async {
-      await _db
+    await _db
         .into(_db.posMachines)
         .insertOnConflictUpdate(
           PosMachinesCompanion(
@@ -224,14 +224,15 @@ class MasterDataDao {
     ];
 
     if (typeCode == MasterDataType.itemPrice.code) {
-      parts.add('store:${context.storeId ?? ''}');
-      parts.add('price:${context.priceLevelId ?? ''}');
+      parts.add('store:${(context.storeId ?? '').trim()}');
+      parts.add('price:${(context.priceLevelId ?? '').trim()}');
     }
 
     if (typeCode == MasterDataType.devicePrivilege.code) {
-      parts.add('user:${context.syncUserId}');
-      if ((context.terminalNo ?? '').trim().isNotEmpty) {
-        parts.add('machine:${context.terminalNo}');
+      parts.add('user:${context.syncUserId.trim()}');
+      final terminalNo = (context.terminalNo ?? '').trim();
+      if (terminalNo.isNotEmpty) {
+        parts.add('machine:$terminalNo');
       }
     }
 
