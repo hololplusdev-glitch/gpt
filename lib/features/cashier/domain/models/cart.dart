@@ -1,3 +1,8 @@
+import 'dart:convert';
+
+import 'package:pos_flutter/core/errors/app_exception.dart';
+import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
+import 'package:pos_flutter/features/sales/domain/models/sale_inputs.dart';
 import 'package:pos_flutter/shared/models/enums.dart';
 import 'package:pos_flutter/shared/models/sellable_item_snapshot.dart';
 
@@ -57,6 +62,70 @@ class CartItem {
       notes: notes ?? this.notes,
     );
   }
+
+  SaleLineInput toSaleLineInput() {
+    return SaleLineInput(
+      itemId: itemId,
+      unitId: unitId,
+      itemName: productName,
+      unitName: unitName,
+      barcode: barcode,
+      quantity: quantity,
+      unitPrice: unitPrice,
+      taxRate: taxRate,
+      discountType: discountType,
+      discountValue: discountValue,
+      discountAmount: discountAmount,
+      isPriceOverridden: isPriceOverridden,
+      allowDiscount: allowDiscount,
+      priceSource: priceSource,
+      notes: notes,
+    );
+  }
+
+  Map<String, dynamic> toHeldOrderSnapshotJson() {
+    return {
+      'itemId': itemId,
+      'unitId': unitId,
+      'itemName': productName,
+      'unitName': unitName,
+      'barcode': barcode,
+      'quantity': quantity,
+      'unitPrice': unitPrice,
+      'taxRate': taxRate,
+      'discountType': discountType?.code,
+      'discountValue': discountValue,
+      'discountAmount': discountAmount,
+      'isPriceOverridden': isPriceOverridden,
+      'allowDiscount': allowDiscount,
+      'priceSource': priceSource,
+      'notes': notes,
+    };
+  }
+
+  static CartItem fromSnapshotJson(Map<String, dynamic> json) {
+    final unitName = json['unitName'] as String? ?? 'Each';
+
+    return CartItem(
+      sellableItem: SellableItemSnapshot(
+        itemId: json['itemId'] as String,
+        unitId: json['unitId'] as String,
+        itemName: json['itemName'] as String,
+        unitName: unitName,
+        barcode: json['barcode'] as String?,
+        unitPrice: _double(json['unitPrice']),
+        taxRate: _double(json['taxRate']),
+        allowDiscount: json['allowDiscount'] as bool? ?? false,
+        priceSource: json['priceSource'] as String? ?? PriceSource.itemPrice.code,
+      ),
+      quantity: _double(json['quantity'], fallback: 1.0),
+      discountType: _parseDiscountType(json['discountType']),
+      discountValue: _nullableDouble(json['discountValue']),
+      discountAmount: _double(json['discountAmount']),
+      isPriceOverridden: json['isPriceOverridden'] as bool? ?? false,
+      notes: json['notes'] as String?,
+    );
+  }
 }
 
 class Cart {
@@ -67,6 +136,205 @@ class Cart {
   bool get isEmpty => items.isEmpty;
   bool get isNotEmpty => items.isNotEmpty;
 
-  int get totalItemCount =>
-      items.fold(0, (sum, item) => sum + item.quantity.round());
+  int get totalItemCount {
+    return items.fold(0, (sum, item) => sum + item.quantity.round());
+  }
+
+  CartItem? findLine(String itemId, String? unitId) {
+    for (final item in items) {
+      if (_sameLine(item, itemId, unitId)) return item;
+    }
+    return null;
+  }
+
+  double quantityFor(String itemId, String? unitId) {
+    return findLine(itemId, unitId)?.quantity ?? 0;
+  }
+
+  Cart addSellableItem(SellableItemSnapshot snapshot) {
+    final existing = findLine(snapshot.itemId, snapshot.unitId);
+
+    if (existing == null) {
+      return Cart(
+        items: [
+          ...items,
+          CartItem(sellableItem: snapshot, quantity: 1.0),
+        ],
+      );
+    }
+
+    return changeQuantity(
+      existing.itemId,
+      existing.unitId,
+      existing.quantity + 1,
+    );
+  }
+
+  Cart replaceLine(CartItem updatedLine) {
+    return Cart(
+      items: items
+          .map(
+            (item) => _sameLine(item, updatedLine.itemId, updatedLine.unitId)
+                ? updatedLine
+                : item,
+          )
+          .toList(),
+    );
+  }
+
+  Cart changeQuantity(String itemId, String? unitId, double newQuantity) {
+    if (newQuantity <= 0) return removeItem(itemId, unitId);
+
+    final current = findLine(itemId, unitId);
+    if (current == null) return this;
+
+    return replaceLine(current.copyWith(quantity: newQuantity));
+  }
+
+  Cart applyResolvedPrice({
+    required String itemId,
+    required String unitId,
+    required SellableItemSnapshot pricedSnapshot,
+  }) {
+    final current = findLine(itemId, unitId);
+    if (current == null) return this;
+
+    return replaceLine(
+      current.copyWith(sellableItem: pricedSnapshot),
+    );
+  }
+
+  Cart applyLineDiscount(
+    String itemId,
+    String? unitId, {
+    required DiscountType type,
+    required double value,
+    required double amount,
+  }) {
+    return Cart(
+      items: items.map((item) {
+        if (!_sameLine(item, itemId, unitId)) return item;
+
+        if (!item.allowDiscount && (amount > 0 || value > 0)) {
+          throw BusinessException(
+            'Discounts are not allowed for ${item.productName}.',
+            code: 'DISCOUNT_NOT_ALLOWED',
+          );
+        }
+
+        return item.copyWith(
+          discountType: type,
+          discountValue: value,
+          discountAmount: amount,
+        );
+      }).toList(),
+    );
+  }
+
+  Cart overridePrice(String itemId, String? unitId, double newPrice) {
+    return Cart(
+      items: items.map((item) {
+        if (!_sameLine(item, itemId, unitId)) return item;
+
+        return item.copyWith(
+          overrideUnitPrice: newPrice,
+          isPriceOverridden: true,
+        );
+      }).toList(),
+    );
+  }
+
+  Cart removeItem(String itemId, String? unitId) {
+    return Cart(
+      items: items.where((item) => !_sameLine(item, itemId, unitId)).toList(),
+    );
+  }
+
+  List<SaleLineInput> toSaleLineInputs() {
+    return items.map((item) => item.toSaleLineInput()).toList();
+  }
+
+  List<Map<String, dynamic>> toHeldOrderSnapshotJson() {
+    return items.map((item) => item.toHeldOrderSnapshotJson()).toList();
+  }
+
+  CheckoutQuote previewQuote({
+    required PricingEngine pricingEngine,
+    required bool useTax,
+    required bool priceIncludesTax,
+  }) {
+    return pricingEngine.calculateQuote(
+      lines: toSaleLineInputs()
+          .map(
+            (line) => PricingLineInput(
+              itemId: line.itemId,
+              unitId: line.unitId,
+              unitPrice: line.unitPrice,
+              quantity: line.quantity,
+              discountAmount: line.discountAmount,
+              taxRate: line.taxRate,
+            ),
+          )
+          .toList(),
+      taxRate: 0,
+      useTax: useTax,
+      priceIncludesTax: priceIncludesTax,
+    );
+  }
+
+  static Cart fromHeldOrderSnapshotJson(String snapshotJson) {
+    final decoded = jsonDecode(snapshotJson);
+
+    if (decoded is List) {
+      return Cart(
+        items: decoded
+            .cast<Map<String, dynamic>>()
+            .map(CartItem.fromSnapshotJson)
+            .toList(),
+      );
+    }
+
+    if (decoded is Map<String, dynamic>) {
+      final items = decoded['items'];
+
+      if (items is List) {
+        return Cart(
+          items: items
+              .cast<Map<String, dynamic>>()
+              .map(CartItem.fromSnapshotJson)
+              .toList(),
+        );
+      }
+    }
+
+    throw const FormatException('Invalid held order snapshot.');
+  }
+
+  bool _sameLine(CartItem item, String itemId, String? unitId) {
+    return item.itemId == itemId && item.unitId == unitId;
+  }
+}
+
+double _double(Object? value, {double fallback = 0.0}) {
+  if (value == null) return fallback;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString()) ?? fallback;
+}
+
+double? _nullableDouble(Object? value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString());
+}
+
+DiscountType? _parseDiscountType(Object? value) {
+  if (value == null) return null;
+
+  if (value is String) {
+    for (final type in DiscountType.values) {
+      if (type.code == value) return type;
+    }
+  }
+
+  return null;
 }

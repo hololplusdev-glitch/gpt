@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
-import 'package:pos_flutter/features/cashier/application/cart_mapper.dart';
 import 'package:pos_flutter/features/cashier/application/cart_notifier.dart';
-import 'package:pos_flutter/features/sales/application/sales_service.dart';
+import 'package:pos_flutter/shared/providers/core_providers.dart';
 
 class CartQuoteState {
   final CheckoutQuote? quote;
@@ -19,14 +19,23 @@ class CartQuoteState {
   bool get hasQuote => quote != null;
 }
 
+/// UI preview only.
+/// Official checkout totals are recalculated by SaleCheckout.
 final cartQuoteProvider = Provider<CartQuoteState>((ref) {
   final cart = ref.watch(cartProvider);
+
   if (cart.isEmpty) return const CartQuoteState.empty();
 
+  final session = ref.watch(activePosSessionProvider).valueOrNull;
+  if (session == null) return const CartQuoteState.empty();
+
   try {
-    final quote = ref
-        .watch(salesServiceProvider)
-        .quoteSale(lineItems: CartMapper.saleLineInputs(cart));
+    final quote = cart.previewQuote(
+      pricingEngine: const PricingEngine(),
+      useTax: session.activeUseTax,
+      priceIncludesTax: session.priceIncludesTax,
+    );
+
     return CartQuoteState.data(quote);
   } catch (e) {
     return CartQuoteState.failure(e);

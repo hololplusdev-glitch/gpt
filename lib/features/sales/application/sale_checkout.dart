@@ -18,7 +18,6 @@ import 'package:pos_flutter/core/services/pos_devices/print_queue.dart';
 import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
 import 'package:pos_flutter/core/services/sync/upload_queue.dart';
 import 'package:pos_flutter/core/services/time/clock.dart';
-import 'package:pos_flutter/features/cashier/application/cart_mapper.dart';
 import 'package:pos_flutter/features/cashier/application/cart_notifier.dart';
 import 'package:pos_flutter/features/cashier/domain/models/payment_method_option.dart';
 import 'package:pos_flutter/features/sales/domain/models/sale_inputs.dart';
@@ -88,7 +87,7 @@ class SaleCheckout {
     final shiftId = shiftState.activeShift!.id;
     await _validateOpenShift(shiftId);
 
-    final draftLines = CartMapper.saleLineInputs(request.cart);
+    final draftLines = request.cart.toSaleLineInputs();
     final officialLines = await _resolveOfficialPrices(
       session: session,
       draftLines: draftLines,
