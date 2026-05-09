@@ -133,6 +133,16 @@ class SalesDao {
         .get();
   }
 
+  Future<void> enqueuePrintJobs(List<PrintJobsCompanion> jobs) async {
+    if (jobs.isEmpty) return;
+
+    await _db.transaction(() async {
+      for (final job in jobs) {
+        await _db.into(_db.printJobs).insert(job);
+      }
+    });
+  }
+
   /// Get sales for a shift.
   Future<List<Sale>> getSalesForShift(String shiftId) async {
     return (_db.select(_db.sales)

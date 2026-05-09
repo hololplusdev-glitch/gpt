@@ -25,12 +25,12 @@ class InvoiceNumberService {
     String sequenceType = 'sale',
   }) async {
     final seq = await _salesDao.reserveNextInvoiceSequence(
+      _clock.now(),
       custCode: custCode,
       branchNo: branchNo,
       machineNo: machineNo,
       userId: userId,
       sequenceType: sequenceType,
-      _clock.now(),
     );
     return '$custCode-$branchNo-$machineNo-$userId-${seq.toString().padLeft(6, '0')}';
   }

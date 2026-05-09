@@ -113,7 +113,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       final result = await ref
           .read(saleCheckoutProvider)
           .complete(
-            SaleSaleCheckoutRequest(
+            SaleCheckoutRequest(
               cart: widget.cart,
               shiftState: ref.read(shiftProvider),
               paymentMethod: method,

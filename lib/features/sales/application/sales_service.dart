@@ -14,11 +14,8 @@ import 'package:pos_flutter/core/errors/app_exception.dart';
 import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:pos_flutter/core/persistence/daos/audit_dao.dart';
 import 'package:pos_flutter/core/persistence/daos/sales_dao.dart';
-import 'package:pos_flutter/core/persistence/daos/shift_dao.dart';
 import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/core/persistence/pos_config_repository.dart';
-import 'package:pos_flutter/core/services/invoice_number_service.dart';
-import 'package:pos_flutter/core/services/payments/payment_method_resolver.dart';
 import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
 import 'package:pos_flutter/core/services/time/clock.dart';
 import 'package:pos_flutter/features/sales/domain/models/sale_inputs.dart';
@@ -30,21 +27,17 @@ import 'package:uuid/uuid.dart';
 /// The checkout pipeline from validated cart to persisted sale.
 class SalesService {
   final SalesDao _salesDao;
-  final ShiftDao _shiftDao;
   final AuditDao _auditDao;
   final PosConfigRepository _config;
   final ActivePosSession? _activeSession;
-  final InvoiceNumberService _invoiceNumberService;
   final PricingEngine _pricingEngine;
   final Clock _clock;
 
   SalesService({
     required SalesDao salesDao,
-    required ShiftDao shiftDao,
     required AuditDao auditDao,
     required PosConfigRepository config,
     required ActivePosSession? activeSession,
-    required InvoiceNumberService invoiceNumberService,
     PricingEngine pricingEngine = const PricingEngine(),
     Clock clock = const SystemClock(),
   }) : _salesDao = salesDao,
@@ -93,304 +86,6 @@ class SalesService {
     } on PricingException catch (e) {
       throw SaleException(e.message);
     }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Complete Sale
-  // ---------------------------------------------------------------------------
-
-  /// Validate, persist, and finalize a sale.
-  /// Returns the created sale local ID.
-  Future<String> completeSale({
-    required String shiftId,
-    required List<SaleLineInput> lineItems,
-    required List<SalePaymentInput> payments,
-    String? customerId,
-    String? customerName,
-    String? customerTaxNumber,
-    SaleDiscountInput? invoiceDiscount,
-    String? notes,
-  }) async {
-    final activeSession = _requireActiveSession();
-    final activeMachineNo = activeSession.activeMachineNo;
-    final activeBranchNo = activeSession.activeBranchNo;
-    final activeUserId = activeSession.activeUserId;
-
-    // 2. Validate open shift
-    final shift = await _shiftDao.getById(shiftId);
-    final isOpen = shift != null && shift.status == ShiftStatus.open.code;
-    if (!isOpen) {
-      throw SaleException('No open shift. Open a shift before selling.');
-    }
-
-    // 3. Validate cart not empty
-    if (lineItems.isEmpty) {
-      throw SaleException('No items in cart.');
-    }
-    _validateSaleInputs(lineItems: lineItems);
-
-    // 4. Calculate official checkout quote.
-    final quote = quoteSale(
-      lineItems: lineItems,
-      invoiceDiscount: invoiceDiscount,
-    );
-    final subtotal = quote.subtotal;
-    final discountTotal = quote.discountTotal;
-    final taxTotal = quote.taxTotal;
-    final grandTotal = quote.grandTotal;
-    final invoiceDiscountAmount = quote.invoiceDiscountAmount;
-    final processedItems = <_ProcessedItem>[];
-
-    for (var i = 0; i < lineItems.length; i++) {
-      final line = lineItems[i];
-      final pricedLine = quote.lines[i];
-      processedItems.add(
-        _ProcessedItem(
-          input: line,
-          taxableAmount: pricedLine.taxableAmount,
-          taxAmount: pricedLine.taxAmount,
-          lineTotal: pricedLine.lineTotal,
-        ),
-      );
-    }
-
-    // 5. Validate payments against the same quote that will be persisted.
-    final paymentResult = PaymentPolicy(
-      requireCardReference: false,
-      allowCustomerCredit: _config.allowCustomerCredit,
-    ).validate(quote: quote, payments: payments);
-    final paidTotal = paymentResult.paidTotal;
-    final remaining = paymentResult.remainingTotal;
-    final changeTotal = paymentResult.changeTotal;
-
-    // 6. Generate local invoice number
-    final localInvoiceNo = await _invoiceNumberService.generateNext(
-      custCode: activeSession.custCode,
-      branchNo: activeBranchNo,
-      machineNo: activeMachineNo,
-      userId: activeUserId,
-    );
-
-    // 7. Persist atomically
-    final saleId = 'SALE_${_uuid.v4()}';
-    final now = _clock.now();
-    final idempotencyKey = 'sale_$saleId';
-
-    final header = SalesCompanion(
-      id: Value(saleId),
-      localSaleNo: Value(localInvoiceNo),
-      type: Value(SaleType.sale.code),
-      status: Value(SaleStatus.completed.code),
-      terminalId: Value(activeMachineNo),
-      shiftId: Value(shiftId),
-      cashierId: Value(activeUserId),
-      branchNo: Value(activeBranchNo),
-      tenantCode: Value(activeSession.custCode),
-      branchYear: Value(activeSession.activeBranchYear),
-      machineNo: Value(activeMachineNo),
-      storeId: Value(activeSession.activeStoreId),
-      priceLevelId: Value(activeSession.activePriceLevelId),
-      useTax: Value(activeSession.activeUseTax),
-      sourceUserId: Value(activeUserId),
-      cashierNameSnapshot: Value(activeSession.activeUserName),
-      customerId: Value(customerId),
-      customerNameSnapshot: Value(customerName),
-      customerTaxNumberSnapshot: Value(customerTaxNumber),
-      subtotal: Value(subtotal),
-      discountTotal: Value(discountTotal),
-      taxTotal: Value(taxTotal),
-      grandTotal: Value(grandTotal),
-      paidTotal: Value(paidTotal),
-      remainingTotal: Value(remaining > 0 ? remaining : 0),
-      changeTotal: Value(changeTotal),
-      syncStatus: Value(OutboxStatus.pending.code),
-      idempotencyKey: Value(idempotencyKey),
-      notes: Value(notes),
-      createdAt: Value(now),
-      completedAt: Value(now),
-    );
-
-    final itemCompanions = <SaleLinesCompanion>[];
-
-    // Distribute invoice discount
-    var remainingInvoiceDiscount = invoiceDiscountAmount;
-    final totalTaxableForDiscount = processedItems.fold(
-      0.0,
-      (sum, p) => sum + p.taxableAmount,
-    );
-
-    for (int i = 0; i < processedItems.length; i++) {
-      final p = processedItems[i];
-      final itemRowId = 'TI_${_uuid.v4()}';
-
-      var lineInvoiceDiscount = 0.0;
-      if (invoiceDiscountAmount > 0 && totalTaxableForDiscount > 0) {
-        if (i == processedItems.length - 1) {
-          lineInvoiceDiscount = remainingInvoiceDiscount;
-        } else {
-          lineInvoiceDiscount = PricingEngine.roundAmount(
-            invoiceDiscountAmount * p.taxableAmount / totalTaxableForDiscount,
-          );
-        }
-        remainingInvoiceDiscount -= lineInvoiceDiscount;
-      }
-
-      itemCompanions.add(
-        SaleLinesCompanion(
-          id: Value(itemRowId),
-          saleId: Value(saleId),
-          itemId: Value(p.input.itemId),
-          unitId: Value(p.input.unitId),
-          itemNameSnapshot: Value(p.input.itemName),
-          unitNameSnapshot: Value(p.input.unitName),
-          barcode: Value(p.input.barcode),
-          qtyScaled: Value(p.input.quantity.round()),
-          unitPrice: Value(p.input.unitPrice),
-          taxRate: Value(p.input.taxRate),
-          taxableAmount: Value(p.taxableAmount),
-          taxAmount: Value(p.taxAmount),
-          lineDiscountType: Value(p.input.discountType?.code),
-          lineDiscountValue: Value(p.input.discountValue),
-          lineDiscountAmount: Value(p.input.discountAmount),
-          invoiceDiscountShare: Value(lineInvoiceDiscount),
-          grossAmount: Value(p.input.unitPrice * p.input.quantity),
-          allowDiscountSnapshot: Value(p.input.allowDiscount),
-          priceSource: Value(_priceSourceForLine(p.input)),
-          storeId: Value(activeSession.activeStoreId),
-          priceLevelId: Value(activeSession.activePriceLevelId),
-          unitSize: Value(p.input.unitSize),
-          lineTotal: Value(p.lineTotal),
-          overrideReason: Value(p.input.isPriceOverridden ? 'manual' : null),
-          notes: Value(p.input.notes),
-        ),
-      );
-    }
-
-    final paymentCompanions = <SalePaymentsCompanion>[];
-    for (final p in payments) {
-      final paymentRowId = 'TP_${_uuid.v4()}';
-      final paymentType = p.resolvedType;
-      paymentCompanions.add(
-        SalePaymentsCompanion(
-          id: Value(paymentRowId),
-          saleId: Value(saleId),
-          paymentMethodId: Value(p.paymentMethodId),
-          methodCodeSnapshot: Value(p.paymentMethodCode),
-          methodNameSnapshot: Value(p.paymentMethodName ?? p.paymentMethodCode),
-          methodTypeSnapshot: Value(paymentType.code),
-          isManual: Value(PaymentMethodResolver.isManual(paymentType)),
-          amount: Value(p.amount),
-          cashTendered: Value(p.cashTendered),
-          changeGiven: Value(p.changeGiven),
-          referenceNo: Value(p.referenceNo),
-          bankId: Value(p.bankId),
-          cardTypeId: Value(p.cardTypeId),
-          paymentDeviceRef: Value(p.terminalRef),
-          authCode: Value(p.authCode),
-          rrn: Value(p.rrn),
-          cardScheme: Value(p.cardScheme),
-          cardLast4: Value(p.cardLast4),
-          status: Value(PaymentStatus.completed.code),
-          createdAt: Value(now),
-        ),
-      );
-    }
-
-    // Tax summary
-    final taxCompanions = <SaleTaxSummaryCompanion>[];
-    final taxGroups =
-        <double, ({double taxableAmount, double taxAmount, double rate})>{};
-    for (final p in processedItems) {
-      if (p.taxAmount <= 0 && p.input.taxRate <= 0) continue;
-      final existing = taxGroups[p.input.taxRate];
-      taxGroups[p.input.taxRate] = (
-        taxableAmount: (existing?.taxableAmount ?? 0) + p.taxableAmount,
-        taxAmount: (existing?.taxAmount ?? 0) + p.taxAmount,
-        rate: p.input.taxRate,
-      );
-    }
-    for (final entry in taxGroups.entries) {
-      taxCompanions.add(
-        SaleTaxSummaryCompanion(
-          id: Value('TT_${_uuid.v4()}'),
-          saleId: Value(saleId),
-          taxRate: Value(entry.value.rate),
-          taxableAmount: Value(entry.value.taxableAmount),
-          taxAmount: Value(entry.value.taxAmount),
-        ),
-      );
-    }
-
-    // Discount summary
-    List<SaleAdjustmentsCompanion>? discountCompanions;
-    if (invoiceDiscount != null && invoiceDiscountAmount > 0) {
-      discountCompanions = [
-        SaleAdjustmentsCompanion(
-          id: Value('TD_${_uuid.v4()}'),
-          saleId: Value(saleId),
-          scope: Value(AdjustmentScope.invoice.code),
-          type: Value(invoiceDiscount.type.code),
-          source: Value(AdjustmentSource.manual.code),
-          value: Value(invoiceDiscount.value),
-          amount: Value(invoiceDiscountAmount),
-          reason: Value(invoiceDiscount.reason),
-          approvedBy: Value(invoiceDiscount.approvedBy),
-          createdAt: Value(now),
-        ),
-      ];
-    }
-
-    final auditLogEntry = AuditLogCompanion(
-      id: Value('AUD_${_uuid.v4()}'),
-      action: Value(AuditAction.saleCompleted.code),
-      actorId: Value(activeUserId),
-      actorName: Value(activeSession.activeUserName),
-      targetType: Value(OutboxEntityType.sale.code),
-      targetId: Value(saleId),
-      detailsJson: Value(
-        jsonEncode({
-          'invoiceNo': localInvoiceNo,
-          'grandTotal': grandTotal,
-          'itemCount': lineItems.length,
-        }),
-      ),
-      terminalId: Value(activeMachineNo),
-      createdAt: Value(now),
-    );
-
-    final outboxEntry = OutboxEventsCompanion(
-      id: Value('OBX_${_uuid.v4()}'),
-      eventType: Value(OutboxEventType.saleCreated.code),
-      entityType: Value(OutboxEntityType.sale.code),
-      entityId: Value(saleId),
-      payloadJson: Value(
-        jsonEncode({
-          'saleId': saleId,
-          'localSaleNo': localInvoiceNo,
-          'machineNo': activeMachineNo,
-          'branchNo': activeBranchNo,
-          'shiftId': shiftId,
-          'cashierId': activeUserId,
-          'grandTotal': grandTotal,
-          'completedAt': now.toIso8601String(),
-        }),
-      ),
-      status: Value(OutboxStatus.pending.code),
-      createdAt: Value(now),
-      idempotencyKey: Value(idempotencyKey),
-    );
-
-    await _salesDao.persistSaleEnvelope(
-      header: header,
-      items: itemCompanions,
-      payments: paymentCompanions,
-      taxes: taxCompanions,
-      discounts: discountCompanions,
-      auditLogEntry: auditLogEntry,
-      outboxEntry: outboxEntry,
-    );
-
-    return saleId;
   }
 
   // ---------------------------------------------------------------------------
@@ -662,102 +357,6 @@ class SalesService {
   }
 }
 
-class PaymentPolicy {
-  final bool requireCardReference;
-  final bool allowCustomerCredit;
-
-  const PaymentPolicy({
-    required this.requireCardReference,
-    required this.allowCustomerCredit,
-  });
-
-  PaymentValidationResult validate({
-    required CheckoutQuote quote,
-    required List<SalePaymentInput> payments,
-  }) {
-    if (payments.isEmpty) {
-      throw SaleException('At least one payment is required.');
-    }
-    if (quote.grandTotal < 0) {
-      throw SaleException('Invalid sale total.');
-    }
-
-    var paidTotal = 0.0;
-    var explicitChangeTotal = 0.0;
-    var hasChangeCapablePayment = false;
-
-    for (final payment in payments) {
-      final type = payment.resolvedType;
-      if (payment.amount <= 0) {
-        throw SaleException('Payment amount must be greater than zero.');
-      }
-
-      final cashTendered = payment.cashTendered;
-      final changeGiven = payment.changeGiven ?? 0;
-      if ((cashTendered ?? 0) < 0 || changeGiven < 0) {
-        throw SaleException('Invalid cash tendered/change values.');
-      }
-
-      if (type.allowsChange) {
-        hasChangeCapablePayment = true;
-        if (cashTendered != null && cashTendered < payment.amount) {
-          throw SaleException('Cash tendered is less than payment amount.');
-        }
-      } else if (changeGiven > 0 || cashTendered != null) {
-        throw SaleException('Change is only allowed for cash payments.');
-      }
-
-      if (payment.requiresReference ||
-          (requireCardReference && type.isManualCard)) {
-        if (!payment.hasReference) {
-          throw SaleException('Card payment reference is required.');
-        }
-      }
-
-      if (type.isIntegratedCard && !payment.hasTerminalApproval) {
-        throw SaleException(
-          'Integrated card payment requires terminal approval.',
-        );
-      }
-
-      paidTotal += payment.amount;
-      explicitChangeTotal += changeGiven;
-    }
-
-    final remaining = quote.grandTotal - paidTotal;
-    if (remaining > 0 && !allowCustomerCredit) {
-      throw SaleException(
-        'Payment of ${paidTotal.toStringAsFixed(2)} is insufficient for total ${quote.grandTotal.toStringAsFixed(2)}',
-      );
-    }
-
-    final overpayment = paidTotal > quote.grandTotal
-        ? paidTotal - quote.grandTotal
-        : 0.0;
-    if ((overpayment > 0 || explicitChangeTotal > 0) &&
-        !hasChangeCapablePayment) {
-      throw SaleException('Overpayment requires a cash payment for change.');
-    }
-
-    return PaymentValidationResult(
-      paidTotal: paidTotal,
-      remainingTotal: remaining > 0 ? remaining : 0,
-      changeTotal: explicitChangeTotal > 0 ? explicitChangeTotal : overpayment,
-    );
-  }
-}
-
-class PaymentValidationResult {
-  final double paidTotal;
-  final double remainingTotal;
-  final double changeTotal;
-
-  const PaymentValidationResult({
-    required this.paidTotal,
-    required this.remainingTotal,
-    required this.changeTotal,
-  });
-}
 
 /// Full sale detail with lines and payments.
 class SaleDetail {
@@ -787,24 +386,6 @@ class SaleDiscountInput {
   });
 }
 
-class _ProcessedItem {
-  final SaleLineInput input;
-  final double taxableAmount;
-  final double taxAmount;
-  final double lineTotal;
-
-  const _ProcessedItem({
-    required this.input,
-    required this.taxableAmount,
-    required this.taxAmount,
-    required this.lineTotal,
-  });
-}
-
-String _priceSourceForLine(SaleLineInput input) {
-  if (input.isPriceOverridden) return PriceSource.manualOverride.code;
-  return input.priceSource;
-}
 
 /// Sale-specific exception.
 class SaleException extends BusinessException {
@@ -814,11 +395,9 @@ class SaleException extends BusinessException {
 final salesServiceProvider = Provider<SalesService>((ref) {
   return SalesService(
     salesDao: ref.watch(salesDaoProvider),
-    shiftDao: ref.watch(shiftDaoProvider),
     auditDao: ref.watch(auditDaoProvider),
     config: ref.watch(posConfigProvider),
     activeSession: ref.watch(activePosSessionProvider).valueOrNull,
-    invoiceNumberService: ref.watch(invoiceNumberServiceProvider),
     clock: ref.watch(clockProvider),
   );
 });
