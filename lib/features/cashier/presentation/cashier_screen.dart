@@ -18,7 +18,7 @@ import 'package:pos_flutter/core/scanner/barcode_scanner_service.dart';
 import 'package:pos_flutter/core/scanner/scanner_providers.dart';
 import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
 import 'package:pos_flutter/features/auth/application/auth_notifier.dart';
-import 'package:pos_flutter/features/cashier/application/cart_notifier.dart';
+import 'package:pos_flutter/features/cashier/domain/models/cart.dart';
 import 'package:pos_flutter/features/cashier/application/cart_quote_provider.dart';
 import 'package:pos_flutter/features/cashier/application/product_providers.dart';
 import 'package:pos_flutter/features/cashier/presentation/widgets/barcode_scanner_overlay.dart';

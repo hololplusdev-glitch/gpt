@@ -1,4 +1,5 @@
 import 'package:pos_flutter/core/persistence/daos/print_job_dao.dart';
+import 'package:pos_flutter/core/persistence/database.dart' show PrintJob;
 export 'package:pos_flutter/core/persistence/database.dart' show PrintJob;
 
 /// Retry/status shell only.

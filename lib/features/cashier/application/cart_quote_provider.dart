@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
-import 'package:pos_flutter/features/cashier/application/cart_notifier.dart';
+import 'package:pos_flutter/features/cashier/domain/models/cart.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 
 class CartQuoteState {

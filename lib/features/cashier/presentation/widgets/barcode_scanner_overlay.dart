@@ -9,7 +9,7 @@ import 'package:pos_flutter/core/design_system/spacing.dart';
 import 'package:pos_flutter/core/l10n/app_localizations.dart';
 import 'package:pos_flutter/core/scanner/barcode_scanner_service.dart';
 import 'package:pos_flutter/core/scanner/scanner_providers.dart';
-import 'package:pos_flutter/features/cashier/application/cart_notifier.dart';
+import 'package:pos_flutter/features/cashier/domain/models/cart.dart';
 
 bool _barcodeScannerSheetOpen = false;
 Future<void> _barcodeScannerReleaseFuture = Future<void>.value();
@@ -82,7 +82,7 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
     with WidgetsBindingObserver {
   late final MobileScannerController _cameraController;
   late final BarcodeScannerService _scannerService;
-  late final CartNotifier _cartNotifier;
+  late final CartController _cartNotifier;
 
   final _processingCodes = <String>{};
 

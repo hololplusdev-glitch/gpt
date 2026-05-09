@@ -17,7 +17,7 @@ import 'package:pos_flutter/core/services/pos_devices/print_queue.dart';
 import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
 import 'package:pos_flutter/core/services/sync/upload_queue.dart';
 import 'package:pos_flutter/core/services/time/clock.dart';
-import 'package:pos_flutter/features/cashier/application/cart_notifier.dart';
+import 'package:pos_flutter/features/cashier/domain/models/cart.dart';
 import 'package:pos_flutter/features/cashier/domain/models/payment_method_option.dart';
 import 'package:pos_flutter/features/sales/domain/models/sale_inputs.dart';
 import 'package:pos_flutter/features/shift/application/shift_notifier.dart';
@@ -39,7 +39,7 @@ class SaleCheckout {
   final UploadQueue _uploadQueue;
   final PrintQueue _printQueue;
   final PaymentProfileService _paymentProfileService;
-  final CartNotifier _cartNotifier;
+  final CartController _cartNotifier;
   final ActivePosSession? _activeSession;
   final PricingEngine _pricingEngine;
   final Clock _clock;
@@ -54,7 +54,7 @@ class SaleCheckout {
     required UploadQueue uploadQueue,
     required PrintQueue printQueue,
     required PaymentProfileService paymentProfileService,
-    required CartNotifier cartNotifier,
+    required CartController cartNotifier,
     required ActivePosSession? activeSession,
     PricingEngine pricingEngine = const PricingEngine(),
     Clock clock = const SystemClock(),

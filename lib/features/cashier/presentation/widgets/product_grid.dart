@@ -12,7 +12,7 @@ import 'package:pos_flutter/core/errors/app_exception.dart';
 import 'package:pos_flutter/core/l10n/app_localizations.dart';
 import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
 
-import 'package:pos_flutter/features/cashier/application/cart_notifier.dart';
+import 'package:pos_flutter/features/cashier/domain/models/cart.dart';
 import 'package:pos_flutter/features/cashier/application/product_providers.dart';
 import 'package:pos_flutter/features/cashier/domain/models/product.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
