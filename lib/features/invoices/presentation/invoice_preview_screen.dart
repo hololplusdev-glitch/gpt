@@ -12,7 +12,6 @@ import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
 import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
 import 'package:pos_flutter/core/services/invoices/invoice_output_coordinator.dart';
 import 'package:pos_flutter/core/services/invoices/invoice_print_history_entry.dart';
-import 'package:pos_flutter/features/auth/application/auth_notifier.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:pos_flutter/shared/presentation/presenters/printer_status_presenter.dart';
 import 'package:pos_flutter/shared/presentation/presenters/sale_status_presenter.dart';
@@ -258,18 +257,18 @@ class _Actions extends ConsumerWidget {
     required bool reprint,
   }) async {
     final output = ref.read(invoiceOutputCoordinatorProvider);
-    final auth = ref.read(authProvider).session;
+    final activeSession = ref.read(activePosSessionProvider).valueOrNull;
     final reason = reprint ? await _askReprintReason(context) : null;
     if (reprint && reason == null) return;
     final result = reprint
         ? await output.reprint(
             document.saleId,
             reason: reason,
-            createdBy: auth?.userId ?? document.cashier.userId,
+            createdBy: activeSession?.activeUserId ?? document.cashier.userId,
           )
         : await output.printOriginal(
             document.saleId,
-            createdBy: auth?.userId ?? document.cashier.userId,
+            createdBy: activeSession?.activeUserId ?? document.cashier.userId,
           );
     if (!context.mounted) return;
     if (result.hasFailures) {

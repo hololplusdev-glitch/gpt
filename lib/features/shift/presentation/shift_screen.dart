@@ -11,11 +11,11 @@ import 'package:pos_flutter/core/design_system/colors.dart';
 import 'package:pos_flutter/core/design_system/layout.dart';
 import 'package:pos_flutter/core/design_system/spacing.dart';
 import 'package:pos_flutter/core/l10n/app_localizations.dart';
+import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
-import 'package:pos_flutter/features/auth/application/auth_notifier.dart';
 import 'package:pos_flutter/features/shift/application/shift_notifier.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_info_banner.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
+import 'package:pos_flutter/shared/presentation/widgets/app_info_banner.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
 import 'package:pos_flutter/shared/presentation/widgets/key_value_row.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
@@ -42,7 +42,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
   @override
   Widget build(BuildContext context) {
     final shiftState = ref.watch(shiftProvider);
-    final authState = ref.watch(authProvider);
+    final activeSession = ref.watch(activePosSessionProvider).valueOrNull;
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -70,8 +70,8 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.xxxl),
                   child: shiftState.hasOpenShift
-                      ? _buildCloseShiftView(shiftState, authState, l10n)
-                      : _buildOpenShiftView(shiftState, authState, l10n),
+                      ? _buildCloseShiftView(shiftState, activeSession, l10n)
+                      : _buildOpenShiftView(shiftState, activeSession, l10n),
                 ),
               ),
             ),
@@ -83,7 +83,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
 
   Widget _buildOpenShiftView(
     ShiftState shiftState,
-    AuthState authState,
+    ActivePosSession? activeSession,
     AppLocalizations l10n,
   ) {
     return Column(
@@ -106,7 +106,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
         const SizedBox(height: AppSpacing.sm),
         Text(
           l10n.cashierNameLabel(
-            authState.session?.displayName ?? l10n.unknownCashier,
+            activeSession?.activeUserName ?? l10n.unknownCashier,
           ),
           textAlign: TextAlign.center,
           style: const TextStyle(color: AppColors.textSecondary),
@@ -128,7 +128,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
           child: AppButton.primary(
             onPressed: shiftState.isLoading
                 ? null
-                : () => _openShift(authState),
+                : () => _openShift(activeSession),
             isLoading: shiftState.isLoading,
             icon: Icons.play_arrow,
             label: shiftState.isLoading ? l10n.openingShift : l10n.openShift,
@@ -140,10 +140,11 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
 
   Widget _buildCloseShiftView(
     ShiftState shiftState,
-    AuthState authState,
+    ActivePosSession? activeSession,
     AppLocalizations l10n,
   ) {
     final shift = shiftState.activeShift!;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -170,10 +171,6 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
           value: PosFormatters.amount(shift.openingCash),
           verticalPadding: AppSpacing.xs,
         ),
-
-        // WHY: Blind Close Policy
-        // Gross Sales is intentionally hidden here to prevent cashiers from knowing
-        // the exact expected cash in drawer, enforcing an honest manual count.
         Container(
           margin: const EdgeInsets.only(top: AppSpacing.md),
           padding: AppSpacing.paddingMd,
@@ -181,18 +178,18 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
             color: AppColors.surfaceVariant,
             borderRadius: AppSpacing.borderRadiusSm,
           ),
-          child: Row(
+          child: const Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.security,
                 size: 16,
                 color: AppColors.textSecondary,
               ),
-              const SizedBox(width: AppSpacing.sm),
+              SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
                   'Blind Close: Expected sales are hidden for security.',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
                     fontStyle: FontStyle.italic,
@@ -227,7 +224,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
           child: AppButton.warning(
             onPressed: shiftState.isLoading || _isClosing
                 ? null
-                : () => _closeShift(authState),
+                : () => _closeShift(activeSession),
             isLoading: shiftState.isLoading,
             icon: Icons.stop,
             label: shiftState.isLoading ? l10n.closingShift : l10n.closeShift,
@@ -237,20 +234,18 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     );
   }
 
-  Future<void> _openShift(AuthState authState) async {
+  Future<void> _openShift(ActivePosSession? session) async {
     final cashText = _cashController.text.trim();
     final cashDouble = double.tryParse(cashText) ?? 0;
-    final session = authState.session;
+
     if (session == null) {
       return;
     }
 
-    final success = await ref
-        .read(shiftProvider.notifier)
-        .openShift(
-          terminalId: ref.read(activeMachineProvider).activeMachineNo,
-          cashierId: session.userId,
-          cashierName: session.displayName,
+    final success = await ref.read(shiftProvider.notifier).openShift(
+          terminalId: session.activeMachineNo,
+          cashierId: session.activeUserId,
+          cashierName: session.activeUserName,
           openingCash: cashDouble,
         );
 
@@ -259,11 +254,12 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     }
   }
 
-  Future<void> _closeShift(AuthState authState) async {
+  Future<void> _closeShift(ActivePosSession? session) async {
     setState(() => _isClosing = true);
+
     final cashText = _cashController.text.trim();
     final cashDouble = double.tryParse(cashText) ?? 0;
-    final session = authState.session;
+
     if (session == null) {
       if (mounted) {
         setState(() => _isClosing = false);
@@ -271,18 +267,17 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
       return;
     }
 
-    final success = await ref
-        .read(shiftProvider.notifier)
-        .closeShift(
+    final success = await ref.read(shiftProvider.notifier).closeShift(
           actualCash: cashDouble,
-          cashierId: session.userId,
-          cashierName: session.displayName,
-          terminalId: ref.read(activeMachineProvider).activeMachineNo,
+          cashierId: session.activeUserId,
+          cashierName: session.activeUserName,
+          terminalId: session.activeMachineNo,
           closingNotes: _notesController.text.trim(),
         );
 
     if (mounted) {
       setState(() => _isClosing = false);
+
       if (success) {
         context.go(AppRoutes.login);
       }

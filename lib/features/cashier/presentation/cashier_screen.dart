@@ -18,7 +18,6 @@ import 'package:pos_flutter/core/scanner/barcode_scanner_service.dart';
 import 'package:pos_flutter/core/scanner/scanner_providers.dart';
 import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
 import 'package:pos_flutter/features/auth/application/auth_notifier.dart';
-import 'package:pos_flutter/features/cashier/application/cart_mapper.dart';
 import 'package:pos_flutter/features/cashier/application/cart_notifier.dart';
 import 'package:pos_flutter/features/cashier/application/cart_quote_provider.dart';
 import 'package:pos_flutter/features/cashier/application/product_providers.dart';
@@ -214,9 +213,9 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       return;
     }
 
-    final authState = ref.read(authProvider);
+    final activeSession = ref.read(activePosSessionProvider).valueOrNull;
     final shiftState = ref.read(shiftProvider);
-    if (!authState.isAuthenticated || !shiftState.hasOpenShift) return;
+    if (activeSession == null || !shiftState.hasOpenShift) return;
 
     final shift = shiftState.activeShift!;
     final salesService = ref.read(salesServiceProvider);
@@ -224,7 +223,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     try {
       await salesService.holdOrder(
         shiftId: shift.id,
-        items: CartMapper.saleLineInputs(cart),
+        items: cart.toSaleLineInputs(),
       );
 
       ref.read(cartProvider.notifier).clearCart();
@@ -245,7 +244,6 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final session = ref.watch(authProvider).session;
     final cart = ref.watch(cartProvider);
     final l10n = AppLocalizations.of(context)!;
     final size = MediaQuery.sizeOf(context);
@@ -307,7 +305,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
           children: [
             _buildTopBar(
               context,
-              session?.displayName ?? l10n.cashierWorkspace,
+              activeSession.activeUserName,
             ),
             Expanded(
               child: isWide
@@ -363,7 +361,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                             ),
                             _LogoutButton(
                               onPressed: () =>
-                                  ref.read(authProvider.notifier).logout(),
+                                  ref.read(cashierSelectionProvider.notifier).logout(),
                             ),
                           ],
                         ),
@@ -442,7 +440,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                         const SizedBox(width: AppSpacing.xs),
                         _LogoutButton(
                           onPressed: () =>
-                              ref.read(authProvider.notifier).logout(),
+                              ref.read(cashierSelectionProvider.notifier).logout(),
                         ),
                       ],
                     ),
