@@ -1,0 +1,554 @@
+{
+  "@@locale": "ar",
+  "appTitle": "كاشير برو",
+  "posShort": "كاشير",
+  "login": "تسجيل الدخول",
+  "logout": "تسجيل الخروج",
+  "username": "اسم المستخدم",
+  "password": "كلمة المرور",
+  "loginButton": "دخول",
+  "loginError": "بيانات الدخول غير صحيحة",
+  "cashierSelectionOffline": "اختيار الكاشير (بدون اتصال)",
+  "cashierSelectPrompt": "اختر معرف مستخدم  للبدء",
+  "userIdOrLoginName": "معرف المستخدم أو اسم الدخول",
+  "selectCashier": "اختيار الكاشير",
+  "offlineUsersMustBeSynced": "وضع عدم الاتصال - يجب مزامنة المستخدمين من النظام .",
+  "passwordLoginPending": "سيكون تسجيل الدخول بكلمة المرور متاحًا عند جاهزية واجهة تسجيل الدخول.",
+  "cashierWorkspace": "الكاشير",
+  "salesHistory": "سجل المبيعات",
+  "settings": "الإعدادات",
+  "setup": "الإعداد",
+  "search": "بحث",
+  "searchProducts": "البحث عن المنتجات...",
+  "scanBarcode": "مسح الباركود",
+  "scanAddedProduct": "تمت إضافة {productName}",
+  "@scanAddedProduct": {
+    "placeholders": {
+      "productName": { "type": "String" }
+    }
+  },
+  "scanAddedProductQuantity": "{productName} (x{quantity})",
+  "@scanAddedProductQuantity": {
+    "placeholders": {
+      "productName": { "type": "String" },
+      "quantity": { "type": "int" }
+    }
+  },
+  "noPriceForProduct": "{productName}: لا يوجد سعر",
+  "@noPriceForProduct": {
+    "placeholders": {
+      "productName": { "type": "String" }
+    }
+  },
+  "barcodeScanFailed": "فشل مسح الباركود.",
+  "scannerStartFailed": "تعذر تشغيل الماسح.",
+  "cameraStartFailed": "تعذر تشغيل الكاميرا.",
+  "scanAddedItem": "تمت إضافة الصنف",
+  "scanAddedItemQuantity": "تمت إضافة الصنف ({quantity})",
+  "@scanAddedItemQuantity": {
+    "placeholders": {
+      "quantity": { "type": "int" }
+    }
+  },
+  "barcodeNotFoundCatalog": "الباركود غير موجود في الكتالوج.",
+  "scanNoPriceCurrentStore": "هذا الصنف غير قابل للبيع في مخزن الجهاز الحالي.",
+  "toggleFlash": "تشغيل الفلاش",
+  "closeScanner": "إغلاق الماسح",
+  "pointCameraBarcode": "وجّه الكاميرا نحو الباركود",
+  "scannedItemsCount": "تم مسح {count} صنف",
+  "@scannedItemsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "cameraPermissionDenied": "لم يتم منح إذن الكاميرا. فعّل إذن الكاميرا من إعدادات الجهاز.",
+  "cart": "السلة",
+  "cartWithCount": "السلة ({count})",
+  "@cartWithCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "cartEmpty": "السلة فارغة",
+  "cartEmptyNothingToHold": "السلة فارغة - لا يوجد طلب لتعليقه",
+  "tapProductsToAdd": "اضغط على المنتجات لإضافتها",
+  "addToCart": "إضافة للسلة",
+  "removeFromCart": "حذف",
+  "quantity": "الكمية",
+  "price": "السعر",
+  "discount": "الخصم",
+  "discountAmountLabel": "خصم -{amount}",
+  "@discountAmountLabel": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "priceOverridden": "تم تعديل السعر",
+  "subtotal": "المجموع الفرعي",
+  "vat": "ضريبة القيمة المضافة",
+  "tax": "الضريبة",
+  "total": "الإجمالي",
+  "payAmount": "دفع {amount}",
+  "@payAmount": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "pay": "دفع",
+  "cash": "نقدي",
+  "card": "بطاقة",
+  "mixed": "مختلط",
+  "change": "الباقي",
+  "invoiceNumberLabel": "الفاتورة: {invoiceNo}",
+  "@invoiceNumberLabel": {
+    "placeholders": {
+      "invoiceNo": { "type": "String" }
+    }
+  },
+  "tendered": "المبلغ المدفوع",
+  "amountTenderedSar": "المبلغ المستلم (ر.س)",
+  "exact": "المبلغ الكامل",
+  "receipt": "الإيصال",
+  "printReceipt": "طباعة الإيصال",
+  "reprintReceipt": "إعادة طباعة الإيصال",
+  "holdOrder": "تعليق الطلب",
+  "hold": "تعليق",
+  "orderHeldSuccessfully": "تم تعليق الطلب بنجاح",
+  "recallOrder": "استرجاع الطلب",
+  "heldOrders": "الطلبات المعلقة",
+  "voidSale": "إلغاء",
+  "returnSale": "مرتجع",
+  "customer": "العميل",
+  "selectCustomer": "اختيار العميل",
+  "noCustomer": "عميل عابر",
+  "notes": "ملاحظات",
+  "priceOverride": "تعديل السعر",
+  "discountOverride": "تعديل الخصم",
+  "supervisorApproval": "موافقة المشرف",
+  "enterSupervisorPin": "أدخل رقم المشرف السري",
+  "approved": "تمت الموافقة",
+  "denied": "مرفوض",
+  "connection": "الاتصال",
+  "devices": "الأجهزة",
+  "printer": "الطابعة",
+  "payment": "الدفع",
+  "paymentTerminal": "جهاز الدفع",
+  "barcodeScanner": "ماسح الباركود",
+  "connected": "متصل",
+  "disconnected": "غير متصل",
+  "connecting": "جاري الاتصال...",
+  "syncStatus": "حالة المزامنة",
+  "syncMonitor": "مراقبة المزامنة",
+  "pendingUpload": "بانتظار الرفع",
+  "uploadFailed": "فشل الرفع",
+  "uploaded": "تم الرفع",
+  "downloading": "جاري التنزيل...",
+  "downloadMasterData": "تنزيل البيانات الأساسية",
+  "pendingInvoiceUploadUnavailable": "رفع الفواتير المعلقة - الواجهة غير موثقة",
+  "masterDataDownloadSummary": "تم تنزيل البيانات الأساسية: {rows} صف، المجموعات الفاشلة: {failedGroups}",
+  "@masterDataDownloadSummary": {
+    "placeholders": {
+      "rows": { "type": "int" },
+      "failedGroups": { "type": "int" }
+    }
+  },
+  "syncNotConfigured": "عميل API غير مهيأ. شغل الإعداد أولاً.",
+  "connectionStatus": "حالة الاتصال",
+  "backendApi": "Backend ORDS",
+  "notConnectedOfflineMode": "غير متصل - وضع عدم الاتصال",
+  "pending": "قيد الانتظار",
+  "synced": "تمت المزامنة",
+  "failed": "فشل",
+  "retry": "إعادة المحاولة",
+  "refresh": "تحديث",
+  "host": "العنوان",
+  "port": "المنفذ",
+  "bootingPos": "جاري تشغيل كاشير برو",
+  "branch": "الفرع",
+  "station": "المحطة",
+  "testConnection": "اختبار الاتصال",
+  "connectionSuccess": "الاتصال ناجح",
+  "connectionFailed": "فشل الاتصال",
+  "healthCheck": "فحص الحالة",
+  "firstRunTitle": "مرحباً بك في كاشير برو",
+  "firstRunSubtitle": "لنقم بإعداد محطة نقاط البيع الخاصة بك",
+  "selectLanguage": "اختر اللغة",
+  "next": "التالي",
+  "back": "رجوع",
+  "finish": "إنهاء",
+  "skip": "تخطي",
+  "save": "حفظ",
+  "cancel": "إلغاء",
+  "confirm": "تأكيد",
+  "delete": "حذف",
+  "edit": "تعديل",
+  "ok": "موافق",
+  "yes": "نعم",
+  "no": "لا",
+  "error": "خطأ",
+  "success": "نجاح",
+  "warning": "تحذير",
+  "loading": "جاري التحميل...",
+  "noResults": "لا توجد نتائج",
+  "noProductsFound": "لا توجد منتجات",
+  "allCategories": "الكل",
+  "quoteError": "خطأ في التسعير",
+  "viewCart": "عرض السلة",
+  "searchProductsOrScanBarcode": "ابحث عن المنتجات أو امسح الباركود...",
+  "unableToAddItemToCart": "تعذرت إضافة الصنف إلى السلة.",
+  "unableToPrepareCheckoutTotal": "تعذر تجهيز إجمالي الدفع.",
+  "noOpenShiftCannotProcessPayment": "لا توجد وردية مفتوحة. لا يمكن إتمام الدفع.",
+  "noActivePaymentMethodConfigured": "لا توجد طريقة دفع نشطة مهيأة.",
+  "enterValidTenderedAmount": "أدخل مبلغًا مستلمًا صحيحًا.",
+  "insufficientAmountTendered": "المبلغ المستلم غير كافٍ.",
+  "notAuthenticatedLoginAgain": "لم يتم تسجيل الدخول. الرجاء تسجيل الدخول.",
+  "paymentReferenceRequired": "الرقم المرجعي للدفع مطلوب.",
+  "paymentCouldNotBeCompleted": "تعذر إتمام عملية الدفع.",
+  "saleSavedPrintQueued": "تم حفظ عملية البيع، وفشلت الطباعة وتمت إضافتها لإعادة المحاولة.",
+  "completePayment": "إتمام الدفع",
+  "recordCardPayment": "تسجيل دفع البطاقة (يدوي)",
+  "recordBankPayment": "تسجيل الدفع البنكي",
+  "recordPayment": "تسجيل الدفع",
+  "paymentSuccessful": "تم الدفع بنجاح",
+  "doneNewSale": "إنهاء - بيع جديد",
+  "offline": "غير متصل",
+  "online": "متصل",
+  "currency": "ر.س",
+  "todaySales": "مبيعات اليوم",
+  "averageValue": "متوسط القيمة",
+  "noSalesToday": "لا توجد مبيعات اليوم",
+  "saleCashierLine": "{time} - {cashier}",
+  "@saleCashierLine": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "cashier": { "type": "String" }
+    }
+  },
+  "invoiceTypeSales": "فاتورة مبيعات",
+"printStatusNotPrinted": "غير مطبوعة",
+"printStatusPrinted": "تمت الطباعة",
+"printStatusFailed": "فشل الطباعة",
+"printStatusPending": "بانتظار الطباعة",
+"arabicPrintNotice": "يعتمد دعم النص العربي في ESC/POS على صفحة الترميز في الطابعة.",
+  "saleId": "رقم المبيعات",
+  "receiptNumber": "رقم الإيصال",
+  "date": "التاريخ",
+  "status": "الحالة",
+  "completed": "مكتمل",
+  "draft": "مسودة",
+  "pendingSync": "بانتظار المزامنة",
+  "rejected": "مرفوض",
+  "voided": "ملغي",
+  "returned": "مرتجع",
+  "held": "معلق",
+  "active": "نشط",
+  "openShift": "فتح الوردية",
+  "closeShift": "إغلاق الوردية",
+  "backToPos": "العودة لنقاط البيع",
+  "openNewShift": "فتح وردية جديدة",
+  "cashierNameLabel": "الكاشير: {name}",
+  "@cashierNameLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "unknownCashier": "غير معروف",
+  "openingCashSar": "النقدية الافتتاحية (ر.س)",
+  "zeroAmountHint": "0.00",
+  "openingShift": "جاري الفتح...",
+  "openedAtLabel": "تم الفتح: {dateTime}",
+  "@openedAtLabel": {
+    "placeholders": {
+      "dateTime": { "type": "String" }
+    }
+  },
+  "openingCash": "النقدية الافتتاحية",
+  "sales": "المعاملات",
+  "grossSales": "إجمالي المبيعات",
+  "actualCashInDrawerSar": "النقدية الفعلية في الدرج (ر.س)",
+  "closingNotesOptional": "ملاحظات الإغلاق (اختياري)",
+  "closingShift": "جاري الإغلاق...",
+  "clearCart": "مسح السلة",
+  "itemCount": "{count} عنصر",
+  "@itemCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "amountFormat": "{amount} ر.س",
+  "@amountFormat": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "posDevices": "أجهزة نقاط البيع",
+  "posConfigIncomplete": "إعدادات نقطة البيع غير مكتملة. راجع الإعدادات أو أجهزة نقاط البيع قبل البيع.",
+  "printers": "الطابعات",
+  "searchNetwork": "البحث في الشبكة",
+  "addPrinter": "إضافة طابعة",
+  "editPrinter": "تعديل الطابعة",
+  "deletePrinter": "حذف الطابعة",
+  "deletePrinterConfirmation": "حذف {name}؟ ستتم إزالة هذه الطابعة من هذه المحطة.",
+  "@deletePrinterConfirmation": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "noPrintersConfigured": "لا توجد طابعات مهيأة",
+  "addCashierOrKitchenPrinter": "أضف طابعة شبكة/IP للكاشير أو المطبخ.",
+  "unableToLoadPrinters": "تعذر تحميل الطابعات.",
+  "unableToLoadPaymentProfile": "تعذر تحميل إعدادات الدفع.",
+  "test": "اختبار",
+  "testPrint": "اختبار الطباعة",
+  "testPrintSucceeded": "نجح اختبار الطباعة.",
+  "testPrintFailed": "فشل اختبار الطباعة.",
+  "printerUpdateFailed": "تعذر تحديث الطابعة.",
+  "printerDeleteFailed": "تعذر حذف الطابعة.",
+  "printerSaveFailed": "تعذر حفظ الطابعة.",
+  "networkPrinter": "طابعة شبكة (IP)",
+  "systemPrinter": "طابعة النظام",
+  "bluetoothPrinter": "طابعة بلوتوث",
+  "usbPrinter": "طابعة USB",
+  "androidBuiltIn": "طابعة النظام المدمجة (Android)",
+  "enableCardPayment": "تفعيل الدفع بالبطاقة/الشبكة",
+  "checkoutChoosesPaymentPerSale": "يتم اختيار النقد أو البطاقة عند الدفع لكل عملية بيع.",
+  "requireReference": "طلب الرقم المرجعي للبطاقة اليدوية",
+  "referenceRequired": "الرقم المرجعي مطلوب",
+  "integratedMode": "الوضع المتكامل",
+  "savePaymentProfile": "حفظ إعدادات الدفع",
+  "readiness": "الجاهزية",
+  "saleReadiness": "جاهزية البيع",
+  "cashierPrinter": "طابعة الكاشير",
+  "kitchenPrinter": "طابعة المطبخ",
+  "manualCard": "بطاقة يدوية",
+  "disabled": "معطل",
+  "missing": "غير موجود",
+  "untested": "غير مختبر",
+  "ready": "جاهز",
+  "unsupported": "غير مدعوم",
+  "retryableJobs": "عمليات الطباعة القابلة للإعادة",
+  "retryFailedJobs": "إعادة محاولة {count} عملية طباعة فاشلة",
+  "@retryFailedJobs": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "allowed": "مسموح",
+  "allowedPrintWarning": "مسموح (تحذير: طابعة الكاشير)",
+  "allowedKitchenWarning": "مسموح (تحذير: طابعة المطبخ)",
+  "noCard": "لا توجد بطاقة",
+  "retryQueuedJobsProcessed": "تمت معالجة عمليات الطباعة القابلة للإعادة.",
+  "unavailable": "غير متاح",
+  "cardPaymentNotConfigured": "الدفع بالبطاقة غير مهيأ.",
+  "integratedNotAvailable": "الدفع المتكامل غير متاح.",
+  "searchNetworkPrinters": "البحث عن طابعات الشبكة",
+  "subnetPrefixExample": "بادئة الشبكة الفرعية (مثال: 192.168.1)",
+  "scanningPort": "جاري فحص المنفذ {port}...",
+  "@scanningPort": {
+    "placeholders": {
+      "port": { "type": "int" }
+    }
+  },
+  "networkPrinterSearchHint": "أدخل بادئة الشبكة ثم اضغط بحث لفحص طابعات ESC/POS على المنفذ 9100.",
+  "portNumber": "المنفذ {port}",
+  "@portNumber": {
+    "placeholders": {
+      "port": { "type": "int" }
+    }
+  },
+  "close": "إغلاق",
+  "networkSearchFailed": "فشل البحث عن طابعات الشبكة.",
+  "cashierRole": "كاشير",
+  "kitchenRole": "مطبخ",
+  "printerName": "اسم الطابعة",
+  "ipAddress": "عنوان IP",
+  "paperWidth": "عرض الورق:",
+  "paperWidthMm": "{width}مم",
+  "@paperWidthMm": {
+    "placeholders": {
+      "width": { "type": "int" }
+    }
+  },
+  "copies": "النسخ:",
+  "autoPrintAfterSale": "الطباعة تلقائيًا بعد البيع",
+  "enablePrinter": "تفعيل الطابعة",
+  "mustBeTestedSuccessfullyFirst": "يجب اختبارها بنجاح أولاً",
+  "lastTestedAt": "آخر اختبار: {dateTime}",
+  "@lastTestedAt": {
+    "placeholders": {
+      "dateTime": { "type": "String" }
+    }
+  },
+  "testing": "جاري الاختبار...",
+  "paymentReference": "الرقم المرجعي للدفع",
+  "recordApprovedRef": "تسجيل يدوي لمدفوعات الشبكة/البنك. أدخل رقم المرجع إن وجد.",
+  "posSetup": "إعداد كاشير برو",
+  "languageLabel": "اللغة",
+  "serverIdentity": "الخادم وهوية النظام",
+  "initialReadiness": "الجاهزية المبدئية",
+  "english": "الإنجليزية",
+  "arabic": "العربية",
+  "fullUrlMode": "وضع الرابط الكامل",
+  "fullUrlSubtitle": "الصق الرابط الأساسي لـ Backend API مباشرة",
+  "apiBaseUrl": "الرابط الأساسي (API)",
+  "apiBaseUrlExample": "https://2481.extrasolutionscloud.com/ords/erp/pos-api/v1",
+  "baseUrlHint": "الرابط الأساسي بدون /data",
+  "hostOrIp": "الاستضافة / IP",
+  "optional": "اختياري",
+  "apiBasePath": "المسار الأساسي",
+  "apiBasePathExample": "/ords/erp/pos-api/v1",
+  "https": "HTTPS",
+  "customerCode": "كود العميل",
+  "userId": "معرف مستخدم النظام",
+  "branchNumber": "رقم الفرع (braNbr)",
+  "branchNumberHint": "يستخدم كمعرف للفرع",
+  "machineNumber": "رقم الجهاز (mchnNbr)",
+  "machineNumberHint": "يستخدم كمعرف للمحطة",
+  "setupSuccess": "تم إعداد الخادم وهوية النظام بنجاح",
+  "setupPrintersLater": "يتم إعداد الطابعات والدفع لاحقًا في أجهزة نقاط البيع",
+  "cancelSync": "إلغاء المزامنة",
+  "preparing": "جاري التحضير...",
+  "enterApiBaseUrl": "أدخل الرابط الأساسي للواجهة البرمجية.",
+  "serverCheckFailedFixConnection": "فشل فحص الخادم. صحح الاتصال قبل المتابعة.",
+  "setupUnexpectedError": "تعذر متابعة الإعداد. راجع بيانات الاتصال وحاول مرة أخرى.",
+  "syncingData": "جاري مزامنة البيانات...",
+  "syncingDataPercent": "جاري مزامنة البيانات... {percent}%",
+  "@syncingDataPercent": {
+    "placeholders": {
+      "percent": { "type": "int" }
+    }
+  },
+  "serverConnection": "اتصال الخادم",
+  "notConfigured": "غير مهيأ",
+  "terminalIdentity": "هوية النظام",
+  "backendIdentitySummary": "كود العميل: {custCode}  |  الفرع: {branch}  |  الجهاز: {machine}",
+  "@backendIdentitySummary": {
+    "placeholders": {
+      "custCode": { "type": "String" },
+      "branch": { "type": "String" },
+      "machine": { "type": "String" }
+    }
+  },
+  "posDevicesSubtitle": "الطابعات، دفع البطاقة اليدوي، الجاهزية",
+  "general": "عام",
+  "about": "حول التطبيق",
+  "versionLabel": "كاشير برو v{version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "applicationLegalese2026": "© 2026 إكسترا سوليوشنز. جميع الحقوق محفوظة.",
+  "dangerZone": "منطقة حساسة",
+  "resetSetup": "إعادة ضبط الإعداد",
+  "resetSetupSubtitle": "إعادة تشغيل إعداد الاتصال الأولي",
+  "resetSetupQuestion": "إعادة ضبط الإعداد؟",
+  "resetSetupWarning": "سيتم مسح إعداد الاتصال الأولي وستحتاج إلى اتصال خادم جديد ومزامنة كاملة للبيانات. ستبقى المبيعات والورديات وسجل المعاملات محفوظة.",
+  "reset": "إعادة ضبط",
+  "pdfInvoiceTitle": "فاتورة {invoiceNo}",
+"@pdfInvoiceTitle": {
+  "placeholders": {
+    "invoiceNo": { "type": "String" }
+  }
+},
+"simplifiedTaxInvoice": "فاتورة ضريبية مبسطة",
+"taxNumber": "الرقم الضريبي",
+"commercialRegistration": "السجل التجاري",
+"terminal": "الجهاز",
+"item": "الصنف",
+"unitPrice": "سعر الوحدة",
+"paymentMethod": "طريقة الدفع",
+"reference": "المرجع",
+"amount": "المبلغ",
+"beforeTaxTotal": "المجموع قبل الضريبة",
+"paid": "المدفوع",
+"receiptInvoiceTitle": "فاتورة {invoiceNo}",
+"@receiptInvoiceTitle": {
+  "placeholders": {
+    "invoiceNo": { "type": "String" }
+  }
+},
+"simplifiedTaxInvoice": "فاتورة ضريبية مبسطة",
+"taxNumber": "الرقم الضريبي",
+"terminal": "الجهاز",
+"cashier": "الكاشير",
+"reference": "المرجع",
+"noEnabledPrinter": "لا توجد طابعة مفعلة.",
+"invoiceSavedButPrintFailed": "تم حفظ الفاتورة، لكن فشلت الطباعة.",
+"invoiceSentToPrinter": "تم إرسال الفاتورة للطباعة.",
+"viewInvoice": "عرض الفاتورة",
+"savePdf": "حفظ PDF",
+"pdfSavedAt": "تم حفظ ملف PDF: {path}",
+"@pdfSavedAt": {
+  "placeholders": {
+    "path": { "type": "String" }
+  }
+},
+"ownerConsole": "لوحة المالك",
+"exit": "خروج",
+"ownerTools": "أدوات المالك",
+"ownerConsoleReadOnlyNotice": "هذه الشاشة للعرض فقط. لا يوجد تعديل أو حذف للبيانات.",
+"localTables": "الجداول المحلية",
+"localTablesSubtitle": "عرض الجداول والأعمدة والصفوف كما هي في قاعدة البيانات",
+"diagnosticFilters": "فلاتر التشخيص",
+"diagnosticFiltersSubtitle": "لاحقًا: مبيعات بدون فاتورة، outbox معلق، طباعة فاشلة...",
+"failedToLoadTables": "فشل تحميل الجداول: {error}",
+"@failedToLoadTables": {
+  "placeholders": {
+    "error": { "type": "String" }
+  }
+},
+"noTables": "لا توجد جداول",
+"selectTableRawData": "اختر جدولًا لعرض بياناته الخام",
+"failedToLoadTableRows": "فشل تحميل بيانات الجدول: {error}",
+"@failedToLoadTableRows": {
+  "placeholders": {
+    "error": { "type": "String" }
+  }
+},
+"rowCopiedAsJson": "تم نسخ الصف كـ JSON",
+"copyRowJson": "نسخ الصف كـ JSON",
+"noRows": "لا توجد صفوف",
+"rowsRange": "{tableName} — الصفوف {from}-{to} من {total}",
+"@rowsRange": {
+  "placeholders": {
+    "tableName": { "type": "String" },
+    "from": { "type": "int" },
+    "to": { "type": "int" },
+    "total": { "type": "int" }
+  }
+},
+"previousPage": "الصفحة السابقة",
+"nextPage": "الصفحة التالية",
+"noPricedProductsForDeviceStore": "لا توجد منتجات مسعّرة لهذا الجهاز/المخزن.",
+"storeAndPriceLevelDetails": "المخزن: {storeId}\nمستوى السعر: {priceLevelId}",
+"@storeAndPriceLevelDetails": {
+  "placeholders": {
+    "storeId": { "type": "String" },
+    "priceLevelId": { "type": "String" }
+  }
+},
+"noPriceForCurrentStorePriceLevel": "لا يوجد سعر لهذا الصنف في المخزن ومستوى السعر الحالي.",
+"noPrice": "لا يوجد سعر",
+"errorLoading": "خطأ في التحميل",
+"scannedItemNotSellableInCurrentStore": "هذا الصنف غير قابل للبيع في مخزن الجهاز الحالي.",
+"invoiceSearch": "بحث برقم الفاتورة",
+"today": "اليوم",
+"yesterday": "أمس",
+"last7Days": "آخر 7 أيام",
+"custom": "مخصص",
+"filters": "فلاتر",
+"allCashiers": "كل الكاشيرين",
+"allPayments": "كل طرق الدفع",
+"clearFilters": "مسح الفلاتر",
+"netSales": "صافي المبيعات",
+"transactions": "العمليات",
+"voidsAndReturns": "الملغي والمرتجع",
+"noSalesInRange": "لا توجد مبيعات ضمن هذا النطاق",
+"searchInvoiceOrProduct": "بحث برقم الفاتورة أو المنتج",
+"products": "المنتجات",
+"noSalesFound": "لا توجد مبيعات مطابقة",
+"recentSales": "آخر المبيعات",
+"saleRows": "صفوف المبيعات",
+"invoice":"الفاتورة"
+}

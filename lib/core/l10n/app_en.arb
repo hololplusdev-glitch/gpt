@@ -1,0 +1,563 @@
+{
+  "@@locale": "en",
+  "appTitle": "Kasir Pro",
+  "posShort": "Kasir",
+  "login": "Login",
+  "logout": "Logout",
+  "username": "Username",
+  "password": "Password",
+  "loginButton": "Sign In",
+  "loginError": "Invalid credentials",
+  "cashierSelectionOffline": "Cashier Selection (Offline)",
+  "cashierSelectPrompt": "Select your Backend user ID to begin",
+  "userIdOrLoginName": "User ID or Login Name",
+  "selectCashier": "Select Cashier",
+  "offlineUsersMustBeSynced": "Offline mode - users must be synced from Backend.",
+  "passwordLoginPending": "Password login will be available when Login API is ready.",
+  "cashierWorkspace": "Cashier",
+  "salesHistory": "Sales History",
+  "invoiceSearch": "Invoice search",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "last7Days": "Last 7 days",
+  "custom": "Custom",
+  "filters": "Filters",
+  "allCashiers": "All cashiers",
+  "allPayments": "All payments",
+  "clearFilters": "Clear filters",
+  "netSales": "Net Sales",
+  "transactions": "Transactions",
+  "voidsAndReturns": "Voids & Returns",
+  "noSalesInRange": "No sales in this range",
+  "settings": "Settings",
+  "setup": "Setup",
+  "search": "Search",
+  "searchProducts": "Search products...",
+  "scanBarcode": "Scan Barcode",
+  "scanAddedProduct": "{productName} added",
+  "@scanAddedProduct": {
+    "placeholders": {
+      "productName": { "type": "String" }
+    }
+  },
+  "scanAddedProductQuantity": "{productName} (x{quantity})",
+  "@scanAddedProductQuantity": {
+    "placeholders": {
+      "productName": { "type": "String" },
+      "quantity": { "type": "int" }
+    }
+  },
+  "noPriceForProduct": "{productName}: no price",
+  "@noPriceForProduct": {
+    "placeholders": {
+      "productName": { "type": "String" }
+    }
+  },
+  "barcodeScanFailed": "Barcode scan failed.",
+  "scannerStartFailed": "Unable to start scanner.",
+  "cameraStartFailed": "Unable to start camera.",
+  "scanAddedItem": "Item added",
+  "scanAddedItemQuantity": "Item added ({quantity})",
+  "@scanAddedItemQuantity": {
+    "placeholders": {
+      "quantity": { "type": "int" }
+    }
+  },
+  "barcodeNotFoundCatalog": "Barcode was not found in the catalog.",
+  "scanNoPriceCurrentStore": "This item is not sellable in the current device store.",
+  "toggleFlash": "Toggle flash",
+  "closeScanner": "Close scanner",
+  "pointCameraBarcode": "Point the camera at the barcode",
+  "scannedItemsCount": "{count} items scanned",
+  "@scannedItemsCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "cameraPermissionDenied": "Camera permission was not granted. Enable camera permission from device settings.",
+  "cart": "Cart",
+  "cartWithCount": "Cart ({count})",
+  "@cartWithCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "cartEmpty": "Cart is empty",
+  "cartEmptyNothingToHold": "Cart is empty - nothing to hold",
+  "tapProductsToAdd": "Tap products to add them",
+  "addToCart": "Add to Cart",
+  "removeFromCart": "Remove",
+  "quantity": "Qty",
+  "price": "Price",
+  "discount": "Discount",
+  "discountAmountLabel": "-{amount} discount",
+  "@discountAmountLabel": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "priceOverridden": "Price overridden",
+  "subtotal": "Subtotal",
+  "vat": "VAT",
+  "tax": "Tax",
+  "total": "Total",
+  "payAmount": "Pay {amount}",
+  "@payAmount": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "pay": "Pay",
+  "cash": "Cash",
+  "card": "Card",
+  "mixed": "Mixed",
+  "change": "Change",
+  "invoiceNumberLabel": "Invoice: {invoiceNo}",
+  "@invoiceNumberLabel": {
+    "placeholders": {
+      "invoiceNo": { "type": "String" }
+    }
+  },
+  "tendered": "Tendered",
+  "amountTenderedSar": "Amount Tendered (SAR)",
+  "exact": "Exact",
+  "receipt": "Receipt",
+  "printReceipt": "Print Receipt",
+  "reprintReceipt": "Reprint Receipt",
+  "holdOrder": "Hold Order",
+  "hold": "Hold",
+  "orderHeldSuccessfully": "Order held successfully",
+  "recallOrder": "Recall Order",
+  "heldOrders": "Held Orders",
+  "voidSale": "Void",
+  "returnSale": "Return",
+  "customer": "Customer",
+  "selectCustomer": "Select Customer",
+  "noCustomer": "Walk-in Customer",
+  "notes": "Notes",
+  "priceOverride": "Price Override",
+  "discountOverride": "Discount Override",
+  "supervisorApproval": "Supervisor Approval",
+  "enterSupervisorPin": "Enter supervisor PIN",
+  "approved": "Approved",
+  "denied": "Denied",
+  "connection": "Connection",
+  "devices": "Devices",
+  "printer": "Printer",
+  "payment": "Payment",
+  "paymentTerminal": "Payment Terminal",
+  "barcodeScanner": "Barcode Scanner",
+  "connected": "Connected",
+  "disconnected": "Disconnected",
+  "connecting": "Connecting...",
+  "syncStatus": "Sync Status",
+  "syncMonitor": "Sync Monitor",
+  "pendingUpload": "Pending upload",
+  "uploadFailed": "Upload failed",
+  "uploaded": "Uploaded",
+  "downloading": "Downloading...",
+  "downloadMasterData": "Download Master Data",
+  "pendingInvoiceUploadUnavailable": "Pending Invoice Upload - API not documented",
+  "masterDataDownloadSummary": "Master data downloaded: {rows} rows, Failed groups: {failedGroups}",
+  "@masterDataDownloadSummary": {
+    "placeholders": {
+      "rows": { "type": "int" },
+      "failedGroups": { "type": "int" }
+    }
+  },
+  "syncNotConfigured": "API client is not configured. Run setup first.",
+  "connectionStatus": "Connection Status",
+  "backendApi": "Backend ORDS",
+  "notConnectedOfflineMode": "Not connected - offline mode",
+  "pending": "Pending",
+  "synced": "Synced",
+  "failed": "Failed",
+  "retry": "Retry",
+  "refresh": "Refresh",
+  "host": "Host",
+  "port": "Port",
+  "bootingPos": "Starting Kasir Pro",
+  "branch": "Branch",
+  "station": "Station",
+  "testConnection": "Test Connection",
+  "connectionSuccess": "Connection successful",
+  "connectionFailed": "Connection failed",
+  "healthCheck": "Health Check",
+  "firstRunTitle": "Welcome to Kasir Pro",
+  "firstRunSubtitle": "Let's configure your point-of-sale station",
+  "selectLanguage": "Select Language",
+  "next": "Next",
+  "back": "Back",
+  "finish": "Finish",
+  "skip": "Skip",
+  "save": "Save",
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "delete": "Delete",
+  "edit": "Edit",
+  "ok": "OK",
+  "yes": "Yes",
+  "no": "No",
+  "error": "Error",
+  "success": "Success",
+  "warning": "Warning",
+  "loading": "Loading...",
+  "noResults": "No results found",
+  "noProductsFound": "No products found",
+  "allCategories": "All",
+  "quoteError": "Quote error",
+  "viewCart": "View Cart",
+  "searchProductsOrScanBarcode": "Search products or scan barcode...",
+  "unableToAddItemToCart": "Unable to add item to cart.",
+  "unableToPrepareCheckoutTotal": "Unable to prepare checkout total.",
+  "noOpenShiftCannotProcessPayment": "No open shift. Cannot process payment.",
+  "noActivePaymentMethodConfigured": "No active payment method is configured.",
+  "enterValidTenderedAmount": "Enter a valid tendered amount.",
+  "insufficientAmountTendered": "Insufficient amount tendered.",
+  "notAuthenticatedLoginAgain": "Not authenticated. Please log in.",
+  "paymentReferenceRequired": "Payment reference is required.",
+  "paymentCouldNotBeCompleted": "Payment could not be completed.",
+  "saleSavedPrintQueued": "Sale saved, print failed and was queued for retry.",
+  "completePayment": "Complete Payment",
+  "recordCardPayment": "Record Card Payment (Manual)",
+  "@recordCardPayment": {
+    "description": "Button label clarifying this is a manual card payment record, not an integrated terminal sale"
+  },
+  "recordBankPayment": "Record Bank Payment",
+  "recordPayment": "Record Payment",
+  "paymentSuccessful": "Payment Successful",
+  "doneNewSale": "Done - New Sale",
+  "offline": "Offline",
+  "online": "Online",
+  "currency": "SAR",
+  "todaySales": "Today's Sales",
+  "averageValue": "Avg. Value",
+  "noSalesToday": "No sales today",
+  "saleCashierLine": "{time} - {cashier}",
+  "@saleCashierLine": {
+    "placeholders": {
+      "time": { "type": "String" },
+      "cashier": { "type": "String" }
+    }
+  },
+  "invoiceTypeSales": "Sales Invoice",
+"printStatusNotPrinted": "Not printed",
+"printStatusPrinted": "Printed",
+"printStatusFailed": "Print failed",
+"printStatusPending": "Waiting for print",
+"arabicPrintNotice": "Arabic ESC/POS text support depends on the printer code page.",
+  "saleId": "Sale ID",
+  "receiptNumber": "Receipt #",
+  "date": "Date",
+  "status": "Status",
+  "completed": "Completed",
+  "draft": "Draft",
+  "pendingSync": "Pending sync",
+  "rejected": "Rejected",
+  "voided": "Voided",
+  "returned": "Returned",
+  "held": "Held",
+  "active": "Active",
+  "openShift": "Open Shift",
+  "closeShift": "Close Shift",
+  "backToPos": "Back to POS",
+  "openNewShift": "Open New Shift",
+  "cashierNameLabel": "Cashier: {name}",
+  "@cashierNameLabel": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "unknownCashier": "Unknown",
+  "openingCashSar": "Opening Cash (SAR)",
+  "zeroAmountHint": "0.00",
+  "openingShift": "Opening...",
+  "openedAtLabel": "Opened: {dateTime}",
+  "@openedAtLabel": {
+    "placeholders": {
+      "dateTime": { "type": "String" }
+    }
+  },
+  "openingCash": "Opening Cash",
+  "sales": "Sales",
+  "grossSales": "Gross Sales",
+  "actualCashInDrawerSar": "Actual Cash in Drawer (SAR)",
+  "closingNotesOptional": "Closing notes (optional)",
+  "closingShift": "Closing...",
+  "clearCart": "Clear Cart",
+  "itemCount": "{count} items",
+  "@itemCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "amountFormat": "{amount} SAR",
+  "@amountFormat": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "posDevices": "POS Devices",
+  "posConfigIncomplete": "Point-of-sale configuration is incomplete. Review settings or POS devices before selling.",
+  "printers": "Printers",
+  "searchNetwork": "Search network",
+  "addPrinter": "Add printer",
+  "editPrinter": "Edit printer",
+  "deletePrinter": "Delete printer",
+  "deletePrinterConfirmation": "Delete {name}? This printer will be removed from this station.",
+  "@deletePrinterConfirmation": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "noPrintersConfigured": "No printers configured",
+  "addCashierOrKitchenPrinter": "Add a cashier or kitchen Network/IP printer.",
+  "unableToLoadPrinters": "Unable to load printers.",
+  "unableToLoadPaymentProfile": "Unable to load payment settings.",
+  "test": "Test",
+  "testPrint": "Test print",
+  "testPrintSucceeded": "Test print succeeded.",
+  "testPrintFailed": "Test print failed.",
+  "printerUpdateFailed": "Unable to update printer.",
+  "printerDeleteFailed": "Unable to delete printer.",
+  "printerSaveFailed": "Unable to save printer.",
+  "networkPrinter": "Network/IP ESC-POS",
+  "systemPrinter": "System Printer",
+  "bluetoothPrinter": "Bluetooth ESC-POS",
+  "usbPrinter": "USB ESC-POS",
+  "androidBuiltIn": "Android Built-in",
+  "enableCardPayment": "Enable card/network payment",
+  "checkoutChoosesPaymentPerSale": "Checkout still decides Cash or Card per sale.",
+  "requireReference": "Require reference for manual card",
+  "referenceRequired": "Reference required",
+  "integratedMode": "Integrated mode",
+  "savePaymentProfile": "Save Payment Profile",
+  "readiness": "Readiness",
+  "saleReadiness": "Sale readiness",
+  "cashierPrinter": "Cashier Printer",
+  "kitchenPrinter": "Kitchen Printer",
+  "manualCard": "Manual card",
+  "disabled": "Disabled",
+  "missing": "Missing",
+  "untested": "Untested",
+  "ready": "Ready",
+  "unsupported": "Unsupported",
+  "retryableJobs": "Retryable print jobs",
+  "retryFailedJobs": "Retry {count} failed print jobs",
+  "@retryFailedJobs": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "allowed": "Allowed",
+  "allowedPrintWarning": "Allowed (Print Warning)",
+  "allowedKitchenWarning": "Allowed (Kitchen Warning)",
+  "noCard": "No Card",
+  "retryQueuedJobsProcessed": "Retryable print jobs processed.",
+  "unavailable": "Unavailable",
+  "cardPaymentNotConfigured": "Card payment is not configured.",
+  "integratedNotAvailable": "Integrated payment is unavailable.",
+  "searchNetworkPrinters": "Search Network Printers",
+  "subnetPrefixExample": "Subnet prefix (e.g. 192.168.1)",
+  "scanningPort": "Scanning port {port}...",
+  "@scanningPort": {
+    "placeholders": {
+      "port": { "type": "int" }
+    }
+  },
+  "networkPrinterSearchHint": "Enter subnet and tap Search to scan for ESC/POS printers on port 9100.",
+  "portNumber": "Port {port}",
+  "@portNumber": {
+    "placeholders": {
+      "port": { "type": "int" }
+    }
+  },
+  "close": "Close",
+  "networkSearchFailed": "Network printer search failed.",
+  "cashierRole": "Cashier",
+  "kitchenRole": "Kitchen",
+  "printerName": "Printer name",
+  "ipAddress": "IP address",
+  "paperWidth": "Paper width:",
+  "paperWidthMm": "{width}mm",
+  "@paperWidthMm": {
+    "placeholders": {
+      "width": { "type": "int" }
+    }
+  },
+  "copies": "Copies:",
+  "autoPrintAfterSale": "Auto-print after sale",
+  "enablePrinter": "Enable printer",
+  "mustBeTestedSuccessfullyFirst": "Must be tested successfully first",
+  "lastTestedAt": "Last tested: {dateTime}",
+  "@lastTestedAt": {
+    "placeholders": {
+      "dateTime": { "type": "String" }
+    }
+  },
+  "testing": "Testing...",
+  "paymentReference": "Payment reference",
+  "recordApprovedRef": "Manual card/bank record. Enter the customer receipt reference if available.",
+  "posSetup": "Kasir Pro Setup",
+  "languageLabel": "Language",
+  "serverIdentity": "Server and Backend identity",
+  "initialReadiness": "Initial readiness",
+  "english": "English",
+  "arabic": "Arabic",
+  "fullUrlMode": "Full URL mode",
+  "fullUrlSubtitle": "Paste the Backend API base URL directly",
+  "apiBaseUrl": "API Base URL",
+  "apiBaseUrlExample": "https://2481.extrasolutionscloud.com/ords/erp/pos-api/v1",
+  "baseUrlHint": "Base URL without /data",
+  "hostOrIp": "Host / IP",
+  "optional": "optional",
+  "apiBasePath": "API Base Path",
+  "apiBasePathExample": "/ords/erp/pos-api/v1",
+  "https": "HTTPS",
+  "customerCode": "Customer Code",
+  "userId": "Backend User ID",
+  "branchNumber": "Branch Number (braNbr)",
+  "branchNumberHint": "Also used as Branch ID",
+  "machineNumber": "Machine Number (mchnNbr)",
+  "machineNumberHint": "Also used as Station ID",
+  "setupSuccess": "Server and Backend identity configured successfully",
+  "setupPrintersLater": "Printers and payment are configured later in POS Devices",
+  "cancelSync": "Cancel Sync",
+  "preparing": "Preparing...",
+  "enterApiBaseUrl": "Enter the API base URL.",
+  "serverCheckFailedFixConnection": "Server check failed. Fix the connection before proceeding.",
+  "setupUnexpectedError": "Setup could not continue. Review the entered connection details and try again.",
+  "syncingData": "Syncing data...",
+  "syncingDataPercent": "Syncing data... {percent}%",
+  "@syncingDataPercent": {
+    "placeholders": {
+      "percent": { "type": "int" }
+    }
+  },
+  "serverConnection": "Server Connection",
+  "notConfigured": "Not configured",
+  "terminalIdentity": "Backend Identity",
+  "backendIdentitySummary": "CustCode: {custCode}  |  Branch: {branch}  |  Machine: {machine}",
+  "@backendIdentitySummary": {
+    "placeholders": {
+      "custCode": { "type": "String" },
+      "branch": { "type": "String" },
+      "machine": { "type": "String" }
+    }
+  },
+  "posDevicesSubtitle": "Printers, manual card payment, readiness",
+  "general": "General",
+  "about": "About",
+  "versionLabel": "Kasir Pro v{version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": { "type": "String" }
+    }
+  },
+  "applicationLegalese2026": "© 2026 Extra Solutions. All rights reserved.",
+  "dangerZone": "Danger Zone",
+  "resetSetup": "Reset Setup",
+  "resetSetupSubtitle": "Re-run first-time connection setup",
+  "resetSetupQuestion": "Reset Setup?",
+  "resetSetupWarning": "This clears first-run connection setup and requires a new server connection and full data sync. Your sales, shifts, and sale history are preserved.",
+  "reset": "Reset",
+  "invoiceTypeSales": "Sales Invoice",
+"printStatusNotPrinted": "Not printed",
+"printStatusPrinted": "Printed",
+"printStatusFailed": "Print failed",
+"printStatusPending": "Waiting for print",
+"arabicPrintNotice": "Arabic ESC/POS text support depends on the printer code page.",
+"pdfInvoiceTitle": "Invoice {invoiceNo}",
+"@pdfInvoiceTitle": {
+  "placeholders": {
+    "invoiceNo": { "type": "String" }
+  }
+},
+"simplifiedTaxInvoice": "Simplified Tax Invoice",
+"taxNumber": "Tax Number",
+"commercialRegistration": "Commercial Registration",
+"terminal": "Terminal",
+"item": "Item",
+"unitPrice": "Unit Price",
+"paymentMethod": "Payment Method",
+"reference": "Reference",
+"amount": "Amount",
+"beforeTaxTotal": "Subtotal before tax",
+"paid": "Paid",
+"receiptInvoiceTitle": "Invoice {invoiceNo}",
+"@receiptInvoiceTitle": {
+  "placeholders": {
+    "invoiceNo": { "type": "String" }
+  }
+},
+"simplifiedTaxInvoice": "Simplified Tax Invoice",
+"taxNumber": "Tax Number",
+"terminal": "Terminal",
+"cashier": "Cashier",
+"reference": "Reference",
+"noEnabledPrinter": "No enabled printer.",
+"invoiceSavedButPrintFailed": "Invoice was saved, but printing failed.",
+"invoiceSentToPrinter": "Invoice was sent to the printer.",
+"viewInvoice": "View Invoice",
+"savePdf": "Save PDF",
+"pdfSavedAt": "PDF file saved: {path}",
+"@pdfSavedAt": {
+  "placeholders": {
+    "path": { "type": "String" }
+  }
+},
+"ownerConsole": "Owner Console",
+"exit": "Exit",
+"ownerTools": "Owner Tools",
+"ownerConsoleReadOnlyNotice": "This screen is read-only. No data can be edited or deleted.",
+"localTables": "Local Tables",
+"localTablesSubtitle": "View tables, columns, and rows exactly as stored in the local database",
+"diagnosticFilters": "Diagnostic Filters",
+"diagnosticFiltersSubtitle": "Coming later: sales without invoices, stuck outbox, failed prints...",
+"failedToLoadTables": "Failed to load tables: {error}",
+"@failedToLoadTables": {
+  "placeholders": {
+    "error": { "type": "String" }
+  }
+},
+"noTables": "No tables",
+"selectTableRawData": "Select a table to view its raw data",
+"failedToLoadTableRows": "Failed to load table rows: {error}",
+"@failedToLoadTableRows": {
+  "placeholders": {
+    "error": { "type": "String" }
+  }
+},
+"rowCopiedAsJson": "Row copied as JSON",
+"copyRowJson": "Copy Row JSON",
+"noRows": "No rows",
+"rowsRange": "{tableName} — Rows {from}-{to} of {total}",
+"@rowsRange": {
+  "placeholders": {
+    "tableName": { "type": "String" },
+    "from": { "type": "int" },
+    "to": { "type": "int" },
+    "total": { "type": "int" }
+  }
+},
+"previousPage": "Previous page",
+"nextPage": "Next page",
+"noPricedProductsForDeviceStore": "No priced products for this device/store.",
+"storeAndPriceLevelDetails": "Store: {storeId}\nPrice level: {priceLevelId}",
+"@storeAndPriceLevelDetails": {
+  "placeholders": {
+    "storeId": { "type": "String" },
+    "priceLevelId": { "type": "String" }
+  }
+},
+"noPriceForCurrentStorePriceLevel": "No price exists for this item in the current store and price level.",
+"noPrice": "No price",
+"errorLoading": "Error loading",
+"scannedItemNotSellableInCurrentStore": "This item is not sellable in the current device store.",
+"searchInvoiceOrProduct": "Search invoice or product",
+"products": "Products",
+"noSalesFound": "No matching sales",
+"recentSales": "Recent Sales",
+"saleRows": "Sale rows",
+"invoice": "Invoice"
+}
