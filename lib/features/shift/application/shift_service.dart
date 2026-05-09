@@ -7,11 +7,11 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_flutter/core/errors/app_exception.dart';
+import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:pos_flutter/core/persistence/daos/sales_dao.dart';
 import 'package:pos_flutter/core/persistence/daos/shift_dao.dart';
 import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/core/persistence/pos_config_repository.dart';
-import 'package:pos_flutter/core/services/permission_service.dart';
 import 'package:pos_flutter/core/services/time/clock.dart';
 import 'package:pos_flutter/shared/models/enums.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
@@ -21,19 +21,19 @@ import 'package:uuid/uuid.dart';
 class ShiftService {
   final ShiftDao _shiftDao;
   final SalesDao _salesDao;
-  final PermissionService _permissions;
+  final ActivePosSessionDao _sessionDao;
   final PosConfigRepository _config;
   final Clock _clock;
 
   ShiftService({
     required ShiftDao shiftDao,
     required SalesDao salesDao,
-    required PermissionService permissions,
+    required ActivePosSessionDao sessionDao,
     required PosConfigRepository config,
     Clock clock = const SystemClock(),
   }) : _shiftDao = shiftDao,
        _salesDao = salesDao,
-       _permissions = permissions,
+       _sessionDao = sessionDao,
        _config = config,
        _clock = clock;
 
@@ -48,12 +48,6 @@ class ShiftService {
     required double openingCash,
     String? shiftTypeId,
   }) async {
-    // Validate permission
-    await _permissions.requirePermission(
-      userId: session.activeUserId,
-      terminalId: session.activeMachineNo,
-      permission: PermissionCode.shiftOpen,
-    );
 
     // Check no open shift exists for this terminal
     final existing = await _shiftDao.getOpenShift(session.activeMachineNo);
@@ -125,6 +119,7 @@ class ShiftService {
       outboxEntry: outboxEntry,
       auditLogEntry: auditLogEntry,
     );
+    await _sessionDao.attachOpenShift(localId);
 
     return (await _shiftDao.getById(localId))!;
   }
@@ -139,12 +134,6 @@ class ShiftService {
     required double actualCash,
     String? closingNotes,
   }) async {
-    // Validate permission
-    await _permissions.requirePermission(
-      userId: session.activeUserId,
-      terminalId: session.activeMachineNo,
-      permission: PermissionCode.shiftClose,
-    );
 
     // Check shift exists and is open
     final shift = await _shiftDao.getById(localId);
@@ -249,6 +238,7 @@ class ShiftService {
       outboxEntry: outboxEntry,
       auditLogEntry: auditLogEntry,
     );
+    await _sessionDao.clearOpenShift(localId);
   }
 
   // ---------------------------------------------------------------------------
@@ -260,11 +250,6 @@ class ShiftService {
     required String localId,
     int? overrideMinutes,
   }) async {
-    await _permissions.requirePermission(
-      userId: session.activeUserId,
-      terminalId: session.activeMachineNo,
-      permission: PermissionCode.shiftExtend,
-    );
 
     final shift = await _shiftDao.getById(localId);
     if (shift == null) throw ShiftException('Shift not found');
@@ -355,7 +340,7 @@ final shiftServiceProvider = Provider<ShiftService>((ref) {
   return ShiftService(
     shiftDao: ref.watch(shiftDaoProvider),
     salesDao: ref.watch(salesDaoProvider),
-    permissions: ref.watch(permissionServiceProvider),
+    sessionDao: ref.watch(activePosSessionDaoProvider),
     config: ref.watch(posConfigProvider),
     clock: ref.watch(clockProvider),
   );

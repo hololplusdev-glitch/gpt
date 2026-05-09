@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/config/runtime_config_repository.dart';
 import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/core/services/pos_devices/runtime_platform.dart';
 import 'package:uuid/uuid.dart';

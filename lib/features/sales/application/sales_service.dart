@@ -11,6 +11,7 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_flutter/core/errors/app_exception.dart';
+import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:pos_flutter/core/persistence/daos/audit_dao.dart';
 import 'package:pos_flutter/core/persistence/daos/sales_dao.dart';
 import 'package:pos_flutter/core/persistence/daos/shift_dao.dart';
@@ -18,7 +19,6 @@ import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/core/persistence/pos_config_repository.dart';
 import 'package:pos_flutter/core/services/invoice_number_service.dart';
 import 'package:pos_flutter/core/services/payments/payment_method_resolver.dart';
-import 'package:pos_flutter/core/services/permission_service.dart';
 import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
 import 'package:pos_flutter/core/services/time/clock.dart';
 import 'package:pos_flutter/features/sales/domain/models/sale_inputs.dart';
@@ -32,7 +32,6 @@ class SalesService {
   final SalesDao _salesDao;
   final ShiftDao _shiftDao;
   final AuditDao _auditDao;
-  final PermissionService _permissions;
   final PosConfigRepository _config;
   final ActivePosSession? _activeSession;
   final InvoiceNumberService _invoiceNumberService;
@@ -43,7 +42,6 @@ class SalesService {
     required SalesDao salesDao,
     required ShiftDao shiftDao,
     required AuditDao auditDao,
-    required PermissionService permissions,
     required PosConfigRepository config,
     required ActivePosSession? activeSession,
     required InvoiceNumberService invoiceNumberService,
@@ -52,7 +50,6 @@ class SalesService {
   }) : _salesDao = salesDao,
        _shiftDao = shiftDao,
        _auditDao = auditDao,
-       _permissions = permissions,
        _config = config,
        _activeSession = activeSession,
        _invoiceNumberService = invoiceNumberService,
@@ -118,13 +115,6 @@ class SalesService {
     final activeMachineNo = activeSession.activeMachineNo;
     final activeBranchNo = activeSession.activeBranchNo;
     final activeUserId = activeSession.activeUserId;
-
-    // 1. Validate permission
-    await _permissions.requirePermission(
-      userId: activeUserId,
-      terminalId: activeMachineNo,
-      permission: PermissionCode.saleCreate,
-    );
 
     // 2. Validate open shift
     final shift = await _shiftDao.getById(shiftId);
@@ -419,12 +409,6 @@ class SalesService {
     final activeSession = _requireActiveSession();
     final terminalId = activeSession.activeMachineNo;
     final cashierId = activeSession.activeUserId;
-    
-    await _permissions.requirePermission(
-      userId: cashierId,
-      terminalId: terminalId,
-      permission: PermissionCode.holdOrder,
-    );
     if (!_config.useHeldInvoices) {
       throw SaleException('Held orders are disabled by POS configuration.');
     }
@@ -495,12 +479,6 @@ class SalesService {
     final activeSession = _requireActiveSession();
     final terminalId = activeSession.activeMachineNo;
     final cashierId = activeSession.activeUserId;
-    
-    await _permissions.requirePermission(
-      userId: cashierId,
-      terminalId: terminalId,
-      permission: PermissionCode.recallOrder,
-    );
 
     final orders = await _salesDao.getAllHeldOrders(terminalId);
     final order = orders.where((o) => o.id == orderId).firstOrNull;
@@ -529,12 +507,6 @@ class SalesService {
     final activeSession = _requireActiveSession();
     final terminalId = activeSession.activeMachineNo;
     final cashierId = activeSession.activeUserId;
-    
-    await _permissions.requirePermission(
-      userId: cashierId,
-      terminalId: terminalId,
-      permission: PermissionCode.cancelHeldOrder,
-    );
 
     await _salesDao.cancelHeldOrder(orderId);
 
@@ -563,12 +535,6 @@ class SalesService {
     String? supervisorId,
   }) async {
     final activeSession = _requireActiveSession();
-    
-    await _permissions.requirePermission(
-      userId: activeSession.activeUserId,
-      terminalId: activeSession.activeMachineNo,
-      permission: PermissionCode.saleVoid,
-    );
 
     final now = _clock.now();
     final outboxEntry = OutboxEventsCompanion(
@@ -850,7 +816,6 @@ final salesServiceProvider = Provider<SalesService>((ref) {
     salesDao: ref.watch(salesDaoProvider),
     shiftDao: ref.watch(shiftDaoProvider),
     auditDao: ref.watch(auditDaoProvider),
-    permissions: ref.watch(permissionServiceProvider),
     config: ref.watch(posConfigProvider),
     activeSession: ref.watch(activePosSessionProvider).valueOrNull,
     invoiceNumberService: ref.watch(invoiceNumberServiceProvider),

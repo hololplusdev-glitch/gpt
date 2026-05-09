@@ -8,10 +8,9 @@ import 'package:pos_flutter/core/l10n/app_localizations.dart';
 import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
 import 'package:pos_flutter/core/services/invoices/invoice_output_coordinator.dart';
 import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
-import 'package:pos_flutter/features/auth/application/auth_notifier.dart';
 import 'package:pos_flutter/features/cashier/application/cart_notifier.dart';
 import 'package:pos_flutter/features/cashier/application/cart_quote_provider.dart';
-import 'package:pos_flutter/features/cashier/application/checkout_coordinator.dart';
+import 'package:pos_flutter/features/sales/application/sale_checkout.dart';
 import 'package:pos_flutter/features/cashier/application/product_providers.dart';
 import 'package:pos_flutter/features/cashier/domain/models/payment_method_option.dart';
 import 'package:pos_flutter/features/shift/application/shift_notifier.dart';
@@ -112,11 +111,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
     try {
       final result = await ref
-          .read(checkoutCoordinatorProvider)
+          .read(saleCheckoutProvider)
           .complete(
-            CheckoutRequest(
+            SaleSaleCheckoutRequest(
               cart: widget.cart,
-              authState: ref.read(authProvider),
               shiftState: ref.read(shiftProvider),
               paymentMethod: method,
               tenderedText: _tenderedController.text,
@@ -544,7 +542,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
     final result = await ref
         .read(invoiceOutputCoordinatorProvider)
-        .printOriginal(id, createdBy: ref.read(authProvider).session?.userId);
+        .printOriginal(
+          id,
+          createdBy: ref.read(activePosSessionProvider).valueOrNull?.activeUserId,
+        );
 
     if (!mounted) return;
 

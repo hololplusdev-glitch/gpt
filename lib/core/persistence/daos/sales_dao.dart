@@ -25,6 +25,7 @@ class SalesDao {
     required List<SalePaymentsCompanion> payments,
     required AuditLogCompanion auditLogEntry,
     OutboxEventsCompanion? outboxEntry,
+    List<PrintJobsCompanion>? printJobs,
     List<SaleTaxSummaryCompanion>? taxes,
     List<SaleAdjustmentsCompanion>? discounts,
   }) async {
@@ -48,6 +49,11 @@ class SalesDao {
       }
       if (outboxEntry != null) {
         await _db.into(_db.outboxEvents).insert(outboxEntry);
+      }
+      if (printJobs != null) {
+        for (final job in printJobs) {
+          await _db.into(_db.printJobs).insert(job);
+        }
       }
       await _db.into(_db.auditLog).insert(auditLogEntry);
     });

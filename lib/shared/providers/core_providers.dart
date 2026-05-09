@@ -24,6 +24,7 @@ import 'package:pos_flutter/core/services/permission_service.dart';
 import 'package:pos_flutter/core/services/pos_devices/payment_profile_service.dart';
 import 'package:pos_flutter/core/services/pos_devices/print_job_processor.dart';
 import 'package:pos_flutter/core/services/pos_devices/print_job_service.dart';
+import 'package:pos_flutter/core/services/pos_devices/print_queue.dart';
 import 'package:pos_flutter/core/services/pos_devices/printer_adapter_factory.dart';
 import 'package:pos_flutter/core/services/pos_devices/printer_profile_service.dart';
 import 'package:pos_flutter/core/services/pos_devices/runtime_platform.dart';
@@ -32,6 +33,7 @@ import 'package:pos_flutter/core/services/invoices/invoice_document_builder.dart
 import 'package:pos_flutter/core/services/invoices/invoice_pdf_exporter.dart';
 import 'package:pos_flutter/core/services/installation/app_installation_service.dart';
 import 'package:pos_flutter/core/services/sync/db_sync_service.dart';
+import 'package:pos_flutter/core/services/sync/upload_queue.dart';
 import 'package:pos_flutter/core/services/time/clock.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -133,7 +135,6 @@ final posConfigProvider = Provider<PosConfigRepository>((ref) {
 final appInstallationServiceProvider = Provider<AppInstallationService>((ref) {
   return AppInstallationService(
     db: ref.watch(databaseProvider),
-    runtimeConfigRepository: ref.watch(runtimeConfigRepositoryProvider),
   );
 });
 
@@ -153,6 +154,10 @@ final invoiceNumberServiceProvider = Provider<InvoiceNumberService>((ref) {
   return InvoiceNumberService(
     ref.watch(salesDaoProvider),
   );
+});
+
+final uploadQueueProvider = Provider<UploadQueue>((ref) {
+  return const UploadQueue();
 });
 
 final dbSyncServiceProvider = Provider<DbSyncService>((ref) {
@@ -205,6 +210,12 @@ final invoiceDocumentBuilderProvider = Provider<InvoiceDocumentBuilder>((ref) {
 
 final invoicePdfExporterProvider = Provider<InvoicePdfExporter>((ref) {
   return const InvoicePdfExporter();
+});
+
+final printQueueProvider = Provider<PrintQueue>((ref) {
+  return PrintQueue(
+    printerProfileDao: ref.watch(printerProfileDaoProvider),
+  );
 });
 
 final printJobServiceProvider = Provider<PrintJobService>((ref) {

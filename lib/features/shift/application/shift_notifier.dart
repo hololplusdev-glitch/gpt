@@ -3,10 +3,13 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_flutter/core/errors/app_exception.dart';
+import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/features/shift/application/shift_service.dart';
+import 'package:pos_flutter/shared/providers/core_providers.dart';
 
-/// State for the active shift.
+typedef ActiveSessionReader = ActivePosSession? Function();
+
 class ShiftState {
   final Shift? activeShift;
   final bool isLoading;
@@ -35,17 +38,18 @@ class ShiftState {
   }
 }
 
-/// Manages shift lifecycle state.
 class ShiftNotifier extends StateNotifier<ShiftState> {
   final ShiftService _shiftService;
+  final ActiveSessionReader _readSession;
 
-  ShiftNotifier(this._shiftService) : super(const ShiftState());
+  ShiftNotifier(this._shiftService, this._readSession)
+    : super(const ShiftState());
 
-  /// Load the current open shift for the terminal (on app start or login).
   Future<void> loadCurrentShift(String terminalId) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
-      final shift = await _shiftService.getCurrentShift(terminalId);
+      final session = _requireSession();
+      final shift = await _shiftService.getCurrentShift(session.activeMachineNo);
       state = ShiftState(activeShift: shift);
     } catch (e) {
       state = state.copyWith(
@@ -55,7 +59,6 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
     }
   }
 
-  /// Open a new shift.
   Future<bool> openShift({
     required String terminalId,
     required String cashierId,
@@ -66,9 +69,7 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final shift = await _shiftService.openShift(
-        terminalId: terminalId,
-        cashierId: cashierId,
-        cashierName: cashierName,
+        session: _requireSession(),
         openingCash: openingCash,
         shiftTypeId: shiftTypeId,
       );
@@ -86,7 +87,6 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
     }
   }
 
-  /// Close the current shift.
   Future<bool> closeShift({
     required double actualCash,
     required String cashierId,
@@ -98,14 +98,14 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
       state = state.copyWith(errorMessage: 'No open shift to close');
       return false;
     }
+
     state = state.copyWith(isLoading: true, clearError: true);
+
     try {
       await _shiftService.closeShift(
+        session: _requireSession(),
         localId: state.activeShift!.id,
         actualCash: actualCash,
-        cashierId: cashierId,
-        cashierName: cashierName,
-        terminalId: terminalId,
         closingNotes: closingNotes,
       );
       state = const ShiftState();
@@ -122,18 +122,17 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
     }
   }
 
-  /// Extend the current shift.
   Future<bool> extendShift({
     required String cashierId,
     required String terminalId,
     int? overrideMinutes,
   }) async {
     if (!state.hasOpenShift) return false;
+
     try {
       final shift = await _shiftService.extendShift(
+        session: _requireSession(),
         localId: state.activeShift!.id,
-        cashierId: cashierId,
-        terminalId: terminalId,
         overrideMinutes: overrideMinutes,
       );
       state = ShiftState(activeShift: shift);
@@ -144,12 +143,25 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
     }
   }
 
-  /// Clear any error.
   void clearError() {
     state = state.copyWith(clearError: true);
+  }
+
+  ActivePosSession _requireSession() {
+    final session = _readSession();
+    if (session == null) {
+      throw const BusinessException(
+        'Select a cashier and POS machine before shift operations.',
+        code: 'NO_ACTIVE_POS_SESSION',
+      );
+    }
+    return session;
   }
 }
 
 final shiftProvider = StateNotifierProvider<ShiftNotifier, ShiftState>((ref) {
-  return ShiftNotifier(ref.watch(shiftServiceProvider));
+  return ShiftNotifier(
+    ref.watch(shiftServiceProvider),
+    () => ref.read(activePosSessionProvider).valueOrNull,
+  );
 });
