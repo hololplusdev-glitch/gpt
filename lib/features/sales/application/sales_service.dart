@@ -1,7 +1,6 @@
 // features/sales/application/sales_service.dart
-// WHY: Orchestrates the complete checkout pipeline.
-// Validates shift, checks permissions, calculates totals, and persists the sale
-// atomically. Invoice upload/stock deduction are intentionally outside this flow.
+// WHY: Non-checkout sales support only: held orders, void, and history.
+// Sale completion is owned exclusively by SaleCheckout.
 //
 // TODO(Phase:DecimalQty): Support fractional quantities when item.use_qty_fraction=1.
 // Currently quantity is int-only throughout SaleLineInput.
@@ -18,6 +17,7 @@ import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/core/persistence/pos_config_repository.dart';
 import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
 import 'package:pos_flutter/core/services/time/clock.dart';
+import 'package:pos_flutter/core/services/sync/upload_queue.dart';
 import 'package:pos_flutter/features/sales/domain/models/sale_inputs.dart';
 import 'package:pos_flutter/shared/models/enums.dart';
 import 'package:pos_flutter/shared/models/sales_history.dart';
@@ -29,6 +29,7 @@ class SalesService {
   final SalesDao _salesDao;
   final AuditDao _auditDao;
   final PosConfigRepository _config;
+  final UploadQueue _uploadQueue;
   final ActivePosSession? _activeSession;
   final PricingEngine _pricingEngine;
   final Clock _clock;
@@ -37,15 +38,15 @@ class SalesService {
     required SalesDao salesDao,
     required AuditDao auditDao,
     required PosConfigRepository config,
+    required UploadQueue uploadQueue,
     required ActivePosSession? activeSession,
     PricingEngine pricingEngine = const PricingEngine(),
     Clock clock = const SystemClock(),
   }) : _salesDao = salesDao,
-       _shiftDao = shiftDao,
        _auditDao = auditDao,
        _config = config,
+       _uploadQueue = uploadQueue,
        _activeSession = activeSession,
-       _invoiceNumberService = invoiceNumberService,
        _pricingEngine = pricingEngine,
        _clock = clock;
 
@@ -75,7 +76,7 @@ class SalesService {
             .toList(),
         taxRate: 0,
         useTax: _requireActiveSession().activeUseTax,
-        priceIncludesTax: _config.priceIncludesTax,
+        priceIncludesTax: _requireActiveSession().priceIncludesTax,
         invoiceDiscount: invoiceDiscount == null
             ? null
             : PricingDiscountInput(
@@ -232,23 +233,12 @@ class SalesService {
     final activeSession = _requireActiveSession();
 
     final now = _clock.now();
-    final outboxEntry = OutboxEventsCompanion(
-      id: Value('OBX_${_uuid.v4()}'),
-      eventType: Value(OutboxEventType.saleVoided.code),
-      entityType: Value(OutboxEntityType.sale.code),
-      entityId: Value(saleId),
-      payloadJson: Value(
-        jsonEncode({
-          'saleId': saleId,
-          'cashierId': activeSession.activeUserId,
-          'cashierName': activeSession.activeUserName,
-          'supervisorId': supervisorId,
-          'voidedAt': now.toIso8601String(),
-        }),
-      ),
-      status: Value(OutboxStatus.pending.code),
-      createdAt: Value(now),
-      idempotencyKey: Value('void_$saleId'),
+    final outboxEntry = _uploadQueue.saleVoided(
+      saleId: saleId,
+      cashierId: activeSession.activeUserId,
+      cashierName: activeSession.activeUserName,
+      supervisorId: supervisorId,
+      voidedAt: now,
     );
 
     final auditLogEntry = AuditLogCompanion(
@@ -357,7 +347,6 @@ class SalesService {
   }
 }
 
-
 /// Full sale detail with lines and payments.
 class SaleDetail {
   final Sale sale;
@@ -386,7 +375,6 @@ class SaleDiscountInput {
   });
 }
 
-
 /// Sale-specific exception.
 class SaleException extends BusinessException {
   const SaleException(super.message) : super(code: 'sale_error');
@@ -397,6 +385,7 @@ final salesServiceProvider = Provider<SalesService>((ref) {
     salesDao: ref.watch(salesDaoProvider),
     auditDao: ref.watch(auditDaoProvider),
     config: ref.watch(posConfigProvider),
+    uploadQueue: ref.watch(uploadQueueProvider),
     activeSession: ref.watch(activePosSessionProvider).valueOrNull,
     clock: ref.watch(clockProvider),
   );

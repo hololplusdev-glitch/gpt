@@ -40,6 +40,7 @@ class SaleCheckout {
   final UploadQueue _uploadQueue;
   final PrintQueue _printQueue;
   final PaymentProfileService _paymentProfileService;
+  final CartNotifier _cartNotifier;
   final ActivePosSession? _activeSession;
   final PricingEngine _pricingEngine;
   final Clock _clock;
@@ -54,6 +55,7 @@ class SaleCheckout {
     required UploadQueue uploadQueue,
     required PrintQueue printQueue,
     required PaymentProfileService paymentProfileService,
+    required CartNotifier cartNotifier,
     required ActivePosSession? activeSession,
     PricingEngine pricingEngine = const PricingEngine(),
     Clock clock = const SystemClock(),
@@ -66,6 +68,7 @@ class SaleCheckout {
         _uploadQueue = uploadQueue,
         _printQueue = printQueue,
         _paymentProfileService = paymentProfileService,
+        _cartNotifier = cartNotifier,
         _activeSession = activeSession,
         _pricingEngine = pricingEngine,
         _clock = clock;
@@ -228,6 +231,8 @@ class SaleCheckout {
 
       await _salesDao.enqueuePrintJobs(printJobs);
     }
+
+    _cartNotifier.clearCart();
 
     return SaleCheckoutResult(
       saleId: saleId,
@@ -773,6 +778,7 @@ final saleCheckoutProvider = Provider<SaleCheckout>((ref) {
     uploadQueue: ref.watch(uploadQueueProvider),
     printQueue: ref.watch(printQueueProvider),
     paymentProfileService: ref.watch(paymentProfileServiceProvider),
+    cartNotifier: ref.read(cartProvider.notifier),
     activeSession: ref.watch(activePosSessionProvider).valueOrNull,
     clock: ref.watch(clockProvider),
   );

@@ -6,7 +6,6 @@ import 'package:pos_flutter/core/design_system/spacing.dart';
 import 'package:pos_flutter/core/errors/app_exception.dart';
 import 'package:pos_flutter/core/l10n/app_localizations.dart';
 import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_output_coordinator.dart';
 import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
 import 'package:pos_flutter/features/cashier/application/cart_notifier.dart';
 import 'package:pos_flutter/features/cashier/application/cart_quote_provider.dart';
@@ -16,7 +15,6 @@ import 'package:pos_flutter/features/cashier/domain/models/payment_method_option
 import 'package:pos_flutter/features/shift/application/shift_notifier.dart';
 import 'package:pos_flutter/shared/models/customer.dart';
 import 'package:pos_flutter/shared/models/enums.dart';
-import 'package:pos_flutter/shared/presentation/utils/app_snackbar.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_dropdown.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_info_banner.dart';
@@ -50,9 +48,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   bool _initialized = false;
   bool _isProcessing = false;
   bool _isComplete = false;
-  bool _printFailed = false;
-  bool _printNoPrinter = false;
-  bool _printCompleted = false;
 
   String? _errorMessage;
   String? _invoiceNo;
@@ -132,10 +127,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         _saleId = result.saleId;
         _completedPaymentMethodType = result.selectedPaymentType;
         _change = result.change;
-        _printFailed = result.printResult?.hasFailures ?? false;
-        _printNoPrinter = result.printResult?.noEligiblePrinter ?? false;
-        _printCompleted =
-            result.printResult != null && !result.printResult!.hasFailures;
         _isProcessing = false;
         _isComplete = true;
       });
@@ -444,10 +435,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   Widget _buildCompletionView() {
     final l10n = AppLocalizations.of(context)!;
 
-    final printFailureMessage = _printNoPrinter
-        ? l10n.noEnabledPrinter
-        : l10n.invoiceSavedButPrintFailed;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xxxl),
       child: Column(
@@ -482,40 +469,15 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
-          if (_printFailed) ...[
-            AppInfoBanner(
-              message: printFailureMessage,
-              type: AppBannerType.warning,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-          ] else if (_printCompleted) ...[
-            AppInfoBanner(
-              message: l10n.invoiceSentToPrinter,
-              type: AppBannerType.success,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-          ],
           Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             alignment: WrapAlignment.center,
             children: [
               AppButton.outlined(
-                onPressed: _printCompletionInvoice,
-                icon: Icons.print,
-                label: _printCompleted
-                    ? l10n.reprintReceipt
-                    : l10n.printReceipt,
-              ),
-              AppButton.outlined(
                 onPressed: _openInvoice,
                 icon: Icons.receipt_long,
                 label: l10n.viewInvoice,
-              ),
-              AppButton.outlined(
-                onPressed: _saveCompletionPdf,
-                icon: Icons.picture_as_pdf,
-                label: l10n.savePdf,
               ),
             ],
           ),
@@ -534,54 +496,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     );
   }
 
-  Future<void> _printCompletionInvoice() async {
-    final id = _saleId;
-    if (id == null) return;
-
-    final l10n = AppLocalizations.of(context)!;
-
-    final result = await ref
-        .read(invoiceOutputCoordinatorProvider)
-        .printOriginal(
-          id,
-          createdBy: ref.read(activePosSessionProvider).valueOrNull?.activeUserId,
-        );
-
-    if (!mounted) return;
-
-    setState(() {
-      _printFailed = result.hasFailures;
-      _printNoPrinter = result.noEligiblePrinter;
-      _printCompleted = !result.hasFailures;
-    });
-
-    if (result.hasFailures) {
-      AppSnackbar.showWarning(
-        context,
-        result.noEligiblePrinter
-            ? l10n.noEnabledPrinter
-            : l10n.invoiceSavedButPrintFailed,
-      );
-    } else {
-      AppSnackbar.showSuccess(context, l10n.invoiceSentToPrinter);
-    }
-  }
-
-  Future<void> _saveCompletionPdf() async {
-    final id = _saleId;
-    if (id == null) return;
-
-    final l10n = AppLocalizations.of(context)!;
-    final file = await ref.read(invoiceOutputCoordinatorProvider).savePdf(id);
-
-    if (!mounted) return;
-    AppSnackbar.showSuccess(context, l10n.pdfSavedAt(file.path));
-  }
-
   void _finishPayment() {
     final id = _saleId;
-
-    ref.read(cartProvider.notifier).clearCart();
 
     Navigator.of(context).pop(PaymentDialogResult.completed(saleId: id));
   }
@@ -589,8 +505,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   void _openInvoice() {
     final id = _saleId;
     if (id == null) return;
-
-    ref.read(cartProvider.notifier).clearCart();
 
     Navigator.of(
       context,
