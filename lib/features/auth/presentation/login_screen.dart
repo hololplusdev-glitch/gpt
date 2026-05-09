@@ -166,7 +166,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (activeSession != null) {
         await ref
             .read(shiftProvider.notifier)
-            .loadCurrentShift(activeSession.activeMachineNo);
+            .loadCurrentShift();
       }
     }
 

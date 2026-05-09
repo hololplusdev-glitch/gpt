@@ -128,7 +128,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
           child: AppButton.primary(
             onPressed: shiftState.isLoading
                 ? null
-                : () => _openShift(activeSession),
+                : _openShift,
             isLoading: shiftState.isLoading,
             icon: Icons.play_arrow,
             label: shiftState.isLoading ? l10n.openingShift : l10n.openShift,
@@ -224,7 +224,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
           child: AppButton.warning(
             onPressed: shiftState.isLoading || _isClosing
                 ? null
-                : () => _closeShift(activeSession),
+                : _closeShift,
             isLoading: shiftState.isLoading,
             icon: Icons.stop,
             label: shiftState.isLoading ? l10n.closingShift : l10n.closeShift,
@@ -234,18 +234,11 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     );
   }
 
-  Future<void> _openShift(ActivePosSession? session) async {
+  Future<void> _openShift() async {
     final cashText = _cashController.text.trim();
     final cashDouble = double.tryParse(cashText) ?? 0;
 
-    if (session == null) {
-      return;
-    }
-
     final success = await ref.read(shiftProvider.notifier).openShift(
-          terminalId: session.activeMachineNo,
-          cashierId: session.activeUserId,
-          cashierName: session.activeUserName,
           openingCash: cashDouble,
         );
 
@@ -254,24 +247,14 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     }
   }
 
-  Future<void> _closeShift(ActivePosSession? session) async {
+  Future<void> _closeShift() async {
     setState(() => _isClosing = true);
 
     final cashText = _cashController.text.trim();
     final cashDouble = double.tryParse(cashText) ?? 0;
 
-    if (session == null) {
-      if (mounted) {
-        setState(() => _isClosing = false);
-      }
-      return;
-    }
-
     final success = await ref.read(shiftProvider.notifier).closeShift(
           actualCash: cashDouble,
-          cashierId: session.activeUserId,
-          cashierName: session.activeUserName,
-          terminalId: session.activeMachineNo,
           closingNotes: _notesController.text.trim(),
         );
 

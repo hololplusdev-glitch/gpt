@@ -45,7 +45,7 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
   ShiftNotifier(this._shiftService, this._readSession)
     : super(const ShiftState());
 
-  Future<void> loadCurrentShift(String terminalId) async {
+  Future<void> loadCurrentShift() async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final session = _requireSession();
@@ -60,9 +60,6 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
   }
 
   Future<bool> openShift({
-    required String terminalId,
-    required String cashierId,
-    required String cashierName,
     required double openingCash,
     String? shiftTypeId,
   }) async {
@@ -89,9 +86,6 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
 
   Future<bool> closeShift({
     required double actualCash,
-    required String cashierId,
-    required String cashierName,
-    required String terminalId,
     String? closingNotes,
   }) async {
     if (!state.hasOpenShift) {
@@ -123,8 +117,6 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
   }
 
   Future<bool> extendShift({
-    required String cashierId,
-    required String terminalId,
     int? overrideMinutes,
   }) async {
     if (!state.hasOpenShift) return false;
