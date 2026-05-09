@@ -220,15 +220,20 @@ class SaleCheckout {
     );
 
     if (_config.autoPrintAfterSale) {
-      final document = await _invoiceDocumentBuilder.getOrCreateOriginal(saleId);
-      final printJobs = await _printQueue.invoiceReceipt(
-        document: document,
-        createdAt: now,
-        createdBy: session.activeUserId,
-        requireAutoPrint: true,
-      );
+      try {
+        final document = await _invoiceDocumentBuilder.getOrCreateOriginal(saleId);
+        final printJobs = await _printQueue.invoiceReceipt(
+          document: document,
+          createdAt: now,
+          createdBy: session.activeUserId,
+          requireAutoPrint: true,
+        );
 
-      await _salesDao.enqueuePrintJobs(printJobs);
+        await _salesDao.enqueuePrintJobs(printJobs);
+      } catch (_) {
+        // Print enqueue/document snapshot failures must not fail checkout.
+        // The sale and upload outbox event are already persisted.
+      }
     }
 
     _cartNotifier.clearCart();

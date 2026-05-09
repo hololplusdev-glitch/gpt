@@ -20,7 +20,6 @@ import 'package:pos_flutter/core/services/readiness/catalog_readiness_service.da
 import 'package:pos_flutter/core/persistence/pos_config_repository.dart';
 import 'package:pos_flutter/core/services/invoice_number_service.dart';
 import 'package:pos_flutter/core/services/master_data/master_data_sync_service.dart';
-import 'package:pos_flutter/core/services/permission_service.dart';
 import 'package:pos_flutter/core/services/pos_devices/payment_profile_service.dart';
 import 'package:pos_flutter/core/services/pos_devices/print_job_processor.dart';
 import 'package:pos_flutter/core/services/pos_devices/print_job_service.dart';
@@ -144,10 +143,6 @@ final clockProvider = Provider<Clock>((ref) {
 
 final businessDateServiceProvider = Provider<BusinessDateService>((ref) {
   return BusinessDateService(clock: ref.watch(clockProvider));
-});
-
-final permissionServiceProvider = Provider<PermissionService>((ref) {
-  return PermissionService(ref.watch(authDaoProvider));
 });
 
 final invoiceNumberServiceProvider = Provider<InvoiceNumberService>((ref) {

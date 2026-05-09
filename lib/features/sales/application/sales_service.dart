@@ -24,7 +24,7 @@ import 'package:pos_flutter/shared/models/sales_history.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 
-/// The checkout pipeline from validated cart to persisted sale.
+/// Non-checkout sales support: held orders, void, and history.
 class SalesService {
   final SalesDao _salesDao;
   final AuditDao _auditDao;
