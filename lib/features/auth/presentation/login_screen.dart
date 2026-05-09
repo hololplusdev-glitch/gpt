@@ -121,25 +121,72 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
+    final authDao = ref.read(authDaoProvider);
+    final sessionDao = ref.read(activePosSessionDaoProvider);
+    final user = await authDao.findByUsername(username);
+
+    if (user == null) {
+      await ref.read(cashierSelectionProvider.notifier).selectCashier(username);
+      return;
+    }
+
+    final accesses = await sessionDao.listAllowedMachinesForUser(
+      custCode: user.custCode,
+      userId: user.id,
+    );
+
+    if (!mounted) return;
+
+    String? selectedMachineNo;
+
+    if (accesses.length == 1) {
+      selectedMachineNo = accesses.single.machineNo;
+    } else if (accesses.length > 1) {
+      selectedMachineNo = await _chooseMachine(accesses.map((e) => e.machineNo).toList());
+      if (selectedMachineNo == null) return;
+    } else {
+      await ref.read(cashierSelectionProvider.notifier).selectCashier(username);
+      return;
+    }
+
     final config = ref.read(posConfigProvider);
 
     final success = await ref
         .read(cashierSelectionProvider.notifier)
-        .selectCashier(username);
+        .selectCashierAndMachine(username, selectedMachineNo);
 
     if (!mounted || !success) {
       return;
     }
 
     if (config.useShift) {
-      final activeMachine = ref.read(activeMachineProvider).activeMachineNo;
-      await ref.read(shiftProvider.notifier).loadCurrentShift(activeMachine);
+      final activeSession = await ref.read(activePosSessionDaoProvider).getActive();
+      if (activeSession != null) {
+        await ref
+            .read(shiftProvider.notifier)
+            .loadCurrentShift(activeSession.activeMachineNo);
+      }
     }
 
-    // لا تضف context.go هنا.
-    // الراوتر سيقرر:
-    // - إذا فيه وردية مفتوحة -> الكاشير
-    // - إذا ما فيه وردية -> شاشة فتح الوردية
+    // Router decides the next page based on ActivePosSession + open shift.
+  }
+
+  Future<String?> _chooseMachine(List<String> machineNos) {
+    return showDialog<String>(
+      context: context,
+      builder: (context) {
+        return SimpleDialog(
+          title: const Text('Select POS machine'),
+          children: [
+            for (final machineNo in machineNos)
+              SimpleDialogOption(
+                onPressed: () => Navigator.of(context).pop(machineNo),
+                child: Text(machineNo),
+              ),
+          ],
+        );
+      },
+    );
   }
 
   @override

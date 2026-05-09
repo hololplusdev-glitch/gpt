@@ -91,6 +91,8 @@ class MasterDataSyncContext {
   final String custCode;
   final String bootstrapUserId;
   final String? userId;
+  final String? branchNo;
+  final String? terminalNo;
   final String? priceLevelId;
   final String? storeId;
   final int pageLimit;
@@ -99,12 +101,36 @@ class MasterDataSyncContext {
     required this.custCode,
     this.bootstrapUserId = '1',
     this.userId,
+    this.branchNo,
+    this.terminalNo,
     this.priceLevelId,
     this.storeId,
     this.pageLimit = 100,
   });
 
   String get syncUserId => userId ?? bootstrapUserId;
+
+  MasterDataSyncContext copyWith({
+    String? custCode,
+    String? bootstrapUserId,
+    String? userId,
+    String? branchNo,
+    String? terminalNo,
+    String? priceLevelId,
+    String? storeId,
+    int? pageLimit,
+  }) {
+    return MasterDataSyncContext(
+      custCode: custCode ?? this.custCode,
+      bootstrapUserId: bootstrapUserId ?? this.bootstrapUserId,
+      userId: userId ?? this.userId,
+      branchNo: branchNo ?? this.branchNo,
+      terminalNo: terminalNo ?? this.terminalNo,
+      priceLevelId: priceLevelId ?? this.priceLevelId,
+      storeId: storeId ?? this.storeId,
+      pageLimit: pageLimit ?? this.pageLimit,
+    );
+  }
 
   Map<String, dynamic> queryParameters({
     required MasterDataType type,
@@ -122,6 +148,7 @@ class MasterDataSyncContext {
     if (lastUpdate != null && lastUpdate.isNotEmpty) {
       params['p_last_update'] = lastUpdate;
     }
+
     if (type == MasterDataType.itemPrice) {
       if (priceLevelId != null && priceLevelId!.isNotEmpty) {
         params['p_price_lvl_id'] = priceLevelId;

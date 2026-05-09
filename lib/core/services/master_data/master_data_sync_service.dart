@@ -555,7 +555,38 @@ class MasterDataSyncService {
   Future<MasterDataSyncContext> _contextWithMachineDefaults(
     MasterDataSyncContext context,
   ) async {
-    return context;
+    final defaults = await _loadLocalMachineDefaults(context);
+
+    if (defaults == null) {
+      throw const SyncException(
+        'POS_MACHINE sync did not provide a usable machine profile.',
+        code: 'MASTER_DATA_MACHINE_DEFAULTS_MISSING',
+      );
+    }
+
+    final storeId = defaults.defaultStoreId?.trim();
+    final priceLevelId = defaults.priceLevelId?.trim();
+
+    if (storeId == null || storeId.isEmpty) {
+      throw const SyncException(
+        'POS_MACHINE has no default store. ITEM_PRICE cannot be scoped.',
+        code: 'MASTER_DATA_MACHINE_STORE_MISSING',
+      );
+    }
+
+    if (priceLevelId == null || priceLevelId.isEmpty) {
+      throw const SyncException(
+        'POS_MACHINE has no price level. ITEM_PRICE cannot be scoped.',
+        code: 'MASTER_DATA_MACHINE_PRICE_LEVEL_MISSING',
+      );
+    }
+
+    return context.copyWith(
+      branchNo: defaults.branchNo,
+      terminalNo: defaults.terminalNo,
+      storeId: storeId,
+      priceLevelId: priceLevelId,
+    );
   }
 
   /// WHY: Pre-flight validation — ensures all required Backend identity params
@@ -664,7 +695,11 @@ class MasterDataSyncService {
   Future<TerminalBootstrapDefaults?> _loadLocalMachineDefaults(
     MasterDataSyncContext context,
   ) async {
-    return null;
+    return _masterDataDao.loadLocalMachineDefaults(
+      tenantCode: context.custCode,
+      terminalNo: context.terminalNo,
+      branchNo: context.branchNo,
+    );
   }
 
   Future<bool> _hasLocalUsedDevicePrivilege(
@@ -673,7 +708,7 @@ class MasterDataSyncService {
     return _masterDataDao.hasLocalUsedDevicePrivilege(
       tenantCode: context.custCode,
       userId: context.syncUserId,
-      terminalNo: '',
+      terminalNo: context.terminalNo ?? '',
     );
   }
 
@@ -810,7 +845,27 @@ class MasterDataSyncService {
     List<TerminalBootstrapDefaults> defaults,
     MasterDataSyncContext context, {
     String? serverTime,
-  }) async {}
+  }) async {
+    if (defaults.isEmpty) {
+      throw const SyncException(
+        'POS_MACHINE returned no terminal defaults.',
+        code: 'MASTER_DATA_MACHINE_DEFAULTS_MISSING',
+      );
+    }
+
+    final usable = defaults.any(
+      (defaults) =>
+          (defaults.defaultStoreId?.trim().isNotEmpty ?? false) &&
+          (defaults.priceLevelId?.trim().isNotEmpty ?? false),
+    );
+
+    if (!usable) {
+      throw const SyncException(
+        'POS_MACHINE returned machines without store/price level defaults.',
+        code: 'MASTER_DATA_MACHINE_DEFAULTS_INCOMPLETE',
+      );
+    }
+  }
 
   String _newId(String prefix) {
     final seq = _idSequence++;
@@ -861,8 +916,8 @@ class MasterDataSyncService {
       modeCode: mode.code,
       tenantCode: context.custCode,
       userId: context.syncUserId,
-      branchNo: '',
-      terminalNo: '',
+      branchNo: context.branchNo ?? '',
+      terminalNo: context.terminalNo ?? '',
       at: at,
     );
   }
@@ -1035,7 +1090,7 @@ class MasterDataSyncService {
   }) async {
     await _masterDataDao.saveSyncState(
       type.code,
-      tenantCode: context.custCode,
+      context: context,
       status: status,
       now: _clock.now(),
       serverTime: serverTime,

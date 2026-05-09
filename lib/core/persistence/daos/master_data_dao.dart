@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/core/services/master_data/master_data_mapper.dart';
@@ -68,21 +69,32 @@ class MasterDataDao {
 
   Future<TerminalBootstrapDefaults?> loadLocalMachineDefaults({
     required String tenantCode,
-    required String terminalNo,
-    required String branchNo,
+    String? terminalNo,
+    String? branchNo,
   }) async {
-    final row =
-        await (_db.select(_db.posMachines)..where(
-              (machine) =>
-                  machine.custCode.equals(tenantCode) &
-                  machine.machineNo.equals(terminalNo),
-            ))
-            .getSingleOrNull();
-    if (row == null) return null;
+    final query = _db.select(_db.posMachines)
+      ..where((machine) => machine.custCode.equals(tenantCode))
+      ..orderBy([(machine) => OrderingTerm.asc(machine.machineNo)]);
+
+    final machineNo = terminalNo?.trim();
+    if (machineNo != null && machineNo.isNotEmpty) {
+      query.where((machine) => machine.machineNo.equals(machineNo));
+    }
+
+    final rows = await query.get();
+    if (rows.isEmpty) return null;
+
+    final row = rows.firstWhere(
+      (machine) =>
+          (machine.storeId?.trim().isNotEmpty ?? false) &&
+          (machine.priceLevelId?.trim().isNotEmpty ?? false),
+      orElse: () => rows.first,
+    );
+
     return TerminalBootstrapDefaults(
       custCode: row.custCode,
       terminalNo: row.machineNo,
-      branchNo: row.branchNo ?? branchNo,
+      branchNo: row.branchNo ?? branchNo ?? '',
       braYear: row.branchYear,
       defaultStoreId: row.storeId,
       priceLevelId: row.priceLevelId,
@@ -160,8 +172,11 @@ class MasterDataDao {
     return rows.length;
   }
 
-  Future<String?> lastServerTime(String typeCode, {required String tenantCode}) async {
-    final syncKey = '${tenantCode}_$typeCode';
+  Future<String?> lastServerTime(
+    String typeCode, {
+    required MasterDataSyncContext context,
+  }) async {
+    final syncKey = _syncKey(typeCode, context);
     final row = await (_db.select(
       _db.scopedSyncState,
     )..where((state) => state.syncKey.equals(syncKey))).getSingleOrNull();
@@ -170,26 +185,28 @@ class MasterDataDao {
 
   Future<void> saveSyncState(
     String typeCode, {
-    required String tenantCode,
+    required MasterDataSyncContext context,
     required String status,
     required DateTime now,
     String? serverTime,
     String? error,
   }) async {
-    final syncKey = '${tenantCode}_$typeCode';
+    final syncKey = _syncKey(typeCode, context);
     final existing = await (_db.select(
       _db.scopedSyncState,
     )..where((state) => state.syncKey.equals(syncKey))).getSingleOrNull();
+
     final isSuccessful =
         status == MasterDataTypeRunStatus.success.code ||
         status == MasterDataTypeRunStatus.noChanges.code;
+
     await _db
         .into(_db.scopedSyncState)
         .insertOnConflictUpdate(
           ScopedSyncStateCompanion(
             syncKey: Value(syncKey),
             type: Value(typeCode),
-            scopeJson: Value('{"tenantCode": "$tenantCode"}'),
+            scopeJson: Value(_scopeJson(context)),
             lastSuccessTime: Value(
               isSuccessful ? now.toIso8601String() : existing?.lastSuccessTime,
             ),
@@ -198,6 +215,38 @@ class MasterDataDao {
             lastError: Value(error),
           ),
         );
+  }
+
+  String _syncKey(String typeCode, MasterDataSyncContext context) {
+    final parts = <String>[
+      context.custCode.trim(),
+      typeCode,
+    ];
+
+    if (typeCode == MasterDataType.itemPrice.code) {
+      parts.add('store:${context.storeId ?? ''}');
+      parts.add('price:${context.priceLevelId ?? ''}');
+    }
+
+    if (typeCode == MasterDataType.devicePrivilege.code) {
+      parts.add('user:${context.syncUserId}');
+      if ((context.terminalNo ?? '').trim().isNotEmpty) {
+        parts.add('machine:${context.terminalNo}');
+      }
+    }
+
+    return parts.join('|');
+  }
+
+  String _scopeJson(MasterDataSyncContext context) {
+    return jsonEncode({
+      'tenantCode': context.custCode,
+      'userId': context.syncUserId,
+      'branchNo': context.branchNo,
+      'terminalNo': context.terminalNo,
+      'storeId': context.storeId,
+      'priceLevelId': context.priceLevelId,
+    });
   }
 
   Future<void> insertRun({
