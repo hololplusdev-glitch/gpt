@@ -169,6 +169,3 @@ final cashierSelectionProvider =
   );
 });
 
-/// Temporary alias for legacy UI imports.
-/// Do not use for runtime decisions.
-final authProvider = cashierSelectionProvider;

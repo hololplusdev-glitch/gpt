@@ -211,7 +211,7 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
     ref.read(apiClientProvider).clearConfiguration();
     ref.invalidate(syncProfileProvider);
     ref.invalidate(activePosSessionProvider);
-    ref.invalidate(authProvider);
+    ref.invalidate(cashierSelectionProvider);
     ref.invalidate(shiftProvider);
     ref.invalidate(catalogReadinessProvider);
     state = AsyncData(SetupState(language: state.valueOrNull?.language ?? 'en'));

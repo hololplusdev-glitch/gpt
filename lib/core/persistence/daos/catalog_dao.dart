@@ -352,6 +352,7 @@ EXISTS (
               (price) =>
                   price.itemId.isIn(itemIds) &
                   price.priceLevelId.equals(priceLevelId) &
+                  price.storeId.equals(storeId) &
                   price.unitPrice.isBiggerThanValue(0),
             ))
             .get();
@@ -384,9 +385,7 @@ EXISTS (
           )
           .where((price) => _matchesQty(price, quantity))
           .toList();
-      final candidates = allCandidates
-          .where((price) => _matchesStore(price, storeId))
-          .toList();
+      final candidates = allCandidates;
       if (candidates.isEmpty) {
         continue;
       }
@@ -461,6 +460,7 @@ EXISTS (
               (price) =>
                   price.itemId.equals(itemId) &
                   price.priceLevelId.equals(priceLevelId) &
+                  price.storeId.equals(storeId) &
                   price.unitPrice.isBiggerThanValue(0),
             ))
             .get();
@@ -468,7 +468,6 @@ EXISTS (
         .where(
           (price) => price.unitId != null && unitIds.contains(price.unitId),
         )
-        .where((price) => _matchesStore(price, storeId))
         .where((price) => _matchesQty(price, quantity))
         .toList();
     if (candidates.isEmpty) return null;
@@ -646,10 +645,6 @@ EXISTS (
 
   String _sourceUnitIdForUnitData(ItemUnit unit) {
     return unit.sourceUnitId ?? _sourceUnitIdFromLocalId(unit.id);
-  }
-
-  bool _matchesStore(ItemPrice price, String storeId) {
-    return price.storeId?.trim() == storeId;
   }
 
   bool _matchesQty(ItemPrice price, double quantity) {
