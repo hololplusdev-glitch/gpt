@@ -62,7 +62,8 @@ class SyncProfileTable extends Table {
   TextColumn get bootstrapUserId => text().withDefault(const Constant('1'))();
   IntColumn get pageLimit => integer().withDefault(const Constant(100))();
   IntColumn get timeoutSeconds => integer().nullable()();
-  BoolColumn get setupCompleted => boolean().withDefault(const Constant(false))();
+  BoolColumn get setupCompleted =>
+      boolean().withDefault(const Constant(false))();
   BoolColumn get initialSyncCompleted =>
       boolean().withDefault(const Constant(false))();
   DateTimeColumn get lastFullSyncAt => dateTime().nullable()();

@@ -58,19 +58,19 @@ class SaleCheckout {
     required ActivePosSession? activeSession,
     PricingEngine pricingEngine = const PricingEngine(),
     Clock clock = const SystemClock(),
-  })  : _salesDao = salesDao,
-        _shiftDao = shiftDao,
-        _catalogDao = catalogDao,
-        _config = config,
-        _invoiceNumberService = invoiceNumberService,
-        _invoiceDocumentBuilder = invoiceDocumentBuilder,
-        _uploadQueue = uploadQueue,
-        _printQueue = printQueue,
-        _paymentProfileService = paymentProfileService,
-        _cartNotifier = cartNotifier,
-        _activeSession = activeSession,
-        _pricingEngine = pricingEngine,
-        _clock = clock;
+  }) : _salesDao = salesDao,
+       _shiftDao = shiftDao,
+       _catalogDao = catalogDao,
+       _config = config,
+       _invoiceNumberService = invoiceNumberService,
+       _invoiceDocumentBuilder = invoiceDocumentBuilder,
+       _uploadQueue = uploadQueue,
+       _printQueue = printQueue,
+       _paymentProfileService = paymentProfileService,
+       _cartNotifier = cartNotifier,
+       _activeSession = activeSession,
+       _pricingEngine = pricingEngine,
+       _clock = clock;
 
   static const _uuid = Uuid();
 
@@ -79,7 +79,9 @@ class SaleCheckout {
     final shiftState = request.shiftState;
 
     if (!shiftState.hasOpenShift || shiftState.activeShift == null) {
-      throw const SaleCheckoutException('Open a shift before completing payment.');
+      throw const SaleCheckoutException(
+        'Open a shift before completing payment.',
+      );
     }
 
     if (request.cart.isEmpty) {
@@ -104,7 +106,8 @@ class SaleCheckout {
     var change = 0.0;
 
     if (resolved.allowsChange) {
-      tendered = double.tryParse(
+      tendered =
+          double.tryParse(
             request.tenderedText.trim().isEmpty ? '0' : request.tenderedText,
           ) ??
           double.nan;
@@ -132,7 +135,9 @@ class SaleCheckout {
 
       final mode = PaymentProfileMode.fromCode(profile.mode);
       if (mode == PaymentProfileMode.integrated) {
-        throw const SaleCheckoutException('Integrated payment is not available.');
+        throw const SaleCheckoutException(
+          'Integrated payment is not available.',
+        );
       }
 
       effectiveType = PaymentMethodType.manualCard;
@@ -232,7 +237,9 @@ class SaleCheckout {
 
     if (_config.autoPrintAfterSale) {
       try {
-        final document = await _invoiceDocumentBuilder.getOrCreateOriginal(saleId);
+        final document = await _invoiceDocumentBuilder.getOrCreateOriginal(
+          saleId,
+        );
         final printJobs = await _printQueue.invoiceReceipt(
           document: document,
           createdAt: now,
@@ -312,7 +319,9 @@ class SaleCheckout {
     final isOpen = shift != null && shift.status == ShiftStatus.open.code;
 
     if (!isOpen) {
-      throw const SaleCheckoutException('No open shift. Open a shift before selling.');
+      throw const SaleCheckoutException(
+        'No open shift. Open a shift before selling.',
+      );
     }
   }
 
@@ -473,7 +482,8 @@ class SaleCheckout {
     }
 
     final taxCompanions = <SaleTaxSummaryCompanion>[];
-    final taxGroups = <double, ({double taxableAmount, double taxAmount, double rate})>{};
+    final taxGroups =
+        <double, ({double taxableAmount, double taxAmount, double rate})>{};
 
     for (final p in processedItems) {
       if (p.taxAmount <= 0 && p.input.taxRate <= 0) continue;
@@ -622,7 +632,8 @@ CheckoutPaymentRequirements checkoutPaymentRequirements(
   bool paymentProfileRequiresReference = false,
 }) {
   final requiresReference =
-      method.requiresReference || (method.needsPaymentProfile && paymentProfileRequiresReference);
+      method.requiresReference ||
+      (method.needsPaymentProfile && paymentProfileRequiresReference);
 
   return CheckoutPaymentRequirements(
     requiresReference: requiresReference,
@@ -687,29 +698,40 @@ class PaymentPolicy {
       final type = payment.resolvedType;
 
       if (payment.amount <= 0) {
-        throw const SaleCheckoutException('Payment amount must be greater than zero.');
+        throw const SaleCheckoutException(
+          'Payment amount must be greater than zero.',
+        );
       }
 
       final cashTendered = payment.cashTendered;
       final changeGiven = payment.changeGiven ?? 0;
 
       if ((cashTendered ?? 0) < 0 || changeGiven < 0) {
-        throw const SaleCheckoutException('Invalid cash tendered/change values.');
+        throw const SaleCheckoutException(
+          'Invalid cash tendered/change values.',
+        );
       }
 
       if (type.allowsChange) {
         hasChangeCapablePayment = true;
 
         if (cashTendered != null && cashTendered < payment.amount) {
-          throw const SaleCheckoutException('Cash tendered is less than payment amount.');
+          throw const SaleCheckoutException(
+            'Cash tendered is less than payment amount.',
+          );
         }
       } else if (changeGiven > 0 || cashTendered != null) {
-        throw const SaleCheckoutException('Change is only allowed for cash payments.');
+        throw const SaleCheckoutException(
+          'Change is only allowed for cash payments.',
+        );
       }
 
-      if (payment.requiresReference || (requireCardReference && type.isManualCard)) {
+      if (payment.requiresReference ||
+          (requireCardReference && type.isManualCard)) {
         if (!payment.hasReference) {
-          throw const SaleCheckoutException('Card payment reference is required.');
+          throw const SaleCheckoutException(
+            'Card payment reference is required.',
+          );
         }
       }
 
@@ -731,10 +753,15 @@ class PaymentPolicy {
       );
     }
 
-    final overpayment = paidTotal > quote.grandTotal ? paidTotal - quote.grandTotal : 0.0;
+    final overpayment = paidTotal > quote.grandTotal
+        ? paidTotal - quote.grandTotal
+        : 0.0;
 
-    if ((overpayment > 0 || explicitChangeTotal > 0) && !hasChangeCapablePayment) {
-      throw const SaleCheckoutException('Overpayment requires a cash payment for change.');
+    if ((overpayment > 0 || explicitChangeTotal > 0) &&
+        !hasChangeCapablePayment) {
+      throw const SaleCheckoutException(
+        'Overpayment requires a cash payment for change.',
+      );
     }
 
     return PaymentValidationResult(

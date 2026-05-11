@@ -57,7 +57,9 @@ class SetupState {
       lastHealthCheck: lastHealthCheck ?? this.lastHealthCheck,
       syncProgress: clearSync ? 0.0 : (syncProgress ?? this.syncProgress),
       syncStatus: clearSync ? null : (syncStatus ?? this.syncStatus),
-      syncPagination: clearSync ? null : (syncPagination ?? this.syncPagination),
+      syncPagination: clearSync
+          ? null
+          : (syncPagination ?? this.syncPagination),
     );
   }
 }
@@ -214,7 +216,9 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
     ref.invalidate(cashierSelectionProvider);
     ref.invalidate(shiftProvider);
     ref.invalidate(catalogReadinessProvider);
-    state = AsyncData(SetupState(language: state.valueOrNull?.language ?? 'en'));
+    state = AsyncData(
+      SetupState(language: state.valueOrNull?.language ?? 'en'),
+    );
   }
 
   Future<void> _verifySetupUserExists(String usrId) async {

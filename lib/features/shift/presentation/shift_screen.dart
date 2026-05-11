@@ -126,9 +126,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
         SizedBox(
           height: AppSpacing.jumbo + AppSpacing.sm,
           child: AppButton.primary(
-            onPressed: shiftState.isLoading
-                ? null
-                : _openShift,
+            onPressed: shiftState.isLoading ? null : _openShift,
             isLoading: shiftState.isLoading,
             icon: Icons.play_arrow,
             label: shiftState.isLoading ? l10n.openingShift : l10n.openShift,
@@ -180,11 +178,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
           ),
           child: const Row(
             children: [
-              Icon(
-                Icons.security,
-                size: 16,
-                color: AppColors.textSecondary,
-              ),
+              Icon(Icons.security, size: 16, color: AppColors.textSecondary),
               SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
@@ -222,9 +216,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
         SizedBox(
           height: AppSpacing.jumbo + AppSpacing.sm,
           child: AppButton.warning(
-            onPressed: shiftState.isLoading || _isClosing
-                ? null
-                : _closeShift,
+            onPressed: shiftState.isLoading || _isClosing ? null : _closeShift,
             isLoading: shiftState.isLoading,
             icon: Icons.stop,
             label: shiftState.isLoading ? l10n.closingShift : l10n.closeShift,
@@ -238,9 +230,9 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     final cashText = _cashController.text.trim();
     final cashDouble = double.tryParse(cashText) ?? 0;
 
-    final success = await ref.read(shiftProvider.notifier).openShift(
-          openingCash: cashDouble,
-        );
+    final success = await ref
+        .read(shiftProvider.notifier)
+        .openShift(openingCash: cashDouble);
 
     if (success && mounted) {
       context.go(AppRoutes.cashier);
@@ -253,7 +245,9 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     final cashText = _cashController.text.trim();
     final cashDouble = double.tryParse(cashText) ?? 0;
 
-    final success = await ref.read(shiftProvider.notifier).closeShift(
+    final success = await ref
+        .read(shiftProvider.notifier)
+        .closeShift(
           actualCash: cashDouble,
           closingNotes: _notesController.text.trim(),
         );

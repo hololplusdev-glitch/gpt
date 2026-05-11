@@ -119,7 +119,8 @@ class CartItem {
         unitPrice: _double(json['unitPrice']),
         taxRate: _double(json['taxRate']),
         allowDiscount: json['allowDiscount'] as bool? ?? false,
-        priceSource: json['priceSource'] as String? ?? PriceSource.itemPrice.code,
+        priceSource:
+            json['priceSource'] as String? ?? PriceSource.itemPrice.code,
       ),
       quantity: _double(json['quantity'], fallback: 1.0),
       discountType: _parseDiscountType(json['discountType']),
@@ -202,9 +203,7 @@ class Cart {
     final current = findLine(itemId, unitId);
     if (current == null) return this;
 
-    return replaceLine(
-      current.copyWith(sellableItem: pricedSnapshot),
-    );
+    return replaceLine(current.copyWith(sellableItem: pricedSnapshot));
   }
 
   Cart applyLineDiscount(
@@ -342,11 +341,12 @@ DiscountType? _parseDiscountType(Object? value) {
   return null;
 }
 
-typedef CartPriceResolver = Future<ResolvedItemPrice?> Function({
-  required String itemId,
-  required String unitId,
-  required double quantity,
-});
+typedef CartPriceResolver =
+    Future<ResolvedItemPrice?> Function({
+      required String itemId,
+      required String unitId,
+      required double quantity,
+    });
 
 /// Riverpod state shell for Cart.
 ///
@@ -368,7 +368,11 @@ class CartController extends StateNotifier<Cart> {
       return 1;
     }
 
-    await changeQuantityWithPricing(snapshot.itemId, snapshot.unitId, targetQty);
+    await changeQuantityWithPricing(
+      snapshot.itemId,
+      snapshot.unitId,
+      targetQty,
+    );
     return targetQty;
   }
 
@@ -489,28 +493,29 @@ class CartController extends StateNotifier<Cart> {
 
 final cartProvider = StateNotifierProvider<CartController, Cart>((ref) {
   return CartController(
-    priceResolver: ({
-      required String itemId,
-      required String unitId,
-      required double quantity,
-    }) {
-      final catalogDao = ref.read(catalogDaoProvider);
-      final session = ref.read(activePosSessionProvider).valueOrNull;
+    priceResolver:
+        ({
+          required String itemId,
+          required String unitId,
+          required double quantity,
+        }) {
+          final catalogDao = ref.read(catalogDaoProvider);
+          final session = ref.read(activePosSessionProvider).valueOrNull;
 
-      if (session == null) {
-        throw const BusinessException(
-          'Select a cashier and POS machine before pricing items.',
-          code: 'NO_ACTIVE_POS_SESSION',
-        );
-      }
+          if (session == null) {
+            throw const BusinessException(
+              'Select a cashier and POS machine before pricing items.',
+              code: 'NO_ACTIVE_POS_SESSION',
+            );
+          }
 
-      return catalogDao.resolveItemPrice(
-        itemId: itemId,
-        unitId: unitId,
-        priceLevelId: session.activePriceLevelId,
-        storeId: session.activeStoreId,
-        quantity: quantity,
-      );
-    },
+          return catalogDao.resolveItemPrice(
+            itemId: itemId,
+            unitId: unitId,
+            priceLevelId: session.activePriceLevelId,
+            storeId: session.activeStoreId,
+            quantity: quantity,
+          );
+        },
   );
 });

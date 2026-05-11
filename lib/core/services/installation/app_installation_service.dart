@@ -11,9 +11,7 @@ class AppInstallationService {
 
   final AppDatabase _db;
 
-  const AppInstallationService({
-    required AppDatabase db,
-  }) : _db = db;
+  const AppInstallationService({required AppDatabase db}) : _db = db;
 
   Future<void> ensureInitialized() async {
     final existing =

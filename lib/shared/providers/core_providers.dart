@@ -120,9 +120,7 @@ final posConfigProvider = Provider<PosConfigRepository>((ref) {
 });
 
 final appInstallationServiceProvider = Provider<AppInstallationService>((ref) {
-  return AppInstallationService(
-    db: ref.watch(databaseProvider),
-  );
+  return AppInstallationService(db: ref.watch(databaseProvider));
 });
 
 final clockProvider = Provider<Clock>((ref) {
@@ -134,9 +132,7 @@ final businessDateServiceProvider = Provider<BusinessDateService>((ref) {
 });
 
 final invoiceNumberServiceProvider = Provider<InvoiceNumberService>((ref) {
-  return InvoiceNumberService(
-    ref.watch(salesDaoProvider),
-  );
+  return InvoiceNumberService(ref.watch(salesDaoProvider));
 });
 
 final uploadQueueProvider = Provider<UploadQueue>((ref) {
@@ -203,9 +199,7 @@ final printQueueProvider = Provider<PrintQueue>((ref) {
 });
 
 final printJobServiceProvider = Provider<PrintJobService>((ref) {
-  return PrintJobService(
-    printJobDao: ref.watch(printJobDaoProvider),
-  );
+  return PrintJobService(printJobDao: ref.watch(printJobDaoProvider));
 });
 
 final printJobProcessorProvider = Provider<PrintJobProcessor>((ref) {

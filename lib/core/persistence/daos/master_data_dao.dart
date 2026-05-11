@@ -76,12 +76,13 @@ class MasterDataDao {
     final machineNo = terminalNo?.trim();
 
     if (machineNo != null && machineNo.isNotEmpty) {
-      final row = await (_db.select(_db.posMachines)..where(
-            (machine) =>
-                machine.custCode.equals(tenantCode) &
-                machine.machineNo.equals(machineNo),
-          ))
-          .getSingleOrNull();
+      final row =
+          await (_db.select(_db.posMachines)..where(
+                (machine) =>
+                    machine.custCode.equals(tenantCode) &
+                    machine.machineNo.equals(machineNo),
+              ))
+              .getSingleOrNull();
 
       if (row == null ||
           !(row.storeId?.trim().isNotEmpty ?? false) ||
@@ -106,10 +107,11 @@ class MasterDataDao {
       );
     }
 
-    final rows = await (_db.select(_db.posMachines)
-          ..where((machine) => machine.custCode.equals(tenantCode))
-          ..orderBy([(machine) => OrderingTerm.asc(machine.machineNo)]))
-        .get();
+    final rows =
+        await (_db.select(_db.posMachines)
+              ..where((machine) => machine.custCode.equals(tenantCode))
+              ..orderBy([(machine) => OrderingTerm.asc(machine.machineNo)]))
+            .get();
 
     final validRows = rows
         .where(
@@ -262,38 +264,18 @@ class MasterDataDao {
   }
 
   String _syncKey(String typeCode, MasterDataSyncContext context) {
-    final parts = <String>[
+    return <String>[
       typeCode,
       'cust=${context.custCode.trim()}',
       'usr=${context.syncUserId.trim()}',
-    ];
-
-    final terminalNo = (context.terminalNo ?? '').trim();
-
-    if (typeCode == MasterDataType.itemPrice.code) {
-      parts.add('st=${(context.storeId ?? '').trim()}');
-      parts.add('priceLevel=${(context.priceLevelId ?? '').trim()}');
-      if (terminalNo.isNotEmpty) {
-        parts.add('machine=$terminalNo');
-      }
-    }
-
-    if (typeCode == MasterDataType.devicePrivilege.code &&
-        terminalNo.isNotEmpty) {
-      parts.add('machine=$terminalNo');
-    }
-
-    return parts.join('|');
+    ].join('|');
   }
 
   String _scopeJson(MasterDataSyncContext context) {
     return jsonEncode({
       'tenantCode': context.custCode,
       'userId': context.syncUserId,
-      'branchNo': context.branchNo,
-      'terminalNo': context.terminalNo,
-      'storeId': context.storeId,
-      'priceLevelId': context.priceLevelId,
+      'downloadScope': 'tenant',
     });
   }
 

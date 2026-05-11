@@ -4,10 +4,10 @@
 
 import 'package:pos_flutter/core/errors/app_exception.dart';
 
-/// Enumeration of all master data types supported by the POS sync engine.
+/// Enumeration of all master data types supported by the POS data download engine.
 ///
-/// [syncOrder] defines the required download sequence — POS_MACHINE and
-/// DEVICE_PRIV must complete before dependent types.
+/// SSOT: Backend data download is tenant-wide and selected only by p_type.
+/// Runtime filtering happens locally after login using USER + DEVICE_PRIV + POS_MACHINE.
 enum MasterDataType {
   posMachine('POS_MACHINE'),
   user('USER'),
@@ -27,8 +27,8 @@ enum MasterDataType {
 
   final String code;
 
-  /// Download order. POS_MACHINE and DEVICE_PRIV must complete before
-  /// any dependent types. USER is placed after structural data.
+  /// Download order. Requests use only p_type + p_cust_code + p_usr_id.
+  /// Do not scope ITEM_PRICE by machine/store/price level at request time.
   static const syncOrder = [
     user,
     posMachine,
@@ -149,27 +149,9 @@ class MasterDataSyncContext {
       params['p_last_update'] = lastUpdate;
     }
 
-    final branch = branchNo?.trim();
-    if (branch != null && branch.isNotEmpty) {
-      params['p_bra_nbr'] = branch;
-    }
-
-    final machine = terminalNo?.trim();
-    if (machine != null && machine.isNotEmpty) {
-      params['p_mchn_nbr'] = machine;
-    }
-
-    if (type == MasterDataType.itemPrice) {
-      final priceLevel = priceLevelId?.trim();
-      if (priceLevel != null && priceLevel.isNotEmpty) {
-        params['p_price_lvl_id'] = priceLevel;
-      }
-
-      final store = storeId?.trim();
-      if (store != null && store.isNotEmpty) {
-        params['p_st_id'] = store;
-      }
-    }
+    // SSOT: p_type selects the dataset. The API returns the full tenant-wide
+    // payload for the bootstrap user. Store/price-level/machine filtering is
+    // runtime logic, not download-request logic.
 
     return params;
   }

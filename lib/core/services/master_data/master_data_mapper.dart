@@ -84,8 +84,10 @@ class MasterDataMapper {
       switch (type) {
         case MasterDataType.posMachine:
           final data = _BackendRow(row);
-          final mchnNbr =
-              data.requiredText(['mchn_nbr', 'machine_id'], 'POS_MACHINE.mchn_nbr');
+          final mchnNbr = data.requiredText([
+            'mchn_nbr',
+            'machine_id',
+          ], 'POS_MACHINE.mchn_nbr');
           final custCode = data.text(['cust_code']) ?? context.custCode;
           final defaults = TerminalBootstrapDefaults(
             custCode: custCode,
@@ -135,7 +137,9 @@ class MasterDataMapper {
             _mapUser(row, context, cachedAt, users);
           }
           final usrId = data.requiredText(['usr_id'], 'DEVICE_PRIV.usr_id');
-          final mchnNbr = data.requiredText(['mchn_nbr'], 'DEVICE_PRIV.mchn_nbr');
+          final mchnNbr = data.requiredText([
+            'mchn_nbr',
+          ], 'DEVICE_PRIV.mchn_nbr');
           final used = data.boolValue(['used'], fallback: false);
 
           userMachineAccesses.add(
@@ -213,7 +217,10 @@ class MasterDataMapper {
         case MasterDataType.cash:
           final data = _BackendRow(row);
           final cashId = data.requiredText(['cash_id'], 'CASH.cash_id');
-          final methodId = '${PaymentMethodCodes.cashAccountPrefix}$cashId';
+          final currencyId = data.text(['crncy_id']) ?? '';
+          final methodId = currencyId.isEmpty
+              ? '${PaymentMethodCodes.cashAccountPrefix}$cashId'
+              : '${PaymentMethodCodes.cashAccountPrefix}${cashId}_$currencyId';
           final isActive = !data.boolValue(['inactive']);
           final isDefault = data.boolValue(['def_cash', 'is_default']);
           paymentMethods.add(
@@ -225,7 +232,7 @@ class MasterDataMapper {
               name: Value(data.text(['cash_name', 'name']) ?? cashId),
               nameAr: Value(data.text(['cash_f_name', 'name_ar'])),
               cashId: Value(cashId),
-              currencyId: Value(data.text(['crncy_id']) ?? ''),
+              currencyId: Value(currencyId),
               isDefault: Value(isDefault),
               isActive: Value(isActive),
               requiresReference: const Value(false),

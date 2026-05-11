@@ -63,7 +63,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       final shiftState = ref.read(shiftProvider);
       final useShift = ref.read(posConfigProvider).useShift;
 
-      final isAuthenticated = ref.read(activePosSessionProvider).valueOrNull != null;
+      final isAuthenticated =
+          ref.read(activePosSessionProvider).valueOrNull != null;
       final isBootRoute = state.matchedLocation == AppRoutes.boot;
       final isLoginRoute = state.matchedLocation == AppRoutes.login;
       final isSetupRoute = state.matchedLocation == AppRoutes.setup;

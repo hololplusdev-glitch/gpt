@@ -20,9 +20,7 @@ Future<void> showBarcodeScannerSheet(BuildContext context) async {
   // CameraX on some Android/MIUI devices needs a moment to fully release.
   // Do not open a new scanner session until the previous one is released.
   try {
-    await _barcodeScannerReleaseFuture.timeout(
-      const Duration(seconds: 2),
-    );
+    await _barcodeScannerReleaseFuture.timeout(const Duration(seconds: 2));
   } catch (_) {
     // Do not block forever on device-specific CameraX release issues.
   }
@@ -49,17 +47,13 @@ Future<void> showBarcodeScannerSheet(BuildContext context) async {
       isDismissible: false,
       enableDrag: false,
       backgroundColor: Colors.transparent,
-      builder: (_) => _BarcodeScannerSheet(
-        onCameraReleased: completeRelease,
-      ),
+      builder: (_) => _BarcodeScannerSheet(onCameraReleased: completeRelease),
     );
   } finally {
     _barcodeScannerSheetOpen = false;
 
     try {
-      await releaseCompleter.future.timeout(
-        const Duration(milliseconds: 1200),
-      );
+      await releaseCompleter.future.timeout(const Duration(milliseconds: 1200));
     } catch (_) {
       completeRelease();
     }
@@ -69,9 +63,7 @@ Future<void> showBarcodeScannerSheet(BuildContext context) async {
 class _BarcodeScannerSheet extends ConsumerStatefulWidget {
   final VoidCallback onCameraReleased;
 
-  const _BarcodeScannerSheet({
-    required this.onCameraReleased,
-  });
+  const _BarcodeScannerSheet({required this.onCameraReleased});
 
   @override
   ConsumerState<_BarcodeScannerSheet> createState() =>
@@ -190,7 +182,9 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
       final l10n = AppLocalizations.of(context)!;
       _showFeedback(
         _ScanFeedback(
-          message: denied ? l10n.cameraPermissionDenied : l10n.cameraStartFailed,
+          message: denied
+              ? l10n.cameraPermissionDenied
+              : l10n.cameraStartFailed,
           isError: true,
         ),
       );
@@ -372,12 +366,7 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
         case ScanError():
           _markResolved(code);
           _playFeedback(success: false);
-          _showFeedback(
-            _ScanFeedback(
-              message: result.message,
-              isError: true,
-            ),
-          );
+          _showFeedback(_ScanFeedback(message: result.message, isError: true));
 
         case ScanDuplicate():
           _markResolved(code);
@@ -390,9 +379,7 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
 
   void _playFeedback({required bool success}) {
     try {
-      SystemSound.play(
-        success ? SystemSoundType.click : SystemSoundType.alert,
-      );
+      SystemSound.play(success ? SystemSoundType.click : SystemSoundType.alert);
 
       if (success) {
         HapticFeedback.lightImpact();
@@ -447,9 +434,7 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
 
     _scannerService.resetDebounce();
 
-    unawaited(
-      _disposeCameraController().whenComplete(widget.onCameraReleased),
-    );
+    unawaited(_disposeCameraController().whenComplete(widget.onCameraReleased));
 
     super.dispose();
   }
@@ -469,23 +454,16 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
         height: screenHeight * 0.55,
         decoration: const BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(20),
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
             const _DragHandle(),
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Row(
                 children: [
-                  const Icon(
-                    Icons.qr_code_scanner,
-                    color: AppColors.primary,
-                  ),
+                  const Icon(Icons.qr_code_scanner, color: AppColors.primary),
                   const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
@@ -556,10 +534,7 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
     return LayoutBuilder(
       builder: (context, constraints) {
         final scanWindow = _scanWindowFor(
-          Size(
-            constraints.maxWidth,
-            constraints.maxHeight,
-          ),
+          Size(constraints.maxWidth, constraints.maxHeight),
         );
 
         return Stack(
@@ -575,9 +550,7 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
                 bottom: AppSpacing.xl,
                 left: AppSpacing.lg,
                 right: AppSpacing.lg,
-                child: _FeedbackToast(
-                  feedback: _feedback!,
-                ),
+                child: _FeedbackToast(feedback: _feedback!),
               ),
           ],
         );
@@ -617,10 +590,7 @@ class _TorchButton extends StatelessWidget {
       return IconButton(
         tooltip: tooltip,
         onPressed: null,
-        icon: const Icon(
-          Icons.flash_off,
-          color: AppColors.textSecondary,
-        ),
+        icon: const Icon(Icons.flash_off, color: AppColors.textSecondary),
       );
     }
 
@@ -688,10 +658,7 @@ class _DragHandle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(
-        top: AppSpacing.sm,
-        bottom: AppSpacing.xs,
-      ),
+      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
       child: Center(
         child: Container(
           width: 36,
@@ -709,19 +676,14 @@ class _DragHandle extends StatelessWidget {
 class _ScanWindowOverlay extends StatelessWidget {
   final Rect scanWindow;
 
-  const _ScanWindowOverlay({
-    required this.scanWindow,
-  });
+  const _ScanWindowOverlay({required this.scanWindow});
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
         ColorFiltered(
-          colorFilter: const ColorFilter.mode(
-            Colors.black54,
-            BlendMode.srcOut,
-          ),
+          colorFilter: const ColorFilter.mode(Colors.black54, BlendMode.srcOut),
           child: Stack(
             children: [
               Container(
@@ -763,18 +725,13 @@ class _ScanFeedback {
   final String message;
   final bool isError;
 
-  const _ScanFeedback({
-    required this.message,
-    required this.isError,
-  });
+  const _ScanFeedback({required this.message, required this.isError});
 }
 
 class _FeedbackToast extends StatelessWidget {
   final _ScanFeedback feedback;
 
-  const _FeedbackToast({
-    required this.feedback,
-  });
+  const _FeedbackToast({required this.feedback});
 
   @override
   Widget build(BuildContext context) {

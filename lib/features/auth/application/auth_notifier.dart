@@ -13,10 +13,7 @@ class CashierSelectionState {
   final bool isLoading;
   final String? errorMessage;
 
-  const CashierSelectionState({
-    this.isLoading = false,
-    this.errorMessage,
-  });
+  const CashierSelectionState({this.isLoading = false, this.errorMessage});
 }
 
 class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
@@ -81,7 +78,10 @@ class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
     }
   }
 
-  Future<bool> selectCashierAndMachine(String username, String machineNo) async {
+  Future<bool> selectCashierAndMachine(
+    String username,
+    String machineNo,
+  ) async {
     state = const CashierSelectionState(isLoading: true);
 
     try {
@@ -161,11 +161,12 @@ class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
 }
 
 final cashierSelectionProvider =
-    StateNotifierProvider<CashierSelectionNotifier, CashierSelectionState>((ref) {
-  return CashierSelectionNotifier(
-    authDao: ref.watch(authDaoProvider),
-    auditDao: ref.watch(auditDaoProvider),
-    sessionDao: ref.watch(activePosSessionDaoProvider),
-  );
-});
-
+    StateNotifierProvider<CashierSelectionNotifier, CashierSelectionState>((
+      ref,
+    ) {
+      return CashierSelectionNotifier(
+        authDao: ref.watch(authDaoProvider),
+        auditDao: ref.watch(auditDaoProvider),
+        sessionDao: ref.watch(activePosSessionDaoProvider),
+      );
+    });

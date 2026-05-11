@@ -49,7 +49,9 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final session = _requireSession();
-      final shift = await _shiftService.getCurrentShift(session.activeMachineNo);
+      final shift = await _shiftService.getCurrentShift(
+        session.activeMachineNo,
+      );
       state = ShiftState(activeShift: shift);
     } catch (e) {
       state = state.copyWith(
@@ -116,9 +118,7 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
     }
   }
 
-  Future<bool> extendShift({
-    int? overrideMinutes,
-  }) async {
+  Future<bool> extendShift({int? overrideMinutes}) async {
     if (!state.hasOpenShift) return false;
 
     try {

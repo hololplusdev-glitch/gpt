@@ -265,7 +265,9 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                AppInfoBanner.warning(message: 'No active POS session. Please select a machine.'),
+                AppInfoBanner.warning(
+                  message: 'No active POS session. Please select a machine.',
+                ),
                 const SizedBox(height: AppSpacing.md),
                 const SelectableText(
                   'No session found. Please return to user selection.',
@@ -303,10 +305,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
         backgroundColor: AppColors.background,
         body: Column(
           children: [
-            _buildTopBar(
-              context,
-              activeSession.activeUserName,
-            ),
+            _buildTopBar(context, activeSession.activeUserName),
             Expanded(
               child: isWide
                   ? _buildWideLayout()
@@ -360,8 +359,9 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                                   context.push(AppRoutes.settings),
                             ),
                             _LogoutButton(
-                              onPressed: () =>
-                                  ref.read(cashierSelectionProvider.notifier).logout(),
+                              onPressed: () => ref
+                                  .read(cashierSelectionProvider.notifier)
+                                  .logout(),
                             ),
                           ],
                         ),
@@ -439,8 +439,9 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                         _CashierBadge(cashierName: cashierName),
                         const SizedBox(width: AppSpacing.xs),
                         _LogoutButton(
-                          onPressed: () =>
-                              ref.read(cashierSelectionProvider.notifier).logout(),
+                          onPressed: () => ref
+                              .read(cashierSelectionProvider.notifier)
+                              .logout(),
                         ),
                       ],
                     ),

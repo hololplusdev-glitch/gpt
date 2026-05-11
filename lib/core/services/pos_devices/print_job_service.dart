@@ -8,9 +8,8 @@ export 'package:pos_flutter/core/persistence/database.dart' show PrintJob;
 class PrintJobService {
   final PrintJobDao _printJobDao;
 
-  const PrintJobService({
-    required PrintJobDao printJobDao,
-  }) : _printJobDao = printJobDao;
+  const PrintJobService({required PrintJobDao printJobDao})
+    : _printJobDao = printJobDao;
 
   Stream<List<PrintJob>> watchRetryableJobs() => _printJobDao.watchRetryable();
 

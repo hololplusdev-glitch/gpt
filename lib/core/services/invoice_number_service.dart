@@ -11,10 +11,8 @@ class InvoiceNumberService {
   final SalesDao _salesDao;
   final Clock _clock;
 
-  InvoiceNumberService(
-    this._salesDao, {
-    Clock clock = const SystemClock(),
-  }) : _clock = clock;
+  InvoiceNumberService(this._salesDao, {Clock clock = const SystemClock()})
+    : _clock = clock;
 
   /// Generate next local invoice number for the active POS session.
   Future<String> generateNext({

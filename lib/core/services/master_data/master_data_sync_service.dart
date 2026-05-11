@@ -151,8 +151,8 @@ class MasterDataSyncService {
     MasterDataSyncCancelHandle? cancelHandle,
     void Function(MasterDataSyncProgress)? onProgress,
   }) async {
-    // WHY: Pre-flight validation — abort early with a clear message
-    // instead of sending incomplete requests to Backend.
+    // WHY: Pre-flight validation — only tenant and bootstrap user are required.
+    // Runtime machine/store/price-level filtering happens locally after login.
     _validateSyncContext(context);
 
     final results = <MasterDataTypeResult>[];
@@ -164,8 +164,6 @@ class MasterDataSyncService {
     var cancelled = false;
 
     for (final type in MasterDataType.syncOrder) {
-      // WHY: ITEM_PRICE requires p_st_id and p_price_lvl_id derived from
-      // POS_MACHINE. Abort if they're missing instead of sending a broken request.
       if (cancelHandle?.isCancelled ?? false) {
         cancelled = true;
         results.add(
@@ -227,31 +225,6 @@ class MasterDataSyncService {
           break;
         }
       } else if (result.isFailure) {}
-
-      if (type == MasterDataType.posMachine && !result.isFailure) {
-        try {
-          currentContext = await _contextWithMachineDefaults(currentContext);
-        } catch (e) {
-          // WHY: Missing machine defaults (def_st/price_lvl) is fatal.
-          final failed = MasterDataTypeResult(
-            type: type,
-            status: MasterDataTypeRunStatus.failed,
-            errorCode: _errorCode(e),
-            error: ErrorMapper.userMessage(e),
-            oldServerTime: result.oldServerTime,
-            newServerTime: result.newServerTime,
-            sentLastUpdate: result.sentLastUpdate,
-          );
-          results[results.length - 1] = failed;
-          await _saveSyncState(
-            type,
-            currentContext,
-            status: failed.status.code,
-            error: failed.error,
-          );
-          break;
-        }
-      }
     }
 
     onProgress?.call(
@@ -552,43 +525,6 @@ class MasterDataSyncService {
     }
   }
 
-  Future<MasterDataSyncContext> _contextWithMachineDefaults(
-    MasterDataSyncContext context,
-  ) async {
-    final defaults = await _loadLocalMachineDefaults(context);
-
-    if (defaults == null) {
-      throw const SyncException(
-        'POS_MACHINE sync did not provide a usable machine profile.',
-        code: 'MASTER_DATA_MACHINE_DEFAULTS_MISSING',
-      );
-    }
-
-    final storeId = defaults.defaultStoreId?.trim();
-    final priceLevelId = defaults.priceLevelId?.trim();
-
-    if (storeId == null || storeId.isEmpty) {
-      throw const SyncException(
-        'POS_MACHINE has no default store. ITEM_PRICE cannot be scoped.',
-        code: 'MASTER_DATA_MACHINE_STORE_MISSING',
-      );
-    }
-
-    if (priceLevelId == null || priceLevelId.isEmpty) {
-      throw const SyncException(
-        'POS_MACHINE has no price level. ITEM_PRICE cannot be scoped.',
-        code: 'MASTER_DATA_MACHINE_PRICE_LEVEL_MISSING',
-      );
-    }
-
-    return context.copyWith(
-      branchNo: defaults.branchNo,
-      terminalNo: defaults.terminalNo,
-      storeId: storeId,
-      priceLevelId: priceLevelId,
-    );
-  }
-
   /// WHY: Pre-flight validation — ensures all required Backend identity params
   /// are present before the sync loop begins. A clear local error is far more
   /// debuggable than a remote 400/500 with opaque Backend error codes.
@@ -609,22 +545,8 @@ class MasterDataSyncService {
     MasterDataType type,
     MasterDataSyncContext context,
   ) {
-    if (type != MasterDataType.itemPrice) return;
-    final storeId = context.storeId?.trim();
-    final priceLevelId = context.priceLevelId?.trim();
-    final terminalNo = context.terminalNo?.trim();
-
-    if (storeId == null ||
-        storeId.isEmpty ||
-        priceLevelId == null ||
-        priceLevelId.isEmpty ||
-        terminalNo == null ||
-        terminalNo.isEmpty) {
-      throw const SyncException(
-        'ITEM_PRICE sync requires p_mchn_nbr, p_st_id and p_price_lvl_id derived from POS_MACHINE.',
-        code: 'MASTER_DATA_MISSING_PRICE_CONTEXT',
-      );
-    }
+    // SSOT: all p_type downloads are global for the tenant/bootstrap user.
+    // Never require runtime machine/store/price-level context here.
   }
 
   void _validateContextRowsMapped(
@@ -662,67 +584,8 @@ class MasterDataSyncService {
       return;
     }
 
-    if (type == MasterDataType.posMachine) {
-      final defaults = await _loadLocalMachineDefaults(context);
-      if (defaults == null ||
-          defaults.defaultStoreId == null ||
-          defaults.defaultStoreId!.isEmpty ||
-          defaults.priceLevelId == null ||
-          defaults.priceLevelId!.isEmpty) {
-        throw const SyncException(
-          'POS_MACHINE returned no changes, but no local machine defaults exist.',
-          code: 'MASTER_DATA_LOCAL_MACHINE_MISSING',
-        );
-      }
-      return;
-    }
-
-    if (type == MasterDataType.devicePrivilege) {
-      final hasPrivilege = await _hasLocalUsedDevicePrivilege(context);
-      if (!hasPrivilege) {
-        throw const SyncException(
-          'DEVICE_PRIV returned no changes, but no local used privilege exists for this user and machine.',
-          code: 'NO_MACHINE_PRIV',
-        );
-      }
-      return;
-    }
-
-    if (type == MasterDataType.itemPrice) {
-      final localCount = await _localPriceCount(context);
-      if (localCount == 0) {
-        warnings.add(
-          'ITEM_PRICE returned no changes and no local prices match current store/price level.',
-        );
-      }
-    }
-  }
-
-  Future<TerminalBootstrapDefaults?> _loadLocalMachineDefaults(
-    MasterDataSyncContext context,
-  ) async {
-    return _masterDataDao.loadLocalMachineDefaults(
-      tenantCode: context.custCode,
-      terminalNo: context.terminalNo,
-      branchNo: context.branchNo,
-    );
-  }
-
-  Future<bool> _hasLocalUsedDevicePrivilege(
-    MasterDataSyncContext context,
-  ) async {
-    return _masterDataDao.hasLocalUsedDevicePrivilege(
-      tenantCode: context.custCode,
-      userId: context.syncUserId,
-      terminalNo: context.terminalNo ?? '',
-    );
-  }
-
-  Future<int> _localPriceCount(MasterDataSyncContext context) async {
-    return _masterDataDao.localPriceCount(
-      storeId: context.storeId,
-      priceLevelId: context.priceLevelId,
-    );
+    // Incremental no-change is valid for tenant-wide bootstrap downloads.
+    // Login/readiness will validate whether the cached data can run POS offline.
   }
 
   Future<_MasterDataPage> _fetchPage({
@@ -1083,7 +946,10 @@ class MasterDataSyncService {
     };
   }
 
-  Future<String?> _lastServerTime(MasterDataType type, MasterDataSyncContext context) async {
+  Future<String?> _lastServerTime(
+    MasterDataType type,
+    MasterDataSyncContext context,
+  ) async {
     return _masterDataDao.lastServerTime(type.code, context: context);
   }
 

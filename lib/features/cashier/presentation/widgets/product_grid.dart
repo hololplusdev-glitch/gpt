@@ -88,7 +88,9 @@ class ProductGrid extends ConsumerWidget {
                 final search = ref.read(searchQueryProvider);
                 final cat = ref.read(selectedCategoryProvider);
                 if (search.isEmpty && cat == null) {
-                  final session = ref.read(activePosSessionProvider).valueOrNull;
+                  final session = ref
+                      .read(activePosSessionProvider)
+                      .valueOrNull;
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,

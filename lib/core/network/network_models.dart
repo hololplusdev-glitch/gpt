@@ -114,8 +114,7 @@ class SyncProfile {
       isValidated: isValidated ?? this.isValidated,
       lastValidatedAt: lastValidatedAt ?? this.lastValidatedAt,
       setupCompleted: setupCompleted ?? this.setupCompleted,
-      initialSyncCompleted:
-          initialSyncCompleted ?? this.initialSyncCompleted,
+      initialSyncCompleted: initialSyncCompleted ?? this.initialSyncCompleted,
       lastFullSyncAt: lastFullSyncAt ?? this.lastFullSyncAt,
     );
   }

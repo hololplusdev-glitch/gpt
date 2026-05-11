@@ -48,7 +48,6 @@ class ShiftService {
     required double openingCash,
     String? shiftTypeId,
   }) async {
-
     // Check no open shift exists for this terminal
     final existing = await _shiftDao.getOpenShift(session.activeMachineNo);
     if (existing != null) {
@@ -134,7 +133,6 @@ class ShiftService {
     required double actualCash,
     String? closingNotes,
   }) async {
-
     // Check shift exists and is open
     final shift = await _shiftDao.getById(localId);
     if (shift == null) throw ShiftException('Shift not found: $localId');
@@ -250,7 +248,6 @@ class ShiftService {
     required String localId,
     int? overrideMinutes,
   }) async {
-
     final shift = await _shiftDao.getById(localId);
     if (shift == null) throw ShiftException('Shift not found');
 

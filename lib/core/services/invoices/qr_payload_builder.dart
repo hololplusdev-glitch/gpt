@@ -1,4 +1,3 @@
-
 import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
 
 class QrPayloadBuilder {

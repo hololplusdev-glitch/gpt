@@ -50,17 +50,14 @@ class ActivePosSession {
     required this.openShiftId,
     required this.loginAt,
   });
-
 }
 
 class ActivePosSessionDao {
   final AppDatabase _db;
   final Clock _clock;
 
-  const ActivePosSessionDao(
-    this._db, {
-    Clock clock = const SystemClock(),
-  }) : _clock = clock;
+  const ActivePosSessionDao(this._db, {Clock clock = const SystemClock()})
+    : _clock = clock;
 
   static const _uuid = Uuid();
 
@@ -77,13 +74,16 @@ class ActivePosSessionDao {
   }
 
   Future<ActivePosSessionRow?> _readActiveRow() {
-    return (_db.select(_db.activePosSessions)..where((row) => row.id.equals(1)))
-        .getSingleOrNull();
+    return (_db.select(
+      _db.activePosSessions,
+    )..where((row) => row.id.equals(1))).getSingleOrNull();
   }
 
   Future<List<PosUser>> listCashiers() {
     return (_db.select(_db.posUsers)
-          ..where((row) => row.isActive.equals(true) & row.canLoginPos.equals(true))
+          ..where(
+            (row) => row.isActive.equals(true) & row.canLoginPos.equals(true),
+          )
           ..orderBy([(row) => OrderingTerm.asc(row.displayName)]))
         .get();
   }
@@ -107,11 +107,10 @@ class ActivePosSessionDao {
     required String custCode,
     required String machineNo,
   }) {
-    return (_db.select(_db.posMachines)
-          ..where(
-            (row) =>
-                row.custCode.equals(custCode) & row.machineNo.equals(machineNo),
-          ))
+    return (_db.select(_db.posMachines)..where(
+          (row) =>
+              row.custCode.equals(custCode) & row.machineNo.equals(machineNo),
+        ))
         .getSingleOrNull();
   }
 
@@ -123,7 +122,9 @@ class ActivePosSessionDao {
     _validateMachine(machine);
 
     if (user.custCode != machine.custCode) {
-      throw StateError('Selected user and POS machine belong to different tenants.');
+      throw StateError(
+        'Selected user and POS machine belong to different tenants.',
+      );
     }
 
     final allowed = await _canUseMachine(
@@ -138,7 +139,9 @@ class ActivePosSessionDao {
 
     final now = _clock.now();
 
-    await _db.into(_db.activePosSessions).insertOnConflictUpdate(
+    await _db
+        .into(_db.activePosSessions)
+        .insertOnConflictUpdate(
           ActivePosSessionsCompanion(
             id: const Value(1),
             sessionId: Value('SESS_${_uuid.v4()}'),
@@ -160,8 +163,9 @@ class ActivePosSessionDao {
   }
 
   Future<void> attachOpenShift(String shiftId) async {
-    await (_db.update(_db.activePosSessions)..where((row) => row.id.equals(1)))
-        .write(
+    await (_db.update(
+      _db.activePosSessions,
+    )..where((row) => row.id.equals(1))).write(
       ActivePosSessionsCompanion(
         openShiftId: Value(shiftId),
         updatedAt: Value(_clock.now()),
@@ -173,8 +177,9 @@ class ActivePosSessionDao {
     final row = await _readActiveRow();
     if (row == null || row.openShiftId != shiftId) return;
 
-    await (_db.update(_db.activePosSessions)..where((row) => row.id.equals(1)))
-        .write(
+    await (_db.update(
+      _db.activePosSessions,
+    )..where((row) => row.id.equals(1))).write(
       ActivePosSessionsCompanion(
         openShiftId: const Value(null),
         updatedAt: Value(_clock.now()),
@@ -187,11 +192,13 @@ class ActivePosSessionDao {
   }
 
   Future<ActivePosSession> _derive(ActivePosSessionRow row) async {
-    final user = await (_db.select(_db.posUsers)
-          ..where(
-            (u) => u.custCode.equals(row.custCode) & u.id.equals(row.activeUserId),
-          ))
-        .getSingleOrNull();
+    final user =
+        await (_db.select(_db.posUsers)..where(
+              (u) =>
+                  u.custCode.equals(row.custCode) &
+                  u.id.equals(row.activeUserId),
+            ))
+            .getSingleOrNull();
 
     final machine = await getMachine(
       custCode: row.custCode,
@@ -208,14 +215,48 @@ class ActivePosSessionDao {
     _validateUser(user);
     _validateMachine(machine);
 
-    final allowed = await _canUseMachine(
+    final access = await _machineAccess(
       custCode: row.custCode,
       userId: row.activeUserId,
       machineNo: row.activeMachineNo,
     );
 
-    if (!allowed) {
+    if (access == null) {
       throw StateError('Active POS session machine access is no longer valid.');
+    }
+
+    final branchNo = _firstNonEmpty([
+      access.branchNo,
+      machine.branchNo,
+      user.branchNo,
+    ]);
+    final branchYear = _firstNonEmpty([
+      access.branchYear,
+      machine.branchYear,
+      user.branchYear,
+    ]);
+    final storeId = _firstNonEmpty([
+      access.storeId,
+      machine.storeId,
+      user.defaultStoreId,
+    ]);
+    final priceLevelId = _firstNonEmpty([
+      access.priceLevelId,
+      machine.priceLevelId,
+    ]);
+    final defaultBankId = _firstNonEmpty([
+      access.defaultBankId,
+      machine.defaultBankId,
+    ]);
+
+    if (branchNo == null) {
+      throw StateError('Selected runtime context has no branch number.');
+    }
+    if (storeId == null) {
+      throw StateError('Selected runtime context has no store.');
+    }
+    if (priceLevelId == null) {
+      throw StateError('Selected runtime context has no price level.');
     }
 
     return ActivePosSession(
@@ -225,12 +266,12 @@ class ActivePosSessionDao {
       activeUserName: user.displayName,
       activeMachineNo: machine.machineNo,
       activeMachineName: machine.name ?? machine.machineNo,
-      activeBranchNo: machine.branchNo!.trim(),
-      activeBranchYear: machine.branchYear,
-      activeStoreId: machine.storeId!.trim(),
-      activePriceLevelId: machine.priceLevelId!.trim(),
+      activeBranchNo: branchNo,
+      activeBranchYear: branchYear,
+      activeStoreId: storeId,
+      activePriceLevelId: priceLevelId,
       activeUseTax: machine.useTax,
-      activeDefaultBankId: machine.defaultBankId,
+      activeDefaultBankId: defaultBankId,
       activeDefaultCardTypeId: machine.defaultCardTypeId,
       cashId: machine.cashId,
       accountId: user.accountId,
@@ -242,22 +283,40 @@ class ActivePosSessionDao {
     );
   }
 
+  Future<PosUserMachineAccessData?> _machineAccess({
+    required String custCode,
+    required String userId,
+    required String machineNo,
+  }) async {
+    return (_db.select(_db.posUserMachineAccess)..where(
+          (row) =>
+              row.custCode.equals(custCode) &
+              row.userId.equals(userId) &
+              row.machineNo.equals(machineNo) &
+              row.canUseMachine.equals(true),
+        ))
+        .getSingleOrNull();
+  }
+
   Future<bool> _canUseMachine({
     required String custCode,
     required String userId,
     required String machineNo,
   }) async {
-    final access = await (_db.select(_db.posUserMachineAccess)
-          ..where(
-            (row) =>
-                row.custCode.equals(custCode) &
-                row.userId.equals(userId) &
-                row.machineNo.equals(machineNo) &
-                row.canUseMachine.equals(true),
-          ))
-        .getSingleOrNull();
+    return await _machineAccess(
+          custCode: custCode,
+          userId: userId,
+          machineNo: machineNo,
+        ) !=
+        null;
+  }
 
-    return access != null;
+  String? _firstNonEmpty(List<String?> values) {
+    for (final value in values) {
+      final trimmed = value?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) return trimmed;
+    }
+    return null;
   }
 
   void _validateUser(PosUser user) {

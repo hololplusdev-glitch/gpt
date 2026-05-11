@@ -88,7 +88,9 @@ class HeldOrdersService {
     final session = _requireActiveSession();
 
     if (!_config.useHeldInvoices) {
-      throw const SaleException('Held orders are disabled by POS configuration.');
+      throw const SaleException(
+        'Held orders are disabled by POS configuration.',
+      );
     }
 
     final currentCount = await _salesDao.countActiveHeldOrders(shiftId);
@@ -150,9 +152,7 @@ class HeldOrdersService {
     return id;
   }
 
-  Future<String> resumeHeldOrder({
-    required String orderId,
-  }) async {
+  Future<String> resumeHeldOrder({required String orderId}) async {
     final session = _requireActiveSession();
 
     final orders = await _salesDao.getAllHeldOrders(session.activeMachineNo);
@@ -176,9 +176,7 @@ class HeldOrdersService {
     return order.snapshotJson;
   }
 
-  Future<void> cancelHeldOrder({
-    required String orderId,
-  }) async {
+  Future<void> cancelHeldOrder({required String orderId}) async {
     final session = _requireActiveSession();
 
     await _salesDao.cancelHeldOrder(orderId);
@@ -227,7 +225,9 @@ class HeldOrdersService {
   ActivePosSession _requireActiveSession() {
     final session = _activeSession;
     if (session == null) {
-      throw const SaleException('Select a cashier and POS machine before selling.');
+      throw const SaleException(
+        'Select a cashier and POS machine before selling.',
+      );
     }
     return session;
   }
