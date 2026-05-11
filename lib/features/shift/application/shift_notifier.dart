@@ -13,8 +13,6 @@ import 'package:pos_flutter/shared/providers/core_providers.dart';
 
 typedef ActiveSessionReader = ActivePosSession? Function();
 
-/// UI command state only.
-/// Not a source of truth for whether a shift is open.
 class ShiftCommandState {
   final bool isLoading;
   final String? errorMessage;
@@ -45,8 +43,6 @@ class ShiftCommandResult {
     : this._(success: false, errorMessage: message);
 }
 
-/// Read model for the current shift screen.
-/// Derived from ActivePosSession.openShiftId + DB queries.
 class ShiftDashboard {
   final Shift shift;
   final ShiftSalesTotals totals;
@@ -62,13 +58,10 @@ class ShiftDashboard {
     required this.cashRefund,
   });
 
-  double get expectedCash {
-    return shift.openingCash + totals.cashSales + cashIn - cashOut - cashRefund;
-  }
+  double get expectedCash =>
+      shift.openingCash + totals.cashSales + cashIn - cashOut - cashRefund;
 }
 
-/// Single read path for current shift details.
-/// If there is no ActivePosSession.openShiftId, there is no current shift.
 final activeShiftDashboardProvider =
     FutureProvider.autoDispose<ShiftDashboard?>((ref) async {
       final session = ref.watch(activePosSessionProvider).valueOrNull;
@@ -82,7 +75,6 @@ final activeShiftDashboardProvider =
       final salesDao = ref.watch(salesDaoProvider);
 
       final shift = await shiftDao.getById(shiftId);
-
       if (shift == null) {
         return null;
       }
@@ -143,7 +135,6 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
     String? closingNotes,
   }) async {
     final normalizedShiftId = shiftId.trim();
-
     if (normalizedShiftId.isEmpty) {
       const message = 'No open shift to close.';
       state = state.copyWith(errorMessage: message);
@@ -179,7 +170,6 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
     int? overrideMinutes,
   }) async {
     final normalizedShiftId = shiftId.trim();
-
     if (normalizedShiftId.isEmpty) {
       return const ShiftCommandResult.failure('No open shift to extend.');
     }
@@ -193,8 +183,6 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
         overrideMinutes: overrideMinutes,
       );
 
-      refetchDashboardOnly();
-
       state = const ShiftCommandState();
       return const ShiftCommandResult.success();
     } catch (e) {
@@ -204,25 +192,18 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
     }
   }
 
-  void refetchDashboardOnly() {
-    // Intentionally empty: dashboard invalidation is done by UI/read providers.
-    // The command controller remains a command controller.
-  }
-
   void clearError() {
     state = state.copyWith(clearError: true);
   }
 
   ActivePosSession _requireSession() {
     final session = _readSession();
-
     if (session == null) {
       throw const BusinessException(
         'Select a cashier and POS machine before shift operations.',
         code: 'NO_ACTIVE_POS_SESSION',
       );
     }
-
     return session;
   }
 }

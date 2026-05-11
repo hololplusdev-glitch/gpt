@@ -340,13 +340,13 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     final cashText = _openingCashController.text.trim();
     final cashDouble = double.tryParse(cashText) ?? 0;
 
-    final success = await ref
+    final result = await ref
         .read(shiftControllerProvider.notifier)
         .openShift(openingCash: cashDouble);
 
     if (!mounted) return;
 
-    if (success) {
+    if (result.success) {
       _openingCashController.clear();
       ref.invalidate(activeShiftDashboardProvider);
       context.go(AppRoutes.cashier);
@@ -357,7 +357,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     final cashText = _actualCashController.text.trim();
     final cashDouble = double.tryParse(cashText) ?? 0;
 
-    final success = await ref
+    final result = await ref
         .read(shiftControllerProvider.notifier)
         .closeShift(
           shiftId: shiftId,
@@ -367,7 +367,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
 
     if (!mounted) return;
 
-    if (success) {
+    if (result.success) {
       _actualCashController.clear();
       _notesController.clear();
       ref.invalidate(activeShiftDashboardProvider);
