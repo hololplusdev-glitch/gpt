@@ -751,6 +751,17 @@ class MasterDataSyncService {
     // Login/readiness will validate whether the cached data can run POS offline.
   }
 
+  int _effectivePageLimitFor(MasterDataType type, int configuredLimit) {
+    // CUSTOMER payload is much larger than lightweight setup tables.
+    // Old stable versions used p_limit=100. Keep customers small to avoid
+    // ORDS/server/Dio connection resets on large JSON pages.
+    if (type == MasterDataType.customer) {
+      return configuredLimit < 100 ? configuredLimit : 100;
+    }
+
+    return configuredLimit;
+  }
+
   Future<_MasterDataPage> _fetchPage({
     required MasterDataSyncContext context,
     required MasterDataType type,
@@ -758,11 +769,13 @@ class MasterDataSyncService {
     required String? lastUpdate,
     MasterDataSyncCancelHandle? cancelHandle,
   }) async {
-    final queryParams = context.queryParameters(
-      type: type,
-      offset: offset,
-      lastUpdate: lastUpdate,
-    );
+    final queryParams = context
+        .copyWith(pageLimit: _effectivePageLimitFor(type, context.pageLimit))
+        .queryParameters(
+          type: type,
+          offset: offset,
+          lastUpdate: lastUpdate,
+        );
 
     // WHY: Validate baseUrl doesn't end with /data to prevent /data/data.
     final baseUrl = _apiClient.debugBaseUrl;
