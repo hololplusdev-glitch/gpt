@@ -150,103 +150,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     await controller.loginWithPin(pin);
   }
 
-  Future<String?> _showPinDialog({required bool createMode}) async {
-    String? error;
-
+  Future<String?> _showPinDialog({required bool createMode}) {
     return showDialog<String>(
       context: context,
       barrierDismissible: false,
       requestFocus: false,
-      builder: (context) {
-        final controller = TextEditingController();
-        final confirmController = TextEditingController();
-
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            void submit() {
-              final pin = controller.text.trim();
-              final confirm = confirmController.text.trim();
-
-              if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
-                setDialogState(() => error = 'PIN يجب أن يكون 4 أرقام.');
-                return;
-              }
-
-              if (createMode && pin != confirm) {
-                setDialogState(() => error = 'تأكيد PIN غير مطابق.');
-                return;
-              }
-
-              Navigator.of(context).pop(pin);
-            }
-
-            return AlertDialog(
-              title: Text(createMode ? 'إنشاء PIN' : 'إدخال PIN'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AppTextField(
-                    controller: controller,
-                    autofocus: false,
-                    labelText: createMode ? 'PIN جديد' : 'PIN',
-                    keyboardType: TextInputType.number,
-                    obscureText: true,
-                    textInputAction: createMode
-                        ? TextInputAction.next
-                        : TextInputAction.done,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(4),
-                    ],
-                    onSubmitted: (_) {
-                      if (!createMode) submit();
-                    },
-                  ),
-                  if (createMode) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    AppTextField(
-                      controller: confirmController,
-                      autofocus: false,
-                      labelText: 'تأكيد PIN',
-                      keyboardType: TextInputType.number,
-                      obscureText: true,
-                      textInputAction: TextInputAction.done,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(4),
-                      ],
-                      onSubmitted: (_) => submit(),
-                    ),
-                  ],
-                  if (error != null) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text(
-                        error!,
-                        style: const TextStyle(
-                          color: AppColors.error,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('إلغاء'),
-                ),
-                FilledButton(
-                  onPressed: submit,
-                  child: Text(createMode ? 'حفظ ودخول' : 'دخول'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (context) => _PinEntryDialog(createMode: createMode),
     );
   }
 
@@ -433,6 +342,111 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PinEntryDialog extends StatefulWidget {
+  final bool createMode;
+
+  const _PinEntryDialog({required this.createMode});
+
+  @override
+  State<_PinEntryDialog> createState() => _PinEntryDialogState();
+}
+
+class _PinEntryDialogState extends State<_PinEntryDialog> {
+  final _pinController = TextEditingController();
+  final _confirmController = TextEditingController();
+
+  String? _error;
+
+  @override
+  void dispose() {
+    _pinController.dispose();
+    _confirmController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final pin = _pinController.text.trim();
+    final confirm = _confirmController.text.trim();
+
+    if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
+      setState(() => _error = 'PIN يجب أن يكون 4 أرقام.');
+      return;
+    }
+
+    if (widget.createMode && pin != confirm) {
+      setState(() => _error = 'تأكيد PIN غير مطابق.');
+      return;
+    }
+
+    Navigator.of(context).pop(pin);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.createMode ? 'إنشاء PIN' : 'إدخال PIN'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppTextField(
+            controller: _pinController,
+            autofocus: false,
+            labelText: widget.createMode ? 'PIN جديد' : 'PIN',
+            keyboardType: TextInputType.number,
+            obscureText: true,
+            textInputAction: widget.createMode
+                ? TextInputAction.next
+                : TextInputAction.done,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(4),
+            ],
+            onSubmitted: (_) {
+              if (!widget.createMode) _submit();
+            },
+          ),
+          if (widget.createMode) ...[
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              controller: _confirmController,
+              autofocus: false,
+              labelText: 'تأكيد PIN',
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              textInputAction: TextInputAction.done,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(4),
+              ],
+              onSubmitted: (_) => _submit(),
+            ),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                _error!,
+                style: const TextStyle(color: AppColors.error, fontSize: 12),
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: Text(widget.createMode ? 'حفظ ودخول' : 'دخول'),
+        ),
+      ],
     );
   }
 }
