@@ -50,12 +50,6 @@ class MasterDataPersistencePlan {
 }
 
 class MasterDataMapper {
-  // Pass existing item default unit logic or just ignore missing existing?
-  // Wait, in upsertItem, DAO queries `existing?.defaultUnitId`.
-  // Since Mapper can't query DB, how do we handle existing defaultUnitId?
-  // In `upsertItem` (line 334), it does a query.
-  // We can either let DAO do it or we can pass a callback, or if incomingDefaultUnit is null, we can do Value.absent().
-  // Let's use `Value(incomingDefaultUnit)` if it's not null, else `Value.absent()`.
 
   MasterDataPersistencePlan mapRows({
     required MasterDataType type,

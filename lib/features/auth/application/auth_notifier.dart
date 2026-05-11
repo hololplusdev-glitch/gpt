@@ -4,60 +4,202 @@ import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:pos_flutter/core/persistence/daos/audit_dao.dart';
 import 'package:pos_flutter/core/persistence/daos/auth_dao.dart';
 import 'package:pos_flutter/core/persistence/daos/shift_dao.dart';
+import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/shared/models/enums.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 
-/// UI state for cashier selection only.
-/// Runtime truth is activePosSessionProvider.
-class CashierSelectionState {
+/// Command controller for POS runtime session.
+///
+/// SSOT rules:
+/// - activePosSessionProvider is the read model for the current runtime session.
+/// - PosSessionController owns login/logout commands only.
+/// - LoginScreen must not read AuthDao/ActivePosSessionDao/ShiftDao directly.
+class PosSessionState {
   final bool isLoading;
+  final bool isResolvingUser;
   final String? errorMessage;
+  final PosUser? resolvedUser;
+  final List<RuntimeMachineChoice> machineChoices;
+  final String? selectedMachineNo;
 
-  const CashierSelectionState({this.isLoading = false, this.errorMessage});
+  const PosSessionState({
+    this.isLoading = false,
+    this.isResolvingUser = false,
+    this.errorMessage,
+    this.resolvedUser,
+    this.machineChoices = const [],
+    this.selectedMachineNo,
+  });
+
+  bool get canLogin {
+    return resolvedUser != null &&
+        selectedMachineNo?.trim().isNotEmpty == true &&
+        !isResolvingUser &&
+        !isLoading;
+  }
+
+  PosSessionState copyWith({
+    bool? isLoading,
+    bool? isResolvingUser,
+    String? errorMessage,
+    bool clearError = false,
+    PosUser? resolvedUser,
+    bool clearResolvedUser = false,
+    List<RuntimeMachineChoice>? machineChoices,
+    String? selectedMachineNo,
+    bool clearSelectedMachine = false,
+  }) {
+    return PosSessionState(
+      isLoading: isLoading ?? this.isLoading,
+      isResolvingUser: isResolvingUser ?? this.isResolvingUser,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      resolvedUser: clearResolvedUser
+          ? null
+          : (resolvedUser ?? this.resolvedUser),
+      machineChoices: machineChoices ?? this.machineChoices,
+      selectedMachineNo: clearSelectedMachine
+          ? null
+          : (selectedMachineNo ?? this.selectedMachineNo),
+    );
+  }
 }
 
-class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
+class PosSessionController extends StateNotifier<PosSessionState> {
   final AuthDao _authDao;
   final AuditDao _auditDao;
   final ActivePosSessionDao _sessionDao;
   final ShiftDao _shiftDao;
+  final Ref _ref;
 
-  static const _uuid = Uuid();
-
-  CashierSelectionNotifier({
+  PosSessionController({
     required AuthDao authDao,
     required AuditDao auditDao,
     required ActivePosSessionDao sessionDao,
     required ShiftDao shiftDao,
+    required Ref ref,
   }) : _authDao = authDao,
        _auditDao = auditDao,
        _sessionDao = sessionDao,
        _shiftDao = shiftDao,
-       super(const CashierSelectionState());
+       _ref = ref,
+       super(const PosSessionState());
 
-  /// Only supported login flow:
-  /// user number + selected runtime machine.
-  Future<bool> selectCashierAndMachine(
-    String userNumber,
-    String machineNo,
-  ) async {
-    state = const CashierSelectionState(isLoading: true);
+  static const _uuid = Uuid();
+
+  int _resolveToken = 0;
+
+  Future<void> resolveUserNumber(String value) async {
+    final token = ++_resolveToken;
+    final number = value.trim();
+
+    state = const PosSessionState();
+
+    if (number.isEmpty) {
+      return;
+    }
+
+    state = state.copyWith(isResolvingUser: true, clearError: true);
 
     try {
-      final user = await _authDao.findByUsername(userNumber);
+      final user = await _authDao.findByUsername(number);
+
+      if (token != _resolveToken) return;
+
       if (user == null) {
-        state = const CashierSelectionState(
-          errorMessage: 'User not found in downloaded data.',
+        state = const PosSessionState(
+          errorMessage: 'رقم المستخدم غير موجود في بيانات التشغيل.',
         );
-        return false;
+        return;
       }
 
       if (!user.isActive || !user.canLoginPos) {
-        state = const CashierSelectionState(
-          errorMessage: 'User not authorized for POS.',
+        state = const PosSessionState(
+          errorMessage: 'هذا المستخدم غير مسموح له بالدخول إلى نقاط البيع.',
         );
-        return false;
+        return;
+      }
+
+      final choices = await _sessionDao.listRuntimeMachineChoicesForUser(
+        user: user,
+      );
+
+      if (token != _resolveToken) return;
+
+      state = PosSessionState(
+        resolvedUser: user,
+        machineChoices: choices,
+        selectedMachineNo: choices.length == 1
+            ? choices.single.machineNo
+            : null,
+        errorMessage: choices.isEmpty
+            ? 'لا توجد نقطة تشغيل مرتبطة بهذا المستخدم.'
+            : null,
+      );
+    } catch (e) {
+      if (token != _resolveToken) return;
+      state = PosSessionState(errorMessage: ErrorMapper.userMessage(e));
+    }
+  }
+
+  void selectMachine(String? machineNo) {
+    state = state.copyWith(
+      selectedMachineNo: machineNo,
+      clearSelectedMachine: machineNo == null || machineNo.trim().isEmpty,
+      clearError: true,
+    );
+  }
+
+  Future<bool> hasLocalPinForResolvedUser() async {
+    final user = state.resolvedUser;
+
+    if (user == null) {
+      state = state.copyWith(errorMessage: 'أدخل رقم المستخدم أولًا.');
+      return false;
+    }
+
+    return _authDao.hasLocalPin(custCode: user.custCode, userId: user.id);
+  }
+
+  Future<bool> loginWithPin(String pin) async {
+    final user = state.resolvedUser;
+    final machineNo = state.selectedMachineNo?.trim();
+
+    if (user == null || machineNo == null || machineNo.isEmpty) {
+      state = state.copyWith(
+        errorMessage: 'أدخل رقم المستخدم واختر نقطة التشغيل.',
+      );
+      return false;
+    }
+
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final hasPin = await _authDao.hasLocalPin(
+        custCode: user.custCode,
+        userId: user.id,
+      );
+
+      if (hasPin) {
+        final ok = await _authDao.verifyLocalPin(
+          custCode: user.custCode,
+          userId: user.id,
+          pin: pin,
+        );
+
+        if (!ok) {
+          state = state.copyWith(
+            isLoading: false,
+            errorMessage: 'PIN غير صحيح.',
+          );
+          return false;
+        }
+      } else {
+        await _authDao.setLocalPin(
+          custCode: user.custCode,
+          userId: user.id,
+          pin: pin,
+        );
       }
 
       final machine = await _sessionDao.getMachine(
@@ -66,7 +208,8 @@ class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
       );
 
       if (machine == null) {
-        state = const CashierSelectionState(
+        state = state.copyWith(
+          isLoading: false,
           errorMessage: 'Selected POS machine not found.',
         );
         return false;
@@ -78,7 +221,8 @@ class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
 
       if (existingMachineShift != null &&
           existingMachineShift.cashierId != user.id) {
-        state = const CashierSelectionState(
+        state = state.copyWith(
+          isLoading: false,
           errorMessage:
               'يوجد شفت مفتوح على هذا الجهاز لمستخدم آخر. أغلق الشفت أولًا.',
         );
@@ -94,27 +238,31 @@ class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
         await _sessionDao.attachOpenShift(existingMachineShift.id);
       }
 
-      final sessionId = session.sessionId ?? 'SESS_${_uuid.v4()}';
+      await _refreshActiveSession();
+
+      final refreshedSession = await _sessionDao.getActive();
+      final effectiveSession = refreshedSession ?? session;
+      final sessionId = effectiveSession.sessionId ?? 'SESS_${_uuid.v4()}';
 
       await _authDao.writeSessionLog(
         id: sessionId,
-        userId: session.activeUserId,
-        username: session.activeUserName,
-        terminalId: session.activeMachineNo,
+        userId: effectiveSession.activeUserId,
+        username: effectiveSession.activeUserName,
+        terminalId: effectiveSession.activeMachineNo,
       );
 
       await _auditDao.log(
         id: 'AUD_${_uuid.v4()}',
         action: AuditAction.login,
-        actorId: session.activeUserId,
-        actorName: session.activeUserName,
-        terminalId: session.activeMachineNo,
+        actorId: effectiveSession.activeUserId,
+        actorName: effectiveSession.activeUserName,
+        terminalId: effectiveSession.activeMachineNo,
       );
 
-      state = const CashierSelectionState();
+      state = const PosSessionState();
       return true;
     } catch (e) {
-      state = CashierSelectionState(errorMessage: ErrorMapper.userMessage(e));
+      state = PosSessionState(errorMessage: ErrorMapper.userMessage(e));
       return false;
     }
   }
@@ -127,24 +275,30 @@ class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
     }
 
     await _sessionDao.clearActive();
-    state = const CashierSelectionState();
+    await _refreshActiveSession();
+
+    state = const PosSessionState();
   }
 
   void clearError() {
     if (state.errorMessage != null) {
-      state = const CashierSelectionState();
+      state = state.copyWith(clearError: true);
     }
+  }
+
+  Future<void> _refreshActiveSession() async {
+    _ref.invalidate(activePosSessionProvider);
+    await _ref.read(activePosSessionProvider.future);
   }
 }
 
-final cashierSelectionProvider =
-    StateNotifierProvider<CashierSelectionNotifier, CashierSelectionState>((
-      ref,
-    ) {
-      return CashierSelectionNotifier(
+final posSessionControllerProvider =
+    StateNotifierProvider<PosSessionController, PosSessionState>((ref) {
+      return PosSessionController(
         authDao: ref.watch(authDaoProvider),
         auditDao: ref.watch(auditDaoProvider),
         sessionDao: ref.watch(activePosSessionDaoProvider),
         shiftDao: ref.watch(shiftDaoProvider),
+        ref: ref,
       );
     });

@@ -43,7 +43,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final actionState = ref.watch(shiftProvider);
+    final actionState = ref.watch(shiftControllerProvider);
     final activeSession = ref.watch(activePosSessionProvider).valueOrNull;
     final dashboardAsync = ref.watch(activeShiftDashboardProvider);
     final l10n = AppLocalizations.of(context)!;
@@ -143,7 +143,10 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     return AppInfoBanner.error(message: error.toString());
   }
 
-  Widget _buildMissingShiftView(ShiftState actionState, AppLocalizations l10n) {
+  Widget _buildMissingShiftView(
+    ShiftCommandState actionState,
+    AppLocalizations l10n,
+  ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -180,7 +183,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
   }
 
   Widget _buildOpenShiftView(
-    ShiftState actionState,
+    ShiftCommandState actionState,
     ActivePosSession activeSession,
     AppLocalizations l10n,
   ) {
@@ -241,7 +244,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
 
   Widget _buildShiftDashboardView(
     ShiftDashboard dashboard,
-    ShiftState actionState,
+    ShiftCommandState actionState,
     ActivePosSession activeSession,
     AppLocalizations l10n,
   ) {
@@ -338,7 +341,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     final cashDouble = double.tryParse(cashText) ?? 0;
 
     final success = await ref
-        .read(shiftProvider.notifier)
+        .read(shiftControllerProvider.notifier)
         .openShift(openingCash: cashDouble);
 
     if (!mounted) return;
@@ -355,7 +358,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     final cashDouble = double.tryParse(cashText) ?? 0;
 
     final success = await ref
-        .read(shiftProvider.notifier)
+        .read(shiftControllerProvider.notifier)
         .closeShift(
           shiftId: shiftId,
           actualCash: cashDouble,

@@ -511,7 +511,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                             ),
                             _LogoutButton(
                               onPressed: () => ref
-                                  .read(cashierSelectionProvider.notifier)
+                                  .read(posSessionControllerProvider.notifier)
                                   .logout(),
                             ),
                           ],
@@ -601,7 +601,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                         const SizedBox(width: AppSpacing.xs),
                         _LogoutButton(
                           onPressed: () => ref
-                              .read(cashierSelectionProvider.notifier)
+                              .read(posSessionControllerProvider.notifier)
                               .logout(),
                         ),
                       ],

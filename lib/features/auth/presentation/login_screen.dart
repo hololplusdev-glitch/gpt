@@ -1,7 +1,7 @@
 // features/auth/presentation/login_screen.dart
-// WHY: Offline login SSOT.
-// User number resolves allowed POS machines from local DEVICE_PRIV permissions.
-// PIN is local and checked after pressing Login.
+// WHY: Login UI only.
+// POS session commands live in PosSessionController.
+// Runtime truth remains activePosSessionProvider.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,8 +9,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_flutter/core/design_system/colors.dart';
 import 'package:pos_flutter/core/design_system/spacing.dart';
 import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:pos_flutter/features/auth/application/auth_notifier.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
@@ -20,7 +18,6 @@ import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
 final loginIdentityCardProvider = FutureProvider.autoDispose<LoginIdentityInfo>(
   (ref) async {
     final db = ref.watch(databaseProvider);
-
     final branch = await (db.select(
       db.branchProfile,
     )..limit(1)).getSingleOrNull();
@@ -54,11 +51,13 @@ String? _firstNonEmpty(List<String?> values) {
       return trimmed;
     }
   }
+
   return null;
 }
 
 String? _cleanIdentityText(String? value) {
   final trimmed = value?.trim();
+
   if (trimmed == null || trimmed.isEmpty) {
     return null;
   }
@@ -93,13 +92,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _userNumberController = TextEditingController();
   final _userNumberFocus = FocusNode();
 
-  PosUser? _resolvedUser;
-  List<RuntimeMachineChoice> _machineChoices = const [];
-  String? _selectedMachineNo;
-  String? _localError;
-  bool _isResolvingUser = false;
-  int _resolveToken = 0;
-
   @override
   void initState() {
     super.initState();
@@ -118,110 +110,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _resolveUserNumber(String value) async {
-    final token = ++_resolveToken;
-    final number = value.trim();
-
-    setState(() {
-      _resolvedUser = null;
-      _machineChoices = const [];
-      _selectedMachineNo = null;
-      _localError = null;
-      _isResolvingUser = number.isNotEmpty;
-    });
-
-    if (number.isEmpty) {
-      setState(() => _isResolvingUser = false);
-      return;
-    }
-
-    final authDao = ref.read(authDaoProvider);
-    final sessionDao = ref.read(activePosSessionDaoProvider);
-
-    final user = await authDao.findByUsername(number);
-    if (!mounted || token != _resolveToken) return;
-
-    if (user == null) {
-      setState(() {
-        _isResolvingUser = false;
-        _localError = 'رقم المستخدم غير موجود في بيانات التشغيل.';
-      });
-      return;
-    }
-
-    if (!user.isActive || !user.canLoginPos) {
-      setState(() {
-        _isResolvingUser = false;
-        _localError = 'هذا المستخدم غير مسموح له بالدخول إلى نقاط البيع.';
-      });
-      return;
-    }
-
-    final choices = await sessionDao.listRuntimeMachineChoicesForUser(
-      user: user,
-    );
-    if (!mounted || token != _resolveToken) return;
-
-    setState(() {
-      _resolvedUser = user;
-      _machineChoices = choices;
-      _selectedMachineNo = choices.length == 1
-          ? choices.single.machineNo
-          : null;
-      _isResolvingUser = false;
-      _localError = choices.isEmpty
-          ? 'لا توجد نقطة تشغيل مرتبطة بهذا المستخدم.'
-          : null;
-    });
-  }
-
   Future<void> _handleLoginPressed() async {
-    final user = _resolvedUser;
-    final machineNo = _selectedMachineNo;
+    final controller = ref.read(posSessionControllerProvider.notifier);
+    final state = ref.read(posSessionControllerProvider);
 
-    if (user == null || machineNo == null || machineNo.trim().isEmpty) {
-      setState(() => _localError = 'أدخل رقم المستخدم واختر نقطة التشغيل.');
+    if (!state.canLogin) {
+      controller.clearError();
       return;
     }
 
-    final authDao = ref.read(authDaoProvider);
-    final hasPin = await authDao.hasLocalPin(
-      custCode: user.custCode,
-      userId: user.id,
-    );
+    final hasPin = await controller.hasLocalPinForResolvedUser();
+
+    if (!mounted) return;
+
     final pin = await _showPinDialog(createMode: !hasPin);
+
     if (pin == null) return;
 
-    if (hasPin) {
-      final ok = await authDao.verifyLocalPin(
-        custCode: user.custCode,
-        userId: user.id,
-        pin: pin,
-      );
-      if (!ok) {
-        setState(() => _localError = 'PIN غير صحيح.');
-        return;
-      }
-    } else {
-      await authDao.setLocalPin(
-        custCode: user.custCode,
-        userId: user.id,
-        pin: pin,
-      );
-    }
-
-    final success = await ref
-        .read(cashierSelectionProvider.notifier)
-        .selectCashierAndMachine(user.id, machineNo);
-
-    if (!mounted || !success) return;
-
-    // Router decides the next page from ActivePosSession.openShiftId.
+    await controller.loginWithPin(pin);
   }
 
   Future<String?> _showPinDialog({required bool createMode}) async {
     final controller = TextEditingController();
     final confirmController = TextEditingController();
+
     String? error;
 
     return showDialog<String>(
@@ -317,15 +229,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cashierSelection = ref.watch(cashierSelectionProvider);
+    final sessionState = ref.watch(posSessionControllerProvider);
     final l10n = AppLocalizations.of(context)!;
-    final errorMessage = _localError ?? cashierSelection.errorMessage;
-
-    final canLogin =
-        _resolvedUser != null &&
-        _selectedMachineNo != null &&
-        !_isResolvingUser &&
-        !cashierSelection.isLoading;
 
     return Scaffold(
       backgroundColor: AppColors.primary,
@@ -376,7 +281,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: AppSpacing.xl),
                   const _LoginIdentityCard(),
                   const SizedBox(height: AppSpacing.xxl),
-                  if (errorMessage != null) ...[
+                  if (sessionState.errorMessage != null) ...[
                     Container(
                       width: double.infinity,
                       padding: AppSpacing.paddingMd,
@@ -397,7 +302,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: Text(
-                              errorMessage,
+                              sessionState.errorMessage!,
                               style: const TextStyle(
                                 color: AppColors.error,
                                 fontSize: 13,
@@ -417,25 +322,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     labelText: 'رقم المستخدم',
                     prefixIcon: const Icon(Icons.badge_outlined),
-                    onChanged: _resolveUserNumber,
+                    onChanged: (value) => ref
+                        .read(posSessionControllerProvider.notifier)
+                        .resolveUserNumber(value),
                     onSubmitted: (_) {
-                      if (canLogin) _handleLoginPressed();
+                      if (sessionState.canLogin) _handleLoginPressed();
                     },
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   AppDropdown<String>(
                     key: ValueKey(
-                      '${_resolvedUser?.id}:${_selectedMachineNo}:${_machineChoices.length}',
+                      '${sessionState.resolvedUser?.id}:${sessionState.selectedMachineNo}:${sessionState.machineChoices.length}',
                     ),
-                    value: _selectedMachineNo,
+                    value: sessionState.selectedMachineNo,
                     labelText: 'نقطة التشغيل',
-                    hintText: _isResolvingUser
+                    hintText: sessionState.isResolvingUser
                         ? 'جاري البحث...'
-                        : _machineChoices.isEmpty
+                        : sessionState.machineChoices.isEmpty
                         ? 'أدخل رقم المستخدم أولًا'
                         : 'اختر نقطة التشغيل',
                     prefixIcon: const Icon(Icons.storefront_outlined),
-                    items: _machineChoices
+                    items: sessionState.machineChoices
                         .map(
                           (choice) => DropdownMenuItem<String>(
                             value: choice.machineNo,
@@ -443,17 +350,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         )
                         .toList(),
-                    onChanged: _machineChoices.length <= 1
+                    onChanged: sessionState.machineChoices.length <= 1
                         ? null
-                        : (value) => setState(() => _selectedMachineNo = value),
+                        : (value) => ref
+                              .read(posSessionControllerProvider.notifier)
+                              .selectMachine(value),
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                   SizedBox(
                     width: double.infinity,
                     height: AppSpacing.jumbo + AppSpacing.xs,
                     child: AppButton.primary(
-                      onPressed: canLogin ? _handleLoginPressed : null,
-                      isLoading: cashierSelection.isLoading,
+                      onPressed: sessionState.canLogin
+                          ? _handleLoginPressed
+                          : null,
+                      isLoading: sessionState.isLoading,
                       label: 'دخول',
                     ),
                   ),

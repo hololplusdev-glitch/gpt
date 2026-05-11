@@ -199,6 +199,12 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
       // If first-run setup fails or is cancelled, discard partial master data.
       try {
         await ref.read(masterDataDaoProvider).clearMasterDataCache();
+        await ref.read(activePosSessionDaoProvider).clearActive();
+        invalidateMasterDataDownloadProviders(ref);
+        ref.invalidate(activePosSessionProvider);
+        ref.invalidate(posSessionControllerProvider);
+        ref.invalidate(shiftControllerProvider);
+        ref.invalidate(catalogReadinessProvider);
       } catch (_) {
         // Keep the original setup error visible. Cache cleanup failure is secondary.
       }
@@ -232,8 +238,8 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
     ref.read(apiClientProvider).clearConfiguration();
     ref.invalidate(syncProfileProvider);
     ref.invalidate(activePosSessionProvider);
-    ref.invalidate(cashierSelectionProvider);
-    ref.invalidate(shiftProvider);
+    ref.invalidate(posSessionControllerProvider);
+    ref.invalidate(shiftControllerProvider);
     ref.invalidate(catalogReadinessProvider);
     state = AsyncData(
       SetupState(language: state.valueOrNull?.language ?? 'en'),

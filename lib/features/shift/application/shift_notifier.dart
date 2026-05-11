@@ -1,5 +1,5 @@
 // features/shift/application/shift_notifier.dart
-// WHY: Shift actions + shift dashboard projection.
+// WHY: Shift command controller + shift dashboard projection.
 // Runtime SSOT is ActivePosSession.openShiftId.
 // This file must not own "current shift" truth.
 
@@ -15,22 +15,34 @@ typedef ActiveSessionReader = ActivePosSession? Function();
 
 /// UI command state only.
 /// Not a source of truth for whether a shift is open.
-class ShiftState {
+class ShiftCommandState {
   final bool isLoading;
   final String? errorMessage;
 
-  const ShiftState({this.isLoading = false, this.errorMessage});
+  const ShiftCommandState({this.isLoading = false, this.errorMessage});
 
-  ShiftState copyWith({
+  ShiftCommandState copyWith({
     bool? isLoading,
     String? errorMessage,
     bool clearError = false,
   }) {
-    return ShiftState(
+    return ShiftCommandState(
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
+}
+
+class ShiftCommandResult {
+  final bool success;
+  final String? errorMessage;
+
+  const ShiftCommandResult._({required this.success, this.errorMessage});
+
+  const ShiftCommandResult.success() : this._(success: true);
+
+  const ShiftCommandResult.failure(String message)
+    : this._(success: false, errorMessage: message);
 }
 
 /// Read model for the current shift screen.
@@ -50,8 +62,9 @@ class ShiftDashboard {
     required this.cashRefund,
   });
 
-  double get expectedCash =>
-      shift.openingCash + totals.cashSales + cashIn - cashOut - cashRefund;
+  double get expectedCash {
+    return shift.openingCash + totals.cashSales + cashIn - cashOut - cashRefund;
+  }
 }
 
 /// Single read path for current shift details.
@@ -69,6 +82,7 @@ final activeShiftDashboardProvider =
       final salesDao = ref.watch(salesDaoProvider);
 
       final shift = await shiftDao.getById(shiftId);
+
       if (shift == null) {
         return null;
       }
@@ -85,14 +99,18 @@ final activeShiftDashboardProvider =
       );
     });
 
-class ShiftNotifier extends StateNotifier<ShiftState> {
+class ShiftController extends StateNotifier<ShiftCommandState> {
   final ShiftService _shiftService;
   final ActiveSessionReader _readSession;
+  final Future<void> Function() _refreshActiveSession;
 
-  ShiftNotifier(this._shiftService, this._readSession)
-    : super(const ShiftState());
+  ShiftController(
+    this._shiftService,
+    this._readSession,
+    this._refreshActiveSession,
+  ) : super(const ShiftCommandState());
 
-  Future<bool> openShift({
+  Future<ShiftCommandResult> openShift({
     required double openingCash,
     String? shiftTypeId,
   }) async {
@@ -105,29 +123,31 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         shiftTypeId: shiftTypeId,
       );
 
-      state = const ShiftState();
-      return true;
+      await _refreshActiveSession();
+
+      state = const ShiftCommandState();
+      return const ShiftCommandResult.success();
     } on ShiftException catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.message);
-      return false;
+      return ShiftCommandResult.failure(e.message);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: ErrorMapper.userMessage(e),
-      );
-      return false;
+      final message = ErrorMapper.userMessage(e);
+      state = state.copyWith(isLoading: false, errorMessage: message);
+      return ShiftCommandResult.failure(message);
     }
   }
 
-  Future<bool> closeShift({
+  Future<ShiftCommandResult> closeShift({
     required String shiftId,
     required double actualCash,
     String? closingNotes,
   }) async {
     final normalizedShiftId = shiftId.trim();
+
     if (normalizedShiftId.isEmpty) {
-      state = state.copyWith(errorMessage: 'No open shift to close.');
-      return false;
+      const message = 'No open shift to close.';
+      state = state.copyWith(errorMessage: message);
+      return const ShiftCommandResult.failure(message);
     }
 
     state = state.copyWith(isLoading: true, clearError: true);
@@ -140,26 +160,29 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         closingNotes: closingNotes,
       );
 
-      state = const ShiftState();
-      return true;
+      await _refreshActiveSession();
+
+      state = const ShiftCommandState();
+      return const ShiftCommandResult.success();
     } on ShiftException catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.message);
-      return false;
+      return ShiftCommandResult.failure(e.message);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: ErrorMapper.userMessage(e),
-      );
-      return false;
+      final message = ErrorMapper.userMessage(e);
+      state = state.copyWith(isLoading: false, errorMessage: message);
+      return ShiftCommandResult.failure(message);
     }
   }
 
-  Future<bool> extendShift({
+  Future<ShiftCommandResult> extendShift({
     required String shiftId,
     int? overrideMinutes,
   }) async {
     final normalizedShiftId = shiftId.trim();
-    if (normalizedShiftId.isEmpty) return false;
+
+    if (normalizedShiftId.isEmpty) {
+      return const ShiftCommandResult.failure('No open shift to extend.');
+    }
 
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -170,15 +193,20 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
         overrideMinutes: overrideMinutes,
       );
 
-      state = const ShiftState();
-      return true;
+      refetchDashboardOnly();
+
+      state = const ShiftCommandState();
+      return const ShiftCommandResult.success();
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: ErrorMapper.userMessage(e),
-      );
-      return false;
+      final message = ErrorMapper.userMessage(e);
+      state = state.copyWith(isLoading: false, errorMessage: message);
+      return ShiftCommandResult.failure(message);
     }
+  }
+
+  void refetchDashboardOnly() {
+    // Intentionally empty: dashboard invalidation is done by UI/read providers.
+    // The command controller remains a command controller.
   }
 
   void clearError() {
@@ -187,19 +215,26 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
 
   ActivePosSession _requireSession() {
     final session = _readSession();
+
     if (session == null) {
       throw const BusinessException(
         'Select a cashier and POS machine before shift operations.',
         code: 'NO_ACTIVE_POS_SESSION',
       );
     }
+
     return session;
   }
 }
 
-final shiftProvider = StateNotifierProvider<ShiftNotifier, ShiftState>((ref) {
-  return ShiftNotifier(
-    ref.watch(shiftServiceProvider),
-    () => ref.read(activePosSessionProvider).valueOrNull,
-  );
-});
+final shiftControllerProvider =
+    StateNotifierProvider<ShiftController, ShiftCommandState>((ref) {
+      return ShiftController(
+        ref.watch(shiftServiceProvider),
+        () => ref.read(activePosSessionProvider).valueOrNull,
+        () async {
+          ref.invalidate(activePosSessionProvider);
+          await ref.read(activePosSessionProvider.future);
+        },
+      );
+    });
