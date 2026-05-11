@@ -46,7 +46,7 @@ enum MasterDataType {
   ];
 
   /// Types whose failure is fatal and must abort the entire sync.
-  static const mandatoryTypes = {user, posMachine};
+  static const mandatoryTypes = {user, posMachine, devicePrivilege};
 }
 
 enum MasterDataSyncMode {
@@ -86,48 +86,30 @@ enum MasterDataTypeRunStatus {
   bool get isFailure => this == failed || this == cancelled;
 }
 
-/// Context passed to every sync request — carries identity parameters.
+/// Context passed to every data download request.
+/// SSOT: backend download is global per tenant/bootstrap user.
+/// Runtime machine/store/price filtering happens after login.
 class MasterDataSyncContext {
   final String custCode;
   final String bootstrapUserId;
-  final String? userId;
-  final String? branchNo;
-  final String? terminalNo;
-  final String? priceLevelId;
-  final String? storeId;
   final int pageLimit;
 
   const MasterDataSyncContext({
     required this.custCode,
     this.bootstrapUserId = '1',
-    this.userId,
-    this.branchNo,
-    this.terminalNo,
-    this.priceLevelId,
-    this.storeId,
     this.pageLimit = 100,
   });
 
-  String get syncUserId => userId ?? bootstrapUserId;
+  String get syncUserId => bootstrapUserId;
 
   MasterDataSyncContext copyWith({
     String? custCode,
     String? bootstrapUserId,
-    String? userId,
-    String? branchNo,
-    String? terminalNo,
-    String? priceLevelId,
-    String? storeId,
     int? pageLimit,
   }) {
     return MasterDataSyncContext(
       custCode: custCode ?? this.custCode,
       bootstrapUserId: bootstrapUserId ?? this.bootstrapUserId,
-      userId: userId ?? this.userId,
-      branchNo: branchNo ?? this.branchNo,
-      terminalNo: terminalNo ?? this.terminalNo,
-      priceLevelId: priceLevelId ?? this.priceLevelId,
-      storeId: storeId ?? this.storeId,
       pageLimit: pageLimit ?? this.pageLimit,
     );
   }
@@ -140,7 +122,7 @@ class MasterDataSyncContext {
     final params = <String, dynamic>{
       'p_type': type.code,
       'p_cust_code': custCode,
-      'p_usr_id': userId ?? bootstrapUserId,
+      'p_usr_id': bootstrapUserId,
       'p_limit': pageLimit,
       'p_offset': offset,
     };
@@ -148,10 +130,6 @@ class MasterDataSyncContext {
     if (lastUpdate != null && lastUpdate.isNotEmpty) {
       params['p_last_update'] = lastUpdate;
     }
-
-    // SSOT: p_type selects the dataset. The API returns the full tenant-wide
-    // payload for the bootstrap user. Store/price-level/machine filtering is
-    // runtime logic, not download-request logic.
 
     return params;
   }
@@ -183,7 +161,7 @@ class MasterDataSyncSummary {
   int get failedTypesCount =>
       results.where((result) => result.isFailure).length;
 
-  /// Whether a mandatory type (POS_MACHINE / DEVICE_PRIV) failed, causing
+  /// Whether a mandatory type failed, causing
   /// the sync to abort early.
   bool get abortedEarly => results.any(
     (r) => r.isFailure && MasterDataType.mandatoryTypes.contains(r.type),
@@ -231,32 +209,6 @@ class MasterDataTypeResult {
 
 class MasterDataContextException extends SyncException {
   const MasterDataContextException(super.message, {super.code});
-}
-
-class TerminalBootstrapDefaults {
-  final String custCode;
-  final String terminalNo;
-  final String branchNo;
-  final String? braYear;
-  final String? defaultStoreId;
-  final String? priceLevelId;
-  final bool useTax;
-  final String? defaultBankId;
-  final String? defaultCardTypeId;
-  final String? printerName;
-
-  const TerminalBootstrapDefaults({
-    required this.custCode,
-    required this.terminalNo,
-    required this.branchNo,
-    required this.braYear,
-    required this.defaultStoreId,
-    required this.priceLevelId,
-    required this.useTax,
-    required this.defaultBankId,
-    required this.defaultCardTypeId,
-    required this.printerName,
-  });
 }
 
 /// View model for master sync state displayed in UI.

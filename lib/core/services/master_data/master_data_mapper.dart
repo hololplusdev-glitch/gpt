@@ -18,7 +18,6 @@ class MasterDataPersistencePlan {
   final List<ItemPricesCompanion> itemPrices;
   final List<CustomersCompanion> customers;
   final List<PaymentMethodsCompanion> paymentMethods;
-  final List<TerminalBootstrapDefaults> machineDefaults;
 
   const MasterDataPersistencePlan({
     this.posMachines = const [],
@@ -33,7 +32,6 @@ class MasterDataPersistencePlan {
     this.itemPrices = const [],
     this.customers = const [],
     this.paymentMethods = const [],
-    this.machineDefaults = const [],
   });
 
   bool get isEmpty =>
@@ -48,8 +46,7 @@ class MasterDataPersistencePlan {
       itemBarcodes.isEmpty &&
       itemPrices.isEmpty &&
       customers.isEmpty &&
-      paymentMethods.isEmpty &&
-      machineDefaults.isEmpty;
+      paymentMethods.isEmpty;
 }
 
 class MasterDataMapper {
@@ -78,7 +75,6 @@ class MasterDataMapper {
     final itemPrices = <ItemPricesCompanion>[];
     final customers = <CustomersCompanion>[];
     final paymentMethods = <PaymentMethodsCompanion>[];
-    final machineDefaults = <TerminalBootstrapDefaults>[];
 
     for (final row in rows) {
       switch (type) {
@@ -89,19 +85,14 @@ class MasterDataMapper {
             'machine_id',
           ], 'POS_MACHINE.mchn_nbr');
           final custCode = data.text(['cust_code']) ?? context.custCode;
-          final defaults = TerminalBootstrapDefaults(
-            custCode: custCode,
-            terminalNo: mchnNbr,
-            branchNo: data.requiredText(['bra_nbr'], 'POS_MACHINE.bra_nbr'),
-            braYear: data.text(['bra_year']),
-            defaultStoreId: data.text(['def_st', 'st_id']),
-            priceLevelId: data.text(['price_lvl', 'price_lvl_id']),
-            useTax: data.boolValue(['use_tax'], fallback: true),
-            defaultBankId: data.text(['def_bank']),
-            defaultCardTypeId: data.text(['def_c_cardid']),
-            printerName: data.text(['printer_name']),
-          );
-          machineDefaults.add(defaults);
+          final branchNo = data.requiredText(['bra_nbr'], 'POS_MACHINE.bra_nbr');
+          final branchYear = data.text(['bra_year']);
+          final defaultStoreId = data.text(['def_st', 'st_id']);
+          final priceLevelId = data.text(['price_lvl', 'price_lvl_id']);
+          final useTax = data.boolValue(['use_tax'], fallback: true);
+          final defaultBankId = data.text(['def_bank']);
+          final defaultCardTypeId = data.text(['def_c_cardid']);
+          final printerName = data.text(['printer_name']);
 
           posMachines.add(
             PosMachinesCompanion(
@@ -111,16 +102,16 @@ class MasterDataMapper {
               invoiceSeries: Value(data.text(['invo_ser'])),
               returnInvoiceSeries: Value(data.text(['rt_invo_ser'])),
               name: Value(data.text(['trmnl_name', 'terminal_name'])),
-              storeId: Value(defaults.defaultStoreId),
-              priceLevelId: Value(defaults.priceLevelId),
-              useTax: Value(defaults.useTax),
-              defaultBankId: Value(defaults.defaultBankId),
-              defaultCardTypeId: Value(defaults.defaultCardTypeId),
-              printerName: Value(defaults.printerName),
+              storeId: Value(defaultStoreId),
+              priceLevelId: Value(priceLevelId),
+              useTax: Value(useTax),
+              defaultBankId: Value(defaultBankId),
+              defaultCardTypeId: Value(defaultCardTypeId),
+              printerName: Value(printerName),
               autoPrint: Value(data.boolValue(['print_invo'])),
               allowDuplicateItems: Value(data.boolValue(['pos_dupl_itm'])),
-              branchNo: Value(defaults.branchNo),
-              branchYear: Value(defaults.braYear),
+              branchNo: Value(branchNo),
+              branchYear: Value(branchYear),
               sourceUpdatedAt: Value(data.text(['last_update'])),
               cachedAt: Value(cachedAt),
             ),
@@ -149,6 +140,8 @@ class MasterDataMapper {
               userId: Value(usrId),
               sourceUserId: Value(usrId),
               machineNo: Value(mchnNbr),
+              terminalName: Value(data.text(['trmnl_name', 'terminal_name'])),
+              useTax: Value(data.boolValue(['use_tax'], fallback: true)),
               branchNo: Value(data.text(['bra_nbr'])),
               branchYear: Value(data.text(['bra_year'])),
               storeId: Value(data.text(['st_id', 'def_st'])),
@@ -508,7 +501,6 @@ class MasterDataMapper {
       itemPrices: itemPrices,
       customers: customers,
       paymentMethods: paymentMethods,
-      machineDefaults: machineDefaults,
     );
   }
 
@@ -535,7 +527,8 @@ class MasterDataMapper {
           data.text(['usr_fname', 'usr_f_name', 'display_name_ar']),
         ),
         authHash: const Value(''),
-        pinHash: Value(data.text(['pin'])),
+        // Local PIN is owned by LocalUserPins, never by backend USER data.
+        pinHash: const Value.absent(),
         roleId: Value(data.text(['role_id'])),
         defaultStoreId: Value(data.text(['st_id_def'])),
         defaultCashId: Value(data.text(['cash_id_def'])),

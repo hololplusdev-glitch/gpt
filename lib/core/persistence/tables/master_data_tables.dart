@@ -50,6 +50,8 @@ class PosUserMachineAccess extends Table {
   TextColumn get userId => text()();
   TextColumn get sourceUserId => text().nullable()();
   TextColumn get machineNo => text()();
+  TextColumn get terminalName => text().nullable()();
+  BoolColumn get useTax => boolean().nullable()();
   TextColumn get branchNo => text().nullable()();
   TextColumn get branchYear => text().nullable()();
   TextColumn get storeId => text().nullable()();

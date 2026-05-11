@@ -73,6 +73,21 @@ class SyncProfileTable extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Local-only PIN storage.
+/// Not synced from backend. Not cleared by master-data refresh.
+/// SSOT for offline PIN authentication.
+class LocalUserPins extends Table {
+  TextColumn get custCode => text()();
+  TextColumn get userId => text()();
+  TextColumn get pinHash => text()();
+  TextColumn get pinSalt => text()();
+  DateTimeColumn get createdAt => dateTime()();
+  DateTimeColumn get updatedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {custCode, userId};
+}
+
 class PosMachines extends Table {
   TextColumn get id => text()();
   TextColumn get name => text().nullable()();
