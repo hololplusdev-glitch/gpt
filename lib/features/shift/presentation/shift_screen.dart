@@ -14,6 +14,7 @@ import 'package:pos_flutter/core/design_system/spacing.dart';
 import 'package:pos_flutter/core/l10n/app_localizations.dart';
 import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
+import 'package:pos_flutter/features/auth/application/pos_session_controller.dart';
 import 'package:pos_flutter/features/shift/application/shift_controller.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_info_banner.dart';
@@ -238,6 +239,12 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
             label: actionState.isLoading ? l10n.openingShift : l10n.openShift,
           ),
         ),
+        const SizedBox(height: AppSpacing.md),
+        TextButton.icon(
+          onPressed: actionState.isLoading ? null : _logoutFromShiftGate,
+          icon: const Icon(Icons.logout),
+          label: const Text('تسجيل الخروج'),
+        ),
       ],
     );
   }
@@ -334,6 +341,14 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _logoutFromShiftGate() async {
+    await ref.read(posSessionControllerProvider.notifier).logout();
+
+    if (!mounted) return;
+
+    context.go(AppRoutes.login);
   }
 
   Future<void> _openShift() async {
