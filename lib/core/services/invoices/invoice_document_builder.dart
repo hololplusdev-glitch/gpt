@@ -2,17 +2,17 @@
 // WHY: Builds a frozen InvoiceDocument from persisted Sale data.
 // Reads from SalesDao, archives via InvoiceArchiveRepository.
 
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/core/persistence/daos/sales_dao.dart';
-import 'package:pos_flutter/core/persistence/database.dart' show Sale;
-import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_archive_repository.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_audit_hasher.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_validation_service.dart';
-import 'package:pos_flutter/core/services/invoices/qr_payload_builder.dart';
-import 'package:pos_flutter/core/services/payments/payment_method_resolver.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
+import 'package:holol_POS/core/persistence/database.dart' show Sale;
+import 'package:holol_POS/core/services/formatters/pos_formatters.dart';
+import 'package:holol_POS/core/services/invoices/invoice_archive_repository.dart';
+import 'package:holol_POS/core/services/invoices/invoice_audit_hasher.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document.dart';
+import 'package:holol_POS/core/services/invoices/invoice_validation_service.dart';
+import 'package:holol_POS/core/services/invoices/qr_payload_builder.dart';
+import 'package:holol_POS/core/services/payments/payment_method_resolver.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 
 class InvoiceDocumentLabels {
   final String invoiceTypeSales;

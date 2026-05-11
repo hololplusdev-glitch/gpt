@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
-import 'package:pos_flutter/features/cashier/domain/models/cart.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
+import 'package:holol_POS/features/cashier/domain/models/cart.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 
 class CartQuoteState {
   final CheckoutQuote? quote;

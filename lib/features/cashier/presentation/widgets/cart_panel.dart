@@ -4,19 +4,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pos_flutter/app/router.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
-import 'package:pos_flutter/features/cashier/domain/models/cart.dart';
-import 'package:pos_flutter/features/cashier/application/cart_quote_provider.dart';
-import 'package:pos_flutter/features/cashier/presentation/dialogs/payment_dialog.dart';
-import 'package:pos_flutter/shared/presentation/utils/app_snackbar.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_empty_state.dart';
-import 'package:pos_flutter/shared/presentation/widgets/key_value_row.dart';
+import 'package:holol_POS/app/router.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/core/services/formatters/pos_formatters.dart';
+import 'package:holol_POS/features/cashier/domain/models/cart.dart';
+import 'package:holol_POS/features/cashier/application/cart_quote_provider.dart';
+import 'package:holol_POS/features/cashier/presentation/dialogs/payment_dialog.dart';
+import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_empty_state.dart';
+import 'package:holol_POS/shared/presentation/widgets/key_value_row.dart';
 
 class CartPanel extends ConsumerStatefulWidget {
   const CartPanel({super.key});

@@ -1,5 +1,5 @@
-import 'package:pos_flutter/shared/models/enums.dart';
-import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
+import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
 
 class SaleLineInput {
   final String itemId;

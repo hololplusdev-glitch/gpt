@@ -6,21 +6,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/core/services/formatters/pos_formatters.dart';
 
-import 'package:pos_flutter/features/cashier/domain/models/cart.dart';
-import 'package:pos_flutter/features/cashier/application/product_providers.dart';
-import 'package:pos_flutter/features/cashier/domain/models/product.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_dropdown.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_loading.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_empty_state.dart';
-import 'package:pos_flutter/shared/presentation/utils/app_snackbar.dart';
-import 'package:pos_flutter/shared/presentation/dialogs/app_dialog.dart';
+import 'package:holol_POS/features/cashier/domain/models/cart.dart';
+import 'package:holol_POS/features/cashier/application/product_providers.dart';
+import 'package:holol_POS/features/cashier/domain/models/product.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_dropdown.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_empty_state.dart';
+import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
+import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
 
 class ProductGrid extends ConsumerWidget {
   const ProductGrid({super.key});

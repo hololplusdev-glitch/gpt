@@ -3,14 +3,14 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/adapters/printer_adapter.dart';
-import 'package:pos_flutter/core/persistence/daos/printer_profile_dao.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-export 'package:pos_flutter/core/persistence/database.dart' show PrinterProfile;
-import 'package:pos_flutter/core/services/pos_devices/printer_adapter_factory.dart';
-import 'package:pos_flutter/core/services/pos_devices/system_printer_discovery_service.dart';
-import 'package:pos_flutter/core/services/time/clock.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/core/adapters/printer_adapter.dart';
+import 'package:holol_POS/core/persistence/daos/printer_profile_dao.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+export 'package:holol_POS/core/persistence/database.dart' show PrinterProfile;
+import 'package:holol_POS/core/services/pos_devices/printer_adapter_factory.dart';
+import 'package:holol_POS/core/services/pos_devices/system_printer_discovery_service.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 import 'package:uuid/uuid.dart';
 
 extension PrinterProfileSettings on PrinterProfile {

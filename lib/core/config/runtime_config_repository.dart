@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:pos_flutter/core/network/network_models.dart';
+import 'package:holol_POS/core/network/network_models.dart';
 
 class RuntimeSetupConfig {
   final bool isSetupComplete;

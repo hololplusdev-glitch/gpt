@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
 
 /// Centralized utility for showing snackbars.
 /// Enforces consistent styling, durations, and behavior across the app.

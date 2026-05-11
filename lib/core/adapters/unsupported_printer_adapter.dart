@@ -1,5 +1,5 @@
-import 'package:pos_flutter/core/adapters/printer_adapter.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
+import 'package:holol_POS/core/adapters/printer_adapter.dart';
+import 'package:holol_POS/core/persistence/database.dart';
 
 class UnsupportedPrinterAdapter implements PrinterAdapter {
   final String reason;

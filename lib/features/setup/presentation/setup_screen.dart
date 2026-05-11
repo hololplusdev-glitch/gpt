@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/features/setup/application/setup_notifier.dart';
-import 'package:pos_flutter/core/network/network_models.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_switch.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_loading.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
-import 'package:pos_flutter/shared/presentation/widgets/responsive_row.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/features/setup/application/setup_notifier.dart';
+import 'package:holol_POS/core/network/network_models.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_switch.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
+import 'package:holol_POS/shared/presentation/widgets/responsive_row.dart';
 
 class SetupScreen extends ConsumerStatefulWidget {
   const SetupScreen({super.key});

@@ -1,13 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pos_flutter/core/persistence/daos/catalog_dao.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
-import 'package:pos_flutter/features/sales/domain/models/sale_inputs.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
-import 'package:pos_flutter/shared/models/sellable_item_snapshot.dart';
+import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
+import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
+import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
 
 class CartItem {
   final SellableItemSnapshot sellableItem;

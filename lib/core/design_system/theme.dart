@@ -5,12 +5,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
 
 abstract final class AppTheme {
   static ThemeData get light {
     final baseTheme = ThemeData(
+      fontFamilyFallback: const ['SaudiRiyal'],
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: const ColorScheme.light(

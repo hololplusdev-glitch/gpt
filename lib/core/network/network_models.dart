@@ -2,7 +2,7 @@
 // WHY: SyncProfile is the connection/bootstrap SSOT only. Runtime POS context
 // lives in ActivePosSession, never in the server connection profile.
 
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 
 class SyncProfile {
   final String host;

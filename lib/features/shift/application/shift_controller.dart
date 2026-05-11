@@ -4,12 +4,12 @@
 // This file must not own "current shift" truth.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
-import 'package:pos_flutter/core/persistence/daos/sales_dao.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/features/shift/application/shift_service.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
+import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/features/shift/application/shift_service.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 
 typedef ActiveSessionReader = ActivePosSession? Function();
 

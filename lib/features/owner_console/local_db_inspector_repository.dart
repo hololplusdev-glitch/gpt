@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
+import 'package:holol_POS/core/persistence/database.dart';
 
 class LocalDbInspectorRepository {
   LocalDbInspectorRepository(this.db);

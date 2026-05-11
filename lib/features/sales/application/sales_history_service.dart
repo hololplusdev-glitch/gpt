@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pos_flutter/core/persistence/daos/sales_dao.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/core/services/time/clock.dart';
-import 'package:pos_flutter/shared/models/sales_history.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/shared/models/sales_history.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 
 /// Sales history/detail query owner only.
 /// Sale completion remains owned by SaleCheckout.

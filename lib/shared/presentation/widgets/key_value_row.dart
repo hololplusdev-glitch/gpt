@@ -9,8 +9,8 @@
 // Single Source of Truth for all "label → value" UI patterns.
 
 import 'package:flutter/widgets.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
 
 /// A horizontal row displaying a label and value pair.
 ///

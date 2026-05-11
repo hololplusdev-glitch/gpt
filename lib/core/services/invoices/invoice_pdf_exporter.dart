@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_pdf_fonts.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/core/services/formatters/pos_formatters.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document.dart';
+import 'package:holol_POS/core/services/invoices/invoice_pdf_fonts.dart';
 
 class InvoicePdfLabels {
   final String Function(String invoiceNo) pdfInvoiceTitle;
@@ -118,11 +118,7 @@ class InvoicePdfExporter {
     await outputDir.create(recursive: true);
 
     final safeNo = _safeInvoiceNo(document.localInvoiceNo);
-    final file = await _nextAvailableFile(
-      outputDir,
-      'invoice_$safeNo',
-      'pdf',
-    );
+    final file = await _nextAvailableFile(outputDir, 'invoice_$safeNo', 'pdf');
 
     final pdf = pw.Document(
       title: labels.pdfInvoiceTitle(document.localInvoiceNo),
@@ -182,17 +178,12 @@ class InvoicePdfExporter {
 
       return publicDir;
     } catch (_) {
-      return Directory(
-        '${fallback.path}${Platform.pathSeparator}POS_Invoices',
-      );
+      return Directory('${fallback.path}${Platform.pathSeparator}POS_Invoices');
     }
   }
 
   String _safeInvoiceNo(String invoiceNo) {
-    return invoiceNo.replaceAll(
-      RegExp(r'[^A-Za-z0-9_-]+'),
-      '_',
-    );
+    return invoiceNo.replaceAll(RegExp(r'[^A-Za-z0-9_-]+'), '_');
   }
 
   Future<File> _nextAvailableFile(

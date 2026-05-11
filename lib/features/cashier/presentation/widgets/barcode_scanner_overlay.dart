@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/core/scanner/barcode_scanner_service.dart';
-import 'package:pos_flutter/core/scanner/scanner_providers.dart';
-import 'package:pos_flutter/features/cashier/domain/models/cart.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/core/scanner/barcode_scanner_service.dart';
+import 'package:holol_POS/core/scanner/scanner_providers.dart';
+import 'package:holol_POS/features/cashier/domain/models/cart.dart';
 
 bool _barcodeScannerSheetOpen = false;
 Future<void> _barcodeScannerReleaseFuture = Future<void>.value();

@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:pos_flutter/core/adapters/printer_adapter.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
-import 'package:pos_flutter/core/services/pos_devices/printer_profile_service.dart';
-import 'package:pos_flutter/core/services/invoices/receipt_template_renderer.dart';
-import 'package:pos_flutter/core/services/invoices/thermal_raster_renderer.dart';
-import 'package:pos_flutter/core/services/pos_devices/printer_test_document.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/core/adapters/printer_adapter.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document.dart';
+import 'package:holol_POS/core/services/pos_devices/printer_profile_service.dart';
+import 'package:holol_POS/core/services/invoices/receipt_template_renderer.dart';
+import 'package:holol_POS/core/services/invoices/thermal_raster_renderer.dart';
+import 'package:holol_POS/core/services/pos_devices/printer_test_document.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 
 class NetworkEscPosPrinterAdapter implements PrinterAdapter {
   final ReceiptTemplateRenderer _renderer;

@@ -3,10 +3,10 @@
 // Returns raw Drift data objects; mapping to domain models happens in repositories.
 
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/persistence/database.dart' hide Customer;
-import 'package:pos_flutter/shared/models/customer.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
-import 'package:pos_flutter/shared/models/sellable_item_snapshot.dart';
+import 'package:holol_POS/core/persistence/database.dart' hide Customer;
+import 'package:holol_POS/shared/models/customer.dart';
+import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
 
 /// Data access for catalog tables.
 class CatalogDao {

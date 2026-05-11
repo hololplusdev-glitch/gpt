@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:collection/collection.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/layout.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
-import 'package:pos_flutter/core/services/pos_devices/payment_profile_service.dart';
-import 'package:pos_flutter/core/services/pos_devices/print_job_service.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
-import 'package:pos_flutter/shared/presentation/presenters/printer_status_presenter.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_loading.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
-import 'package:pos_flutter/core/services/pos_devices/printer_profile_service.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/layout.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
+import 'package:holol_POS/core/services/pos_devices/payment_profile_service.dart';
+import 'package:holol_POS/core/services/pos_devices/print_job_service.dart';
+import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/shared/presentation/presenters/printer_status_presenter.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/services/pos_devices/printer_profile_service.dart';
 
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_empty_state.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_info_banner.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_section_card.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_status_chip.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_switch.dart';
-import 'package:pos_flutter/shared/presentation/utils/app_snackbar.dart';
-import 'package:pos_flutter/shared/presentation/dialogs/app_dialog.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_empty_state.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_section_card.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_status_chip.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_switch.dart';
+import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
+import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 
 import 'dialogs/printer_form_dialogs.dart';
 

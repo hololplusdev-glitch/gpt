@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
-import 'package:pos_flutter/core/persistence/daos/audit_dao.dart';
-import 'package:pos_flutter/core/persistence/daos/auth_dao.dart';
-import 'package:pos_flutter/core/persistence/daos/shift_dao.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
+import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
+import 'package:holol_POS/core/persistence/daos/auth_dao.dart';
+import 'package:holol_POS/core/persistence/daos/shift_dao.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 
 /// Command controller for POS runtime session.

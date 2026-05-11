@@ -3,8 +3,8 @@
 // The official Backend invoice number is only assigned after sync.
 // Backend pattern: {CUST}-{BRA}-{MCHN}-{USR}-{SEQ} (zero-padded 4 digits).
 
-import 'package:pos_flutter/core/persistence/daos/sales_dao.dart';
-import 'package:pos_flutter/core/services/time/clock.dart';
+import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
 
 /// Generates local invoice numbers.
 class InvoiceNumberService {

@@ -5,8 +5,8 @@
 import 'dart:math';
 
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/core/services/time/clock.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
 
 /// Data access for user authentication and session logging.
 class AuthDao {

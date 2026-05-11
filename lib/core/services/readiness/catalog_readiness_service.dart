@@ -3,8 +3,8 @@
 // incomplete — selling without items, prices, or POS_MACHINE config
 // produces broken invoices that cannot be uploaded to Backend.
 
-import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
-import 'package:pos_flutter/core/persistence/daos/catalog_dao.dart';
+import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
+import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
 
 /// Aggregated readiness result — a single "go/no-go" gate.
 class CatalogReadiness {

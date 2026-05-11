@@ -1,6 +1,5 @@
-import 'package:pos_flutter/core/persistence/database.dart'
-    hide InvoiceDocument;
-import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
+import 'package:holol_POS/core/persistence/database.dart' hide InvoiceDocument;
+import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 
 typedef ReceiptPayload = InvoiceDocument;
 

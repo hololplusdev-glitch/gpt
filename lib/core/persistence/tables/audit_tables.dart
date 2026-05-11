@@ -3,7 +3,7 @@
 // Audit is NOT sync — these are separate concerns.
 
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/persistence/tables/sales_tables.dart';
+import 'package:holol_POS/core/persistence/tables/sales_tables.dart';
 
 /// Audit log — who did what. Not a sync log.
 /// action stored as stable string code:

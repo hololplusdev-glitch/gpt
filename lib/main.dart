@@ -1,3 +1,3 @@
-import 'package:pos_flutter/app/bootstrap.dart';
+import 'package:holol_POS/app/bootstrap.dart';
 
 void main() => bootstrap();

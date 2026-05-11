@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 
 /// A unified dialog component to replace manual showDialog + AlertDialog calls.
 class AppDialog extends StatelessWidget {

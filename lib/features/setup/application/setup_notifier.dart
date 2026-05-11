@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/core/network/network_models.dart';
-import 'package:pos_flutter/core/services/master_data/master_data_contract.dart';
-import 'package:pos_flutter/core/services/master_data/master_data_download_helper.dart';
-import 'package:pos_flutter/core/services/master_data/master_data_sync_service.dart';
-import 'package:pos_flutter/features/auth/application/pos_session_controller.dart';
-import 'package:pos_flutter/features/shift/application/shift_controller.dart';
-import 'package:pos_flutter/features/sync/application/master_data_provider_invalidation.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/network/network_models.dart';
+import 'package:holol_POS/core/services/master_data/master_data_contract.dart';
+import 'package:holol_POS/core/services/master_data/master_data_download_helper.dart';
+import 'package:holol_POS/core/services/master_data/master_data_sync_service.dart';
+import 'package:holol_POS/features/auth/application/pos_session_controller.dart';
+import 'package:holol_POS/features/shift/application/shift_controller.dart';
+import 'package:holol_POS/features/sync/application/master_data_provider_invalidation.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 
 class SetupState {
   final bool isSetupComplete;

@@ -3,8 +3,8 @@
 
 import 'dart:convert';
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/core/services/time/clock.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
 
 /// Data access for shift operations.
 class ShiftDao {

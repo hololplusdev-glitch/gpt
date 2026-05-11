@@ -1,6 +1,6 @@
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_print_history_entry.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/core/services/invoices/invoice_print_history_entry.dart';
 
 class InvoicePrintHistoryDao {
   final AppDatabase _db;

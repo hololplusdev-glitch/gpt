@@ -2,7 +2,7 @@
 // WHY: Centralized Backend master data type definitions and sync context.
 // Extracted from master_data_sync_service.dart for DRY/SRP compliance.
 
-import 'package:pos_flutter/core/errors/app_exception.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
 
 /// Enumeration of all master data types supported by the POS data download engine.
 ///

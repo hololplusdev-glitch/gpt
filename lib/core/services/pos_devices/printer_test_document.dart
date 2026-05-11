@@ -1,4 +1,4 @@
-import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 
 InvoiceDocument buildPrinterTestDocument() {
   return InvoiceDocument(

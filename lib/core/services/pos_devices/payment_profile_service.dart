@@ -1,10 +1,10 @@
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/persistence/daos/payment_profile_dao.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-export 'package:pos_flutter/core/persistence/database.dart'
+import 'package:holol_POS/core/persistence/daos/payment_profile_dao.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+export 'package:holol_POS/core/persistence/database.dart'
     show PaymentDeviceProfile;
-import 'package:pos_flutter/core/services/time/clock.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 
 class PaymentProfileService {
   final PaymentProfileDao _dao;

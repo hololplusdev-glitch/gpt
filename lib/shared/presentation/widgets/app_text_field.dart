@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
 
 /// A unified text field component enforcing the SSOT for input styling.
 /// Automatically inherits styles from `AppTheme` but allows specific overrides safely.

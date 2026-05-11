@@ -1,16 +1,16 @@
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pos_flutter/core/persistence/daos/print_job_dao.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_document_builder.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_pdf_exporter.dart';
-import 'package:pos_flutter/core/services/pos_devices/print_job_processor.dart';
-import 'package:pos_flutter/core/services/pos_devices/print_job_service.dart';
-import 'package:pos_flutter/core/services/pos_devices/print_queue.dart';
-import 'package:pos_flutter/core/services/time/clock.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/persistence/daos/print_job_dao.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document_builder.dart';
+import 'package:holol_POS/core/services/invoices/invoice_pdf_exporter.dart';
+import 'package:holol_POS/core/services/pos_devices/print_job_processor.dart';
+import 'package:holol_POS/core/services/pos_devices/print_job_service.dart';
+import 'package:holol_POS/core/services/pos_devices/print_queue.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:share_plus/share_plus.dart';
 
 class InvoiceOutputActions {

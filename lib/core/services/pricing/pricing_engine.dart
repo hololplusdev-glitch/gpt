@@ -1,5 +1,5 @@
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 
 class PricingEngine {
   const PricingEngine();

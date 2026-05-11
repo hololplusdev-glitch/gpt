@@ -1,6 +1,6 @@
-import 'package:pos_flutter/core/persistence/daos/print_job_dao.dart';
-import 'package:pos_flutter/core/persistence/database.dart' show PrintJob;
-export 'package:pos_flutter/core/persistence/database.dart' show PrintJob;
+import 'package:holol_POS/core/persistence/daos/print_job_dao.dart';
+import 'package:holol_POS/core/persistence/database.dart' show PrintJob;
+export 'package:holol_POS/core/persistence/database.dart' show PrintJob;
 
 /// Retry/status shell only.
 /// PrintJobs are built/enqueued by PrintQueue.

@@ -1,6 +1,6 @@
 import 'dart:io' show Platform;
 
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 
 AppPlatform currentAppPlatform() {
   if (Platform.isAndroid) return AppPlatform.android;

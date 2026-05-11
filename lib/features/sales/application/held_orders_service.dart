@@ -2,17 +2,17 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
-import 'package:pos_flutter/core/persistence/daos/audit_dao.dart';
-import 'package:pos_flutter/core/persistence/daos/sales_dao.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/core/persistence/pos_config_repository.dart';
-import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
-import 'package:pos_flutter/core/services/time/clock.dart';
-import 'package:pos_flutter/features/sales/domain/models/sale_inputs.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
+import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
+import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/core/persistence/pos_config_repository.dart';
+import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
+import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 
 /// Held-order owner only.

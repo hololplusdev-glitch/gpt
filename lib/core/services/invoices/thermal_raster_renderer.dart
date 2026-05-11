@@ -2,8 +2,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
-import 'package:pos_flutter/core/services/invoices/receipt_template_renderer.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document.dart';
+import 'package:holol_POS/core/services/invoices/receipt_template_renderer.dart';
 
 class ThermalRasterRenderer {
   final ReceiptTemplateRenderer _textRenderer;

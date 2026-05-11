@@ -1,10 +1,9 @@
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/persistence/daos/print_job_dao.dart';
-import 'package:pos_flutter/core/persistence/daos/printer_profile_dao.dart';
-import 'package:pos_flutter/core/persistence/database.dart'
-    hide InvoiceDocument;
-import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/core/persistence/daos/print_job_dao.dart';
+import 'package:holol_POS/core/persistence/daos/printer_profile_dao.dart';
+import 'package:holol_POS/core/persistence/database.dart' hide InvoiceDocument;
+import 'package:holol_POS/core/services/invoices/invoice_document.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 import 'package:uuid/uuid.dart';
 
 /// Final PrintJobs owner.

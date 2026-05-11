@@ -6,8 +6,8 @@
 // Provides consistent visual treatment for content panels across the app.
 
 import 'package:flutter/material.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
 
 /// A simple surface panel with consistent padding and optional title.
 ///

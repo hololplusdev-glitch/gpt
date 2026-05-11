@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
 
 /// A unified loading indicator enforcing SSOT for loading states.
 class AppLoading extends StatelessWidget {

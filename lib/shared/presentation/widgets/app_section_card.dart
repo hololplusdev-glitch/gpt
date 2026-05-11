@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
 
 class AppSectionCard extends StatelessWidget {
   final String title;

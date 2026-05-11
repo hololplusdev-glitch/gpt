@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
-import 'package:pos_flutter/core/services/time/clock.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
 
 class PrintJobDao {
   final AppDatabase _db;

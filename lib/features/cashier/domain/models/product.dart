@@ -1,4 +1,4 @@
-import 'package:pos_flutter/shared/models/sellable_item_snapshot.dart';
+import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
 
 class ProductCategory {
   final String id;

@@ -16,7 +16,7 @@ abstract final class AppIdentity {
   static const String appNameShort = 'Kasir';
 
   /// Internal package identifier (matches pubspec.yaml `name`).
-  static const String packageName = 'pos_flutter';
+  static const String packageName = 'holol_POS';
 
   // ─── Version ───────────────────────────────────────────
   /// Semantic version string — update here + pubspec.yaml on each release.

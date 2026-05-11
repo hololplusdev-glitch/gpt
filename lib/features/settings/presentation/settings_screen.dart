@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pos_flutter/app/router.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/core/constants/app_identity.dart';
-import 'package:pos_flutter/core/design_system/layout.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
-import 'package:pos_flutter/features/setup/application/setup_notifier.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_section_card.dart';
-import 'package:pos_flutter/shared/presentation/dialogs/app_dialog.dart';
+import 'package:holol_POS/app/router.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/core/constants/app_identity.dart';
+import 'package:holol_POS/core/design_system/layout.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
+import 'package:holol_POS/features/setup/application/setup_notifier.dart';
+import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_section_card.dart';
+import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
 
 /// WHY: Settings screen is READ-ONLY for connection. Connection editing
 /// is only done through Setup (DRY principle). To change connection,

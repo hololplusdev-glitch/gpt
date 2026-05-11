@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 import 'package:uuid/uuid.dart';
 
 /// Final upload owner.

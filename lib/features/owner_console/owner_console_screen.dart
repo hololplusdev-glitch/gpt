@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/features/owner_console/local_db_inspector_repository.dart';
-import 'package:pos_flutter/shared/presentation/utils/app_snackbar.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_loading.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/features/owner_console/local_db_inspector_repository.dart';
+import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 
 final localDbInspectorRepositoryProvider = Provider<LocalDbInspectorRepository>(
   (ref) {

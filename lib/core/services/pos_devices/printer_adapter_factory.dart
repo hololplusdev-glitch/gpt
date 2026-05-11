@@ -2,12 +2,12 @@
 // WHY: Maps PrinterProfile → concrete PrinterAdapter based on connectionType
 // and driverType. Also provides platform-aware connection options list for UI.
 
-import 'package:pos_flutter/core/adapters/network_escpos_printer_adapter.dart';
-import 'package:pos_flutter/core/adapters/printer_adapter.dart';
-import 'package:pos_flutter/core/adapters/system_printer_adapter.dart';
-import 'package:pos_flutter/core/adapters/unsupported_printer_adapter.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/core/adapters/network_escpos_printer_adapter.dart';
+import 'package:holol_POS/core/adapters/printer_adapter.dart';
+import 'package:holol_POS/core/adapters/system_printer_adapter.dart';
+import 'package:holol_POS/core/adapters/unsupported_printer_adapter.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 
 class PrinterConnectionOption {
   final PrinterConnectionType type;

@@ -1,10 +1,10 @@
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/core/network/network_models.dart';
-import 'package:pos_flutter/core/services/master_data/master_data_contract.dart';
-import 'package:pos_flutter/core/services/master_data/master_data_sync_service.dart';
-import 'package:pos_flutter/core/services/readiness/catalog_readiness_service.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/network/network_models.dart';
+import 'package:holol_POS/core/services/master_data/master_data_contract.dart';
+import 'package:holol_POS/core/services/master_data/master_data_sync_service.dart';
+import 'package:holol_POS/core/services/readiness/catalog_readiness_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 
 class MasterDataDownloadResult {
   final MasterDataSyncSummary summary;

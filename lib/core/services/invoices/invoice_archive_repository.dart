@@ -1,9 +1,8 @@
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/persistence/database.dart'
-    hide InvoiceDocument;
-import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_validation_service.dart';
-import 'package:pos_flutter/core/services/time/clock.dart';
+import 'package:holol_POS/core/persistence/database.dart' hide InvoiceDocument;
+import 'package:holol_POS/core/services/invoices/invoice_document.dart';
+import 'package:holol_POS/core/services/invoices/invoice_validation_service.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
 
 class InvoiceArchiveRepository {
   final AppDatabase _db;

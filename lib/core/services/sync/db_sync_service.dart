@@ -4,12 +4,12 @@
 
 import 'dart:convert';
 
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/core/network/api_client.dart';
-import 'package:pos_flutter/core/persistence/daos/audit_dao.dart';
-import 'package:pos_flutter/core/persistence/daos/sync_dao.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/network/api_client.dart';
+import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
+import 'package:holol_POS/core/persistence/daos/sync_dao.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 import 'package:uuid/uuid.dart';
 
 /// Local upload outbox processor.

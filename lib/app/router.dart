@@ -1,24 +1,24 @@
 // app/router.dart
 // WHY: GoRouter with setup guard → auth guard → shift guard.
 // Enforces: first-run setup → login → open shift → cashier.
-import 'package:pos_flutter/features/owner_console/owner_console_screen.dart';
+import 'package:holol_POS/features/owner_console/owner_console_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/features/auth/presentation/login_screen.dart';
-import 'package:pos_flutter/features/cashier/presentation/cashier_screen.dart';
-import 'package:pos_flutter/features/history/presentation/history_screen.dart';
-import 'package:pos_flutter/features/invoices/presentation/invoice_preview_screen.dart';
-import 'package:pos_flutter/features/pos_devices/presentation/pos_devices_screen.dart';
-import 'package:pos_flutter/features/settings/presentation/settings_screen.dart';
-import 'package:pos_flutter/features/setup/application/setup_notifier.dart';
-import 'package:pos_flutter/features/setup/presentation/setup_screen.dart';
-import 'package:pos_flutter/features/shift/presentation/shift_screen.dart';
-import 'package:pos_flutter/features/sync/presentation/sync_monitor_screen.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/features/auth/presentation/login_screen.dart';
+import 'package:holol_POS/features/cashier/presentation/cashier_screen.dart';
+import 'package:holol_POS/features/history/presentation/history_screen.dart';
+import 'package:holol_POS/features/invoices/presentation/invoice_preview_screen.dart';
+import 'package:holol_POS/features/pos_devices/presentation/pos_devices_screen.dart';
+import 'package:holol_POS/features/settings/presentation/settings_screen.dart';
+import 'package:holol_POS/features/setup/application/setup_notifier.dart';
+import 'package:holol_POS/features/setup/presentation/setup_screen.dart';
+import 'package:holol_POS/features/shift/presentation/shift_screen.dart';
+import 'package:holol_POS/features/sync/presentation/sync_monitor_screen.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 
 /// Route path constants.
 abstract final class AppRoutes {

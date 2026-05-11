@@ -1,10 +1,10 @@
 import 'package:printing/printing.dart';
-import 'package:pos_flutter/core/adapters/printer_adapter.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
-import 'package:pos_flutter/core/services/invoices/thermal_receipt_pdf_renderer.dart';
-import 'package:pos_flutter/core/services/pos_devices/printer_profile_service.dart';
-import 'package:pos_flutter/core/services/pos_devices/printer_test_document.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/core/adapters/printer_adapter.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document.dart';
+import 'package:holol_POS/core/services/invoices/thermal_receipt_pdf_renderer.dart';
+import 'package:holol_POS/core/services/pos_devices/printer_profile_service.dart';
+import 'package:holol_POS/core/services/pos_devices/printer_test_document.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 
 class SystemPrinterAdapter implements PrinterAdapter {
   final ThermalReceiptPdfRenderer _renderer;

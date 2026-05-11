@@ -7,15 +7,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:pos_flutter/app/router.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/features/auth/application/pos_session_controller.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_dropdown.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
+import 'package:holol_POS/app/router.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/features/auth/application/pos_session_controller.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_dropdown.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 
 final loginIdentityCardProvider = FutureProvider.autoDispose<LoginIdentityInfo>(
   (ref) async {

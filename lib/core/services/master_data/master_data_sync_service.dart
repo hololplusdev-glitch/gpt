@@ -1,16 +1,16 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/core/network/api_client.dart';
-import 'package:pos_flutter/core/persistence/daos/audit_dao.dart';
-import 'package:pos_flutter/core/persistence/daos/master_data_dao.dart';
-import 'package:pos_flutter/core/services/master_data/backend_value_reader.dart';
-import 'package:pos_flutter/core/services/master_data/master_data_mapper.dart';
-import 'package:pos_flutter/core/services/master_data/master_data_contract.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/network/api_client.dart';
+import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
+import 'package:holol_POS/core/persistence/daos/master_data_dao.dart';
+import 'package:holol_POS/core/services/master_data/backend_value_reader.dart';
+import 'package:holol_POS/core/services/master_data/master_data_mapper.dart';
+import 'package:holol_POS/core/services/master_data/master_data_contract.dart';
 
-import 'package:pos_flutter/core/services/time/clock.dart';
-import 'package:pos_flutter/core/network/network_models.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/core/network/network_models.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 
 // Types are in master_data_contract.dart
 

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 
 class InvoiceAuditHasher {
   const InvoiceAuditHasher();

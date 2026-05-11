@@ -7,8 +7,8 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pos_flutter/core/scanner/barcode_scanner_service.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/scanner/barcode_scanner_service.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 
 /// Whether the current platform supports camera-based barcode scanning.
 ///

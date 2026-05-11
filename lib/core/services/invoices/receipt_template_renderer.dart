@@ -1,6 +1,6 @@
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/core/services/formatters/pos_formatters.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 
 class ReceiptTemplateLabels {
   final String taxNumber;

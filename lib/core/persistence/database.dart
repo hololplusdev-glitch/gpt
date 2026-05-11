@@ -5,7 +5,7 @@
 
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
-import 'package:pos_flutter/core/persistence/tables/all_tables.dart';
+import 'package:holol_POS/core/persistence/tables/all_tables.dart';
 
 part 'database.g.dart';
 

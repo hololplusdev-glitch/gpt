@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 
 abstract final class PrinterStatusPresenter {
   static PrinterRole? roleFromName(String? name) => PrinterRole.fromCode(name);

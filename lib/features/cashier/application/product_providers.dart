@@ -2,13 +2,13 @@
 // WHY: DB-backed product/category/payment providers for the cashier UI.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pos_flutter/core/persistence/daos/catalog_dao.dart';
-import 'package:pos_flutter/core/persistence/database.dart' hide Customer;
-import 'package:pos_flutter/core/services/payments/payment_method_resolver.dart';
-import 'package:pos_flutter/features/cashier/domain/models/payment_method_option.dart';
-import 'package:pos_flutter/features/cashier/domain/models/product.dart';
-import 'package:pos_flutter/shared/models/customer.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
+import 'package:holol_POS/core/persistence/database.dart' hide Customer;
+import 'package:holol_POS/core/services/payments/payment_method_resolver.dart';
+import 'package:holol_POS/features/cashier/domain/models/payment_method_option.dart';
+import 'package:holol_POS/features/cashier/domain/models/product.dart';
+import 'package:holol_POS/shared/models/customer.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 
 final searchQueryProvider = StateProvider<String>((ref) => '');
 

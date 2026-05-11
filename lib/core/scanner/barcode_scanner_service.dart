@@ -11,9 +11,9 @@
 //   3. Stateless lookup: does not cache items — delegates to CatalogDao which
 //      queries the local SQLite cache (offline-first).
 
-import 'package:pos_flutter/core/persistence/daos/catalog_dao.dart';
-import 'package:pos_flutter/core/services/time/clock.dart';
-import 'package:pos_flutter/shared/models/sellable_item_snapshot.dart';
+import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
 
 /// Outcome of processing a scanned barcode.
 sealed class ScanResult {

@@ -3,8 +3,8 @@
 // Wraps Dio with interceptors for auth, logging, error mapping.
 
 import 'package:dio/dio.dart';
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/core/network/network_models.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/network/network_models.dart';
 
 class ApiPaths {
   static const data = '/data';

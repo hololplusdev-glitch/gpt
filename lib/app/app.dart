@@ -7,11 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logging/logging.dart';
-import 'package:pos_flutter/app/router.dart';
-import 'package:pos_flutter/core/design_system/theme.dart';
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/features/setup/application/setup_notifier.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/app/router.dart';
+import 'package:holol_POS/core/design_system/theme.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/features/setup/application/setup_notifier.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 
 final _installationLog = Logger('AppInstallation');
 

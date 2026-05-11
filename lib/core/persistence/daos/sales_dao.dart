@@ -3,10 +3,10 @@
 // Sales, lines, payments, taxes, adjustments — all persisted in one call.
 
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/core/services/payments/payment_method_resolver.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
-import 'package:pos_flutter/shared/models/sales_history.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/core/services/payments/payment_method_resolver.dart';
+import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/shared/models/sales_history.dart';
 
 /// Data access for sale persistence and querying.
 class SalesDao {

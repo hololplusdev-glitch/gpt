@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/core/services/master_data/master_data_mapper.dart';
-import 'package:pos_flutter/core/services/master_data/master_data_contract.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/core/services/master_data/master_data_mapper.dart';
+import 'package:holol_POS/core/services/master_data/master_data_contract.dart';
 
 class MasterDataDao {
   final AppDatabase _db;
@@ -289,37 +289,39 @@ class MasterDataDao {
       return false;
     }
 
-    final setupUser = await (_db.select(_db.posUsers)
-          ..where(
-            (user) =>
-                user.custCode.equals(normalizedCustCode) &
-                user.isActive.equals(true) &
-                (user.id.equals(normalizedBootstrapUserId) |
-                    user.sourceUserId.equals(normalizedBootstrapUserId)),
-          ))
-        .getSingleOrNull();
+    final setupUser =
+        await (_db.select(_db.posUsers)..where(
+              (user) =>
+                  user.custCode.equals(normalizedCustCode) &
+                  user.isActive.equals(true) &
+                  (user.id.equals(normalizedBootstrapUserId) |
+                      user.sourceUserId.equals(normalizedBootstrapUserId)),
+            ))
+            .getSingleOrNull();
 
     if (setupUser == null) {
       return false;
     }
 
-    final machine = await (_db.select(_db.posMachines)
-          ..where((row) => row.custCode.equals(normalizedCustCode))
-          ..limit(1))
-        .getSingleOrNull();
+    final machine =
+        await (_db.select(_db.posMachines)
+              ..where((row) => row.custCode.equals(normalizedCustCode))
+              ..limit(1))
+            .getSingleOrNull();
 
     if (machine == null) {
       return false;
     }
 
-    final devicePrivilege = await (_db.select(_db.posUserMachineAccess)
-          ..where(
-            (row) =>
-                row.custCode.equals(normalizedCustCode) &
-                row.canUseMachine.equals(true),
-          )
-          ..limit(1))
-        .getSingleOrNull();
+    final devicePrivilege =
+        await (_db.select(_db.posUserMachineAccess)
+              ..where(
+                (row) =>
+                    row.custCode.equals(normalizedCustCode) &
+                    row.canUseMachine.equals(true),
+              )
+              ..limit(1))
+            .getSingleOrNull();
 
     return devicePrivilege != null;
   }

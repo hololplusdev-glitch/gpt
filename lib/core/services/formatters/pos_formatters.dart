@@ -1,5 +1,5 @@
 import 'package:intl/intl.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 
 class PosFormatters {
   const PosFormatters._();
@@ -8,7 +8,10 @@ class PosFormatters {
   static final DateFormat _dateOnly = DateFormat('yyyy-MM-dd');
   static final DateFormat _timeOnly = DateFormat('HH:mm');
 
-  static String amount(num value) => '${value.toStringAsFixed(2)} SAR';
+  static const String saudiRiyalSymbol = '\uE900';
+
+  static String amount(num value) =>
+      '${value.toStringAsFixed(2)} $saudiRiyalSymbol';
 
   static String quantity(num value) =>
       value == value.roundToDouble() ? value.toInt().toString() : '$value';

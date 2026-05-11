@@ -3,23 +3,23 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:pos_flutter/core/design_system/colors.dart';
-import 'package:pos_flutter/core/design_system/layout.dart';
-import 'package:pos_flutter/core/design_system/spacing.dart';
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/core/l10n/app_localizations.dart';
-import 'package:pos_flutter/core/services/master_data/master_data_contract.dart';
-import 'package:pos_flutter/core/services/master_data/master_data_download_helper.dart';
-import 'package:pos_flutter/core/services/master_data/master_data_sync_service.dart';
-import 'package:pos_flutter/features/setup/application/setup_notifier.dart';
-import 'package:pos_flutter/features/sync/application/master_data_provider_invalidation.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_info_banner.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_loading.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_metric_card.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_section_card.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
-import 'package:pos_flutter/shared/presentation/widgets/responsive_row.dart';
-import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
+import 'package:holol_POS/core/design_system/layout.dart';
+import 'package:holol_POS/core/design_system/spacing.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/l10n/app_localizations.dart';
+import 'package:holol_POS/core/services/master_data/master_data_contract.dart';
+import 'package:holol_POS/core/services/master_data/master_data_download_helper.dart';
+import 'package:holol_POS/core/services/master_data/master_data_sync_service.dart';
+import 'package:holol_POS/features/setup/application/setup_notifier.dart';
+import 'package:holol_POS/features/sync/application/master_data_provider_invalidation.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_metric_card.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_section_card.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
+import 'package:holol_POS/shared/presentation/widgets/responsive_row.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
 
 final syncCountsProvider = FutureProvider.autoDispose<_SyncCounts>((ref) async {
   final syncDao = ref.watch(syncDaoProvider);

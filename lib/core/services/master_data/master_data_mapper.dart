@@ -1,9 +1,9 @@
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/errors/app_exception.dart';
-import 'package:pos_flutter/core/persistence/database.dart';
-import 'package:pos_flutter/core/services/master_data/backend_value_reader.dart';
-import 'package:pos_flutter/core/services/master_data/master_data_contract.dart';
-import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/core/services/master_data/backend_value_reader.dart';
+import 'package:holol_POS/core/services/master_data/master_data_contract.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 
 class MasterDataPersistencePlan {
   final List<PosMachinesCompanion> posMachines;
