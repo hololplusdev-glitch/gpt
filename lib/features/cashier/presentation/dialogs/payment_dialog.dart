@@ -12,7 +12,6 @@ import 'package:pos_flutter/features/cashier/application/cart_quote_provider.dar
 import 'package:pos_flutter/features/sales/application/sale_checkout.dart';
 import 'package:pos_flutter/features/cashier/application/product_providers.dart';
 import 'package:pos_flutter/features/cashier/domain/models/payment_method_option.dart';
-import 'package:pos_flutter/features/shift/application/shift_notifier.dart';
 import 'package:pos_flutter/shared/models/customer.dart';
 import 'package:pos_flutter/shared/models/enums.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
@@ -21,6 +20,7 @@ import 'package:pos_flutter/shared/presentation/widgets/app_info_banner.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_loading.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
+import 'package:uuid/uuid.dart';
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final Cart cart;
@@ -34,6 +34,7 @@ class PaymentDialog extends ConsumerStatefulWidget {
 class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   final _tenderedController = TextEditingController();
   final _referenceController = TextEditingController();
+  final String _checkoutAttemptId = 'CHK_${const Uuid().v4()}';
 
   String? _selectedPaymentMethodId;
   String? _selectedCustomerId;
@@ -110,7 +111,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
           .complete(
             SaleCheckoutRequest(
               cart: widget.cart,
-              shiftState: ref.read(shiftProvider),
+              checkoutAttemptId: _checkoutAttemptId,
               paymentMethod: method,
               tenderedText: _tenderedController.text,
               reference: _referenceController.text,

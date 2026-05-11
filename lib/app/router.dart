@@ -127,8 +127,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         AppRoutes.invoice,
       };
       if (isAuthenticated &&
-          useShift &&
-          !shiftState.hasOpenShift &&
+          shiftRequired &&
+          !hasOpenShift &&
           !shiftExemptRoutes.contains(state.matchedLocation)) {
         return AppRoutes.shift;
       }

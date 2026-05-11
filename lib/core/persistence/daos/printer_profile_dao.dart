@@ -55,6 +55,16 @@ class PrinterProfileDao {
         .getSingleOrNull();
   }
 
+  Future<PrinterProfile?> getActiveByName(String name) {
+    final normalized = name.trim();
+    if (normalized.isEmpty) return Future.value(null);
+
+    return (_db.select(_db.printerProfiles)
+          ..where((p) => p.name.equals(normalized) & p.enabled.equals(true))
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
   Future<void> upsertForRole({
     required PrinterProfilesCompanion profile,
     required PrinterRole role,

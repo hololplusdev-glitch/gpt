@@ -50,18 +50,7 @@ class HeldOrdersService {
 
     try {
       return _pricingEngine.calculateQuote(
-        lines: lineItems
-            .map(
-              (line) => PricingLineInput(
-                itemId: line.itemId,
-                unitId: line.unitId,
-                unitPrice: line.unitPrice,
-                quantity: line.quantity,
-                discountAmount: line.discountAmount,
-                taxRate: line.taxRate,
-              ),
-            )
-            .toList(),
+        lines: lineItems.toPricingLineInputs(),
         taxRate: 0,
         useTax: session.activeUseTax,
         priceIncludesTax: session.priceIncludesTax,
@@ -78,7 +67,6 @@ class HeldOrdersService {
   }
 
   Future<String> holdOrder({
-    required String shiftId,
     required List<SaleLineInput> items,
     String? customerId,
     String? customerName,
@@ -86,6 +74,7 @@ class HeldOrdersService {
     String? notes,
   }) async {
     final session = _requireActiveSession();
+    final shiftId = _requireOpenShiftId(session);
 
     if (!_config.useHeldInvoices) {
       throw const SaleException(
@@ -220,6 +209,14 @@ class HeldOrdersService {
         );
       }
     }
+  }
+
+  String _requireOpenShiftId(ActivePosSession session) {
+    final shiftId = session.openShiftId?.trim();
+    if (shiftId == null || shiftId.isEmpty) {
+      throw const SaleException('Open a shift before holding orders.');
+    }
+    return shiftId;
   }
 
   ActivePosSession _requireActiveSession() {

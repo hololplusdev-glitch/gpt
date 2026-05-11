@@ -20,7 +20,6 @@ import 'package:pos_flutter/core/services/time/clock.dart';
 import 'package:pos_flutter/features/cashier/domain/models/cart.dart';
 import 'package:pos_flutter/features/cashier/domain/models/payment_method_option.dart';
 import 'package:pos_flutter/features/sales/domain/models/sale_inputs.dart';
-import 'package:pos_flutter/features/shift/application/shift_notifier.dart';
 import 'package:pos_flutter/shared/models/enums.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
@@ -76,20 +75,12 @@ class SaleCheckout {
 
   Future<SaleCheckoutResult> complete(SaleCheckoutRequest request) async {
     final session = _requireActiveSession();
-    final shiftState = request.shiftState;
-
-    if (!shiftState.hasOpenShift || shiftState.activeShift == null) {
-      throw const SaleCheckoutException(
-        'Open a shift before completing payment.',
-      );
-    }
+    final shiftId = _requireOpenShiftId(session);
+    await _validateOpenShift(shiftId);
 
     if (request.cart.isEmpty) {
       throw const SaleCheckoutException('No items in cart.');
     }
-
-    final shiftId = shiftState.activeShift!.id;
-    await _validateOpenShift(shiftId);
 
     final draftLines = request.cart.toSaleLineInputs();
     final officialLines = await _resolveOfficialPrices(
@@ -181,12 +172,12 @@ class SaleCheckout {
       branchNo: session.activeBranchNo,
       machineNo: session.activeMachineNo,
       userId: session.activeUserId,
-      sequenceType: 'sale',
+      sequenceType: _saleSequenceType(session),
     );
 
     final saleId = 'SALE_${_uuid.v4()}';
     final now = _clock.now();
-    final idempotencyKey = 'sale_$saleId';
+    final idempotencyKey = 'sale_${request.checkoutAttemptId}';
 
     final envelope = _buildSaleEnvelope(
       saleId: saleId,
@@ -235,7 +226,7 @@ class SaleCheckout {
       warnings.add('Original invoice document could not be archived.');
     }
 
-    if (_config.autoPrintAfterSale) {
+    if (_config.autoPrintAfterSale || session.autoPrint) {
       try {
         final document = await _invoiceDocumentBuilder.getOrCreateOriginal(
           saleId,
@@ -245,6 +236,7 @@ class SaleCheckout {
           createdAt: now,
           createdBy: session.activeUserId,
           requireAutoPrint: true,
+          preferredPrinterName: session.printerName,
         );
 
         await _salesDao.enqueuePrintJobs(printJobs);
@@ -302,7 +294,10 @@ class SaleCheckout {
           taxRate: price.taxRate,
           discountType: line.discountType,
           discountValue: line.discountValue,
-          discountAmount: line.discountAmount,
+          discountAmount: _officialDiscountAmount(
+            line: line,
+            officialUnitPrice: price.unitPrice,
+          ),
           isPriceOverridden: false,
           allowDiscount: price.allowDiscount,
           priceSource: price.priceSource,
@@ -312,6 +307,29 @@ class SaleCheckout {
     }
 
     return resolved;
+  }
+
+  String _requireOpenShiftId(ActivePosSession session) {
+    final shiftId = session.openShiftId?.trim();
+    if (shiftId == null || shiftId.isEmpty) {
+      throw const SaleCheckoutException(
+        'Open a shift before completing payment.',
+      );
+    }
+    return shiftId;
+  }
+
+  double _officialDiscountAmount({
+    required SaleLineInput line,
+    required double officialUnitPrice,
+  }) {
+    if (line.discountType == DiscountType.percentage &&
+        line.discountValue != null) {
+      final base = officialUnitPrice * line.quantity;
+      return PricingEngine.roundAmount(base * (line.discountValue! / 100));
+    }
+
+    return line.discountAmount;
   }
 
   Future<void> _validateOpenShift(String shiftId) async {
@@ -330,18 +348,7 @@ class SaleCheckout {
 
     try {
       return _pricingEngine.calculateQuote(
-        lines: lines
-            .map(
-              (line) => PricingLineInput(
-                itemId: line.itemId,
-                unitId: line.unitId,
-                unitPrice: line.unitPrice,
-                quantity: line.quantity,
-                discountAmount: line.discountAmount,
-                taxRate: line.taxRate,
-              ),
-            )
-            .toList(),
+        lines: lines.toPricingLineInputs(),
         taxRate: 0,
         useTax: session.activeUseTax,
         priceIncludesTax: session.priceIncludesTax,
@@ -428,7 +435,8 @@ class SaleCheckout {
           itemNameSnapshot: Value(p.input.itemName),
           unitNameSnapshot: Value(p.input.unitName),
           barcode: Value(p.input.barcode),
-          qtyScaled: Value(p.input.quantity.round()),
+          qtyScaled: Value(_toQtyScaled(p.input.quantity)),
+          qtyScale: const Value(_quantityScale),
           unitPrice: Value(p.input.unitPrice),
           taxRate: Value(p.input.taxRate),
           taxableAmount: Value(p.taxableAmount),
@@ -570,6 +578,11 @@ class SaleCheckout {
     }
   }
 
+  String _saleSequenceType(ActivePosSession session) {
+    final series = session.invoiceSeries?.trim();
+    return series == null || series.isEmpty ? 'sale' : series;
+  }
+
   ActivePosSession _requireActiveSession() {
     final session = _activeSession;
 
@@ -585,7 +598,7 @@ class SaleCheckout {
 
 class SaleCheckoutRequest {
   final Cart cart;
-  final ShiftState shiftState;
+  final String checkoutAttemptId;
   final PaymentMethodOption paymentMethod;
   final String tenderedText;
   final String reference;
@@ -595,7 +608,7 @@ class SaleCheckoutRequest {
 
   const SaleCheckoutRequest({
     required this.cart,
-    required this.shiftState,
+    required this.checkoutAttemptId,
     required this.paymentMethod,
     required this.tenderedText,
     required this.reference,
@@ -815,6 +828,10 @@ class _ProcessedItem {
     required this.lineTotal,
   });
 }
+
+const int _quantityScale = 1000;
+
+int _toQtyScaled(double quantity) => (quantity * _quantityScale).round();
 
 String _priceSourceForLine(SaleLineInput input) {
   if (input.isPriceOverridden) return PriceSource.manualOverride.code;

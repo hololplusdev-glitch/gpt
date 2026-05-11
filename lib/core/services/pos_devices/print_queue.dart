@@ -32,9 +32,11 @@ class PrintQueue {
     required String? createdBy,
     PrintDocumentType documentType = PrintDocumentType.invoiceReceipt,
     bool requireAutoPrint = true,
+    String? preferredPrinterName,
   }) async {
     final printer = await _eligibleCashierPrinter(
       requireAutoPrint: requireAutoPrint,
+      preferredPrinterName: preferredPrinterName,
     );
 
     if (printer == null) return const [];
@@ -58,9 +60,11 @@ class PrintQueue {
     required String? createdBy,
     PrintDocumentType documentType = PrintDocumentType.invoiceReceipt,
     bool requireAutoPrint = false,
+    String? preferredPrinterName,
   }) async {
     final printer = await _eligibleCashierPrinter(
       requireAutoPrint: requireAutoPrint,
+      preferredPrinterName: preferredPrinterName,
     );
 
     if (printer == null) return const [];
@@ -84,7 +88,21 @@ class PrintQueue {
 
   Future<PrinterProfile?> _eligibleCashierPrinter({
     required bool requireAutoPrint,
+    String? preferredPrinterName,
   }) async {
+    final normalizedPrinterName = preferredPrinterName?.trim();
+
+    if (normalizedPrinterName != null && normalizedPrinterName.isNotEmpty) {
+      final preferred = await _printerProfileDao.getActiveByName(
+        normalizedPrinterName,
+      );
+
+      if (preferred == null) return null;
+      if (requireAutoPrint && !preferred.autoPrint) return null;
+
+      return preferred;
+    }
+
     final printer = await _printerProfileDao.getActiveByRole(
       PrinterRole.cashier,
     );

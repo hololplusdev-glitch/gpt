@@ -34,8 +34,8 @@ class ShiftService {
     Clock clock = const SystemClock(),
   }) : _shiftDao = shiftDao,
        _salesDao = salesDao,
-       _sessionDao = sessionDao,
        _config = config,
+       _uploadQueue = uploadQueue,
        _clock = clock;
 
   static const _uuid = Uuid();
