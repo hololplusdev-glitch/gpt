@@ -79,7 +79,10 @@ class AppDatabase extends _$AppDatabase {
     onUpgrade: (Migrator m, int from, int to) async {
       if (from < 2) {
         await m.createTable(localUserPins);
-        await m.addColumn(posUserMachineAccess, posUserMachineAccess.terminalName);
+        await m.addColumn(
+          posUserMachineAccess,
+          posUserMachineAccess.terminalName,
+        );
         await m.addColumn(posUserMachineAccess, posUserMachineAccess.useTax);
       }
     },

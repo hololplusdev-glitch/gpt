@@ -8,7 +8,7 @@ import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 
 /// UI state for cashier selection only.
-/// This is not runtime truth. Runtime truth is activePosSessionProvider.
+/// Runtime truth is activePosSessionProvider.
 class CashierSelectionState {
   final bool isLoading;
   final String? errorMessage;
@@ -32,63 +32,19 @@ class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
        _sessionDao = sessionDao,
        super(const CashierSelectionState());
 
-  Future<bool> selectCashier(String username) async {
-    state = const CashierSelectionState(isLoading: true);
-
-    try {
-      final user = await _authDao.findByUsername(username);
-      if (user == null) {
-        state = const CashierSelectionState(
-          errorMessage: 'User not found in synced data.',
-        );
-        return false;
-      }
-
-      if (!user.isActive || !user.canLoginPos) {
-        state = const CashierSelectionState(
-          errorMessage: 'User not authorized for POS.',
-        );
-        return false;
-      }
-
-      final accesses = await _sessionDao.listAllowedMachinesForUser(
-        custCode: user.custCode,
-        userId: user.id,
-      );
-
-      if (accesses.isEmpty) {
-        state = const CashierSelectionState(
-          errorMessage: 'No POS machine access found for this user.',
-        );
-        return false;
-      }
-
-      if (accesses.length > 1) {
-        state = const CashierSelectionState(
-          errorMessage:
-              'Multiple POS machines are allowed. Select a machine explicitly.',
-        );
-        return false;
-      }
-
-      return selectCashierAndMachine(username, accesses.single.machineNo);
-    } catch (e) {
-      state = CashierSelectionState(errorMessage: ErrorMapper.userMessage(e));
-      return false;
-    }
-  }
-
+  /// Only supported login flow:
+  /// user number + selected runtime machine.
   Future<bool> selectCashierAndMachine(
-    String username,
+    String userNumber,
     String machineNo,
   ) async {
     state = const CashierSelectionState(isLoading: true);
 
     try {
-      final user = await _authDao.findByUsername(username);
+      final user = await _authDao.findByUsername(userNumber);
       if (user == null) {
         state = const CashierSelectionState(
-          errorMessage: 'User not found in synced data.',
+          errorMessage: 'User not found in downloaded data.',
         );
         return false;
       }
@@ -121,16 +77,16 @@ class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
 
       await _authDao.writeSessionLog(
         id: sessionId,
-        userId: user.id,
-        username: user.username,
+        userId: session.activeUserId,
+        username: session.activeUserName,
         terminalId: session.activeMachineNo,
       );
 
       await _auditDao.log(
         id: 'AUD_${_uuid.v4()}',
         action: AuditAction.login,
-        actorId: user.id,
-        actorName: user.displayName,
+        actorId: session.activeUserId,
+        actorName: session.activeUserName,
         terminalId: session.activeMachineNo,
       );
 

@@ -85,7 +85,9 @@ class MasterDataMapper {
             'machine_id',
           ], 'POS_MACHINE.mchn_nbr');
           final custCode = data.text(['cust_code']) ?? context.custCode;
-          final branchNo = data.requiredText(['bra_nbr'], 'POS_MACHINE.bra_nbr');
+          final branchNo = data.requiredText([
+            'bra_nbr',
+          ], 'POS_MACHINE.bra_nbr');
           final branchYear = data.text(['bra_year']);
           final defaultStoreId = data.text(['def_st', 'st_id']);
           final priceLevelId = data.text(['price_lvl', 'price_lvl_id']);
@@ -425,7 +427,7 @@ class MasterDataMapper {
             'item_id',
           ], 'ITEM_PRICE.itm_id');
           final custCode = data.text(['cust_code']) ?? context.custCode;
-          final storeId = data.text(['st_id']) ?? context.storeId ?? '';
+          final storeId = data.text(['st_id']) ?? '';
           final unitId = data.text(['unit_id']);
           final frQty = data.decimal(['fr_qty']);
           final toQty = data.decimal(['to_qty']);

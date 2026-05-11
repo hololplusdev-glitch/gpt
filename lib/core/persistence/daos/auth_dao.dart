@@ -1,6 +1,6 @@
 // core/persistence/daos/auth_dao.dart
 // WHY: Organized DB access for authentication operations.
-// Separates raw SQL concerns from business logic.
+// AuthDao owns local PIN and authentication-related audit logs.
 
 import 'dart:math';
 
@@ -11,17 +11,17 @@ import 'package:pos_flutter/core/services/time/clock.dart';
 /// Data access for user authentication and session logging.
 class AuthDao {
   final AppDatabase _db;
-
   final Clock _clock;
 
   AuthDao(this._db, {Clock clock = const SystemClock()}) : _clock = clock;
 
-  /// Find user by username, ID, usr_id, or login_name (case-insensitive).
-  /// WHY: The login screen says "User ID or Login Name" — users may type
-  /// any of these fields in any casing.
+  /// Find user by username, ID, usr_id, or login_name.
+  /// In this POS flow the cashier types the numeric user ID, but keeping
+  /// login_name support makes the DAO tolerant to backend naming differences.
   Future<PosUser?> findByUsername(String username) async {
     final normalized = username.trim().toLowerCase();
     if (normalized.isEmpty) return null;
+
     return _db
         .customSelect(
           '''
@@ -45,7 +45,7 @@ class AuthDao {
         .getSingleOrNull();
   }
 
-  /// DEV-ONLY: Get all users to help debug empty responses
+  /// DEV-ONLY: Get all users to help debug empty responses.
   Future<List<Map<String, dynamic>>> getAllUsersDebug() async {
     final rows = await _db.select(_db.posUsers).get();
     return rows
@@ -60,7 +60,6 @@ class AuthDao {
         .toList();
   }
 
-  /// Find user by ID.
   Future<PosUser?> findById(String userId) async {
     return (_db.select(
       _db.posUsers,
@@ -69,9 +68,18 @@ class AuthDao {
 
   static const _pinPrefix = 'local-pin-v1';
 
-  bool hasLocalPin(PosUser user) {
-    final value = user.pinHash?.trim();
-    return value != null && value.isNotEmpty;
+  Future<bool> hasLocalPin({
+    required String custCode,
+    required String userId,
+  }) async {
+    final row =
+        await (_db.select(_db.localUserPins)..where(
+              (pin) =>
+                  pin.custCode.equals(custCode) & pin.userId.equals(userId),
+            ))
+            .getSingleOrNull();
+
+    return row != null && row.pinHash.trim().isNotEmpty;
   }
 
   Future<void> setLocalPin({
@@ -80,24 +88,48 @@ class AuthDao {
     required String pin,
   }) async {
     _validatePin(pin);
-    await (_db.update(_db.posUsers)
-          ..where((u) => u.custCode.equals(custCode) & u.id.equals(userId)))
-        .write(PosUsersCompanion(pinHash: Value(_hashPin(pin))));
+
+    final now = _clock.now();
+    final existing =
+        await (_db.select(_db.localUserPins)..where(
+              (row) =>
+                  row.custCode.equals(custCode) & row.userId.equals(userId),
+            ))
+            .getSingleOrNull();
+
+    final salt = existing?.pinSalt ?? _newSalt();
+
+    await _db
+        .into(_db.localUserPins)
+        .insertOnConflictUpdate(
+          LocalUserPinsCompanion(
+            custCode: Value(custCode),
+            userId: Value(userId),
+            pinHash: Value(_hashPin(pin, salt: salt)),
+            pinSalt: Value(salt),
+            createdAt: Value(existing?.createdAt ?? now),
+            updatedAt: Value(now),
+          ),
+        );
   }
 
-  bool verifyLocalPin({required PosUser user, required String pin}) {
+  Future<bool> verifyLocalPin({
+    required String custCode,
+    required String userId,
+    required String pin,
+  }) async {
     _validatePin(pin);
-    final stored = user.pinHash?.trim();
-    if (stored == null || stored.isEmpty) return false;
 
-    if (stored.startsWith('$_pinPrefix:')) {
-      final parts = stored.split(':');
-      if (parts.length != 3) return false;
-      return _hashPin(pin, salt: parts[1]) == stored;
-    }
+    final row =
+        await (_db.select(_db.localUserPins)..where(
+              (pinRow) =>
+                  pinRow.custCode.equals(custCode) &
+                  pinRow.userId.equals(userId),
+            ))
+            .getSingleOrNull();
 
-    // Backward compatibility for any backend-provided plain PIN during rollout.
-    return stored == pin;
+    if (row == null) return false;
+    return row.pinHash == _hashPin(pin, salt: row.pinSalt);
   }
 
   void _validatePin(String pin) {
@@ -106,17 +138,18 @@ class AuthDao {
     }
   }
 
-  String _hashPin(String pin, {String? salt}) {
-    final effectiveSalt = salt ?? _newSalt();
-    final payload = '$effectiveSalt:$pin';
+  String _hashPin(String pin, {required String salt}) {
+    final payload = '$salt:$pin';
 
+    // Local-only hashing without adding a dependency.
+    // Good enough to avoid plain-text PIN storage in this offline POS context.
     var hash = 0xcbf29ce484222325;
     for (final unit in payload.codeUnits) {
       hash ^= unit;
       hash = (hash * 0x100000001b3) & 0x7fffffffffffffff;
     }
 
-    return '$_pinPrefix:$effectiveSalt:${hash.toRadixString(16)}';
+    return '$_pinPrefix:$salt:${hash.toRadixString(16)}';
   }
 
   String _newSalt() {
@@ -127,10 +160,7 @@ class AuthDao {
     ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
-  // WHY: UserRole table removed — supervisor status derived from userLevel.
-  // roleId kept on Users for future API use.
-
-  /// Get all permissions for a user on a terminal.
+  /// Terminal access only. Not full authorization.
   Future<List<String>> getUserPermissions(
     String userId,
     String terminalId,
@@ -140,11 +170,11 @@ class AuthDao {
               (p) => p.userId.equals(userId) & p.machineNo.equals(terminalId),
             ))
             .getSingleOrNull();
+
     if (row == null) return [];
     return [if (row.canUseMachine) 'USE_MACHINE'];
   }
 
-  /// Write session log entry.
   Future<void> writeSessionLog({
     required String id,
     required String userId,
@@ -165,24 +195,24 @@ class AuthDao {
         );
   }
 
-  /// Update session log with logout time.
   Future<void> updateSessionLogout(String sessionId) async {
     final log = await (_db.select(
       _db.auditLog,
     )..where((s) => s.id.equals(sessionId))).getSingleOrNull();
-    if (log != null) {
-      await _db
-          .into(_db.auditLog)
-          .insert(
-            AuditLogCompanion(
-              id: Value('${sessionId}_logout'),
-              action: Value('logout'),
-              actorId: Value(log.actorId),
-              actorName: Value(log.actorName),
-              terminalId: Value(log.terminalId),
-              createdAt: Value(_clock.now()),
-            ),
-          );
-    }
+
+    if (log == null) return;
+
+    await _db
+        .into(_db.auditLog)
+        .insert(
+          AuditLogCompanion(
+            id: Value('${sessionId}_logout'),
+            action: Value('logout'),
+            actorId: Value(log.actorId),
+            actorName: Value(log.actorName),
+            terminalId: Value(log.terminalId),
+            createdAt: Value(_clock.now()),
+          ),
+        );
   }
 }

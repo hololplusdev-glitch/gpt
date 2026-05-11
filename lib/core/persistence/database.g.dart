@@ -1384,6 +1384,419 @@ class SyncProfileTableCompanion extends UpdateCompanion<SyncProfileTableData> {
   }
 }
 
+class $LocalUserPinsTable extends LocalUserPins
+    with TableInfo<$LocalUserPinsTable, LocalUserPin> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LocalUserPinsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _custCodeMeta = const VerificationMeta(
+    'custCode',
+  );
+  @override
+  late final GeneratedColumn<String> custCode = GeneratedColumn<String>(
+    'cust_code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pinHashMeta = const VerificationMeta(
+    'pinHash',
+  );
+  @override
+  late final GeneratedColumn<String> pinHash = GeneratedColumn<String>(
+    'pin_hash',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _pinSaltMeta = const VerificationMeta(
+    'pinSalt',
+  );
+  @override
+  late final GeneratedColumn<String> pinSalt = GeneratedColumn<String>(
+    'pin_salt',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    custCode,
+    userId,
+    pinHash,
+    pinSalt,
+    createdAt,
+    updatedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'local_user_pins';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LocalUserPin> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('cust_code')) {
+      context.handle(
+        _custCodeMeta,
+        custCode.isAcceptableOrUnknown(data['cust_code']!, _custCodeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_custCodeMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('pin_hash')) {
+      context.handle(
+        _pinHashMeta,
+        pinHash.isAcceptableOrUnknown(data['pin_hash']!, _pinHashMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pinHashMeta);
+    }
+    if (data.containsKey('pin_salt')) {
+      context.handle(
+        _pinSaltMeta,
+        pinSalt.isAcceptableOrUnknown(data['pin_salt']!, _pinSaltMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pinSaltMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {custCode, userId};
+  @override
+  LocalUserPin map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LocalUserPin(
+      custCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cust_code'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      pinHash: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pin_hash'],
+      )!,
+      pinSalt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pin_salt'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}updated_at'],
+      )!,
+    );
+  }
+
+  @override
+  $LocalUserPinsTable createAlias(String alias) {
+    return $LocalUserPinsTable(attachedDatabase, alias);
+  }
+}
+
+class LocalUserPin extends DataClass implements Insertable<LocalUserPin> {
+  final String custCode;
+  final String userId;
+  final String pinHash;
+  final String pinSalt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const LocalUserPin({
+    required this.custCode,
+    required this.userId,
+    required this.pinHash,
+    required this.pinSalt,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['cust_code'] = Variable<String>(custCode);
+    map['user_id'] = Variable<String>(userId);
+    map['pin_hash'] = Variable<String>(pinHash);
+    map['pin_salt'] = Variable<String>(pinSalt);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  LocalUserPinsCompanion toCompanion(bool nullToAbsent) {
+    return LocalUserPinsCompanion(
+      custCode: Value(custCode),
+      userId: Value(userId),
+      pinHash: Value(pinHash),
+      pinSalt: Value(pinSalt),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory LocalUserPin.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LocalUserPin(
+      custCode: serializer.fromJson<String>(json['custCode']),
+      userId: serializer.fromJson<String>(json['userId']),
+      pinHash: serializer.fromJson<String>(json['pinHash']),
+      pinSalt: serializer.fromJson<String>(json['pinSalt']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'custCode': serializer.toJson<String>(custCode),
+      'userId': serializer.toJson<String>(userId),
+      'pinHash': serializer.toJson<String>(pinHash),
+      'pinSalt': serializer.toJson<String>(pinSalt),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  LocalUserPin copyWith({
+    String? custCode,
+    String? userId,
+    String? pinHash,
+    String? pinSalt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) => LocalUserPin(
+    custCode: custCode ?? this.custCode,
+    userId: userId ?? this.userId,
+    pinHash: pinHash ?? this.pinHash,
+    pinSalt: pinSalt ?? this.pinSalt,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+  );
+  LocalUserPin copyWithCompanion(LocalUserPinsCompanion data) {
+    return LocalUserPin(
+      custCode: data.custCode.present ? data.custCode.value : this.custCode,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      pinHash: data.pinHash.present ? data.pinHash.value : this.pinHash,
+      pinSalt: data.pinSalt.present ? data.pinSalt.value : this.pinSalt,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalUserPin(')
+          ..write('custCode: $custCode, ')
+          ..write('userId: $userId, ')
+          ..write('pinHash: $pinHash, ')
+          ..write('pinSalt: $pinSalt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(custCode, userId, pinHash, pinSalt, createdAt, updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LocalUserPin &&
+          other.custCode == this.custCode &&
+          other.userId == this.userId &&
+          other.pinHash == this.pinHash &&
+          other.pinSalt == this.pinSalt &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class LocalUserPinsCompanion extends UpdateCompanion<LocalUserPin> {
+  final Value<String> custCode;
+  final Value<String> userId;
+  final Value<String> pinHash;
+  final Value<String> pinSalt;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  final Value<int> rowid;
+  const LocalUserPinsCompanion({
+    this.custCode = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.pinHash = const Value.absent(),
+    this.pinSalt = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LocalUserPinsCompanion.insert({
+    required String custCode,
+    required String userId,
+    required String pinHash,
+    required String pinSalt,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    this.rowid = const Value.absent(),
+  }) : custCode = Value(custCode),
+       userId = Value(userId),
+       pinHash = Value(pinHash),
+       pinSalt = Value(pinSalt),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt);
+  static Insertable<LocalUserPin> custom({
+    Expression<String>? custCode,
+    Expression<String>? userId,
+    Expression<String>? pinHash,
+    Expression<String>? pinSalt,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (custCode != null) 'cust_code': custCode,
+      if (userId != null) 'user_id': userId,
+      if (pinHash != null) 'pin_hash': pinHash,
+      if (pinSalt != null) 'pin_salt': pinSalt,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LocalUserPinsCompanion copyWith({
+    Value<String>? custCode,
+    Value<String>? userId,
+    Value<String>? pinHash,
+    Value<String>? pinSalt,
+    Value<DateTime>? createdAt,
+    Value<DateTime>? updatedAt,
+    Value<int>? rowid,
+  }) {
+    return LocalUserPinsCompanion(
+      custCode: custCode ?? this.custCode,
+      userId: userId ?? this.userId,
+      pinHash: pinHash ?? this.pinHash,
+      pinSalt: pinSalt ?? this.pinSalt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (custCode.present) {
+      map['cust_code'] = Variable<String>(custCode.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (pinHash.present) {
+      map['pin_hash'] = Variable<String>(pinHash.value);
+    }
+    if (pinSalt.present) {
+      map['pin_salt'] = Variable<String>(pinSalt.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LocalUserPinsCompanion(')
+          ..write('custCode: $custCode, ')
+          ..write('userId: $userId, ')
+          ..write('pinHash: $pinHash, ')
+          ..write('pinSalt: $pinSalt, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $BranchProfileTable extends BranchProfile
     with TableInfo<$BranchProfileTable, BranchProfileData> {
   @override
@@ -6523,6 +6936,29 @@ class $PosUserMachineAccessTable extends PosUserMachineAccess
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _terminalNameMeta = const VerificationMeta(
+    'terminalName',
+  );
+  @override
+  late final GeneratedColumn<String> terminalName = GeneratedColumn<String>(
+    'terminal_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _useTaxMeta = const VerificationMeta('useTax');
+  @override
+  late final GeneratedColumn<bool> useTax = GeneratedColumn<bool>(
+    'use_tax',
+    aliasedName,
+    true,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("use_tax" IN (0, 1))',
+    ),
+  );
   static const VerificationMeta _branchNoMeta = const VerificationMeta(
     'branchNo',
   );
@@ -6622,6 +7058,8 @@ class $PosUserMachineAccessTable extends PosUserMachineAccess
     userId,
     sourceUserId,
     machineNo,
+    terminalName,
+    useTax,
     branchNo,
     branchYear,
     storeId,
@@ -6680,6 +7118,21 @@ class $PosUserMachineAccessTable extends PosUserMachineAccess
       );
     } else if (isInserting) {
       context.missing(_machineNoMeta);
+    }
+    if (data.containsKey('terminal_name')) {
+      context.handle(
+        _terminalNameMeta,
+        terminalName.isAcceptableOrUnknown(
+          data['terminal_name']!,
+          _terminalNameMeta,
+        ),
+      );
+    }
+    if (data.containsKey('use_tax')) {
+      context.handle(
+        _useTaxMeta,
+        useTax.isAcceptableOrUnknown(data['use_tax']!, _useTaxMeta),
+      );
     }
     if (data.containsKey('branch_no')) {
       context.handle(
@@ -6775,6 +7228,14 @@ class $PosUserMachineAccessTable extends PosUserMachineAccess
         DriftSqlType.string,
         data['${effectivePrefix}machine_no'],
       )!,
+      terminalName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}terminal_name'],
+      ),
+      useTax: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}use_tax'],
+      ),
       branchNo: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}branch_no'],
@@ -6823,6 +7284,8 @@ class PosUserMachineAccessData extends DataClass
   final String userId;
   final String? sourceUserId;
   final String machineNo;
+  final String? terminalName;
+  final bool? useTax;
   final String? branchNo;
   final String? branchYear;
   final String? storeId;
@@ -6837,6 +7300,8 @@ class PosUserMachineAccessData extends DataClass
     required this.userId,
     this.sourceUserId,
     required this.machineNo,
+    this.terminalName,
+    this.useTax,
     this.branchNo,
     this.branchYear,
     this.storeId,
@@ -6856,6 +7321,12 @@ class PosUserMachineAccessData extends DataClass
       map['source_user_id'] = Variable<String>(sourceUserId);
     }
     map['machine_no'] = Variable<String>(machineNo);
+    if (!nullToAbsent || terminalName != null) {
+      map['terminal_name'] = Variable<String>(terminalName);
+    }
+    if (!nullToAbsent || useTax != null) {
+      map['use_tax'] = Variable<bool>(useTax);
+    }
     if (!nullToAbsent || branchNo != null) {
       map['branch_no'] = Variable<String>(branchNo);
     }
@@ -6888,6 +7359,12 @@ class PosUserMachineAccessData extends DataClass
           ? const Value.absent()
           : Value(sourceUserId),
       machineNo: Value(machineNo),
+      terminalName: terminalName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(terminalName),
+      useTax: useTax == null && nullToAbsent
+          ? const Value.absent()
+          : Value(useTax),
       branchNo: branchNo == null && nullToAbsent
           ? const Value.absent()
           : Value(branchNo),
@@ -6922,6 +7399,8 @@ class PosUserMachineAccessData extends DataClass
       userId: serializer.fromJson<String>(json['userId']),
       sourceUserId: serializer.fromJson<String?>(json['sourceUserId']),
       machineNo: serializer.fromJson<String>(json['machineNo']),
+      terminalName: serializer.fromJson<String?>(json['terminalName']),
+      useTax: serializer.fromJson<bool?>(json['useTax']),
       branchNo: serializer.fromJson<String?>(json['branchNo']),
       branchYear: serializer.fromJson<String?>(json['branchYear']),
       storeId: serializer.fromJson<String?>(json['storeId']),
@@ -6941,6 +7420,8 @@ class PosUserMachineAccessData extends DataClass
       'userId': serializer.toJson<String>(userId),
       'sourceUserId': serializer.toJson<String?>(sourceUserId),
       'machineNo': serializer.toJson<String>(machineNo),
+      'terminalName': serializer.toJson<String?>(terminalName),
+      'useTax': serializer.toJson<bool?>(useTax),
       'branchNo': serializer.toJson<String?>(branchNo),
       'branchYear': serializer.toJson<String?>(branchYear),
       'storeId': serializer.toJson<String?>(storeId),
@@ -6958,6 +7439,8 @@ class PosUserMachineAccessData extends DataClass
     String? userId,
     Value<String?> sourceUserId = const Value.absent(),
     String? machineNo,
+    Value<String?> terminalName = const Value.absent(),
+    Value<bool?> useTax = const Value.absent(),
     Value<String?> branchNo = const Value.absent(),
     Value<String?> branchYear = const Value.absent(),
     Value<String?> storeId = const Value.absent(),
@@ -6972,6 +7455,8 @@ class PosUserMachineAccessData extends DataClass
     userId: userId ?? this.userId,
     sourceUserId: sourceUserId.present ? sourceUserId.value : this.sourceUserId,
     machineNo: machineNo ?? this.machineNo,
+    terminalName: terminalName.present ? terminalName.value : this.terminalName,
+    useTax: useTax.present ? useTax.value : this.useTax,
     branchNo: branchNo.present ? branchNo.value : this.branchNo,
     branchYear: branchYear.present ? branchYear.value : this.branchYear,
     storeId: storeId.present ? storeId.value : this.storeId,
@@ -6996,6 +7481,10 @@ class PosUserMachineAccessData extends DataClass
           ? data.sourceUserId.value
           : this.sourceUserId,
       machineNo: data.machineNo.present ? data.machineNo.value : this.machineNo,
+      terminalName: data.terminalName.present
+          ? data.terminalName.value
+          : this.terminalName,
+      useTax: data.useTax.present ? data.useTax.value : this.useTax,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       branchYear: data.branchYear.present
           ? data.branchYear.value
@@ -7025,6 +7514,8 @@ class PosUserMachineAccessData extends DataClass
           ..write('userId: $userId, ')
           ..write('sourceUserId: $sourceUserId, ')
           ..write('machineNo: $machineNo, ')
+          ..write('terminalName: $terminalName, ')
+          ..write('useTax: $useTax, ')
           ..write('branchNo: $branchNo, ')
           ..write('branchYear: $branchYear, ')
           ..write('storeId: $storeId, ')
@@ -7044,6 +7535,8 @@ class PosUserMachineAccessData extends DataClass
     userId,
     sourceUserId,
     machineNo,
+    terminalName,
+    useTax,
     branchNo,
     branchYear,
     storeId,
@@ -7062,6 +7555,8 @@ class PosUserMachineAccessData extends DataClass
           other.userId == this.userId &&
           other.sourceUserId == this.sourceUserId &&
           other.machineNo == this.machineNo &&
+          other.terminalName == this.terminalName &&
+          other.useTax == this.useTax &&
           other.branchNo == this.branchNo &&
           other.branchYear == this.branchYear &&
           other.storeId == this.storeId &&
@@ -7079,6 +7574,8 @@ class PosUserMachineAccessCompanion
   final Value<String> userId;
   final Value<String?> sourceUserId;
   final Value<String> machineNo;
+  final Value<String?> terminalName;
+  final Value<bool?> useTax;
   final Value<String?> branchNo;
   final Value<String?> branchYear;
   final Value<String?> storeId;
@@ -7094,6 +7591,8 @@ class PosUserMachineAccessCompanion
     this.userId = const Value.absent(),
     this.sourceUserId = const Value.absent(),
     this.machineNo = const Value.absent(),
+    this.terminalName = const Value.absent(),
+    this.useTax = const Value.absent(),
     this.branchNo = const Value.absent(),
     this.branchYear = const Value.absent(),
     this.storeId = const Value.absent(),
@@ -7110,6 +7609,8 @@ class PosUserMachineAccessCompanion
     required String userId,
     this.sourceUserId = const Value.absent(),
     required String machineNo,
+    this.terminalName = const Value.absent(),
+    this.useTax = const Value.absent(),
     this.branchNo = const Value.absent(),
     this.branchYear = const Value.absent(),
     this.storeId = const Value.absent(),
@@ -7130,6 +7631,8 @@ class PosUserMachineAccessCompanion
     Expression<String>? userId,
     Expression<String>? sourceUserId,
     Expression<String>? machineNo,
+    Expression<String>? terminalName,
+    Expression<bool>? useTax,
     Expression<String>? branchNo,
     Expression<String>? branchYear,
     Expression<String>? storeId,
@@ -7146,6 +7649,8 @@ class PosUserMachineAccessCompanion
       if (userId != null) 'user_id': userId,
       if (sourceUserId != null) 'source_user_id': sourceUserId,
       if (machineNo != null) 'machine_no': machineNo,
+      if (terminalName != null) 'terminal_name': terminalName,
+      if (useTax != null) 'use_tax': useTax,
       if (branchNo != null) 'branch_no': branchNo,
       if (branchYear != null) 'branch_year': branchYear,
       if (storeId != null) 'store_id': storeId,
@@ -7164,6 +7669,8 @@ class PosUserMachineAccessCompanion
     Value<String>? userId,
     Value<String?>? sourceUserId,
     Value<String>? machineNo,
+    Value<String?>? terminalName,
+    Value<bool?>? useTax,
     Value<String?>? branchNo,
     Value<String?>? branchYear,
     Value<String?>? storeId,
@@ -7180,6 +7687,8 @@ class PosUserMachineAccessCompanion
       userId: userId ?? this.userId,
       sourceUserId: sourceUserId ?? this.sourceUserId,
       machineNo: machineNo ?? this.machineNo,
+      terminalName: terminalName ?? this.terminalName,
+      useTax: useTax ?? this.useTax,
       branchNo: branchNo ?? this.branchNo,
       branchYear: branchYear ?? this.branchYear,
       storeId: storeId ?? this.storeId,
@@ -7209,6 +7718,12 @@ class PosUserMachineAccessCompanion
     }
     if (machineNo.present) {
       map['machine_no'] = Variable<String>(machineNo.value);
+    }
+    if (terminalName.present) {
+      map['terminal_name'] = Variable<String>(terminalName.value);
+    }
+    if (useTax.present) {
+      map['use_tax'] = Variable<bool>(useTax.value);
     }
     if (branchNo.present) {
       map['branch_no'] = Variable<String>(branchNo.value);
@@ -7248,6 +7763,8 @@ class PosUserMachineAccessCompanion
           ..write('userId: $userId, ')
           ..write('sourceUserId: $sourceUserId, ')
           ..write('machineNo: $machineNo, ')
+          ..write('terminalName: $terminalName, ')
+          ..write('useTax: $useTax, ')
           ..write('branchNo: $branchNo, ')
           ..write('branchYear: $branchYear, ')
           ..write('storeId: $storeId, ')
@@ -33527,6 +34044,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SyncProfileTableTable syncProfileTable = $SyncProfileTableTable(
     this,
   );
+  late final $LocalUserPinsTable localUserPins = $LocalUserPinsTable(this);
   late final $BranchProfileTable branchProfile = $BranchProfileTable(this);
   late final $PosMachinesTable posMachines = $PosMachinesTable(this);
   late final $ActivePosSessionsTable activePosSessions =
@@ -33700,6 +34218,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     appInstallation,
     syncProfileTable,
+    localUserPins,
     branchProfile,
     posMachines,
     activePosSessions,
@@ -34437,6 +34956,225 @@ typedef $$SyncProfileTableTableProcessedTableManager =
         >,
       ),
       SyncProfileTableData,
+      PrefetchHooks Function()
+    >;
+typedef $$LocalUserPinsTableCreateCompanionBuilder =
+    LocalUserPinsCompanion Function({
+      required String custCode,
+      required String userId,
+      required String pinHash,
+      required String pinSalt,
+      required DateTime createdAt,
+      required DateTime updatedAt,
+      Value<int> rowid,
+    });
+typedef $$LocalUserPinsTableUpdateCompanionBuilder =
+    LocalUserPinsCompanion Function({
+      Value<String> custCode,
+      Value<String> userId,
+      Value<String> pinHash,
+      Value<String> pinSalt,
+      Value<DateTime> createdAt,
+      Value<DateTime> updatedAt,
+      Value<int> rowid,
+    });
+
+class $$LocalUserPinsTableFilterComposer
+    extends Composer<_$AppDatabase, $LocalUserPinsTable> {
+  $$LocalUserPinsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get custCode => $composableBuilder(
+    column: $table.custCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pinHash => $composableBuilder(
+    column: $table.pinHash,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get pinSalt => $composableBuilder(
+    column: $table.pinSalt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LocalUserPinsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LocalUserPinsTable> {
+  $$LocalUserPinsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get custCode => $composableBuilder(
+    column: $table.custCode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pinHash => $composableBuilder(
+    column: $table.pinHash,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get pinSalt => $composableBuilder(
+    column: $table.pinSalt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LocalUserPinsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LocalUserPinsTable> {
+  $$LocalUserPinsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get custCode =>
+      $composableBuilder(column: $table.custCode, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get pinHash =>
+      $composableBuilder(column: $table.pinHash, builder: (column) => column);
+
+  GeneratedColumn<String> get pinSalt =>
+      $composableBuilder(column: $table.pinSalt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+}
+
+class $$LocalUserPinsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LocalUserPinsTable,
+          LocalUserPin,
+          $$LocalUserPinsTableFilterComposer,
+          $$LocalUserPinsTableOrderingComposer,
+          $$LocalUserPinsTableAnnotationComposer,
+          $$LocalUserPinsTableCreateCompanionBuilder,
+          $$LocalUserPinsTableUpdateCompanionBuilder,
+          (
+            LocalUserPin,
+            BaseReferences<_$AppDatabase, $LocalUserPinsTable, LocalUserPin>,
+          ),
+          LocalUserPin,
+          PrefetchHooks Function()
+        > {
+  $$LocalUserPinsTableTableManager(_$AppDatabase db, $LocalUserPinsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LocalUserPinsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$LocalUserPinsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$LocalUserPinsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> custCode = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String> pinHash = const Value.absent(),
+                Value<String> pinSalt = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<DateTime> updatedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LocalUserPinsCompanion(
+                custCode: custCode,
+                userId: userId,
+                pinHash: pinHash,
+                pinSalt: pinSalt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String custCode,
+                required String userId,
+                required String pinHash,
+                required String pinSalt,
+                required DateTime createdAt,
+                required DateTime updatedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => LocalUserPinsCompanion.insert(
+                custCode: custCode,
+                userId: userId,
+                pinHash: pinHash,
+                pinSalt: pinSalt,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LocalUserPinsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LocalUserPinsTable,
+      LocalUserPin,
+      $$LocalUserPinsTableFilterComposer,
+      $$LocalUserPinsTableOrderingComposer,
+      $$LocalUserPinsTableAnnotationComposer,
+      $$LocalUserPinsTableCreateCompanionBuilder,
+      $$LocalUserPinsTableUpdateCompanionBuilder,
+      (
+        LocalUserPin,
+        BaseReferences<_$AppDatabase, $LocalUserPinsTable, LocalUserPin>,
+      ),
+      LocalUserPin,
       PrefetchHooks Function()
     >;
 typedef $$BranchProfileTableCreateCompanionBuilder =
@@ -36799,6 +37537,8 @@ typedef $$PosUserMachineAccessTableCreateCompanionBuilder =
       required String userId,
       Value<String?> sourceUserId,
       required String machineNo,
+      Value<String?> terminalName,
+      Value<bool?> useTax,
       Value<String?> branchNo,
       Value<String?> branchYear,
       Value<String?> storeId,
@@ -36816,6 +37556,8 @@ typedef $$PosUserMachineAccessTableUpdateCompanionBuilder =
       Value<String> userId,
       Value<String?> sourceUserId,
       Value<String> machineNo,
+      Value<String?> terminalName,
+      Value<bool?> useTax,
       Value<String?> branchNo,
       Value<String?> branchYear,
       Value<String?> storeId,
@@ -36858,6 +37600,16 @@ class $$PosUserMachineAccessTableFilterComposer
 
   ColumnFilters<String> get machineNo => $composableBuilder(
     column: $table.machineNo,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get terminalName => $composableBuilder(
+    column: $table.terminalName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get useTax => $composableBuilder(
+    column: $table.useTax,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -36936,6 +37688,16 @@ class $$PosUserMachineAccessTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get terminalName => $composableBuilder(
+    column: $table.terminalName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get useTax => $composableBuilder(
+    column: $table.useTax,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get branchNo => $composableBuilder(
     column: $table.branchNo,
     builder: (column) => ColumnOrderings(column),
@@ -37002,6 +37764,14 @@ class $$PosUserMachineAccessTableAnnotationComposer
 
   GeneratedColumn<String> get machineNo =>
       $composableBuilder(column: $table.machineNo, builder: (column) => column);
+
+  GeneratedColumn<String> get terminalName => $composableBuilder(
+    column: $table.terminalName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get useTax =>
+      $composableBuilder(column: $table.useTax, builder: (column) => column);
 
   GeneratedColumn<String> get branchNo =>
       $composableBuilder(column: $table.branchNo, builder: (column) => column);
@@ -37086,6 +37856,8 @@ class $$PosUserMachineAccessTableTableManager
                 Value<String> userId = const Value.absent(),
                 Value<String?> sourceUserId = const Value.absent(),
                 Value<String> machineNo = const Value.absent(),
+                Value<String?> terminalName = const Value.absent(),
+                Value<bool?> useTax = const Value.absent(),
                 Value<String?> branchNo = const Value.absent(),
                 Value<String?> branchYear = const Value.absent(),
                 Value<String?> storeId = const Value.absent(),
@@ -37101,6 +37873,8 @@ class $$PosUserMachineAccessTableTableManager
                 userId: userId,
                 sourceUserId: sourceUserId,
                 machineNo: machineNo,
+                terminalName: terminalName,
+                useTax: useTax,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 storeId: storeId,
@@ -37118,6 +37892,8 @@ class $$PosUserMachineAccessTableTableManager
                 required String userId,
                 Value<String?> sourceUserId = const Value.absent(),
                 required String machineNo,
+                Value<String?> terminalName = const Value.absent(),
+                Value<bool?> useTax = const Value.absent(),
                 Value<String?> branchNo = const Value.absent(),
                 Value<String?> branchYear = const Value.absent(),
                 Value<String?> storeId = const Value.absent(),
@@ -37133,6 +37909,8 @@ class $$PosUserMachineAccessTableTableManager
                 userId: userId,
                 sourceUserId: sourceUserId,
                 machineNo: machineNo,
+                terminalName: terminalName,
+                useTax: useTax,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 storeId: storeId,
@@ -51099,6 +51877,8 @@ class $AppDatabaseManager {
       $$AppInstallationTableTableManager(_db, _db.appInstallation);
   $$SyncProfileTableTableTableManager get syncProfileTable =>
       $$SyncProfileTableTableTableManager(_db, _db.syncProfileTable);
+  $$LocalUserPinsTableTableManager get localUserPins =>
+      $$LocalUserPinsTableTableManager(_db, _db.localUserPins);
   $$BranchProfileTableTableManager get branchProfile =>
       $$BranchProfileTableTableManager(_db, _db.branchProfile);
   $$PosMachinesTableTableManager get posMachines =>

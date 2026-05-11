@@ -3,7 +3,6 @@
 // User number resolves allowed POS machines from DEVICE_PRIV.
 // PIN is local and checked after pressing Login.
 
-import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,6 +10,7 @@ import 'package:pos_flutter/core/design_system/colors.dart';
 import 'package:pos_flutter/core/design_system/spacing.dart';
 import 'package:pos_flutter/core/l10n/app_localizations.dart';
 import 'package:pos_flutter/core/persistence/database.dart';
+import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:pos_flutter/features/auth/application/auth_notifier.dart';
 import 'package:pos_flutter/features/shift/application/shift_notifier.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
@@ -46,32 +46,6 @@ class LoginIdentityInfo {
     required this.companyName,
     required this.branchName,
   });
-}
-
-class _MachineChoice {
-  final PosUserMachineAccessData access;
-  final PosMachine? machine;
-
-  const _MachineChoice({required this.access, required this.machine});
-
-  String get machineNo => access.machineNo;
-
-  String get label {
-    final name = machine?.name?.trim();
-    final store = _firstNonEmpty([access.storeId, machine?.storeId]);
-    final priceLevel = _firstNonEmpty([
-      access.priceLevelId,
-      machine?.priceLevelId,
-    ]);
-
-    final parts = <String>[
-      if (name != null && name.isNotEmpty) name else machineNo,
-      if (store != null) 'مخزن $store',
-      if (priceLevel != null) 'سعر $priceLevel',
-    ];
-
-    return parts.join(' • ');
-  }
 }
 
 String? _firstNonEmpty(List<String?> values) {
@@ -121,7 +95,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _userNumberFocus = FocusNode();
 
   PosUser? _resolvedUser;
-  List<_MachineChoice> _machineChoices = const [];
+  List<RuntimeMachineChoice> _machineChoices = const [];
   String? _selectedMachineNo;
   String? _localError;
   bool _isResolvingUser = false;
@@ -184,20 +158,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       return;
     }
 
-    final accesses = await sessionDao.listAllowedMachinesForUser(
+    final choices = await sessionDao.listRuntimeMachineChoicesForUser(
       custCode: user.custCode,
       userId: user.id,
     );
-    if (!mounted || token != _resolveToken) return;
-
-    final choices = <_MachineChoice>[];
-    for (final access in accesses) {
-      final machine = await sessionDao.getMachine(
-        custCode: user.custCode,
-        machineNo: access.machineNo,
-      );
-      choices.add(_MachineChoice(access: access, machine: machine));
-    }
     if (!mounted || token != _resolveToken) return;
 
     setState(() {
@@ -223,12 +187,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
 
     final authDao = ref.read(authDaoProvider);
-    final hasPin = authDao.hasLocalPin(user);
+    final hasPin = await authDao.hasLocalPin(
+      custCode: user.custCode,
+      userId: user.id,
+    );
     final pin = await _showPinDialog(createMode: !hasPin);
     if (pin == null) return;
 
     if (hasPin) {
-      final ok = authDao.verifyLocalPin(user: user, pin: pin);
+      final ok = await authDao.verifyLocalPin(
+        custCode: user.custCode,
+        userId: user.id,
+        pin: pin,
+      );
       if (!ok) {
         setState(() => _localError = 'PIN غير صحيح.');
         return;

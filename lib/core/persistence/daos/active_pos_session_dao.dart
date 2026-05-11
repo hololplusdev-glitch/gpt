@@ -52,6 +52,43 @@ class ActivePosSession {
   });
 }
 
+class RuntimeMachineChoice {
+  final PosUserMachineAccessData access;
+  final PosMachine machine;
+
+  const RuntimeMachineChoice({required this.access, required this.machine});
+
+  String get machineNo => access.machineNo;
+
+  String get label {
+    final terminalName = _firstNonEmptyStatic([
+      access.terminalName,
+      machine.name,
+      machine.machineNo,
+    ])!;
+
+    final storeId = _firstNonEmptyStatic([access.storeId, machine.storeId]);
+    final priceLevelId = _firstNonEmptyStatic([
+      access.priceLevelId,
+      machine.priceLevelId,
+    ]);
+
+    return [
+      terminalName,
+      if (storeId != null) 'مخزن $storeId',
+      if (priceLevelId != null) 'سعر $priceLevelId',
+    ].join(' • ');
+  }
+}
+
+String? _firstNonEmptyStatic(List<String?> values) {
+  for (final value in values) {
+    final trimmed = value?.trim();
+    if (trimmed != null && trimmed.isNotEmpty) return trimmed;
+  }
+  return null;
+}
+
 class ActivePosSessionDao {
   final AppDatabase _db;
   final Clock _clock;
@@ -112,6 +149,35 @@ class ActivePosSessionDao {
               row.custCode.equals(custCode) & row.machineNo.equals(machineNo),
         ))
         .getSingleOrNull();
+  }
+
+  /// SSOT for login machine choices.
+  /// UI must not re-implement DEVICE_PRIV + POS_MACHINE joining logic.
+  Future<List<RuntimeMachineChoice>> listRuntimeMachineChoicesForUser({
+    required String custCode,
+    required String userId,
+  }) async {
+    final accesses = await listAllowedMachinesForUser(
+      custCode: custCode,
+      userId: userId,
+    );
+
+    final choices = <RuntimeMachineChoice>[];
+
+    for (final access in accesses) {
+      final machine = await getMachine(
+        custCode: custCode,
+        machineNo: access.machineNo,
+      );
+
+      if (machine == null || !machine.isActive) {
+        continue;
+      }
+
+      choices.add(RuntimeMachineChoice(access: access, machine: machine));
+    }
+
+    return choices;
   }
 
   Future<ActivePosSession> startSession({
@@ -265,12 +331,13 @@ class ActivePosSessionDao {
       activeUserId: user.id,
       activeUserName: user.displayName,
       activeMachineNo: machine.machineNo,
-      activeMachineName: machine.name ?? machine.machineNo,
+      activeMachineName:
+          access.terminalName ?? machine.name ?? machine.machineNo,
       activeBranchNo: branchNo,
       activeBranchYear: branchYear,
       activeStoreId: storeId,
       activePriceLevelId: priceLevelId,
-      activeUseTax: machine.useTax,
+      activeUseTax: access.useTax ?? machine.useTax,
       activeDefaultBankId: defaultBankId,
       activeDefaultCardTypeId: machine.defaultCardTypeId,
       cashId: machine.cashId,
@@ -328,20 +395,6 @@ class ActivePosSessionDao {
   void _validateMachine(PosMachine machine) {
     if (!machine.isActive) {
       throw StateError('Selected POS machine is inactive.');
-    }
-
-    final storeId = machine.storeId?.trim();
-    final priceLevelId = machine.priceLevelId?.trim();
-    final branchNo = machine.branchNo?.trim();
-
-    if (storeId == null || storeId.isEmpty) {
-      throw StateError('Selected POS machine has no default store.');
-    }
-    if (priceLevelId == null || priceLevelId.isEmpty) {
-      throw StateError('Selected POS machine has no price level.');
-    }
-    if (branchNo == null || branchNo.isEmpty) {
-      throw StateError('Selected POS machine has no branch number.');
     }
   }
 }
