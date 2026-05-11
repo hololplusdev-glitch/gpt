@@ -156,9 +156,8 @@ class AuthDao {
     ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
-  /// Deprecated compatibility method.
-  /// Runtime machine policy is centralized in ActivePosSessionDao.
-  /// Do not infer USER->MACHINE authorization from DEVICE_PRIV.usr_id.
+  /// Compatibility method.
+  /// DEVICE_PRIV is the authoritative user-to-machine permission source.
   Future<List<String>> getUserPermissions(
     String userId,
     String terminalId,
@@ -168,46 +167,17 @@ class AuthDao {
       return [];
     }
 
-    final machine =
-        await (_db.select(_db.posMachines)..where(
-              (m) =>
-                  m.custCode.equals(user.custCode) &
-                  m.machineNo.equals(terminalId) &
-                  m.isActive.equals(true),
-            ))
-            .getSingleOrNull();
-
-    if (machine == null) return [];
-
-    final profiles =
+    final privilege =
         await (_db.select(_db.posUserMachineAccess)..where(
               (p) =>
                   p.custCode.equals(user.custCode) &
+                  p.userId.equals(user.id) &
                   p.machineNo.equals(terminalId) &
                   p.canUseMachine.equals(true),
             ))
-            .get();
+            .getSingleOrNull();
 
-    if (profiles.isEmpty) return [];
-
-    final isAdmin = user.userLevel?.trim() == '1';
-    if (isAdmin) return ['USE_MACHINE'];
-
-    final userStoreId = user.defaultStoreId?.trim();
-    if (userStoreId == null || userStoreId.isEmpty) return [];
-
-    for (final profile in profiles) {
-      final profileStoreId =
-          profile.storeId?.trim().isNotEmpty == true
-              ? profile.storeId!.trim()
-              : machine.storeId?.trim();
-
-      if (profileStoreId == userStoreId) {
-        return ['USE_MACHINE'];
-      }
-    }
-
-    return [];
+    return privilege == null ? [] : ['USE_MACHINE'];
   }
 
   Future<void> writeSessionLog({

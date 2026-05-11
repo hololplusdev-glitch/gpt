@@ -224,6 +224,34 @@ class MasterDataSyncService {
           break;
         }
       } else if (result.isFailure) {}
+
+      if (type == MasterDataType.posMachine && !result.isFailure) {
+        final devicePrivilegeResults =
+            await _syncDevicePrivilegesForDownloadedUsers(
+          context,
+          mode: mode,
+          runId: runId,
+          cancelHandle: cancelHandle,
+        );
+
+        results.addAll(devicePrivilegeResults);
+
+        final totalPrivileges =
+            await _masterDataDao.countDevicePrivileges(context.custCode);
+
+        if (totalPrivileges == 0) {
+          results.add(
+            const MasterDataTypeResult(
+              type: MasterDataType.devicePrivilege,
+              status: MasterDataTypeRunStatus.failed,
+              errorCode: 'NO_DEVICE_PRIVILEGES',
+              error:
+                  'No DEVICE_PRIV rows were downloaded for any POS user.',
+            ),
+          );
+          break;
+        }
+      }
     }
 
     onProgress?.call(
@@ -441,6 +469,14 @@ class MasterDataSyncService {
           : MasterDataTypeRunStatus.success;
 
       await _masterDataDao.runInTransaction(() async {
+        if (type == MasterDataType.devicePrivilege &&
+            mode == MasterDataSyncMode.forceFull) {
+          await _masterDataDao.deleteDevicePrivilegesForUser(
+            custCode: context.custCode,
+            userId: context.syncUserId,
+          );
+        }
+
         if (!plan.isEmpty) {
           await _masterDataDao.persistPlanInCurrentTransaction(plan);
         }
@@ -515,6 +551,76 @@ class MasterDataSyncService {
         warnings: List.unmodifiable(warnings),
       );
     }
+  }
+
+  Future<List<MasterDataTypeResult>> _syncDevicePrivilegesForDownloadedUsers(
+    MasterDataSyncContext context, {
+    required MasterDataSyncMode mode,
+    required String runId,
+    MasterDataSyncCancelHandle? cancelHandle,
+  }) async {
+    final users = await _masterDataDao.listDownloadedPosUsers(context.custCode);
+    final results = <MasterDataTypeResult>[];
+
+    if (users.isEmpty) {
+      return const [
+        MasterDataTypeResult(
+          type: MasterDataType.devicePrivilege,
+          status: MasterDataTypeRunStatus.failed,
+          errorCode: 'NO_USERS_FOR_DEVICE_PRIV',
+          error: 'USER returned no active POS users to sync DEVICE_PRIV.',
+        ),
+      ];
+    }
+
+    for (final user in users) {
+      if (cancelHandle?.isCancelled ?? false) {
+        results.add(
+          const MasterDataTypeResult(
+            type: MasterDataType.devicePrivilege,
+            status: MasterDataTypeRunStatus.cancelled,
+            errorCode: 'CANCELLED',
+            error: 'DEVICE_PRIV per-user sync was cancelled.',
+          ),
+        );
+        break;
+      }
+
+      final userContext = context.copyWith(
+        bootstrapUserId: user.id,
+        branchNo: user.branchNo,
+      );
+
+      final result = await syncType(
+        userContext,
+        MasterDataType.devicePrivilege,
+        mode: MasterDataSyncMode.forceFull,
+        runId: runId,
+        cancelHandle: cancelHandle,
+      );
+
+      // NO_MACHINE_PRIV for one user is not fatal for the entire setup.
+      // It simply means this user cannot login to any POS machine.
+      if (result.errorCode == 'NO_MACHINE_PRIV') {
+        results.add(
+          MasterDataTypeResult(
+            type: MasterDataType.devicePrivilege,
+            status: MasterDataTypeRunStatus.noChanges,
+            rowsReceived: 0,
+            rowsSaved: 0,
+            errorCode: null,
+            error: null,
+            warnings: [
+              'No POS machine privileges for user ${user.id}.',
+            ],
+          ),
+        );
+      } else {
+        results.add(result);
+      }
+    }
+
+    return results;
   }
 
   /// WHY: Pre-flight validation — ensures all required Backend identity params
@@ -635,6 +741,18 @@ class MasterDataSyncService {
       final errorMsg =
           data['message']?.toString() ??
           'Master data API rejected the request.';
+
+      if (type == MasterDataType.devicePrivilege &&
+          errorCode == 'NO_MACHINE_PRIV') {
+        return _MasterDataPage(
+          items: const [],
+          serverTime: _clock.now().toIso8601String(),
+          hasMore: false,
+          limit: context.pageLimit,
+          total: 0,
+        );
+      }
+
       throw SyncException(errorMsg, code: errorCode);
     }
 

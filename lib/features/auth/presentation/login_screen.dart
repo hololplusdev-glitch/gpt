@@ -1,6 +1,6 @@
 // features/auth/presentation/login_screen.dart
 // WHY: Offline login SSOT.
-// User number resolves allowed POS machines from DEVICE_PRIV.
+// User number resolves allowed POS machines from local DEVICE_PRIV permissions.
 // PIN is local and checked after pressing Login.
 
 import 'package:flutter/material.dart';
@@ -487,7 +487,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
-                            'يتم تحديد نقاط التشغيل من بيانات DEVICE_PRIV المحلية. '
+                            'يتم تحديد نقاط التشغيل من صلاحيات DEVICE_PRIV المحلية. '
                             'سيُطلب PIN بعد الضغط على دخول.',
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(

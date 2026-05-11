@@ -267,6 +267,42 @@ class MasterDataDao {
         );
   }
 
+  Future<List<PosUser>> listDownloadedPosUsers(String custCode) {
+    return (_db.select(_db.posUsers)
+          ..where(
+            (user) =>
+                user.custCode.equals(custCode) &
+                user.isActive.equals(true) &
+                user.canLoginPos.equals(true),
+          )
+          ..orderBy([(user) => OrderingTerm.asc(user.id)]))
+        .get();
+  }
+
+  Future<int> countDevicePrivileges(String custCode) async {
+    final rows = await (_db.select(_db.posUserMachineAccess)
+          ..where(
+            (row) =>
+                row.custCode.equals(custCode) &
+                row.canUseMachine.equals(true),
+          ))
+        .get();
+
+    return rows.length;
+  }
+
+  Future<void> deleteDevicePrivilegesForUser({
+    required String custCode,
+    required String userId,
+  }) async {
+    await (_db.delete(_db.posUserMachineAccess)
+          ..where(
+            (row) =>
+                row.custCode.equals(custCode) & row.userId.equals(userId),
+          ))
+        .go();
+  }
+
   Future<void> clearMasterDataCache() async {
     await _db.transaction(() async {
       await _db.delete(_db.scopedSyncState).go();

@@ -6,8 +6,8 @@ import 'package:pos_flutter/core/errors/app_exception.dart';
 
 /// Enumeration of all master data types supported by the POS data download engine.
 ///
-/// SSOT: Backend data download is tenant-wide and selected only by p_type.
-/// Runtime filtering happens locally after login using USER + DEVICE_PRIV + POS_MACHINE.
+/// SSOT: Most backend data is downloaded tenant-wide by p_type.
+/// DEVICE_PRIV is special: it is downloaded per USER because it is keyed by usr_id + mchn_nbr.
 enum MasterDataType {
   posMachine('POS_MACHINE'),
   user('USER'),
@@ -27,12 +27,12 @@ enum MasterDataType {
 
   final String code;
 
-  /// Download order. Requests use only p_type + p_cust_code + p_usr_id.
-  /// Do not scope ITEM_PRICE by machine/store/price level at request time.
+  /// Download order.
+  /// DEVICE_PRIV is intentionally excluded here.
+  /// It is synced per downloaded user after USER + POS_MACHINE.
   static const syncOrder = [
     user,
     posMachine,
-    devicePrivilege,
     branch,
     store,
     cash,
@@ -46,7 +46,7 @@ enum MasterDataType {
   ];
 
   /// Types whose failure is fatal and must abort the entire sync.
-  static const mandatoryTypes = {user, posMachine, devicePrivilege};
+  static const mandatoryTypes = {user, posMachine};
 }
 
 enum MasterDataSyncMode {
@@ -92,11 +92,13 @@ enum MasterDataTypeRunStatus {
 class MasterDataSyncContext {
   final String custCode;
   final String bootstrapUserId;
+  final String? branchNo;
   final int pageLimit;
 
   const MasterDataSyncContext({
     required this.custCode,
     this.bootstrapUserId = '1',
+    this.branchNo,
     this.pageLimit = 100,
   });
 
@@ -105,11 +107,14 @@ class MasterDataSyncContext {
   MasterDataSyncContext copyWith({
     String? custCode,
     String? bootstrapUserId,
+    String? branchNo,
+    bool clearBranchNo = false,
     int? pageLimit,
   }) {
     return MasterDataSyncContext(
       custCode: custCode ?? this.custCode,
       bootstrapUserId: bootstrapUserId ?? this.bootstrapUserId,
+      branchNo: clearBranchNo ? null : branchNo ?? this.branchNo,
       pageLimit: pageLimit ?? this.pageLimit,
     );
   }
@@ -126,6 +131,11 @@ class MasterDataSyncContext {
       'p_limit': pageLimit,
       'p_offset': offset,
     };
+
+    final branch = branchNo?.trim();
+    if (branch != null && branch.isNotEmpty) {
+      params['p_bra_nbr'] = branch;
+    }
 
     if (lastUpdate != null && lastUpdate.isNotEmpty) {
       params['p_last_update'] = lastUpdate;
