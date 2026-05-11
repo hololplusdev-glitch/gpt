@@ -167,7 +167,7 @@ class MasterDataMapper {
           branchProfiles.add(
             BranchProfileCompanion(
               id: Value(branchId),
-              tenantCode: Value(custCode),
+              custCode: Value(custCode),
               branchNo: Value(branchId),
               branchYear: Value(data.text(['bra_year'])),
               branchCode: Value(branchId),
@@ -198,7 +198,7 @@ class MasterDataMapper {
           stores.add(
             StoresCompanion(
               id: Value(stId),
-              tenantCode: Value(data.text(['cust_code']) ?? context.custCode),
+              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               branchNo: Value(data.text(['bra_nbr'])),
               name: Value(data.text(['st_name', 'name']) ?? stId),
               nameAr: Value(data.text(['st_fname', 'st_f_name', 'name_ar'])),
@@ -221,7 +221,7 @@ class MasterDataMapper {
           paymentMethods.add(
             PaymentMethodsCompanion(
               id: Value(methodId),
-              tenantCode: Value(data.text(['cust_code']) ?? context.custCode),
+              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               type: Value(PaymentMethodType.cash.code),
               code: Value(methodId),
               name: Value(data.text(['cash_name', 'name']) ?? cashId),
@@ -245,7 +245,7 @@ class MasterDataMapper {
           paymentMethods.add(
             PaymentMethodsCompanion(
               id: Value(methodId),
-              tenantCode: Value(data.text(['cust_code']) ?? context.custCode),
+              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               type: Value(PaymentMethodType.bankTransfer.code),
               code: Value(methodId),
               name: Value(data.text(['bank_name', 'name']) ?? bankId),
@@ -277,7 +277,7 @@ class MasterDataMapper {
           paymentMethods.add(
             PaymentMethodsCompanion(
               id: Value(methodCode),
-              tenantCode: Value(data.text(['cust_code']) ?? context.custCode),
+              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               type: Value(PaymentMethodType.manualCard.code),
               code: Value(methodCode),
               name: Value(name),
@@ -311,7 +311,7 @@ class MasterDataMapper {
           priceLevels.add(
             PriceLevelsCompanion(
               id: Value(id),
-              tenantCode: Value(data.text(['cust_code']) ?? context.custCode),
+              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               name: Value(data.text(['price_lvl_name', 'name']) ?? id),
               nameAr: Value(
                 data.text(['price_lvl_fname', 'price_lvl_f_name', 'name_ar']),
@@ -338,7 +338,7 @@ class MasterDataMapper {
           items.add(
             ItemsCompanion(
               id: Value(itemId),
-              tenantCode: Value(data.text(['cust_code']) ?? context.custCode),
+              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               code: Value(data.text(['itm_code', 'code']) ?? itemId),
               name: Value(data.text(['itm_name', 'name']) ?? itemId),
               nameAr: Value(data.text(['itm_fname', 'itm_f_name', 'name_ar'])),
@@ -380,7 +380,7 @@ class MasterDataMapper {
           itemUnits.add(
             ItemUnitsCompanion(
               id: Value(rowId),
-              tenantCode: Value(data.text(['cust_code']) ?? context.custCode),
+              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               itemId: Value(itemId),
               sourceUnitId: Value(unitId),
               name: Value(data.text(['unit_name', 'name']) ?? unitId),
@@ -451,7 +451,7 @@ class MasterDataMapper {
           itemPrices.add(
             ItemPricesCompanion(
               id: Value(id),
-              tenantCode: Value(custCode),
+              custCode: Value(custCode),
               itemId: Value(itemId),
               unitId: Value(unitId),
               priceLevelId: Value(priceLevelId),
@@ -475,7 +475,7 @@ class MasterDataMapper {
           customers.add(
             CustomersCompanion(
               id: Value(clntId),
-              tenantCode: Value(data.text(['cust_code']) ?? context.custCode),
+              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               name: Value(data.text(['clnt_name', 'name']) ?? clntId),
               accountId: Value(data.text(['clnt_acc_id'])),
               taxNumber: Value(data.text(['clnt_tax_id'])),
@@ -530,7 +530,6 @@ class MasterDataMapper {
         ),
         authHash: const Value(''),
         // Local PIN is owned by LocalUserPins, never by backend USER data.
-        pinHash: const Value.absent(),
         roleId: Value(data.text(['role_id'])),
         defaultStoreId: Value(data.text(['st_id_def'])),
         defaultCashId: Value(data.text(['cash_id_def'])),

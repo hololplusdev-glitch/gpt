@@ -123,6 +123,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
       if (!mounted) return;
 
+      ref.read(cartProvider.notifier).clearCart();
+
       setState(() {
         _invoiceNo = result.invoiceNo;
         _saleId = result.saleId;

@@ -918,7 +918,7 @@ class MasterDataSyncService {
     await _masterDataDao.insertRun(
       runId: runId,
       modeCode: mode.code,
-      tenantCode: context.custCode,
+      custCode: context.custCode,
       userId: context.syncUserId,
       branchNo: '',
       terminalNo: '',

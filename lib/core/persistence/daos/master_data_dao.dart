@@ -123,7 +123,7 @@ class MasterDataDao {
 
   String _scopeJson(MasterDataSyncContext context) {
     return jsonEncode({
-      'tenantCode': context.custCode,
+      'custCode': context.custCode,
       'userId': context.syncUserId,
       'downloadScope': 'tenant',
     });
@@ -132,7 +132,7 @@ class MasterDataDao {
   Future<void> insertRun({
     required String runId,
     required String modeCode,
-    required String tenantCode,
+    required String custCode,
     required String userId,
     required String branchNo,
     required String terminalNo,
@@ -145,7 +145,7 @@ class MasterDataDao {
             id: Value(runId),
             mode: Value(modeCode),
             status: Value(MasterDataRunStatus.running.code),
-            tenantCode: Value(tenantCode),
+            custCode: Value(custCode),
             sourceUserId: Value(userId),
             branchNo: Value(branchNo),
             machineNo: Value(terminalNo),

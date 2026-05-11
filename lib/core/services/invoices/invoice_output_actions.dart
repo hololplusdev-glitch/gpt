@@ -13,7 +13,7 @@ import 'package:pos_flutter/shared/models/enums.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:share_plus/share_plus.dart';
 
-class InvoiceOutputCoordinator {
+class InvoiceOutputActions {
   final InvoiceDocumentBuilder _documentBuilder;
   final InvoicePdfExporter _pdfExporter;
   final PrintQueue _printQueue;
@@ -22,7 +22,7 @@ class InvoiceOutputCoordinator {
   final PrintJobDao _printJobDao;
   final Clock _clock;
 
-  const InvoiceOutputCoordinator({
+  const InvoiceOutputActions({
     required InvoiceDocumentBuilder documentBuilder,
     required InvoicePdfExporter pdfExporter,
     required PrintQueue printQueue,
@@ -47,9 +47,28 @@ class InvoiceOutputCoordinator {
     String? createdBy,
     bool requireAutoPrint = false,
   }) async {
-    final alreadyPrinted = await _printJobDao.hasPrintedOriginal(saleId);
-    if (alreadyPrinted) {
+    final originalJobs = await _printJobDao.getOriginalJobs(saleId);
+
+    final hasPrintedOriginal = originalJobs.any(
+      (job) => job.status == PrintJobStatus.printed.code,
+    );
+
+    if (hasPrintedOriginal) {
       return reprint(saleId, createdBy: createdBy);
+    }
+
+    final retryableOriginalJobIds = originalJobs
+        .where(
+          (job) =>
+              (job.status == PrintJobStatus.pending.code ||
+                  job.status == PrintJobStatus.failed.code) &&
+              job.attempts < job.maxAttempts,
+        )
+        .map((job) => job.id)
+        .toList();
+
+    if (retryableOriginalJobIds.isNotEmpty) {
+      return _processJobs(retryableOriginalJobIds);
     }
 
     final document = await getOrCreateOriginal(saleId);
@@ -162,10 +181,8 @@ class InvoicePrintResult {
   }
 }
 
-final invoiceOutputCoordinatorProvider = Provider<InvoiceOutputCoordinator>((
-  ref,
-) {
-  return InvoiceOutputCoordinator(
+final invoiceOutputActionsProvider = Provider<InvoiceOutputActions>((ref) {
+  return InvoiceOutputActions(
     documentBuilder: ref.watch(invoiceDocumentBuilderProvider),
     pdfExporter: ref.watch(invoicePdfExporterProvider),
     printQueue: ref.watch(printQueueProvider),

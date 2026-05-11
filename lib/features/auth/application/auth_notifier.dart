@@ -72,17 +72,26 @@ class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
         return false;
       }
 
+      final existingMachineShift = await _shiftDao.getOpenShift(
+        machine.machineNo,
+      );
+
+      if (existingMachineShift != null &&
+          existingMachineShift.cashierId != user.id) {
+        state = const CashierSelectionState(
+          errorMessage:
+              'يوجد شفت مفتوح على هذا الجهاز لمستخدم آخر. أغلق الشفت أولًا.',
+        );
+        return false;
+      }
+
       final session = await _sessionDao.startSession(
         user: user,
         machine: machine,
       );
 
-      final existingShift = await _shiftDao.getOpenShift(
-        session.activeMachineNo,
-        cashierId: session.activeUserId,
-      );
-      if (existingShift != null) {
-        await _sessionDao.attachOpenShift(existingShift.id);
+      if (existingMachineShift != null) {
+        await _sessionDao.attachOpenShift(existingMachineShift.id);
       }
 
       final sessionId = session.sessionId ?? 'SESS_${_uuid.v4()}';

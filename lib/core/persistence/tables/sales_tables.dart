@@ -26,7 +26,7 @@ class Sales extends Table {
   TextColumn get type => text()(); // stable string code
   TextColumn get status => text()(); // stable string code
   TextColumn get syncStatus => text()(); // stable string code
-  TextColumn get tenantCode => text().nullable()();
+  TextColumn get custCode => text().nullable()();
   TextColumn get branchNo => text().nullable()();
   TextColumn get branchYear => text().nullable()();
   TextColumn get terminalId => text()();

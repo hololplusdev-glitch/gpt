@@ -143,8 +143,9 @@ class HeldOrdersService {
 
   Future<String> resumeHeldOrder({required String orderId}) async {
     final session = _requireActiveSession();
+    final shiftId = _requireOpenShiftId(session);
 
-    final orders = await _salesDao.getAllHeldOrders(session.activeMachineNo);
+    final orders = await _salesDao.getActiveHeldOrders(shiftId);
     final order = orders.where((o) => o.id == orderId).firstOrNull;
 
     if (order == null) {
@@ -178,6 +179,12 @@ class HeldOrdersService {
       targetId: orderId,
       terminalId: session.activeMachineNo,
     );
+  }
+
+  Future<List<HeldOrder>> getCurrentHeldOrders() {
+    final session = _requireActiveSession();
+    final shiftId = _requireOpenShiftId(session);
+    return _salesDao.getActiveHeldOrders(shiftId);
   }
 
   Future<List<HeldOrder>> getHeldOrders(String shiftId) {

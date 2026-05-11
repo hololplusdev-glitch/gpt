@@ -10,7 +10,7 @@ import 'package:pos_flutter/core/errors/app_exception.dart';
 import 'package:pos_flutter/core/l10n/app_localizations.dart';
 import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
 import 'package:pos_flutter/core/services/invoices/invoice_document.dart';
-import 'package:pos_flutter/core/services/invoices/invoice_output_coordinator.dart';
+import 'package:pos_flutter/core/services/invoices/invoice_output_actions.dart';
 import 'package:pos_flutter/core/services/invoices/invoice_print_history_entry.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:pos_flutter/shared/presentation/presenters/printer_status_presenter.dart';
@@ -27,9 +27,7 @@ import 'package:pos_flutter/shared/presentation/dialogs/app_dialog.dart';
 
 final invoiceDocumentProvider = FutureProvider.autoDispose
     .family<InvoiceDocument, String>((ref, id) {
-      return ref
-          .watch(invoiceOutputCoordinatorProvider)
-          .getOrCreateOriginal(id);
+      return ref.watch(invoiceOutputActionsProvider).getOrCreateOriginal(id);
     });
 
 final invoicePrintHistoryProvider = FutureProvider.autoDispose
@@ -256,7 +254,7 @@ class _Actions extends ConsumerWidget {
     WidgetRef ref, {
     required bool reprint,
   }) async {
-    final output = ref.read(invoiceOutputCoordinatorProvider);
+    final output = ref.read(invoiceOutputActionsProvider);
     final activeSession = ref.read(activePosSessionProvider).valueOrNull;
     final reason = reprint ? await _askReprintReason(context) : null;
     if (reprint && reason == null) return;
@@ -307,7 +305,7 @@ class _Actions extends ConsumerWidget {
 
   Future<void> _savePdf(BuildContext context, WidgetRef ref) async {
     final file = await ref
-        .read(invoiceOutputCoordinatorProvider)
+        .read(invoiceOutputActionsProvider)
         .savePdf(document.saleId);
     if (context.mounted) {
       AppSnackbar.showSuccess(context, 'Saved PDF: ${file.path}');
@@ -316,9 +314,7 @@ class _Actions extends ConsumerWidget {
 
   Future<void> _share(BuildContext context, WidgetRef ref) async {
     try {
-      await ref
-          .read(invoiceOutputCoordinatorProvider)
-          .sharePdf(document.saleId);
+      await ref.read(invoiceOutputActionsProvider).sharePdf(document.saleId);
     } catch (error) {
       if (context.mounted) {
         AppSnackbar.showError(context, 'Share failed.');

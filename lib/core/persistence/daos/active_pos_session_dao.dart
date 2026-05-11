@@ -34,7 +34,6 @@ class ActivePosSession {
   final bool priceIncludesTax;
   final bool requiresShift;
   final bool autoPrint;
-  final bool allowDuplicateItems;
   final String? invoiceSeries;
   final String? returnInvoiceSeries;
   final String? openShiftId;
@@ -61,7 +60,6 @@ class ActivePosSession {
     required this.priceIncludesTax,
     required this.requiresShift,
     required this.autoPrint,
-    required this.allowDuplicateItems,
     required this.invoiceSeries,
     required this.returnInvoiceSeries,
     required this.openShiftId,
@@ -383,7 +381,6 @@ class ActivePosSessionDao {
       priceIncludesTax: machine.priceIncludesTax,
       requiresShift: machine.requiresShift,
       autoPrint: machine.autoPrint,
-      allowDuplicateItems: machine.allowDuplicateItems,
       invoiceSeries: machine.invoiceSeries,
       returnInvoiceSeries: machine.returnInvoiceSeries,
       openShiftId: row.openShiftId,

@@ -814,7 +814,7 @@ class $SyncProfileTableTable extends SyncProfileTable
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultValue: const Constant(100),
+    defaultValue: const Constant(500),
   );
   static const VerificationMeta _timeoutSecondsMeta = const VerificationMeta(
     'timeoutSeconds',
@@ -1812,12 +1812,12 @@ class $BranchProfileTable extends BranchProfile
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _tenantCodeMeta = const VerificationMeta(
-    'tenantCode',
+  static const VerificationMeta _custCodeMeta = const VerificationMeta(
+    'custCode',
   );
   @override
-  late final GeneratedColumn<String> tenantCode = GeneratedColumn<String>(
-    'tenant_code',
+  late final GeneratedColumn<String> custCode = GeneratedColumn<String>(
+    'cust_code',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -2024,7 +2024,7 @@ class $BranchProfileTable extends BranchProfile
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    tenantCode,
+    custCode,
     branchNo,
     branchYear,
     branchCode,
@@ -2061,13 +2061,13 @@ class $BranchProfileTable extends BranchProfile
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('tenant_code')) {
+    if (data.containsKey('cust_code')) {
       context.handle(
-        _tenantCodeMeta,
-        tenantCode.isAcceptableOrUnknown(data['tenant_code']!, _tenantCodeMeta),
+        _custCodeMeta,
+        custCode.isAcceptableOrUnknown(data['cust_code']!, _custCodeMeta),
       );
     } else if (isInserting) {
-      context.missing(_tenantCodeMeta);
+      context.missing(_custCodeMeta);
     }
     if (data.containsKey('branch_no')) {
       context.handle(
@@ -2211,9 +2211,9 @@ class $BranchProfileTable extends BranchProfile
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      tenantCode: attachedDatabase.typeMapping.read(
+      custCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}tenant_code'],
+        data['${effectivePrefix}cust_code'],
       )!,
       branchNo: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -2299,7 +2299,7 @@ class $BranchProfileTable extends BranchProfile
 class BranchProfileData extends DataClass
     implements Insertable<BranchProfileData> {
   final String id;
-  final String tenantCode;
+  final String custCode;
   final String branchNo;
   final String? branchYear;
   final String? branchCode;
@@ -2320,7 +2320,7 @@ class BranchProfileData extends DataClass
   final DateTime cachedAt;
   const BranchProfileData({
     required this.id,
-    required this.tenantCode,
+    required this.custCode,
     required this.branchNo,
     this.branchYear,
     this.branchCode,
@@ -2344,7 +2344,7 @@ class BranchProfileData extends DataClass
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['tenant_code'] = Variable<String>(tenantCode);
+    map['cust_code'] = Variable<String>(custCode);
     map['branch_no'] = Variable<String>(branchNo);
     if (!nullToAbsent || branchYear != null) {
       map['branch_year'] = Variable<String>(branchYear);
@@ -2399,7 +2399,7 @@ class BranchProfileData extends DataClass
   BranchProfileCompanion toCompanion(bool nullToAbsent) {
     return BranchProfileCompanion(
       id: Value(id),
-      tenantCode: Value(tenantCode),
+      custCode: Value(custCode),
       branchNo: Value(branchNo),
       branchYear: branchYear == null && nullToAbsent
           ? const Value.absent()
@@ -2456,7 +2456,7 @@ class BranchProfileData extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return BranchProfileData(
       id: serializer.fromJson<String>(json['id']),
-      tenantCode: serializer.fromJson<String>(json['tenantCode']),
+      custCode: serializer.fromJson<String>(json['custCode']),
       branchNo: serializer.fromJson<String>(json['branchNo']),
       branchYear: serializer.fromJson<String?>(json['branchYear']),
       branchCode: serializer.fromJson<String?>(json['branchCode']),
@@ -2484,7 +2484,7 @@ class BranchProfileData extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'tenantCode': serializer.toJson<String>(tenantCode),
+      'custCode': serializer.toJson<String>(custCode),
       'branchNo': serializer.toJson<String>(branchNo),
       'branchYear': serializer.toJson<String?>(branchYear),
       'branchCode': serializer.toJson<String?>(branchCode),
@@ -2510,7 +2510,7 @@ class BranchProfileData extends DataClass
 
   BranchProfileData copyWith({
     String? id,
-    String? tenantCode,
+    String? custCode,
     String? branchNo,
     Value<String?> branchYear = const Value.absent(),
     Value<String?> branchCode = const Value.absent(),
@@ -2531,7 +2531,7 @@ class BranchProfileData extends DataClass
     DateTime? cachedAt,
   }) => BranchProfileData(
     id: id ?? this.id,
-    tenantCode: tenantCode ?? this.tenantCode,
+    custCode: custCode ?? this.custCode,
     branchNo: branchNo ?? this.branchNo,
     branchYear: branchYear.present ? branchYear.value : this.branchYear,
     branchCode: branchCode.present ? branchCode.value : this.branchCode,
@@ -2562,9 +2562,7 @@ class BranchProfileData extends DataClass
   BranchProfileData copyWithCompanion(BranchProfileCompanion data) {
     return BranchProfileData(
       id: data.id.present ? data.id.value : this.id,
-      tenantCode: data.tenantCode.present
-          ? data.tenantCode.value
-          : this.tenantCode,
+      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       branchYear: data.branchYear.present
           ? data.branchYear.value
@@ -2610,7 +2608,7 @@ class BranchProfileData extends DataClass
   String toString() {
     return (StringBuffer('BranchProfileData(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('branchNo: $branchNo, ')
           ..write('branchYear: $branchYear, ')
           ..write('branchCode: $branchCode, ')
@@ -2636,7 +2634,7 @@ class BranchProfileData extends DataClass
   @override
   int get hashCode => Object.hash(
     id,
-    tenantCode,
+    custCode,
     branchNo,
     branchYear,
     branchCode,
@@ -2661,7 +2659,7 @@ class BranchProfileData extends DataClass
       identical(this, other) ||
       (other is BranchProfileData &&
           other.id == this.id &&
-          other.tenantCode == this.tenantCode &&
+          other.custCode == this.custCode &&
           other.branchNo == this.branchNo &&
           other.branchYear == this.branchYear &&
           other.branchCode == this.branchCode &&
@@ -2684,7 +2682,7 @@ class BranchProfileData extends DataClass
 
 class BranchProfileCompanion extends UpdateCompanion<BranchProfileData> {
   final Value<String> id;
-  final Value<String> tenantCode;
+  final Value<String> custCode;
   final Value<String> branchNo;
   final Value<String?> branchYear;
   final Value<String?> branchCode;
@@ -2706,7 +2704,7 @@ class BranchProfileCompanion extends UpdateCompanion<BranchProfileData> {
   final Value<int> rowid;
   const BranchProfileCompanion({
     this.id = const Value.absent(),
-    this.tenantCode = const Value.absent(),
+    this.custCode = const Value.absent(),
     this.branchNo = const Value.absent(),
     this.branchYear = const Value.absent(),
     this.branchCode = const Value.absent(),
@@ -2729,7 +2727,7 @@ class BranchProfileCompanion extends UpdateCompanion<BranchProfileData> {
   });
   BranchProfileCompanion.insert({
     required String id,
-    required String tenantCode,
+    required String custCode,
     required String branchNo,
     this.branchYear = const Value.absent(),
     this.branchCode = const Value.absent(),
@@ -2750,13 +2748,13 @@ class BranchProfileCompanion extends UpdateCompanion<BranchProfileData> {
     required DateTime cachedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       tenantCode = Value(tenantCode),
+       custCode = Value(custCode),
        branchNo = Value(branchNo),
        name = Value(name),
        cachedAt = Value(cachedAt);
   static Insertable<BranchProfileData> custom({
     Expression<String>? id,
-    Expression<String>? tenantCode,
+    Expression<String>? custCode,
     Expression<String>? branchNo,
     Expression<String>? branchYear,
     Expression<String>? branchCode,
@@ -2779,7 +2777,7 @@ class BranchProfileCompanion extends UpdateCompanion<BranchProfileData> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (tenantCode != null) 'tenant_code': tenantCode,
+      if (custCode != null) 'cust_code': custCode,
       if (branchNo != null) 'branch_no': branchNo,
       if (branchYear != null) 'branch_year': branchYear,
       if (branchCode != null) 'branch_code': branchCode,
@@ -2805,7 +2803,7 @@ class BranchProfileCompanion extends UpdateCompanion<BranchProfileData> {
 
   BranchProfileCompanion copyWith({
     Value<String>? id,
-    Value<String>? tenantCode,
+    Value<String>? custCode,
     Value<String>? branchNo,
     Value<String?>? branchYear,
     Value<String?>? branchCode,
@@ -2828,7 +2826,7 @@ class BranchProfileCompanion extends UpdateCompanion<BranchProfileData> {
   }) {
     return BranchProfileCompanion(
       id: id ?? this.id,
-      tenantCode: tenantCode ?? this.tenantCode,
+      custCode: custCode ?? this.custCode,
       branchNo: branchNo ?? this.branchNo,
       branchYear: branchYear ?? this.branchYear,
       branchCode: branchCode ?? this.branchCode,
@@ -2858,8 +2856,8 @@ class BranchProfileCompanion extends UpdateCompanion<BranchProfileData> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (tenantCode.present) {
-      map['tenant_code'] = Variable<String>(tenantCode.value);
+    if (custCode.present) {
+      map['cust_code'] = Variable<String>(custCode.value);
     }
     if (branchNo.present) {
       map['branch_no'] = Variable<String>(branchNo.value);
@@ -2927,7 +2925,7 @@ class BranchProfileCompanion extends UpdateCompanion<BranchProfileData> {
   String toString() {
     return (StringBuffer('BranchProfileCompanion(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('branchNo: $branchNo, ')
           ..write('branchYear: $branchYear, ')
           ..write('branchCode: $branchCode, ')
@@ -5775,17 +5773,6 @@ class $PosUsersTable extends PosUsers with TableInfo<$PosUsersTable, PosUser> {
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
-  static const VerificationMeta _pinHashMeta = const VerificationMeta(
-    'pinHash',
-  );
-  @override
-  late final GeneratedColumn<String> pinHash = GeneratedColumn<String>(
-    'pin_hash',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _roleIdMeta = const VerificationMeta('roleId');
   @override
   late final GeneratedColumn<String> roleId = GeneratedColumn<String>(
@@ -5934,7 +5921,6 @@ class $PosUsersTable extends PosUsers with TableInfo<$PosUsersTable, PosUser> {
     displayName,
     displayNameAr,
     authHash,
-    pinHash,
     roleId,
     branchNo,
     branchYear,
@@ -6020,12 +6006,6 @@ class $PosUsersTable extends PosUsers with TableInfo<$PosUsersTable, PosUser> {
       context.handle(
         _authHashMeta,
         authHash.isAcceptableOrUnknown(data['auth_hash']!, _authHashMeta),
-      );
-    }
-    if (data.containsKey('pin_hash')) {
-      context.handle(
-        _pinHashMeta,
-        pinHash.isAcceptableOrUnknown(data['pin_hash']!, _pinHashMeta),
       );
     }
     if (data.containsKey('role_id')) {
@@ -6158,10 +6138,6 @@ class $PosUsersTable extends PosUsers with TableInfo<$PosUsersTable, PosUser> {
         DriftSqlType.string,
         data['${effectivePrefix}auth_hash'],
       )!,
-      pinHash: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}pin_hash'],
-      ),
       roleId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}role_id'],
@@ -6228,7 +6204,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
   final String displayName;
   final String? displayNameAr;
   final String authHash;
-  final String? pinHash;
   final String? roleId;
   final String? branchNo;
   final String? branchYear;
@@ -6250,7 +6225,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
     required this.displayName,
     this.displayNameAr,
     required this.authHash,
-    this.pinHash,
     this.roleId,
     this.branchNo,
     this.branchYear,
@@ -6281,9 +6255,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
       map['display_name_ar'] = Variable<String>(displayNameAr);
     }
     map['auth_hash'] = Variable<String>(authHash);
-    if (!nullToAbsent || pinHash != null) {
-      map['pin_hash'] = Variable<String>(pinHash);
-    }
     if (!nullToAbsent || roleId != null) {
       map['role_id'] = Variable<String>(roleId);
     }
@@ -6333,9 +6304,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
           ? const Value.absent()
           : Value(displayNameAr),
       authHash: Value(authHash),
-      pinHash: pinHash == null && nullToAbsent
-          ? const Value.absent()
-          : Value(pinHash),
       roleId: roleId == null && nullToAbsent
           ? const Value.absent()
           : Value(roleId),
@@ -6383,7 +6351,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
       displayName: serializer.fromJson<String>(json['displayName']),
       displayNameAr: serializer.fromJson<String?>(json['displayNameAr']),
       authHash: serializer.fromJson<String>(json['authHash']),
-      pinHash: serializer.fromJson<String?>(json['pinHash']),
       roleId: serializer.fromJson<String?>(json['roleId']),
       branchNo: serializer.fromJson<String?>(json['branchNo']),
       branchYear: serializer.fromJson<String?>(json['branchYear']),
@@ -6410,7 +6377,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
       'displayName': serializer.toJson<String>(displayName),
       'displayNameAr': serializer.toJson<String?>(displayNameAr),
       'authHash': serializer.toJson<String>(authHash),
-      'pinHash': serializer.toJson<String?>(pinHash),
       'roleId': serializer.toJson<String?>(roleId),
       'branchNo': serializer.toJson<String?>(branchNo),
       'branchYear': serializer.toJson<String?>(branchYear),
@@ -6435,7 +6401,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
     String? displayName,
     Value<String?> displayNameAr = const Value.absent(),
     String? authHash,
-    Value<String?> pinHash = const Value.absent(),
     Value<String?> roleId = const Value.absent(),
     Value<String?> branchNo = const Value.absent(),
     Value<String?> branchYear = const Value.absent(),
@@ -6459,7 +6424,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
         ? displayNameAr.value
         : this.displayNameAr,
     authHash: authHash ?? this.authHash,
-    pinHash: pinHash.present ? pinHash.value : this.pinHash,
     roleId: roleId.present ? roleId.value : this.roleId,
     branchNo: branchNo.present ? branchNo.value : this.branchNo,
     branchYear: branchYear.present ? branchYear.value : this.branchYear,
@@ -6495,7 +6459,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
           ? data.displayNameAr.value
           : this.displayNameAr,
       authHash: data.authHash.present ? data.authHash.value : this.authHash,
-      pinHash: data.pinHash.present ? data.pinHash.value : this.pinHash,
       roleId: data.roleId.present ? data.roleId.value : this.roleId,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       branchYear: data.branchYear.present
@@ -6534,7 +6497,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
           ..write('displayName: $displayName, ')
           ..write('displayNameAr: $displayNameAr, ')
           ..write('authHash: $authHash, ')
-          ..write('pinHash: $pinHash, ')
           ..write('roleId: $roleId, ')
           ..write('branchNo: $branchNo, ')
           ..write('branchYear: $branchYear, ')
@@ -6552,7 +6514,7 @@ class PosUser extends DataClass implements Insertable<PosUser> {
   }
 
   @override
-  int get hashCode => Object.hashAll([
+  int get hashCode => Object.hash(
     id,
     custCode,
     sourceUserId,
@@ -6561,7 +6523,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
     displayName,
     displayNameAr,
     authHash,
-    pinHash,
     roleId,
     branchNo,
     branchYear,
@@ -6574,7 +6535,7 @@ class PosUser extends DataClass implements Insertable<PosUser> {
     canLoginPos,
     sourceUpdatedAt,
     cachedAt,
-  ]);
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -6587,7 +6548,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
           other.displayName == this.displayName &&
           other.displayNameAr == this.displayNameAr &&
           other.authHash == this.authHash &&
-          other.pinHash == this.pinHash &&
           other.roleId == this.roleId &&
           other.branchNo == this.branchNo &&
           other.branchYear == this.branchYear &&
@@ -6611,7 +6571,6 @@ class PosUsersCompanion extends UpdateCompanion<PosUser> {
   final Value<String> displayName;
   final Value<String?> displayNameAr;
   final Value<String> authHash;
-  final Value<String?> pinHash;
   final Value<String?> roleId;
   final Value<String?> branchNo;
   final Value<String?> branchYear;
@@ -6634,7 +6593,6 @@ class PosUsersCompanion extends UpdateCompanion<PosUser> {
     this.displayName = const Value.absent(),
     this.displayNameAr = const Value.absent(),
     this.authHash = const Value.absent(),
-    this.pinHash = const Value.absent(),
     this.roleId = const Value.absent(),
     this.branchNo = const Value.absent(),
     this.branchYear = const Value.absent(),
@@ -6658,7 +6616,6 @@ class PosUsersCompanion extends UpdateCompanion<PosUser> {
     required String displayName,
     this.displayNameAr = const Value.absent(),
     this.authHash = const Value.absent(),
-    this.pinHash = const Value.absent(),
     this.roleId = const Value.absent(),
     this.branchNo = const Value.absent(),
     this.branchYear = const Value.absent(),
@@ -6686,7 +6643,6 @@ class PosUsersCompanion extends UpdateCompanion<PosUser> {
     Expression<String>? displayName,
     Expression<String>? displayNameAr,
     Expression<String>? authHash,
-    Expression<String>? pinHash,
     Expression<String>? roleId,
     Expression<String>? branchNo,
     Expression<String>? branchYear,
@@ -6710,7 +6666,6 @@ class PosUsersCompanion extends UpdateCompanion<PosUser> {
       if (displayName != null) 'display_name': displayName,
       if (displayNameAr != null) 'display_name_ar': displayNameAr,
       if (authHash != null) 'auth_hash': authHash,
-      if (pinHash != null) 'pin_hash': pinHash,
       if (roleId != null) 'role_id': roleId,
       if (branchNo != null) 'branch_no': branchNo,
       if (branchYear != null) 'branch_year': branchYear,
@@ -6736,7 +6691,6 @@ class PosUsersCompanion extends UpdateCompanion<PosUser> {
     Value<String>? displayName,
     Value<String?>? displayNameAr,
     Value<String>? authHash,
-    Value<String?>? pinHash,
     Value<String?>? roleId,
     Value<String?>? branchNo,
     Value<String?>? branchYear,
@@ -6760,7 +6714,6 @@ class PosUsersCompanion extends UpdateCompanion<PosUser> {
       displayName: displayName ?? this.displayName,
       displayNameAr: displayNameAr ?? this.displayNameAr,
       authHash: authHash ?? this.authHash,
-      pinHash: pinHash ?? this.pinHash,
       roleId: roleId ?? this.roleId,
       branchNo: branchNo ?? this.branchNo,
       branchYear: branchYear ?? this.branchYear,
@@ -6803,9 +6756,6 @@ class PosUsersCompanion extends UpdateCompanion<PosUser> {
     }
     if (authHash.present) {
       map['auth_hash'] = Variable<String>(authHash.value);
-    }
-    if (pinHash.present) {
-      map['pin_hash'] = Variable<String>(pinHash.value);
     }
     if (roleId.present) {
       map['role_id'] = Variable<String>(roleId.value);
@@ -6860,7 +6810,6 @@ class PosUsersCompanion extends UpdateCompanion<PosUser> {
           ..write('displayName: $displayName, ')
           ..write('displayNameAr: $displayNameAr, ')
           ..write('authHash: $authHash, ')
-          ..write('pinHash: $pinHash, ')
           ..write('roleId: $roleId, ')
           ..write('branchNo: $branchNo, ')
           ..write('branchYear: $branchYear, ')
@@ -7793,12 +7742,12 @@ class $StoresTable extends Stores with TableInfo<$StoresTable, Store> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _tenantCodeMeta = const VerificationMeta(
-    'tenantCode',
+  static const VerificationMeta _custCodeMeta = const VerificationMeta(
+    'custCode',
   );
   @override
-  late final GeneratedColumn<String> tenantCode = GeneratedColumn<String>(
-    'tenant_code',
+  late final GeneratedColumn<String> custCode = GeneratedColumn<String>(
+    'cust_code',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -7873,7 +7822,7 @@ class $StoresTable extends Stores with TableInfo<$StoresTable, Store> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    tenantCode,
+    custCode,
     branchNo,
     name,
     nameAr,
@@ -7898,13 +7847,13 @@ class $StoresTable extends Stores with TableInfo<$StoresTable, Store> {
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('tenant_code')) {
+    if (data.containsKey('cust_code')) {
       context.handle(
-        _tenantCodeMeta,
-        tenantCode.isAcceptableOrUnknown(data['tenant_code']!, _tenantCodeMeta),
+        _custCodeMeta,
+        custCode.isAcceptableOrUnknown(data['cust_code']!, _custCodeMeta),
       );
     } else if (isInserting) {
-      context.missing(_tenantCodeMeta);
+      context.missing(_custCodeMeta);
     }
     if (data.containsKey('branch_no')) {
       context.handle(
@@ -7962,9 +7911,9 @@ class $StoresTable extends Stores with TableInfo<$StoresTable, Store> {
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      tenantCode: attachedDatabase.typeMapping.read(
+      custCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}tenant_code'],
+        data['${effectivePrefix}cust_code'],
       )!,
       branchNo: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -8001,7 +7950,7 @@ class $StoresTable extends Stores with TableInfo<$StoresTable, Store> {
 
 class Store extends DataClass implements Insertable<Store> {
   final String id;
-  final String tenantCode;
+  final String custCode;
   final String? branchNo;
   final String name;
   final String? nameAr;
@@ -8010,7 +7959,7 @@ class Store extends DataClass implements Insertable<Store> {
   final DateTime cachedAt;
   const Store({
     required this.id,
-    required this.tenantCode,
+    required this.custCode,
     this.branchNo,
     required this.name,
     this.nameAr,
@@ -8022,7 +7971,7 @@ class Store extends DataClass implements Insertable<Store> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['tenant_code'] = Variable<String>(tenantCode);
+    map['cust_code'] = Variable<String>(custCode);
     if (!nullToAbsent || branchNo != null) {
       map['branch_no'] = Variable<String>(branchNo);
     }
@@ -8041,7 +7990,7 @@ class Store extends DataClass implements Insertable<Store> {
   StoresCompanion toCompanion(bool nullToAbsent) {
     return StoresCompanion(
       id: Value(id),
-      tenantCode: Value(tenantCode),
+      custCode: Value(custCode),
       branchNo: branchNo == null && nullToAbsent
           ? const Value.absent()
           : Value(branchNo),
@@ -8064,7 +8013,7 @@ class Store extends DataClass implements Insertable<Store> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Store(
       id: serializer.fromJson<String>(json['id']),
-      tenantCode: serializer.fromJson<String>(json['tenantCode']),
+      custCode: serializer.fromJson<String>(json['custCode']),
       branchNo: serializer.fromJson<String?>(json['branchNo']),
       name: serializer.fromJson<String>(json['name']),
       nameAr: serializer.fromJson<String?>(json['nameAr']),
@@ -8078,7 +8027,7 @@ class Store extends DataClass implements Insertable<Store> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'tenantCode': serializer.toJson<String>(tenantCode),
+      'custCode': serializer.toJson<String>(custCode),
       'branchNo': serializer.toJson<String?>(branchNo),
       'name': serializer.toJson<String>(name),
       'nameAr': serializer.toJson<String?>(nameAr),
@@ -8090,7 +8039,7 @@ class Store extends DataClass implements Insertable<Store> {
 
   Store copyWith({
     String? id,
-    String? tenantCode,
+    String? custCode,
     Value<String?> branchNo = const Value.absent(),
     String? name,
     Value<String?> nameAr = const Value.absent(),
@@ -8099,7 +8048,7 @@ class Store extends DataClass implements Insertable<Store> {
     DateTime? cachedAt,
   }) => Store(
     id: id ?? this.id,
-    tenantCode: tenantCode ?? this.tenantCode,
+    custCode: custCode ?? this.custCode,
     branchNo: branchNo.present ? branchNo.value : this.branchNo,
     name: name ?? this.name,
     nameAr: nameAr.present ? nameAr.value : this.nameAr,
@@ -8112,9 +8061,7 @@ class Store extends DataClass implements Insertable<Store> {
   Store copyWithCompanion(StoresCompanion data) {
     return Store(
       id: data.id.present ? data.id.value : this.id,
-      tenantCode: data.tenantCode.present
-          ? data.tenantCode.value
-          : this.tenantCode,
+      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       name: data.name.present ? data.name.value : this.name,
       nameAr: data.nameAr.present ? data.nameAr.value : this.nameAr,
@@ -8130,7 +8077,7 @@ class Store extends DataClass implements Insertable<Store> {
   String toString() {
     return (StringBuffer('Store(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('branchNo: $branchNo, ')
           ..write('name: $name, ')
           ..write('nameAr: $nameAr, ')
@@ -8144,7 +8091,7 @@ class Store extends DataClass implements Insertable<Store> {
   @override
   int get hashCode => Object.hash(
     id,
-    tenantCode,
+    custCode,
     branchNo,
     name,
     nameAr,
@@ -8157,7 +8104,7 @@ class Store extends DataClass implements Insertable<Store> {
       identical(this, other) ||
       (other is Store &&
           other.id == this.id &&
-          other.tenantCode == this.tenantCode &&
+          other.custCode == this.custCode &&
           other.branchNo == this.branchNo &&
           other.name == this.name &&
           other.nameAr == this.nameAr &&
@@ -8168,7 +8115,7 @@ class Store extends DataClass implements Insertable<Store> {
 
 class StoresCompanion extends UpdateCompanion<Store> {
   final Value<String> id;
-  final Value<String> tenantCode;
+  final Value<String> custCode;
   final Value<String?> branchNo;
   final Value<String> name;
   final Value<String?> nameAr;
@@ -8178,7 +8125,7 @@ class StoresCompanion extends UpdateCompanion<Store> {
   final Value<int> rowid;
   const StoresCompanion({
     this.id = const Value.absent(),
-    this.tenantCode = const Value.absent(),
+    this.custCode = const Value.absent(),
     this.branchNo = const Value.absent(),
     this.name = const Value.absent(),
     this.nameAr = const Value.absent(),
@@ -8189,7 +8136,7 @@ class StoresCompanion extends UpdateCompanion<Store> {
   });
   StoresCompanion.insert({
     required String id,
-    required String tenantCode,
+    required String custCode,
     this.branchNo = const Value.absent(),
     required String name,
     this.nameAr = const Value.absent(),
@@ -8198,12 +8145,12 @@ class StoresCompanion extends UpdateCompanion<Store> {
     required DateTime cachedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       tenantCode = Value(tenantCode),
+       custCode = Value(custCode),
        name = Value(name),
        cachedAt = Value(cachedAt);
   static Insertable<Store> custom({
     Expression<String>? id,
-    Expression<String>? tenantCode,
+    Expression<String>? custCode,
     Expression<String>? branchNo,
     Expression<String>? name,
     Expression<String>? nameAr,
@@ -8214,7 +8161,7 @@ class StoresCompanion extends UpdateCompanion<Store> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (tenantCode != null) 'tenant_code': tenantCode,
+      if (custCode != null) 'cust_code': custCode,
       if (branchNo != null) 'branch_no': branchNo,
       if (name != null) 'name': name,
       if (nameAr != null) 'name_ar': nameAr,
@@ -8227,7 +8174,7 @@ class StoresCompanion extends UpdateCompanion<Store> {
 
   StoresCompanion copyWith({
     Value<String>? id,
-    Value<String>? tenantCode,
+    Value<String>? custCode,
     Value<String?>? branchNo,
     Value<String>? name,
     Value<String?>? nameAr,
@@ -8238,7 +8185,7 @@ class StoresCompanion extends UpdateCompanion<Store> {
   }) {
     return StoresCompanion(
       id: id ?? this.id,
-      tenantCode: tenantCode ?? this.tenantCode,
+      custCode: custCode ?? this.custCode,
       branchNo: branchNo ?? this.branchNo,
       name: name ?? this.name,
       nameAr: nameAr ?? this.nameAr,
@@ -8255,8 +8202,8 @@ class StoresCompanion extends UpdateCompanion<Store> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (tenantCode.present) {
-      map['tenant_code'] = Variable<String>(tenantCode.value);
+    if (custCode.present) {
+      map['cust_code'] = Variable<String>(custCode.value);
     }
     if (branchNo.present) {
       map['branch_no'] = Variable<String>(branchNo.value);
@@ -8286,7 +8233,7 @@ class StoresCompanion extends UpdateCompanion<Store> {
   String toString() {
     return (StringBuffer('StoresCompanion(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('branchNo: $branchNo, ')
           ..write('name: $name, ')
           ..write('nameAr: $nameAr, ')
@@ -8314,12 +8261,12 @@ class $PriceLevelsTable extends PriceLevels
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _tenantCodeMeta = const VerificationMeta(
-    'tenantCode',
+  static const VerificationMeta _custCodeMeta = const VerificationMeta(
+    'custCode',
   );
   @override
-  late final GeneratedColumn<String> tenantCode = GeneratedColumn<String>(
-    'tenant_code',
+  late final GeneratedColumn<String> custCode = GeneratedColumn<String>(
+    'cust_code',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -8383,7 +8330,7 @@ class $PriceLevelsTable extends PriceLevels
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    tenantCode,
+    custCode,
     name,
     nameAr,
     isDefault,
@@ -8407,13 +8354,13 @@ class $PriceLevelsTable extends PriceLevels
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('tenant_code')) {
+    if (data.containsKey('cust_code')) {
       context.handle(
-        _tenantCodeMeta,
-        tenantCode.isAcceptableOrUnknown(data['tenant_code']!, _tenantCodeMeta),
+        _custCodeMeta,
+        custCode.isAcceptableOrUnknown(data['cust_code']!, _custCodeMeta),
       );
     } else if (isInserting) {
-      context.missing(_tenantCodeMeta);
+      context.missing(_custCodeMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -8465,9 +8412,9 @@ class $PriceLevelsTable extends PriceLevels
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      tenantCode: attachedDatabase.typeMapping.read(
+      custCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}tenant_code'],
+        data['${effectivePrefix}cust_code'],
       )!,
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -8500,7 +8447,7 @@ class $PriceLevelsTable extends PriceLevels
 
 class PriceLevel extends DataClass implements Insertable<PriceLevel> {
   final String id;
-  final String tenantCode;
+  final String custCode;
   final String name;
   final String? nameAr;
   final bool isDefault;
@@ -8508,7 +8455,7 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
   final DateTime cachedAt;
   const PriceLevel({
     required this.id,
-    required this.tenantCode,
+    required this.custCode,
     required this.name,
     this.nameAr,
     required this.isDefault,
@@ -8519,7 +8466,7 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['tenant_code'] = Variable<String>(tenantCode);
+    map['cust_code'] = Variable<String>(custCode);
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || nameAr != null) {
       map['name_ar'] = Variable<String>(nameAr);
@@ -8535,7 +8482,7 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
   PriceLevelsCompanion toCompanion(bool nullToAbsent) {
     return PriceLevelsCompanion(
       id: Value(id),
-      tenantCode: Value(tenantCode),
+      custCode: Value(custCode),
       name: Value(name),
       nameAr: nameAr == null && nullToAbsent
           ? const Value.absent()
@@ -8555,7 +8502,7 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PriceLevel(
       id: serializer.fromJson<String>(json['id']),
-      tenantCode: serializer.fromJson<String>(json['tenantCode']),
+      custCode: serializer.fromJson<String>(json['custCode']),
       name: serializer.fromJson<String>(json['name']),
       nameAr: serializer.fromJson<String?>(json['nameAr']),
       isDefault: serializer.fromJson<bool>(json['isDefault']),
@@ -8568,7 +8515,7 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'tenantCode': serializer.toJson<String>(tenantCode),
+      'custCode': serializer.toJson<String>(custCode),
       'name': serializer.toJson<String>(name),
       'nameAr': serializer.toJson<String?>(nameAr),
       'isDefault': serializer.toJson<bool>(isDefault),
@@ -8579,7 +8526,7 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
 
   PriceLevel copyWith({
     String? id,
-    String? tenantCode,
+    String? custCode,
     String? name,
     Value<String?> nameAr = const Value.absent(),
     bool? isDefault,
@@ -8587,7 +8534,7 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
     DateTime? cachedAt,
   }) => PriceLevel(
     id: id ?? this.id,
-    tenantCode: tenantCode ?? this.tenantCode,
+    custCode: custCode ?? this.custCode,
     name: name ?? this.name,
     nameAr: nameAr.present ? nameAr.value : this.nameAr,
     isDefault: isDefault ?? this.isDefault,
@@ -8599,9 +8546,7 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
   PriceLevel copyWithCompanion(PriceLevelsCompanion data) {
     return PriceLevel(
       id: data.id.present ? data.id.value : this.id,
-      tenantCode: data.tenantCode.present
-          ? data.tenantCode.value
-          : this.tenantCode,
+      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       name: data.name.present ? data.name.value : this.name,
       nameAr: data.nameAr.present ? data.nameAr.value : this.nameAr,
       isDefault: data.isDefault.present ? data.isDefault.value : this.isDefault,
@@ -8616,7 +8561,7 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
   String toString() {
     return (StringBuffer('PriceLevel(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('name: $name, ')
           ..write('nameAr: $nameAr, ')
           ..write('isDefault: $isDefault, ')
@@ -8629,7 +8574,7 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
   @override
   int get hashCode => Object.hash(
     id,
-    tenantCode,
+    custCode,
     name,
     nameAr,
     isDefault,
@@ -8641,7 +8586,7 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
       identical(this, other) ||
       (other is PriceLevel &&
           other.id == this.id &&
-          other.tenantCode == this.tenantCode &&
+          other.custCode == this.custCode &&
           other.name == this.name &&
           other.nameAr == this.nameAr &&
           other.isDefault == this.isDefault &&
@@ -8651,7 +8596,7 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
 
 class PriceLevelsCompanion extends UpdateCompanion<PriceLevel> {
   final Value<String> id;
-  final Value<String> tenantCode;
+  final Value<String> custCode;
   final Value<String> name;
   final Value<String?> nameAr;
   final Value<bool> isDefault;
@@ -8660,7 +8605,7 @@ class PriceLevelsCompanion extends UpdateCompanion<PriceLevel> {
   final Value<int> rowid;
   const PriceLevelsCompanion({
     this.id = const Value.absent(),
-    this.tenantCode = const Value.absent(),
+    this.custCode = const Value.absent(),
     this.name = const Value.absent(),
     this.nameAr = const Value.absent(),
     this.isDefault = const Value.absent(),
@@ -8670,7 +8615,7 @@ class PriceLevelsCompanion extends UpdateCompanion<PriceLevel> {
   });
   PriceLevelsCompanion.insert({
     required String id,
-    required String tenantCode,
+    required String custCode,
     required String name,
     this.nameAr = const Value.absent(),
     this.isDefault = const Value.absent(),
@@ -8678,12 +8623,12 @@ class PriceLevelsCompanion extends UpdateCompanion<PriceLevel> {
     required DateTime cachedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       tenantCode = Value(tenantCode),
+       custCode = Value(custCode),
        name = Value(name),
        cachedAt = Value(cachedAt);
   static Insertable<PriceLevel> custom({
     Expression<String>? id,
-    Expression<String>? tenantCode,
+    Expression<String>? custCode,
     Expression<String>? name,
     Expression<String>? nameAr,
     Expression<bool>? isDefault,
@@ -8693,7 +8638,7 @@ class PriceLevelsCompanion extends UpdateCompanion<PriceLevel> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (tenantCode != null) 'tenant_code': tenantCode,
+      if (custCode != null) 'cust_code': custCode,
       if (name != null) 'name': name,
       if (nameAr != null) 'name_ar': nameAr,
       if (isDefault != null) 'is_default': isDefault,
@@ -8705,7 +8650,7 @@ class PriceLevelsCompanion extends UpdateCompanion<PriceLevel> {
 
   PriceLevelsCompanion copyWith({
     Value<String>? id,
-    Value<String>? tenantCode,
+    Value<String>? custCode,
     Value<String>? name,
     Value<String?>? nameAr,
     Value<bool>? isDefault,
@@ -8715,7 +8660,7 @@ class PriceLevelsCompanion extends UpdateCompanion<PriceLevel> {
   }) {
     return PriceLevelsCompanion(
       id: id ?? this.id,
-      tenantCode: tenantCode ?? this.tenantCode,
+      custCode: custCode ?? this.custCode,
       name: name ?? this.name,
       nameAr: nameAr ?? this.nameAr,
       isDefault: isDefault ?? this.isDefault,
@@ -8731,8 +8676,8 @@ class PriceLevelsCompanion extends UpdateCompanion<PriceLevel> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (tenantCode.present) {
-      map['tenant_code'] = Variable<String>(tenantCode.value);
+    if (custCode.present) {
+      map['cust_code'] = Variable<String>(custCode.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -8759,7 +8704,7 @@ class PriceLevelsCompanion extends UpdateCompanion<PriceLevel> {
   String toString() {
     return (StringBuffer('PriceLevelsCompanion(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('name: $name, ')
           ..write('nameAr: $nameAr, ')
           ..write('isDefault: $isDefault, ')
@@ -8785,12 +8730,12 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _tenantCodeMeta = const VerificationMeta(
-    'tenantCode',
+  static const VerificationMeta _custCodeMeta = const VerificationMeta(
+    'custCode',
   );
   @override
-  late final GeneratedColumn<String> tenantCode = GeneratedColumn<String>(
-    'tenant_code',
+  late final GeneratedColumn<String> custCode = GeneratedColumn<String>(
+    'cust_code',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -8993,7 +8938,7 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    tenantCode,
+    custCode,
     code,
     name,
     nameAr,
@@ -9028,13 +8973,13 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('tenant_code')) {
+    if (data.containsKey('cust_code')) {
       context.handle(
-        _tenantCodeMeta,
-        tenantCode.isAcceptableOrUnknown(data['tenant_code']!, _tenantCodeMeta),
+        _custCodeMeta,
+        custCode.isAcceptableOrUnknown(data['cust_code']!, _custCodeMeta),
       );
     } else if (isInserting) {
-      context.missing(_tenantCodeMeta);
+      context.missing(_custCodeMeta);
     }
     if (data.containsKey('code')) {
       context.handle(
@@ -9161,9 +9106,9 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      tenantCode: attachedDatabase.typeMapping.read(
+      custCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}tenant_code'],
+        data['${effectivePrefix}cust_code'],
       )!,
       code: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -9240,7 +9185,7 @@ class $ItemsTable extends Items with TableInfo<$ItemsTable, Item> {
 
 class Item extends DataClass implements Insertable<Item> {
   final String id;
-  final String tenantCode;
+  final String custCode;
   final String? code;
   final String name;
   final String? nameAr;
@@ -9259,7 +9204,7 @@ class Item extends DataClass implements Insertable<Item> {
   final DateTime cachedAt;
   const Item({
     required this.id,
-    required this.tenantCode,
+    required this.custCode,
     this.code,
     required this.name,
     this.nameAr,
@@ -9281,7 +9226,7 @@ class Item extends DataClass implements Insertable<Item> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['tenant_code'] = Variable<String>(tenantCode);
+    map['cust_code'] = Variable<String>(custCode);
     if (!nullToAbsent || code != null) {
       map['code'] = Variable<String>(code);
     }
@@ -9316,7 +9261,7 @@ class Item extends DataClass implements Insertable<Item> {
   ItemsCompanion toCompanion(bool nullToAbsent) {
     return ItemsCompanion(
       id: Value(id),
-      tenantCode: Value(tenantCode),
+      custCode: Value(custCode),
       code: code == null && nullToAbsent ? const Value.absent() : Value(code),
       name: Value(name),
       nameAr: nameAr == null && nullToAbsent
@@ -9353,7 +9298,7 @@ class Item extends DataClass implements Insertable<Item> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Item(
       id: serializer.fromJson<String>(json['id']),
-      tenantCode: serializer.fromJson<String>(json['tenantCode']),
+      custCode: serializer.fromJson<String>(json['custCode']),
       code: serializer.fromJson<String?>(json['code']),
       name: serializer.fromJson<String>(json['name']),
       nameAr: serializer.fromJson<String?>(json['nameAr']),
@@ -9377,7 +9322,7 @@ class Item extends DataClass implements Insertable<Item> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'tenantCode': serializer.toJson<String>(tenantCode),
+      'custCode': serializer.toJson<String>(custCode),
       'code': serializer.toJson<String?>(code),
       'name': serializer.toJson<String>(name),
       'nameAr': serializer.toJson<String?>(nameAr),
@@ -9399,7 +9344,7 @@ class Item extends DataClass implements Insertable<Item> {
 
   Item copyWith({
     String? id,
-    String? tenantCode,
+    String? custCode,
     Value<String?> code = const Value.absent(),
     String? name,
     Value<String?> nameAr = const Value.absent(),
@@ -9418,7 +9363,7 @@ class Item extends DataClass implements Insertable<Item> {
     DateTime? cachedAt,
   }) => Item(
     id: id ?? this.id,
-    tenantCode: tenantCode ?? this.tenantCode,
+    custCode: custCode ?? this.custCode,
     code: code.present ? code.value : this.code,
     name: name ?? this.name,
     nameAr: nameAr.present ? nameAr.value : this.nameAr,
@@ -9443,9 +9388,7 @@ class Item extends DataClass implements Insertable<Item> {
   Item copyWithCompanion(ItemsCompanion data) {
     return Item(
       id: data.id.present ? data.id.value : this.id,
-      tenantCode: data.tenantCode.present
-          ? data.tenantCode.value
-          : this.tenantCode,
+      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       code: data.code.present ? data.code.value : this.code,
       name: data.name.present ? data.name.value : this.name,
       nameAr: data.nameAr.present ? data.nameAr.value : this.nameAr,
@@ -9477,7 +9420,7 @@ class Item extends DataClass implements Insertable<Item> {
   String toString() {
     return (StringBuffer('Item(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('code: $code, ')
           ..write('name: $name, ')
           ..write('nameAr: $nameAr, ')
@@ -9501,7 +9444,7 @@ class Item extends DataClass implements Insertable<Item> {
   @override
   int get hashCode => Object.hash(
     id,
-    tenantCode,
+    custCode,
     code,
     name,
     nameAr,
@@ -9524,7 +9467,7 @@ class Item extends DataClass implements Insertable<Item> {
       identical(this, other) ||
       (other is Item &&
           other.id == this.id &&
-          other.tenantCode == this.tenantCode &&
+          other.custCode == this.custCode &&
           other.code == this.code &&
           other.name == this.name &&
           other.nameAr == this.nameAr &&
@@ -9545,7 +9488,7 @@ class Item extends DataClass implements Insertable<Item> {
 
 class ItemsCompanion extends UpdateCompanion<Item> {
   final Value<String> id;
-  final Value<String> tenantCode;
+  final Value<String> custCode;
   final Value<String?> code;
   final Value<String> name;
   final Value<String?> nameAr;
@@ -9565,7 +9508,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
   final Value<int> rowid;
   const ItemsCompanion({
     this.id = const Value.absent(),
-    this.tenantCode = const Value.absent(),
+    this.custCode = const Value.absent(),
     this.code = const Value.absent(),
     this.name = const Value.absent(),
     this.nameAr = const Value.absent(),
@@ -9586,7 +9529,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
   });
   ItemsCompanion.insert({
     required String id,
-    required String tenantCode,
+    required String custCode,
     this.code = const Value.absent(),
     required String name,
     this.nameAr = const Value.absent(),
@@ -9605,12 +9548,12 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     required DateTime cachedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       tenantCode = Value(tenantCode),
+       custCode = Value(custCode),
        name = Value(name),
        cachedAt = Value(cachedAt);
   static Insertable<Item> custom({
     Expression<String>? id,
-    Expression<String>? tenantCode,
+    Expression<String>? custCode,
     Expression<String>? code,
     Expression<String>? name,
     Expression<String>? nameAr,
@@ -9631,7 +9574,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (tenantCode != null) 'tenant_code': tenantCode,
+      if (custCode != null) 'cust_code': custCode,
       if (code != null) 'code': code,
       if (name != null) 'name': name,
       if (nameAr != null) 'name_ar': nameAr,
@@ -9654,7 +9597,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
 
   ItemsCompanion copyWith({
     Value<String>? id,
-    Value<String>? tenantCode,
+    Value<String>? custCode,
     Value<String?>? code,
     Value<String>? name,
     Value<String?>? nameAr,
@@ -9675,7 +9618,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
   }) {
     return ItemsCompanion(
       id: id ?? this.id,
-      tenantCode: tenantCode ?? this.tenantCode,
+      custCode: custCode ?? this.custCode,
       code: code ?? this.code,
       name: name ?? this.name,
       nameAr: nameAr ?? this.nameAr,
@@ -9702,8 +9645,8 @@ class ItemsCompanion extends UpdateCompanion<Item> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (tenantCode.present) {
-      map['tenant_code'] = Variable<String>(tenantCode.value);
+    if (custCode.present) {
+      map['cust_code'] = Variable<String>(custCode.value);
     }
     if (code.present) {
       map['code'] = Variable<String>(code.value);
@@ -9763,7 +9706,7 @@ class ItemsCompanion extends UpdateCompanion<Item> {
   String toString() {
     return (StringBuffer('ItemsCompanion(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('code: $code, ')
           ..write('name: $name, ')
           ..write('nameAr: $nameAr, ')
@@ -9801,12 +9744,12 @@ class $ItemUnitsTable extends ItemUnits
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _tenantCodeMeta = const VerificationMeta(
-    'tenantCode',
+  static const VerificationMeta _custCodeMeta = const VerificationMeta(
+    'custCode',
   );
   @override
-  late final GeneratedColumn<String> tenantCode = GeneratedColumn<String>(
-    'tenant_code',
+  late final GeneratedColumn<String> custCode = GeneratedColumn<String>(
+    'cust_code',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -9941,7 +9884,7 @@ class $ItemUnitsTable extends ItemUnits
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    tenantCode,
+    custCode,
     itemId,
     sourceUnitId,
     name,
@@ -9971,13 +9914,13 @@ class $ItemUnitsTable extends ItemUnits
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('tenant_code')) {
+    if (data.containsKey('cust_code')) {
       context.handle(
-        _tenantCodeMeta,
-        tenantCode.isAcceptableOrUnknown(data['tenant_code']!, _tenantCodeMeta),
+        _custCodeMeta,
+        custCode.isAcceptableOrUnknown(data['cust_code']!, _custCodeMeta),
       );
     } else if (isInserting) {
-      context.missing(_tenantCodeMeta);
+      context.missing(_custCodeMeta);
     }
     if (data.containsKey('item_id')) {
       context.handle(
@@ -10073,9 +10016,9 @@ class $ItemUnitsTable extends ItemUnits
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      tenantCode: attachedDatabase.typeMapping.read(
+      custCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}tenant_code'],
+        data['${effectivePrefix}cust_code'],
       )!,
       itemId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -10132,7 +10075,7 @@ class $ItemUnitsTable extends ItemUnits
 
 class ItemUnit extends DataClass implements Insertable<ItemUnit> {
   final String id;
-  final String tenantCode;
+  final String custCode;
   final String itemId;
   final String? sourceUnitId;
   final String name;
@@ -10146,7 +10089,7 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
   final DateTime cachedAt;
   const ItemUnit({
     required this.id,
-    required this.tenantCode,
+    required this.custCode,
     required this.itemId,
     this.sourceUnitId,
     required this.name,
@@ -10163,7 +10106,7 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['tenant_code'] = Variable<String>(tenantCode);
+    map['cust_code'] = Variable<String>(custCode);
     map['item_id'] = Variable<String>(itemId);
     if (!nullToAbsent || sourceUnitId != null) {
       map['source_unit_id'] = Variable<String>(sourceUnitId);
@@ -10189,7 +10132,7 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
   ItemUnitsCompanion toCompanion(bool nullToAbsent) {
     return ItemUnitsCompanion(
       id: Value(id),
-      tenantCode: Value(tenantCode),
+      custCode: Value(custCode),
       itemId: Value(itemId),
       sourceUnitId: sourceUnitId == null && nullToAbsent
           ? const Value.absent()
@@ -10219,7 +10162,7 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ItemUnit(
       id: serializer.fromJson<String>(json['id']),
-      tenantCode: serializer.fromJson<String>(json['tenantCode']),
+      custCode: serializer.fromJson<String>(json['custCode']),
       itemId: serializer.fromJson<String>(json['itemId']),
       sourceUnitId: serializer.fromJson<String?>(json['sourceUnitId']),
       name: serializer.fromJson<String>(json['name']),
@@ -10238,7 +10181,7 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'tenantCode': serializer.toJson<String>(tenantCode),
+      'custCode': serializer.toJson<String>(custCode),
       'itemId': serializer.toJson<String>(itemId),
       'sourceUnitId': serializer.toJson<String?>(sourceUnitId),
       'name': serializer.toJson<String>(name),
@@ -10255,7 +10198,7 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
 
   ItemUnit copyWith({
     String? id,
-    String? tenantCode,
+    String? custCode,
     String? itemId,
     Value<String?> sourceUnitId = const Value.absent(),
     String? name,
@@ -10269,7 +10212,7 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
     DateTime? cachedAt,
   }) => ItemUnit(
     id: id ?? this.id,
-    tenantCode: tenantCode ?? this.tenantCode,
+    custCode: custCode ?? this.custCode,
     itemId: itemId ?? this.itemId,
     sourceUnitId: sourceUnitId.present ? sourceUnitId.value : this.sourceUnitId,
     name: name ?? this.name,
@@ -10287,9 +10230,7 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
   ItemUnit copyWithCompanion(ItemUnitsCompanion data) {
     return ItemUnit(
       id: data.id.present ? data.id.value : this.id,
-      tenantCode: data.tenantCode.present
-          ? data.tenantCode.value
-          : this.tenantCode,
+      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       itemId: data.itemId.present ? data.itemId.value : this.itemId,
       sourceUnitId: data.sourceUnitId.present
           ? data.sourceUnitId.value
@@ -10314,7 +10255,7 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
   String toString() {
     return (StringBuffer('ItemUnit(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('itemId: $itemId, ')
           ..write('sourceUnitId: $sourceUnitId, ')
           ..write('name: $name, ')
@@ -10333,7 +10274,7 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
   @override
   int get hashCode => Object.hash(
     id,
-    tenantCode,
+    custCode,
     itemId,
     sourceUnitId,
     name,
@@ -10351,7 +10292,7 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
       identical(this, other) ||
       (other is ItemUnit &&
           other.id == this.id &&
-          other.tenantCode == this.tenantCode &&
+          other.custCode == this.custCode &&
           other.itemId == this.itemId &&
           other.sourceUnitId == this.sourceUnitId &&
           other.name == this.name &&
@@ -10367,7 +10308,7 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
 
 class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
   final Value<String> id;
-  final Value<String> tenantCode;
+  final Value<String> custCode;
   final Value<String> itemId;
   final Value<String?> sourceUnitId;
   final Value<String> name;
@@ -10382,7 +10323,7 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
   final Value<int> rowid;
   const ItemUnitsCompanion({
     this.id = const Value.absent(),
-    this.tenantCode = const Value.absent(),
+    this.custCode = const Value.absent(),
     this.itemId = const Value.absent(),
     this.sourceUnitId = const Value.absent(),
     this.name = const Value.absent(),
@@ -10398,7 +10339,7 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
   });
   ItemUnitsCompanion.insert({
     required String id,
-    required String tenantCode,
+    required String custCode,
     required String itemId,
     this.sourceUnitId = const Value.absent(),
     required String name,
@@ -10412,13 +10353,13 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
     required DateTime cachedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       tenantCode = Value(tenantCode),
+       custCode = Value(custCode),
        itemId = Value(itemId),
        name = Value(name),
        cachedAt = Value(cachedAt);
   static Insertable<ItemUnit> custom({
     Expression<String>? id,
-    Expression<String>? tenantCode,
+    Expression<String>? custCode,
     Expression<String>? itemId,
     Expression<String>? sourceUnitId,
     Expression<String>? name,
@@ -10434,7 +10375,7 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (tenantCode != null) 'tenant_code': tenantCode,
+      if (custCode != null) 'cust_code': custCode,
       if (itemId != null) 'item_id': itemId,
       if (sourceUnitId != null) 'source_unit_id': sourceUnitId,
       if (name != null) 'name': name,
@@ -10452,7 +10393,7 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
 
   ItemUnitsCompanion copyWith({
     Value<String>? id,
-    Value<String>? tenantCode,
+    Value<String>? custCode,
     Value<String>? itemId,
     Value<String?>? sourceUnitId,
     Value<String>? name,
@@ -10468,7 +10409,7 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
   }) {
     return ItemUnitsCompanion(
       id: id ?? this.id,
-      tenantCode: tenantCode ?? this.tenantCode,
+      custCode: custCode ?? this.custCode,
       itemId: itemId ?? this.itemId,
       sourceUnitId: sourceUnitId ?? this.sourceUnitId,
       name: name ?? this.name,
@@ -10490,8 +10431,8 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (tenantCode.present) {
-      map['tenant_code'] = Variable<String>(tenantCode.value);
+    if (custCode.present) {
+      map['cust_code'] = Variable<String>(custCode.value);
     }
     if (itemId.present) {
       map['item_id'] = Variable<String>(itemId.value);
@@ -10536,7 +10477,7 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
   String toString() {
     return (StringBuffer('ItemUnitsCompanion(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('itemId: $itemId, ')
           ..write('sourceUnitId: $sourceUnitId, ')
           ..write('name: $name, ')
@@ -11024,12 +10965,12 @@ class $ItemPricesTable extends ItemPrices
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _tenantCodeMeta = const VerificationMeta(
-    'tenantCode',
+  static const VerificationMeta _custCodeMeta = const VerificationMeta(
+    'custCode',
   );
   @override
-  late final GeneratedColumn<String> tenantCode = GeneratedColumn<String>(
-    'tenant_code',
+  late final GeneratedColumn<String> custCode = GeneratedColumn<String>(
+    'cust_code',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -11165,7 +11106,7 @@ class $ItemPricesTable extends ItemPrices
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    tenantCode,
+    custCode,
     itemId,
     unitId,
     storeId,
@@ -11196,13 +11137,13 @@ class $ItemPricesTable extends ItemPrices
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('tenant_code')) {
+    if (data.containsKey('cust_code')) {
       context.handle(
-        _tenantCodeMeta,
-        tenantCode.isAcceptableOrUnknown(data['tenant_code']!, _tenantCodeMeta),
+        _custCodeMeta,
+        custCode.isAcceptableOrUnknown(data['cust_code']!, _custCodeMeta),
       );
     } else if (isInserting) {
-      context.missing(_tenantCodeMeta);
+      context.missing(_custCodeMeta);
     }
     if (data.containsKey('item_id')) {
       context.handle(
@@ -11307,9 +11248,9 @@ class $ItemPricesTable extends ItemPrices
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      tenantCode: attachedDatabase.typeMapping.read(
+      custCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}tenant_code'],
+        data['${effectivePrefix}cust_code'],
       )!,
       itemId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -11370,7 +11311,7 @@ class $ItemPricesTable extends ItemPrices
 
 class ItemPrice extends DataClass implements Insertable<ItemPrice> {
   final String id;
-  final String tenantCode;
+  final String custCode;
   final String itemId;
   final String? unitId;
   final String? storeId;
@@ -11385,7 +11326,7 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
   final DateTime cachedAt;
   const ItemPrice({
     required this.id,
-    required this.tenantCode,
+    required this.custCode,
     required this.itemId,
     this.unitId,
     this.storeId,
@@ -11403,7 +11344,7 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['tenant_code'] = Variable<String>(tenantCode);
+    map['cust_code'] = Variable<String>(custCode);
     map['item_id'] = Variable<String>(itemId);
     if (!nullToAbsent || unitId != null) {
       map['unit_id'] = Variable<String>(unitId);
@@ -11440,7 +11381,7 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
   ItemPricesCompanion toCompanion(bool nullToAbsent) {
     return ItemPricesCompanion(
       id: Value(id),
-      tenantCode: Value(tenantCode),
+      custCode: Value(custCode),
       itemId: Value(itemId),
       unitId: unitId == null && nullToAbsent
           ? const Value.absent()
@@ -11481,7 +11422,7 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ItemPrice(
       id: serializer.fromJson<String>(json['id']),
-      tenantCode: serializer.fromJson<String>(json['tenantCode']),
+      custCode: serializer.fromJson<String>(json['custCode']),
       itemId: serializer.fromJson<String>(json['itemId']),
       unitId: serializer.fromJson<String?>(json['unitId']),
       storeId: serializer.fromJson<String?>(json['storeId']),
@@ -11501,7 +11442,7 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'tenantCode': serializer.toJson<String>(tenantCode),
+      'custCode': serializer.toJson<String>(custCode),
       'itemId': serializer.toJson<String>(itemId),
       'unitId': serializer.toJson<String?>(unitId),
       'storeId': serializer.toJson<String?>(storeId),
@@ -11519,7 +11460,7 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
 
   ItemPrice copyWith({
     String? id,
-    String? tenantCode,
+    String? custCode,
     String? itemId,
     Value<String?> unitId = const Value.absent(),
     Value<String?> storeId = const Value.absent(),
@@ -11534,7 +11475,7 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
     DateTime? cachedAt,
   }) => ItemPrice(
     id: id ?? this.id,
-    tenantCode: tenantCode ?? this.tenantCode,
+    custCode: custCode ?? this.custCode,
     itemId: itemId ?? this.itemId,
     unitId: unitId.present ? unitId.value : this.unitId,
     storeId: storeId.present ? storeId.value : this.storeId,
@@ -11555,9 +11496,7 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
   ItemPrice copyWithCompanion(ItemPricesCompanion data) {
     return ItemPrice(
       id: data.id.present ? data.id.value : this.id,
-      tenantCode: data.tenantCode.present
-          ? data.tenantCode.value
-          : this.tenantCode,
+      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       itemId: data.itemId.present ? data.itemId.value : this.itemId,
       unitId: data.unitId.present ? data.unitId.value : this.unitId,
       storeId: data.storeId.present ? data.storeId.value : this.storeId,
@@ -11585,7 +11524,7 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
   String toString() {
     return (StringBuffer('ItemPrice(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('itemId: $itemId, ')
           ..write('unitId: $unitId, ')
           ..write('storeId: $storeId, ')
@@ -11605,7 +11544,7 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
   @override
   int get hashCode => Object.hash(
     id,
-    tenantCode,
+    custCode,
     itemId,
     unitId,
     storeId,
@@ -11624,7 +11563,7 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
       identical(this, other) ||
       (other is ItemPrice &&
           other.id == this.id &&
-          other.tenantCode == this.tenantCode &&
+          other.custCode == this.custCode &&
           other.itemId == this.itemId &&
           other.unitId == this.unitId &&
           other.storeId == this.storeId &&
@@ -11641,7 +11580,7 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
 
 class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
   final Value<String> id;
-  final Value<String> tenantCode;
+  final Value<String> custCode;
   final Value<String> itemId;
   final Value<String?> unitId;
   final Value<String?> storeId;
@@ -11657,7 +11596,7 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
   final Value<int> rowid;
   const ItemPricesCompanion({
     this.id = const Value.absent(),
-    this.tenantCode = const Value.absent(),
+    this.custCode = const Value.absent(),
     this.itemId = const Value.absent(),
     this.unitId = const Value.absent(),
     this.storeId = const Value.absent(),
@@ -11674,7 +11613,7 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
   });
   ItemPricesCompanion.insert({
     required String id,
-    required String tenantCode,
+    required String custCode,
     required String itemId,
     this.unitId = const Value.absent(),
     this.storeId = const Value.absent(),
@@ -11689,13 +11628,13 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
     required DateTime cachedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       tenantCode = Value(tenantCode),
+       custCode = Value(custCode),
        itemId = Value(itemId),
        unitPrice = Value(unitPrice),
        cachedAt = Value(cachedAt);
   static Insertable<ItemPrice> custom({
     Expression<String>? id,
-    Expression<String>? tenantCode,
+    Expression<String>? custCode,
     Expression<String>? itemId,
     Expression<String>? unitId,
     Expression<String>? storeId,
@@ -11712,7 +11651,7 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (tenantCode != null) 'tenant_code': tenantCode,
+      if (custCode != null) 'cust_code': custCode,
       if (itemId != null) 'item_id': itemId,
       if (unitId != null) 'unit_id': unitId,
       if (storeId != null) 'store_id': storeId,
@@ -11731,7 +11670,7 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
 
   ItemPricesCompanion copyWith({
     Value<String>? id,
-    Value<String>? tenantCode,
+    Value<String>? custCode,
     Value<String>? itemId,
     Value<String?>? unitId,
     Value<String?>? storeId,
@@ -11748,7 +11687,7 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
   }) {
     return ItemPricesCompanion(
       id: id ?? this.id,
-      tenantCode: tenantCode ?? this.tenantCode,
+      custCode: custCode ?? this.custCode,
       itemId: itemId ?? this.itemId,
       unitId: unitId ?? this.unitId,
       storeId: storeId ?? this.storeId,
@@ -11771,8 +11710,8 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (tenantCode.present) {
-      map['tenant_code'] = Variable<String>(tenantCode.value);
+    if (custCode.present) {
+      map['cust_code'] = Variable<String>(custCode.value);
     }
     if (itemId.present) {
       map['item_id'] = Variable<String>(itemId.value);
@@ -11820,7 +11759,7 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
   String toString() {
     return (StringBuffer('ItemPricesCompanion(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('itemId: $itemId, ')
           ..write('unitId: $unitId, ')
           ..write('storeId: $storeId, ')
@@ -12412,12 +12351,12 @@ class $CustomersTable extends Customers
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _tenantCodeMeta = const VerificationMeta(
-    'tenantCode',
+  static const VerificationMeta _custCodeMeta = const VerificationMeta(
+    'custCode',
   );
   @override
-  late final GeneratedColumn<String> tenantCode = GeneratedColumn<String>(
-    'tenant_code',
+  late final GeneratedColumn<String> custCode = GeneratedColumn<String>(
+    'cust_code',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -12515,7 +12454,7 @@ class $CustomersTable extends Customers
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    tenantCode,
+    custCode,
     name,
     accountId,
     taxNumber,
@@ -12542,13 +12481,13 @@ class $CustomersTable extends Customers
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('tenant_code')) {
+    if (data.containsKey('cust_code')) {
       context.handle(
-        _tenantCodeMeta,
-        tenantCode.isAcceptableOrUnknown(data['tenant_code']!, _tenantCodeMeta),
+        _custCodeMeta,
+        custCode.isAcceptableOrUnknown(data['cust_code']!, _custCodeMeta),
       );
     } else if (isInserting) {
-      context.missing(_tenantCodeMeta);
+      context.missing(_custCodeMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -12621,9 +12560,9 @@ class $CustomersTable extends Customers
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      tenantCode: attachedDatabase.typeMapping.read(
+      custCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}tenant_code'],
+        data['${effectivePrefix}cust_code'],
       )!,
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -12668,7 +12607,7 @@ class $CustomersTable extends Customers
 
 class Customer extends DataClass implements Insertable<Customer> {
   final String id;
-  final String tenantCode;
+  final String custCode;
   final String name;
   final String? accountId;
   final String? taxNumber;
@@ -12679,7 +12618,7 @@ class Customer extends DataClass implements Insertable<Customer> {
   final DateTime cachedAt;
   const Customer({
     required this.id,
-    required this.tenantCode,
+    required this.custCode,
     required this.name,
     this.accountId,
     this.taxNumber,
@@ -12693,7 +12632,7 @@ class Customer extends DataClass implements Insertable<Customer> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['tenant_code'] = Variable<String>(tenantCode);
+    map['cust_code'] = Variable<String>(custCode);
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || accountId != null) {
       map['account_id'] = Variable<String>(accountId);
@@ -12716,7 +12655,7 @@ class Customer extends DataClass implements Insertable<Customer> {
   CustomersCompanion toCompanion(bool nullToAbsent) {
     return CustomersCompanion(
       id: Value(id),
-      tenantCode: Value(tenantCode),
+      custCode: Value(custCode),
       name: Value(name),
       accountId: accountId == null && nullToAbsent
           ? const Value.absent()
@@ -12743,7 +12682,7 @@ class Customer extends DataClass implements Insertable<Customer> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Customer(
       id: serializer.fromJson<String>(json['id']),
-      tenantCode: serializer.fromJson<String>(json['tenantCode']),
+      custCode: serializer.fromJson<String>(json['custCode']),
       name: serializer.fromJson<String>(json['name']),
       accountId: serializer.fromJson<String?>(json['accountId']),
       taxNumber: serializer.fromJson<String?>(json['taxNumber']),
@@ -12759,7 +12698,7 @@ class Customer extends DataClass implements Insertable<Customer> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'tenantCode': serializer.toJson<String>(tenantCode),
+      'custCode': serializer.toJson<String>(custCode),
       'name': serializer.toJson<String>(name),
       'accountId': serializer.toJson<String?>(accountId),
       'taxNumber': serializer.toJson<String?>(taxNumber),
@@ -12773,7 +12712,7 @@ class Customer extends DataClass implements Insertable<Customer> {
 
   Customer copyWith({
     String? id,
-    String? tenantCode,
+    String? custCode,
     String? name,
     Value<String?> accountId = const Value.absent(),
     Value<String?> taxNumber = const Value.absent(),
@@ -12784,7 +12723,7 @@ class Customer extends DataClass implements Insertable<Customer> {
     DateTime? cachedAt,
   }) => Customer(
     id: id ?? this.id,
-    tenantCode: tenantCode ?? this.tenantCode,
+    custCode: custCode ?? this.custCode,
     name: name ?? this.name,
     accountId: accountId.present ? accountId.value : this.accountId,
     taxNumber: taxNumber.present ? taxNumber.value : this.taxNumber,
@@ -12799,9 +12738,7 @@ class Customer extends DataClass implements Insertable<Customer> {
   Customer copyWithCompanion(CustomersCompanion data) {
     return Customer(
       id: data.id.present ? data.id.value : this.id,
-      tenantCode: data.tenantCode.present
-          ? data.tenantCode.value
-          : this.tenantCode,
+      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       name: data.name.present ? data.name.value : this.name,
       accountId: data.accountId.present ? data.accountId.value : this.accountId,
       taxNumber: data.taxNumber.present ? data.taxNumber.value : this.taxNumber,
@@ -12821,7 +12758,7 @@ class Customer extends DataClass implements Insertable<Customer> {
   String toString() {
     return (StringBuffer('Customer(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('name: $name, ')
           ..write('accountId: $accountId, ')
           ..write('taxNumber: $taxNumber, ')
@@ -12837,7 +12774,7 @@ class Customer extends DataClass implements Insertable<Customer> {
   @override
   int get hashCode => Object.hash(
     id,
-    tenantCode,
+    custCode,
     name,
     accountId,
     taxNumber,
@@ -12852,7 +12789,7 @@ class Customer extends DataClass implements Insertable<Customer> {
       identical(this, other) ||
       (other is Customer &&
           other.id == this.id &&
-          other.tenantCode == this.tenantCode &&
+          other.custCode == this.custCode &&
           other.name == this.name &&
           other.accountId == this.accountId &&
           other.taxNumber == this.taxNumber &&
@@ -12865,7 +12802,7 @@ class Customer extends DataClass implements Insertable<Customer> {
 
 class CustomersCompanion extends UpdateCompanion<Customer> {
   final Value<String> id;
-  final Value<String> tenantCode;
+  final Value<String> custCode;
   final Value<String> name;
   final Value<String?> accountId;
   final Value<String?> taxNumber;
@@ -12877,7 +12814,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
   final Value<int> rowid;
   const CustomersCompanion({
     this.id = const Value.absent(),
-    this.tenantCode = const Value.absent(),
+    this.custCode = const Value.absent(),
     this.name = const Value.absent(),
     this.accountId = const Value.absent(),
     this.taxNumber = const Value.absent(),
@@ -12890,7 +12827,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
   });
   CustomersCompanion.insert({
     required String id,
-    required String tenantCode,
+    required String custCode,
     required String name,
     this.accountId = const Value.absent(),
     this.taxNumber = const Value.absent(),
@@ -12901,12 +12838,12 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     required DateTime cachedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       tenantCode = Value(tenantCode),
+       custCode = Value(custCode),
        name = Value(name),
        cachedAt = Value(cachedAt);
   static Insertable<Customer> custom({
     Expression<String>? id,
-    Expression<String>? tenantCode,
+    Expression<String>? custCode,
     Expression<String>? name,
     Expression<String>? accountId,
     Expression<String>? taxNumber,
@@ -12919,7 +12856,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (tenantCode != null) 'tenant_code': tenantCode,
+      if (custCode != null) 'cust_code': custCode,
       if (name != null) 'name': name,
       if (accountId != null) 'account_id': accountId,
       if (taxNumber != null) 'tax_number': taxNumber,
@@ -12934,7 +12871,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
 
   CustomersCompanion copyWith({
     Value<String>? id,
-    Value<String>? tenantCode,
+    Value<String>? custCode,
     Value<String>? name,
     Value<String?>? accountId,
     Value<String?>? taxNumber,
@@ -12947,7 +12884,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
   }) {
     return CustomersCompanion(
       id: id ?? this.id,
-      tenantCode: tenantCode ?? this.tenantCode,
+      custCode: custCode ?? this.custCode,
       name: name ?? this.name,
       accountId: accountId ?? this.accountId,
       taxNumber: taxNumber ?? this.taxNumber,
@@ -12966,8 +12903,8 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (tenantCode.present) {
-      map['tenant_code'] = Variable<String>(tenantCode.value);
+    if (custCode.present) {
+      map['cust_code'] = Variable<String>(custCode.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -13003,7 +12940,7 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
   String toString() {
     return (StringBuffer('CustomersCompanion(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('name: $name, ')
           ..write('accountId: $accountId, ')
           ..write('taxNumber: $taxNumber, ')
@@ -13033,12 +12970,12 @@ class $PaymentMethodsTable extends PaymentMethods
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _tenantCodeMeta = const VerificationMeta(
-    'tenantCode',
+  static const VerificationMeta _custCodeMeta = const VerificationMeta(
+    'custCode',
   );
   @override
-  late final GeneratedColumn<String> tenantCode = GeneratedColumn<String>(
-    'tenant_code',
+  late final GeneratedColumn<String> custCode = GeneratedColumn<String>(
+    'cust_code',
     aliasedName,
     false,
     type: DriftSqlType.string,
@@ -13280,7 +13217,7 @@ class $PaymentMethodsTable extends PaymentMethods
   @override
   List<GeneratedColumn> get $columns => [
     id,
-    tenantCode,
+    custCode,
     type,
     code,
     name,
@@ -13320,13 +13257,13 @@ class $PaymentMethodsTable extends PaymentMethods
     } else if (isInserting) {
       context.missing(_idMeta);
     }
-    if (data.containsKey('tenant_code')) {
+    if (data.containsKey('cust_code')) {
       context.handle(
-        _tenantCodeMeta,
-        tenantCode.isAcceptableOrUnknown(data['tenant_code']!, _tenantCodeMeta),
+        _custCodeMeta,
+        custCode.isAcceptableOrUnknown(data['cust_code']!, _custCodeMeta),
       );
     } else if (isInserting) {
-      context.missing(_tenantCodeMeta);
+      context.missing(_custCodeMeta);
     }
     if (data.containsKey('type')) {
       context.handle(
@@ -13496,9 +13433,9 @@ class $PaymentMethodsTable extends PaymentMethods
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
-      tenantCode: attachedDatabase.typeMapping.read(
+      custCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}tenant_code'],
+        data['${effectivePrefix}cust_code'],
       )!,
       type: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -13595,7 +13532,7 @@ class $PaymentMethodsTable extends PaymentMethods
 
 class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
   final String id;
-  final String tenantCode;
+  final String custCode;
   final String type;
   final String code;
   final String name;
@@ -13619,7 +13556,7 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
   final DateTime cachedAt;
   const PaymentMethod({
     required this.id,
-    required this.tenantCode,
+    required this.custCode,
     required this.type,
     required this.code,
     required this.name,
@@ -13646,7 +13583,7 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
-    map['tenant_code'] = Variable<String>(tenantCode);
+    map['cust_code'] = Variable<String>(custCode);
     map['type'] = Variable<String>(type);
     map['code'] = Variable<String>(code);
     map['name'] = Variable<String>(name);
@@ -13698,7 +13635,7 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
   PaymentMethodsCompanion toCompanion(bool nullToAbsent) {
     return PaymentMethodsCompanion(
       id: Value(id),
-      tenantCode: Value(tenantCode),
+      custCode: Value(custCode),
       type: Value(type),
       code: Value(code),
       name: Value(name),
@@ -13754,7 +13691,7 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PaymentMethod(
       id: serializer.fromJson<String>(json['id']),
-      tenantCode: serializer.fromJson<String>(json['tenantCode']),
+      custCode: serializer.fromJson<String>(json['custCode']),
       type: serializer.fromJson<String>(json['type']),
       code: serializer.fromJson<String>(json['code']),
       name: serializer.fromJson<String>(json['name']),
@@ -13785,7 +13722,7 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
-      'tenantCode': serializer.toJson<String>(tenantCode),
+      'custCode': serializer.toJson<String>(custCode),
       'type': serializer.toJson<String>(type),
       'code': serializer.toJson<String>(code),
       'name': serializer.toJson<String>(name),
@@ -13812,7 +13749,7 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
 
   PaymentMethod copyWith({
     String? id,
-    String? tenantCode,
+    String? custCode,
     String? type,
     String? code,
     String? name,
@@ -13836,7 +13773,7 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
     DateTime? cachedAt,
   }) => PaymentMethod(
     id: id ?? this.id,
-    tenantCode: tenantCode ?? this.tenantCode,
+    custCode: custCode ?? this.custCode,
     type: type ?? this.type,
     code: code ?? this.code,
     name: name ?? this.name,
@@ -13870,9 +13807,7 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
   PaymentMethod copyWithCompanion(PaymentMethodsCompanion data) {
     return PaymentMethod(
       id: data.id.present ? data.id.value : this.id,
-      tenantCode: data.tenantCode.present
-          ? data.tenantCode.value
-          : this.tenantCode,
+      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       type: data.type.present ? data.type.value : this.type,
       code: data.code.present ? data.code.value : this.code,
       name: data.name.present ? data.name.value : this.name,
@@ -13921,7 +13856,7 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
   String toString() {
     return (StringBuffer('PaymentMethod(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('type: $type, ')
           ..write('code: $code, ')
           ..write('name: $name, ')
@@ -13950,7 +13885,7 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
   @override
   int get hashCode => Object.hashAll([
     id,
-    tenantCode,
+    custCode,
     type,
     code,
     name,
@@ -13978,7 +13913,7 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
       identical(this, other) ||
       (other is PaymentMethod &&
           other.id == this.id &&
-          other.tenantCode == this.tenantCode &&
+          other.custCode == this.custCode &&
           other.type == this.type &&
           other.code == this.code &&
           other.name == this.name &&
@@ -14004,7 +13939,7 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
 
 class PaymentMethodsCompanion extends UpdateCompanion<PaymentMethod> {
   final Value<String> id;
-  final Value<String> tenantCode;
+  final Value<String> custCode;
   final Value<String> type;
   final Value<String> code;
   final Value<String> name;
@@ -14029,7 +13964,7 @@ class PaymentMethodsCompanion extends UpdateCompanion<PaymentMethod> {
   final Value<int> rowid;
   const PaymentMethodsCompanion({
     this.id = const Value.absent(),
-    this.tenantCode = const Value.absent(),
+    this.custCode = const Value.absent(),
     this.type = const Value.absent(),
     this.code = const Value.absent(),
     this.name = const Value.absent(),
@@ -14055,7 +13990,7 @@ class PaymentMethodsCompanion extends UpdateCompanion<PaymentMethod> {
   });
   PaymentMethodsCompanion.insert({
     required String id,
-    required String tenantCode,
+    required String custCode,
     required String type,
     required String code,
     required String name,
@@ -14079,14 +14014,14 @@ class PaymentMethodsCompanion extends UpdateCompanion<PaymentMethod> {
     required DateTime cachedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
-       tenantCode = Value(tenantCode),
+       custCode = Value(custCode),
        type = Value(type),
        code = Value(code),
        name = Value(name),
        cachedAt = Value(cachedAt);
   static Insertable<PaymentMethod> custom({
     Expression<String>? id,
-    Expression<String>? tenantCode,
+    Expression<String>? custCode,
     Expression<String>? type,
     Expression<String>? code,
     Expression<String>? name,
@@ -14112,7 +14047,7 @@ class PaymentMethodsCompanion extends UpdateCompanion<PaymentMethod> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
-      if (tenantCode != null) 'tenant_code': tenantCode,
+      if (custCode != null) 'cust_code': custCode,
       if (type != null) 'type': type,
       if (code != null) 'code': code,
       if (name != null) 'name': name,
@@ -14141,7 +14076,7 @@ class PaymentMethodsCompanion extends UpdateCompanion<PaymentMethod> {
 
   PaymentMethodsCompanion copyWith({
     Value<String>? id,
-    Value<String>? tenantCode,
+    Value<String>? custCode,
     Value<String>? type,
     Value<String>? code,
     Value<String>? name,
@@ -14167,7 +14102,7 @@ class PaymentMethodsCompanion extends UpdateCompanion<PaymentMethod> {
   }) {
     return PaymentMethodsCompanion(
       id: id ?? this.id,
-      tenantCode: tenantCode ?? this.tenantCode,
+      custCode: custCode ?? this.custCode,
       type: type ?? this.type,
       code: code ?? this.code,
       name: name ?? this.name,
@@ -14199,8 +14134,8 @@ class PaymentMethodsCompanion extends UpdateCompanion<PaymentMethod> {
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
-    if (tenantCode.present) {
-      map['tenant_code'] = Variable<String>(tenantCode.value);
+    if (custCode.present) {
+      map['cust_code'] = Variable<String>(custCode.value);
     }
     if (type.present) {
       map['type'] = Variable<String>(type.value);
@@ -14277,7 +14212,7 @@ class PaymentMethodsCompanion extends UpdateCompanion<PaymentMethod> {
   String toString() {
     return (StringBuffer('PaymentMethodsCompanion(')
           ..write('id: $id, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('type: $type, ')
           ..write('code: $code, ')
           ..write('name: $name, ')
@@ -16080,12 +16015,12 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _tenantCodeMeta = const VerificationMeta(
-    'tenantCode',
+  static const VerificationMeta _custCodeMeta = const VerificationMeta(
+    'custCode',
   );
   @override
-  late final GeneratedColumn<String> tenantCode = GeneratedColumn<String>(
-    'tenant_code',
+  late final GeneratedColumn<String> custCode = GeneratedColumn<String>(
+    'cust_code',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -16405,7 +16340,7 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     type,
     status,
     syncStatus,
-    tenantCode,
+    custCode,
     branchNo,
     branchYear,
     terminalId,
@@ -16512,10 +16447,10 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     } else if (isInserting) {
       context.missing(_syncStatusMeta);
     }
-    if (data.containsKey('tenant_code')) {
+    if (data.containsKey('cust_code')) {
       context.handle(
-        _tenantCodeMeta,
-        tenantCode.isAcceptableOrUnknown(data['tenant_code']!, _tenantCodeMeta),
+        _custCodeMeta,
+        custCode.isAcceptableOrUnknown(data['cust_code']!, _custCodeMeta),
       );
     }
     if (data.containsKey('branch_no')) {
@@ -16766,9 +16701,9 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
         DriftSqlType.string,
         data['${effectivePrefix}sync_status'],
       )!,
-      tenantCode: attachedDatabase.typeMapping.read(
+      custCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}tenant_code'],
+        data['${effectivePrefix}cust_code'],
       ),
       branchNo: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -16896,7 +16831,7 @@ class Sale extends DataClass implements Insertable<Sale> {
   final String type;
   final String status;
   final String syncStatus;
-  final String? tenantCode;
+  final String? custCode;
   final String? branchNo;
   final String? branchYear;
   final String terminalId;
@@ -16933,7 +16868,7 @@ class Sale extends DataClass implements Insertable<Sale> {
     required this.type,
     required this.status,
     required this.syncStatus,
-    this.tenantCode,
+    this.custCode,
     this.branchNo,
     this.branchYear,
     required this.terminalId,
@@ -16977,8 +16912,8 @@ class Sale extends DataClass implements Insertable<Sale> {
     map['type'] = Variable<String>(type);
     map['status'] = Variable<String>(status);
     map['sync_status'] = Variable<String>(syncStatus);
-    if (!nullToAbsent || tenantCode != null) {
-      map['tenant_code'] = Variable<String>(tenantCode);
+    if (!nullToAbsent || custCode != null) {
+      map['cust_code'] = Variable<String>(custCode);
     }
     if (!nullToAbsent || branchNo != null) {
       map['branch_no'] = Variable<String>(branchNo);
@@ -17058,9 +16993,9 @@ class Sale extends DataClass implements Insertable<Sale> {
       type: Value(type),
       status: Value(status),
       syncStatus: Value(syncStatus),
-      tenantCode: tenantCode == null && nullToAbsent
+      custCode: custCode == null && nullToAbsent
           ? const Value.absent()
-          : Value(tenantCode),
+          : Value(custCode),
       branchNo: branchNo == null && nullToAbsent
           ? const Value.absent()
           : Value(branchNo),
@@ -17138,7 +17073,7 @@ class Sale extends DataClass implements Insertable<Sale> {
       type: serializer.fromJson<String>(json['type']),
       status: serializer.fromJson<String>(json['status']),
       syncStatus: serializer.fromJson<String>(json['syncStatus']),
-      tenantCode: serializer.fromJson<String?>(json['tenantCode']),
+      custCode: serializer.fromJson<String?>(json['custCode']),
       branchNo: serializer.fromJson<String?>(json['branchNo']),
       branchYear: serializer.fromJson<String?>(json['branchYear']),
       terminalId: serializer.fromJson<String>(json['terminalId']),
@@ -17186,7 +17121,7 @@ class Sale extends DataClass implements Insertable<Sale> {
       'type': serializer.toJson<String>(type),
       'status': serializer.toJson<String>(status),
       'syncStatus': serializer.toJson<String>(syncStatus),
-      'tenantCode': serializer.toJson<String?>(tenantCode),
+      'custCode': serializer.toJson<String?>(custCode),
       'branchNo': serializer.toJson<String?>(branchNo),
       'branchYear': serializer.toJson<String?>(branchYear),
       'terminalId': serializer.toJson<String>(terminalId),
@@ -17228,7 +17163,7 @@ class Sale extends DataClass implements Insertable<Sale> {
     String? type,
     String? status,
     String? syncStatus,
-    Value<String?> tenantCode = const Value.absent(),
+    Value<String?> custCode = const Value.absent(),
     Value<String?> branchNo = const Value.absent(),
     Value<String?> branchYear = const Value.absent(),
     String? terminalId,
@@ -17267,7 +17202,7 @@ class Sale extends DataClass implements Insertable<Sale> {
     type: type ?? this.type,
     status: status ?? this.status,
     syncStatus: syncStatus ?? this.syncStatus,
-    tenantCode: tenantCode.present ? tenantCode.value : this.tenantCode,
+    custCode: custCode.present ? custCode.value : this.custCode,
     branchNo: branchNo.present ? branchNo.value : this.branchNo,
     branchYear: branchYear.present ? branchYear.value : this.branchYear,
     terminalId: terminalId ?? this.terminalId,
@@ -17324,9 +17259,7 @@ class Sale extends DataClass implements Insertable<Sale> {
       syncStatus: data.syncStatus.present
           ? data.syncStatus.value
           : this.syncStatus,
-      tenantCode: data.tenantCode.present
-          ? data.tenantCode.value
-          : this.tenantCode,
+      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       branchYear: data.branchYear.present
           ? data.branchYear.value
@@ -17398,7 +17331,7 @@ class Sale extends DataClass implements Insertable<Sale> {
           ..write('type: $type, ')
           ..write('status: $status, ')
           ..write('syncStatus: $syncStatus, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('branchNo: $branchNo, ')
           ..write('branchYear: $branchYear, ')
           ..write('terminalId: $terminalId, ')
@@ -17440,7 +17373,7 @@ class Sale extends DataClass implements Insertable<Sale> {
     type,
     status,
     syncStatus,
-    tenantCode,
+    custCode,
     branchNo,
     branchYear,
     terminalId,
@@ -17481,7 +17414,7 @@ class Sale extends DataClass implements Insertable<Sale> {
           other.type == this.type &&
           other.status == this.status &&
           other.syncStatus == this.syncStatus &&
-          other.tenantCode == this.tenantCode &&
+          other.custCode == this.custCode &&
           other.branchNo == this.branchNo &&
           other.branchYear == this.branchYear &&
           other.terminalId == this.terminalId &&
@@ -17520,7 +17453,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
   final Value<String> type;
   final Value<String> status;
   final Value<String> syncStatus;
-  final Value<String?> tenantCode;
+  final Value<String?> custCode;
   final Value<String?> branchNo;
   final Value<String?> branchYear;
   final Value<String> terminalId;
@@ -17558,7 +17491,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     this.type = const Value.absent(),
     this.status = const Value.absent(),
     this.syncStatus = const Value.absent(),
-    this.tenantCode = const Value.absent(),
+    this.custCode = const Value.absent(),
     this.branchNo = const Value.absent(),
     this.branchYear = const Value.absent(),
     this.terminalId = const Value.absent(),
@@ -17597,7 +17530,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     required String type,
     required String status,
     required String syncStatus,
-    this.tenantCode = const Value.absent(),
+    this.custCode = const Value.absent(),
     this.branchNo = const Value.absent(),
     this.branchYear = const Value.absent(),
     required String terminalId,
@@ -17647,7 +17580,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     Expression<String>? type,
     Expression<String>? status,
     Expression<String>? syncStatus,
-    Expression<String>? tenantCode,
+    Expression<String>? custCode,
     Expression<String>? branchNo,
     Expression<String>? branchYear,
     Expression<String>? terminalId,
@@ -17686,7 +17619,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
       if (type != null) 'type': type,
       if (status != null) 'status': status,
       if (syncStatus != null) 'sync_status': syncStatus,
-      if (tenantCode != null) 'tenant_code': tenantCode,
+      if (custCode != null) 'cust_code': custCode,
       if (branchNo != null) 'branch_no': branchNo,
       if (branchYear != null) 'branch_year': branchYear,
       if (terminalId != null) 'terminal_id': terminalId,
@@ -17730,7 +17663,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     Value<String>? type,
     Value<String>? status,
     Value<String>? syncStatus,
-    Value<String?>? tenantCode,
+    Value<String?>? custCode,
     Value<String?>? branchNo,
     Value<String?>? branchYear,
     Value<String>? terminalId,
@@ -17769,7 +17702,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
       type: type ?? this.type,
       status: status ?? this.status,
       syncStatus: syncStatus ?? this.syncStatus,
-      tenantCode: tenantCode ?? this.tenantCode,
+      custCode: custCode ?? this.custCode,
       branchNo: branchNo ?? this.branchNo,
       branchYear: branchYear ?? this.branchYear,
       terminalId: terminalId ?? this.terminalId,
@@ -17829,8 +17762,8 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     if (syncStatus.present) {
       map['sync_status'] = Variable<String>(syncStatus.value);
     }
-    if (tenantCode.present) {
-      map['tenant_code'] = Variable<String>(tenantCode.value);
+    if (custCode.present) {
+      map['cust_code'] = Variable<String>(custCode.value);
     }
     if (branchNo.present) {
       map['branch_no'] = Variable<String>(branchNo.value);
@@ -17936,7 +17869,7 @@ class SalesCompanion extends UpdateCompanion<Sale> {
           ..write('type: $type, ')
           ..write('status: $status, ')
           ..write('syncStatus: $syncStatus, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('branchNo: $branchNo, ')
           ..write('branchYear: $branchYear, ')
           ..write('terminalId: $terminalId, ')
@@ -25182,12 +25115,12 @@ class $MasterSyncRunsTable extends MasterSyncRuns
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _tenantCodeMeta = const VerificationMeta(
-    'tenantCode',
+  static const VerificationMeta _custCodeMeta = const VerificationMeta(
+    'custCode',
   );
   @override
-  late final GeneratedColumn<String> tenantCode = GeneratedColumn<String>(
-    'tenant_code',
+  late final GeneratedColumn<String> custCode = GeneratedColumn<String>(
+    'cust_code',
     aliasedName,
     true,
     type: DriftSqlType.string,
@@ -25311,7 +25244,7 @@ class $MasterSyncRunsTable extends MasterSyncRuns
     id,
     mode,
     status,
-    tenantCode,
+    custCode,
     sourceUserId,
     branchNo,
     machineNo,
@@ -25356,10 +25289,10 @@ class $MasterSyncRunsTable extends MasterSyncRuns
     } else if (isInserting) {
       context.missing(_statusMeta);
     }
-    if (data.containsKey('tenant_code')) {
+    if (data.containsKey('cust_code')) {
       context.handle(
-        _tenantCodeMeta,
-        tenantCode.isAcceptableOrUnknown(data['tenant_code']!, _tenantCodeMeta),
+        _custCodeMeta,
+        custCode.isAcceptableOrUnknown(data['cust_code']!, _custCodeMeta),
       );
     }
     if (data.containsKey('source_user_id')) {
@@ -25463,9 +25396,9 @@ class $MasterSyncRunsTable extends MasterSyncRuns
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
-      tenantCode: attachedDatabase.typeMapping.read(
+      custCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}tenant_code'],
+        data['${effectivePrefix}cust_code'],
       ),
       sourceUserId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -25520,7 +25453,7 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
   final String id;
   final String mode;
   final String status;
-  final String? tenantCode;
+  final String? custCode;
   final String? sourceUserId;
   final String? branchNo;
   final String? machineNo;
@@ -25535,7 +25468,7 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
     required this.id,
     required this.mode,
     required this.status,
-    this.tenantCode,
+    this.custCode,
     this.sourceUserId,
     this.branchNo,
     this.machineNo,
@@ -25553,8 +25486,8 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
     map['id'] = Variable<String>(id);
     map['mode'] = Variable<String>(mode);
     map['status'] = Variable<String>(status);
-    if (!nullToAbsent || tenantCode != null) {
-      map['tenant_code'] = Variable<String>(tenantCode);
+    if (!nullToAbsent || custCode != null) {
+      map['cust_code'] = Variable<String>(custCode);
     }
     if (!nullToAbsent || sourceUserId != null) {
       map['source_user_id'] = Variable<String>(sourceUserId);
@@ -25586,9 +25519,9 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
       id: Value(id),
       mode: Value(mode),
       status: Value(status),
-      tenantCode: tenantCode == null && nullToAbsent
+      custCode: custCode == null && nullToAbsent
           ? const Value.absent()
-          : Value(tenantCode),
+          : Value(custCode),
       sourceUserId: sourceUserId == null && nullToAbsent
           ? const Value.absent()
           : Value(sourceUserId),
@@ -25623,7 +25556,7 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
       id: serializer.fromJson<String>(json['id']),
       mode: serializer.fromJson<String>(json['mode']),
       status: serializer.fromJson<String>(json['status']),
-      tenantCode: serializer.fromJson<String?>(json['tenantCode']),
+      custCode: serializer.fromJson<String?>(json['custCode']),
       sourceUserId: serializer.fromJson<String?>(json['sourceUserId']),
       branchNo: serializer.fromJson<String?>(json['branchNo']),
       machineNo: serializer.fromJson<String?>(json['machineNo']),
@@ -25643,7 +25576,7 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
       'id': serializer.toJson<String>(id),
       'mode': serializer.toJson<String>(mode),
       'status': serializer.toJson<String>(status),
-      'tenantCode': serializer.toJson<String?>(tenantCode),
+      'custCode': serializer.toJson<String?>(custCode),
       'sourceUserId': serializer.toJson<String?>(sourceUserId),
       'branchNo': serializer.toJson<String?>(branchNo),
       'machineNo': serializer.toJson<String?>(machineNo),
@@ -25661,7 +25594,7 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
     String? id,
     String? mode,
     String? status,
-    Value<String?> tenantCode = const Value.absent(),
+    Value<String?> custCode = const Value.absent(),
     Value<String?> sourceUserId = const Value.absent(),
     Value<String?> branchNo = const Value.absent(),
     Value<String?> machineNo = const Value.absent(),
@@ -25676,7 +25609,7 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
     id: id ?? this.id,
     mode: mode ?? this.mode,
     status: status ?? this.status,
-    tenantCode: tenantCode.present ? tenantCode.value : this.tenantCode,
+    custCode: custCode.present ? custCode.value : this.custCode,
     sourceUserId: sourceUserId.present ? sourceUserId.value : this.sourceUserId,
     branchNo: branchNo.present ? branchNo.value : this.branchNo,
     machineNo: machineNo.present ? machineNo.value : this.machineNo,
@@ -25693,9 +25626,7 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
       id: data.id.present ? data.id.value : this.id,
       mode: data.mode.present ? data.mode.value : this.mode,
       status: data.status.present ? data.status.value : this.status,
-      tenantCode: data.tenantCode.present
-          ? data.tenantCode.value
-          : this.tenantCode,
+      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       sourceUserId: data.sourceUserId.present
           ? data.sourceUserId.value
           : this.sourceUserId,
@@ -25729,7 +25660,7 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
           ..write('id: $id, ')
           ..write('mode: $mode, ')
           ..write('status: $status, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('sourceUserId: $sourceUserId, ')
           ..write('branchNo: $branchNo, ')
           ..write('machineNo: $machineNo, ')
@@ -25749,7 +25680,7 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
     id,
     mode,
     status,
-    tenantCode,
+    custCode,
     sourceUserId,
     branchNo,
     machineNo,
@@ -25768,7 +25699,7 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
           other.id == this.id &&
           other.mode == this.mode &&
           other.status == this.status &&
-          other.tenantCode == this.tenantCode &&
+          other.custCode == this.custCode &&
           other.sourceUserId == this.sourceUserId &&
           other.branchNo == this.branchNo &&
           other.machineNo == this.machineNo &&
@@ -25785,7 +25716,7 @@ class MasterSyncRunsCompanion extends UpdateCompanion<MasterSyncRun> {
   final Value<String> id;
   final Value<String> mode;
   final Value<String> status;
-  final Value<String?> tenantCode;
+  final Value<String?> custCode;
   final Value<String?> sourceUserId;
   final Value<String?> branchNo;
   final Value<String?> machineNo;
@@ -25801,7 +25732,7 @@ class MasterSyncRunsCompanion extends UpdateCompanion<MasterSyncRun> {
     this.id = const Value.absent(),
     this.mode = const Value.absent(),
     this.status = const Value.absent(),
-    this.tenantCode = const Value.absent(),
+    this.custCode = const Value.absent(),
     this.sourceUserId = const Value.absent(),
     this.branchNo = const Value.absent(),
     this.machineNo = const Value.absent(),
@@ -25818,7 +25749,7 @@ class MasterSyncRunsCompanion extends UpdateCompanion<MasterSyncRun> {
     required String id,
     required String mode,
     required String status,
-    this.tenantCode = const Value.absent(),
+    this.custCode = const Value.absent(),
     this.sourceUserId = const Value.absent(),
     this.branchNo = const Value.absent(),
     this.machineNo = const Value.absent(),
@@ -25838,7 +25769,7 @@ class MasterSyncRunsCompanion extends UpdateCompanion<MasterSyncRun> {
     Expression<String>? id,
     Expression<String>? mode,
     Expression<String>? status,
-    Expression<String>? tenantCode,
+    Expression<String>? custCode,
     Expression<String>? sourceUserId,
     Expression<String>? branchNo,
     Expression<String>? machineNo,
@@ -25855,7 +25786,7 @@ class MasterSyncRunsCompanion extends UpdateCompanion<MasterSyncRun> {
       if (id != null) 'id': id,
       if (mode != null) 'mode': mode,
       if (status != null) 'status': status,
-      if (tenantCode != null) 'tenant_code': tenantCode,
+      if (custCode != null) 'cust_code': custCode,
       if (sourceUserId != null) 'source_user_id': sourceUserId,
       if (branchNo != null) 'branch_no': branchNo,
       if (machineNo != null) 'machine_no': machineNo,
@@ -25874,7 +25805,7 @@ class MasterSyncRunsCompanion extends UpdateCompanion<MasterSyncRun> {
     Value<String>? id,
     Value<String>? mode,
     Value<String>? status,
-    Value<String?>? tenantCode,
+    Value<String?>? custCode,
     Value<String?>? sourceUserId,
     Value<String?>? branchNo,
     Value<String?>? machineNo,
@@ -25891,7 +25822,7 @@ class MasterSyncRunsCompanion extends UpdateCompanion<MasterSyncRun> {
       id: id ?? this.id,
       mode: mode ?? this.mode,
       status: status ?? this.status,
-      tenantCode: tenantCode ?? this.tenantCode,
+      custCode: custCode ?? this.custCode,
       sourceUserId: sourceUserId ?? this.sourceUserId,
       branchNo: branchNo ?? this.branchNo,
       machineNo: machineNo ?? this.machineNo,
@@ -25918,8 +25849,8 @@ class MasterSyncRunsCompanion extends UpdateCompanion<MasterSyncRun> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
-    if (tenantCode.present) {
-      map['tenant_code'] = Variable<String>(tenantCode.value);
+    if (custCode.present) {
+      map['cust_code'] = Variable<String>(custCode.value);
     }
     if (sourceUserId.present) {
       map['source_user_id'] = Variable<String>(sourceUserId.value);
@@ -25963,7 +25894,7 @@ class MasterSyncRunsCompanion extends UpdateCompanion<MasterSyncRun> {
           ..write('id: $id, ')
           ..write('mode: $mode, ')
           ..write('status: $status, ')
-          ..write('tenantCode: $tenantCode, ')
+          ..write('custCode: $custCode, ')
           ..write('sourceUserId: $sourceUserId, ')
           ..write('branchNo: $branchNo, ')
           ..write('machineNo: $machineNo, ')
@@ -34103,9 +34034,37 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $AuditLogTable auditLog = $AuditLogTable(this);
   late final $PrintJobsTable printJobs = $PrintJobsTable(this);
   late final $PrintHistoryTable printHistory = $PrintHistoryTable(this);
+  late final Index idxPosMachinesCustMachine = Index(
+    'idx_pos_machines_cust_machine',
+    'CREATE INDEX idx_pos_machines_cust_machine ON pos_machines (cust_code, machine_no)',
+  );
+  late final Index idxDevicePrivCustUser = Index(
+    'idx_device_priv_cust_user',
+    'CREATE INDEX idx_device_priv_cust_user ON pos_user_machine_access (cust_code, user_id)',
+  );
+  late final Index idxStoresCustId = Index(
+    'idx_stores_cust_id',
+    'CREATE INDEX idx_stores_cust_id ON stores (cust_code, id)',
+  );
+  late final Index idxPriceLevelsCustId = Index(
+    'idx_price_levels_cust_id',
+    'CREATE INDEX idx_price_levels_cust_id ON price_levels (cust_code, id)',
+  );
+  late final Index idxItemsCustId = Index(
+    'idx_items_cust_id',
+    'CREATE INDEX idx_items_cust_id ON items (cust_code, id)',
+  );
+  late final Index idxItemUnitsCustItem = Index(
+    'idx_item_units_cust_item',
+    'CREATE INDEX idx_item_units_cust_item ON item_units (cust_code, item_id)',
+  );
   late final Index idxItemUnitsItemId = Index(
     'idx_item_units_item_id',
     'CREATE INDEX idx_item_units_item_id ON item_units (item_id)',
+  );
+  late final Index idxItemBarcodesCustBarcode = Index(
+    'idx_item_barcodes_cust_barcode',
+    'CREATE INDEX idx_item_barcodes_cust_barcode ON item_barcodes (cust_code, barcode)',
   );
   late final Index idxItemBarcodesBarcode = Index(
     'idx_item_barcodes_barcode',
@@ -34113,7 +34072,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   );
   late final Index idxItemPricesLookup = Index(
     'idx_item_prices_lookup',
-    'CREATE INDEX idx_item_prices_lookup ON item_prices (item_id, unit_id, store_id, price_level_id)',
+    'CREATE INDEX idx_item_prices_lookup ON item_prices (cust_code, item_id, unit_id, store_id, price_level_id)',
+  );
+  late final Index idxCustomersCustId = Index(
+    'idx_customers_cust_id',
+    'CREATE INDEX idx_customers_cust_id ON customers (cust_code, id)',
   );
   late final Index idxShiftsMachineStatus = Index(
     'idx_shifts_machine_status',
@@ -34258,9 +34221,17 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     auditLog,
     printJobs,
     printHistory,
+    idxPosMachinesCustMachine,
+    idxDevicePrivCustUser,
+    idxStoresCustId,
+    idxPriceLevelsCustId,
+    idxItemsCustId,
+    idxItemUnitsCustItem,
     idxItemUnitsItemId,
+    idxItemBarcodesCustBarcode,
     idxItemBarcodesBarcode,
     idxItemPricesLookup,
+    idxCustomersCustId,
     idxShiftsMachineStatus,
     idxShiftsOpenedAt,
     idxSalesShiftId,
@@ -35180,7 +35151,7 @@ typedef $$LocalUserPinsTableProcessedTableManager =
 typedef $$BranchProfileTableCreateCompanionBuilder =
     BranchProfileCompanion Function({
       required String id,
-      required String tenantCode,
+      required String custCode,
       required String branchNo,
       Value<String?> branchYear,
       Value<String?> branchCode,
@@ -35204,7 +35175,7 @@ typedef $$BranchProfileTableCreateCompanionBuilder =
 typedef $$BranchProfileTableUpdateCompanionBuilder =
     BranchProfileCompanion Function({
       Value<String> id,
-      Value<String> tenantCode,
+      Value<String> custCode,
       Value<String> branchNo,
       Value<String?> branchYear,
       Value<String?> branchCode,
@@ -35240,8 +35211,8 @@ class $$BranchProfileTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnFilters<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -35350,8 +35321,8 @@ class $$BranchProfileTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnOrderings<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -35458,10 +35429,8 @@ class $$BranchProfileTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get custCode =>
+      $composableBuilder(column: $table.custCode, builder: (column) => column);
 
   GeneratedColumn<String> get branchNo =>
       $composableBuilder(column: $table.branchNo, builder: (column) => column);
@@ -35574,7 +35543,7 @@ class $$BranchProfileTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> tenantCode = const Value.absent(),
+                Value<String> custCode = const Value.absent(),
                 Value<String> branchNo = const Value.absent(),
                 Value<String?> branchYear = const Value.absent(),
                 Value<String?> branchCode = const Value.absent(),
@@ -35596,7 +35565,7 @@ class $$BranchProfileTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => BranchProfileCompanion(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 branchCode: branchCode,
@@ -35620,7 +35589,7 @@ class $$BranchProfileTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String tenantCode,
+                required String custCode,
                 required String branchNo,
                 Value<String?> branchYear = const Value.absent(),
                 Value<String?> branchCode = const Value.absent(),
@@ -35642,7 +35611,7 @@ class $$BranchProfileTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => BranchProfileCompanion.insert(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 branchCode: branchCode,
@@ -37024,7 +36993,6 @@ typedef $$PosUsersTableCreateCompanionBuilder =
       required String displayName,
       Value<String?> displayNameAr,
       Value<String> authHash,
-      Value<String?> pinHash,
       Value<String?> roleId,
       Value<String?> branchNo,
       Value<String?> branchYear,
@@ -37049,7 +37017,6 @@ typedef $$PosUsersTableUpdateCompanionBuilder =
       Value<String> displayName,
       Value<String?> displayNameAr,
       Value<String> authHash,
-      Value<String?> pinHash,
       Value<String?> roleId,
       Value<String?> branchNo,
       Value<String?> branchYear,
@@ -37111,11 +37078,6 @@ class $$PosUsersTableFilterComposer
 
   ColumnFilters<String> get authHash => $composableBuilder(
     column: $table.authHash,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get pinHash => $composableBuilder(
-    column: $table.pinHash,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -37229,11 +37191,6 @@ class $$PosUsersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get pinHash => $composableBuilder(
-    column: $table.pinHash,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get roleId => $composableBuilder(
     column: $table.roleId,
     builder: (column) => ColumnOrderings(column),
@@ -37334,9 +37291,6 @@ class $$PosUsersTableAnnotationComposer
   GeneratedColumn<String> get authHash =>
       $composableBuilder(column: $table.authHash, builder: (column) => column);
 
-  GeneratedColumn<String> get pinHash =>
-      $composableBuilder(column: $table.pinHash, builder: (column) => column);
-
   GeneratedColumn<String> get roleId =>
       $composableBuilder(column: $table.roleId, builder: (column) => column);
 
@@ -37422,7 +37376,6 @@ class $$PosUsersTableTableManager
                 Value<String> displayName = const Value.absent(),
                 Value<String?> displayNameAr = const Value.absent(),
                 Value<String> authHash = const Value.absent(),
-                Value<String?> pinHash = const Value.absent(),
                 Value<String?> roleId = const Value.absent(),
                 Value<String?> branchNo = const Value.absent(),
                 Value<String?> branchYear = const Value.absent(),
@@ -37445,7 +37398,6 @@ class $$PosUsersTableTableManager
                 displayName: displayName,
                 displayNameAr: displayNameAr,
                 authHash: authHash,
-                pinHash: pinHash,
                 roleId: roleId,
                 branchNo: branchNo,
                 branchYear: branchYear,
@@ -37470,7 +37422,6 @@ class $$PosUsersTableTableManager
                 required String displayName,
                 Value<String?> displayNameAr = const Value.absent(),
                 Value<String> authHash = const Value.absent(),
-                Value<String?> pinHash = const Value.absent(),
                 Value<String?> roleId = const Value.absent(),
                 Value<String?> branchNo = const Value.absent(),
                 Value<String?> branchYear = const Value.absent(),
@@ -37493,7 +37444,6 @@ class $$PosUsersTableTableManager
                 displayName: displayName,
                 displayNameAr: displayNameAr,
                 authHash: authHash,
-                pinHash: pinHash,
                 roleId: roleId,
                 branchNo: branchNo,
                 branchYear: branchYear,
@@ -37953,7 +37903,7 @@ typedef $$PosUserMachineAccessTableProcessedTableManager =
 typedef $$StoresTableCreateCompanionBuilder =
     StoresCompanion Function({
       required String id,
-      required String tenantCode,
+      required String custCode,
       Value<String?> branchNo,
       required String name,
       Value<String?> nameAr,
@@ -37965,7 +37915,7 @@ typedef $$StoresTableCreateCompanionBuilder =
 typedef $$StoresTableUpdateCompanionBuilder =
     StoresCompanion Function({
       Value<String> id,
-      Value<String> tenantCode,
+      Value<String> custCode,
       Value<String?> branchNo,
       Value<String> name,
       Value<String?> nameAr,
@@ -37989,8 +37939,8 @@ class $$StoresTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnFilters<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -38039,8 +37989,8 @@ class $$StoresTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnOrderings<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -38087,10 +38037,8 @@ class $$StoresTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get custCode =>
+      $composableBuilder(column: $table.custCode, builder: (column) => column);
 
   GeneratedColumn<String> get branchNo =>
       $composableBuilder(column: $table.branchNo, builder: (column) => column);
@@ -38142,7 +38090,7 @@ class $$StoresTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> tenantCode = const Value.absent(),
+                Value<String> custCode = const Value.absent(),
                 Value<String?> branchNo = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> nameAr = const Value.absent(),
@@ -38152,7 +38100,7 @@ class $$StoresTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => StoresCompanion(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 branchNo: branchNo,
                 name: name,
                 nameAr: nameAr,
@@ -38164,7 +38112,7 @@ class $$StoresTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String tenantCode,
+                required String custCode,
                 Value<String?> branchNo = const Value.absent(),
                 required String name,
                 Value<String?> nameAr = const Value.absent(),
@@ -38174,7 +38122,7 @@ class $$StoresTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => StoresCompanion.insert(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 branchNo: branchNo,
                 name: name,
                 nameAr: nameAr,
@@ -38208,7 +38156,7 @@ typedef $$StoresTableProcessedTableManager =
 typedef $$PriceLevelsTableCreateCompanionBuilder =
     PriceLevelsCompanion Function({
       required String id,
-      required String tenantCode,
+      required String custCode,
       required String name,
       Value<String?> nameAr,
       Value<bool> isDefault,
@@ -38219,7 +38167,7 @@ typedef $$PriceLevelsTableCreateCompanionBuilder =
 typedef $$PriceLevelsTableUpdateCompanionBuilder =
     PriceLevelsCompanion Function({
       Value<String> id,
-      Value<String> tenantCode,
+      Value<String> custCode,
       Value<String> name,
       Value<String?> nameAr,
       Value<bool> isDefault,
@@ -38242,8 +38190,8 @@ class $$PriceLevelsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnFilters<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -38287,8 +38235,8 @@ class $$PriceLevelsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnOrderings<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -38330,10 +38278,8 @@ class $$PriceLevelsTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get custCode =>
+      $composableBuilder(column: $table.custCode, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -38385,7 +38331,7 @@ class $$PriceLevelsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> tenantCode = const Value.absent(),
+                Value<String> custCode = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> nameAr = const Value.absent(),
                 Value<bool> isDefault = const Value.absent(),
@@ -38394,7 +38340,7 @@ class $$PriceLevelsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PriceLevelsCompanion(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 name: name,
                 nameAr: nameAr,
                 isDefault: isDefault,
@@ -38405,7 +38351,7 @@ class $$PriceLevelsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String tenantCode,
+                required String custCode,
                 required String name,
                 Value<String?> nameAr = const Value.absent(),
                 Value<bool> isDefault = const Value.absent(),
@@ -38414,7 +38360,7 @@ class $$PriceLevelsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PriceLevelsCompanion.insert(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 name: name,
                 nameAr: nameAr,
                 isDefault: isDefault,
@@ -38450,7 +38396,7 @@ typedef $$PriceLevelsTableProcessedTableManager =
 typedef $$ItemsTableCreateCompanionBuilder =
     ItemsCompanion Function({
       required String id,
-      required String tenantCode,
+      required String custCode,
       Value<String?> code,
       required String name,
       Value<String?> nameAr,
@@ -38472,7 +38418,7 @@ typedef $$ItemsTableCreateCompanionBuilder =
 typedef $$ItemsTableUpdateCompanionBuilder =
     ItemsCompanion Function({
       Value<String> id,
-      Value<String> tenantCode,
+      Value<String> custCode,
       Value<String?> code,
       Value<String> name,
       Value<String?> nameAr,
@@ -38505,8 +38451,8 @@ class $$ItemsTableFilterComposer extends Composer<_$AppDatabase, $ItemsTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnFilters<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -38605,8 +38551,8 @@ class $$ItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnOrderings<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -38703,10 +38649,8 @@ class $$ItemsTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get custCode =>
+      $composableBuilder(column: $table.custCode, builder: (column) => column);
 
   GeneratedColumn<String> get code =>
       $composableBuilder(column: $table.code, builder: (column) => column);
@@ -38794,7 +38738,7 @@ class $$ItemsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> tenantCode = const Value.absent(),
+                Value<String> custCode = const Value.absent(),
                 Value<String?> code = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> nameAr = const Value.absent(),
@@ -38814,7 +38758,7 @@ class $$ItemsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemsCompanion(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 code: code,
                 name: name,
                 nameAr: nameAr,
@@ -38836,7 +38780,7 @@ class $$ItemsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String tenantCode,
+                required String custCode,
                 Value<String?> code = const Value.absent(),
                 required String name,
                 Value<String?> nameAr = const Value.absent(),
@@ -38856,7 +38800,7 @@ class $$ItemsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemsCompanion.insert(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 code: code,
                 name: name,
                 nameAr: nameAr,
@@ -38900,7 +38844,7 @@ typedef $$ItemsTableProcessedTableManager =
 typedef $$ItemUnitsTableCreateCompanionBuilder =
     ItemUnitsCompanion Function({
       required String id,
-      required String tenantCode,
+      required String custCode,
       required String itemId,
       Value<String?> sourceUnitId,
       required String name,
@@ -38917,7 +38861,7 @@ typedef $$ItemUnitsTableCreateCompanionBuilder =
 typedef $$ItemUnitsTableUpdateCompanionBuilder =
     ItemUnitsCompanion Function({
       Value<String> id,
-      Value<String> tenantCode,
+      Value<String> custCode,
       Value<String> itemId,
       Value<String?> sourceUnitId,
       Value<String> name,
@@ -38946,8 +38890,8 @@ class $$ItemUnitsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnFilters<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -39021,8 +38965,8 @@ class $$ItemUnitsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnOrderings<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -39094,10 +39038,8 @@ class $$ItemUnitsTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get custCode =>
+      $composableBuilder(column: $table.custCode, builder: (column) => column);
 
   GeneratedColumn<String> get itemId =>
       $composableBuilder(column: $table.itemId, builder: (column) => column);
@@ -39168,7 +39110,7 @@ class $$ItemUnitsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> tenantCode = const Value.absent(),
+                Value<String> custCode = const Value.absent(),
                 Value<String> itemId = const Value.absent(),
                 Value<String?> sourceUnitId = const Value.absent(),
                 Value<String> name = const Value.absent(),
@@ -39183,7 +39125,7 @@ class $$ItemUnitsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemUnitsCompanion(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 itemId: itemId,
                 sourceUnitId: sourceUnitId,
                 name: name,
@@ -39200,7 +39142,7 @@ class $$ItemUnitsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String tenantCode,
+                required String custCode,
                 required String itemId,
                 Value<String?> sourceUnitId = const Value.absent(),
                 required String name,
@@ -39215,7 +39157,7 @@ class $$ItemUnitsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemUnitsCompanion.insert(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 itemId: itemId,
                 sourceUnitId: sourceUnitId,
                 name: name,
@@ -39492,7 +39434,7 @@ typedef $$ItemBarcodesTableProcessedTableManager =
 typedef $$ItemPricesTableCreateCompanionBuilder =
     ItemPricesCompanion Function({
       required String id,
-      required String tenantCode,
+      required String custCode,
       required String itemId,
       Value<String?> unitId,
       Value<String?> storeId,
@@ -39510,7 +39452,7 @@ typedef $$ItemPricesTableCreateCompanionBuilder =
 typedef $$ItemPricesTableUpdateCompanionBuilder =
     ItemPricesCompanion Function({
       Value<String> id,
-      Value<String> tenantCode,
+      Value<String> custCode,
       Value<String> itemId,
       Value<String?> unitId,
       Value<String?> storeId,
@@ -39540,8 +39482,8 @@ class $$ItemPricesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnFilters<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -39620,8 +39562,8 @@ class $$ItemPricesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnOrderings<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -39698,10 +39640,8 @@ class $$ItemPricesTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get custCode =>
+      $composableBuilder(column: $table.custCode, builder: (column) => column);
 
   GeneratedColumn<String> get itemId =>
       $composableBuilder(column: $table.itemId, builder: (column) => column);
@@ -39780,7 +39720,7 @@ class $$ItemPricesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> tenantCode = const Value.absent(),
+                Value<String> custCode = const Value.absent(),
                 Value<String> itemId = const Value.absent(),
                 Value<String?> unitId = const Value.absent(),
                 Value<String?> storeId = const Value.absent(),
@@ -39796,7 +39736,7 @@ class $$ItemPricesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemPricesCompanion(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 itemId: itemId,
                 unitId: unitId,
                 storeId: storeId,
@@ -39814,7 +39754,7 @@ class $$ItemPricesTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String tenantCode,
+                required String custCode,
                 required String itemId,
                 Value<String?> unitId = const Value.absent(),
                 Value<String?> storeId = const Value.absent(),
@@ -39830,7 +39770,7 @@ class $$ItemPricesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemPricesCompanion.insert(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 itemId: itemId,
                 unitId: unitId,
                 storeId: storeId,
@@ -40143,7 +40083,7 @@ typedef $$ItemGroupsTableProcessedTableManager =
 typedef $$CustomersTableCreateCompanionBuilder =
     CustomersCompanion Function({
       required String id,
-      required String tenantCode,
+      required String custCode,
       required String name,
       Value<String?> accountId,
       Value<String?> taxNumber,
@@ -40157,7 +40097,7 @@ typedef $$CustomersTableCreateCompanionBuilder =
 typedef $$CustomersTableUpdateCompanionBuilder =
     CustomersCompanion Function({
       Value<String> id,
-      Value<String> tenantCode,
+      Value<String> custCode,
       Value<String> name,
       Value<String?> accountId,
       Value<String?> taxNumber,
@@ -40183,8 +40123,8 @@ class $$CustomersTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnFilters<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -40243,8 +40183,8 @@ class $$CustomersTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnOrderings<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -40301,10 +40241,8 @@ class $$CustomersTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get custCode =>
+      $composableBuilder(column: $table.custCode, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -40364,7 +40302,7 @@ class $$CustomersTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> tenantCode = const Value.absent(),
+                Value<String> custCode = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> accountId = const Value.absent(),
                 Value<String?> taxNumber = const Value.absent(),
@@ -40376,7 +40314,7 @@ class $$CustomersTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => CustomersCompanion(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 name: name,
                 accountId: accountId,
                 taxNumber: taxNumber,
@@ -40390,7 +40328,7 @@ class $$CustomersTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String tenantCode,
+                required String custCode,
                 required String name,
                 Value<String?> accountId = const Value.absent(),
                 Value<String?> taxNumber = const Value.absent(),
@@ -40402,7 +40340,7 @@ class $$CustomersTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => CustomersCompanion.insert(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 name: name,
                 accountId: accountId,
                 taxNumber: taxNumber,
@@ -40438,7 +40376,7 @@ typedef $$CustomersTableProcessedTableManager =
 typedef $$PaymentMethodsTableCreateCompanionBuilder =
     PaymentMethodsCompanion Function({
       required String id,
-      required String tenantCode,
+      required String custCode,
       required String type,
       required String code,
       required String name,
@@ -40465,7 +40403,7 @@ typedef $$PaymentMethodsTableCreateCompanionBuilder =
 typedef $$PaymentMethodsTableUpdateCompanionBuilder =
     PaymentMethodsCompanion Function({
       Value<String> id,
-      Value<String> tenantCode,
+      Value<String> custCode,
       Value<String> type,
       Value<String> code,
       Value<String> name,
@@ -40504,8 +40442,8 @@ class $$PaymentMethodsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnFilters<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -40629,8 +40567,8 @@ class $$PaymentMethodsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnOrderings<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -40752,10 +40690,8 @@ class $$PaymentMethodsTableAnnotationComposer
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get custCode =>
+      $composableBuilder(column: $table.custCode, builder: (column) => column);
 
   GeneratedColumn<String> get type =>
       $composableBuilder(column: $table.type, builder: (column) => column);
@@ -40875,7 +40811,7 @@ class $$PaymentMethodsTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
-                Value<String> tenantCode = const Value.absent(),
+                Value<String> custCode = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<String> code = const Value.absent(),
                 Value<String> name = const Value.absent(),
@@ -40900,7 +40836,7 @@ class $$PaymentMethodsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PaymentMethodsCompanion(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 type: type,
                 code: code,
                 name: name,
@@ -40927,7 +40863,7 @@ class $$PaymentMethodsTableTableManager
           createCompanionCallback:
               ({
                 required String id,
-                required String tenantCode,
+                required String custCode,
                 required String type,
                 required String code,
                 required String name,
@@ -40952,7 +40888,7 @@ class $$PaymentMethodsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PaymentMethodsCompanion.insert(
                 id: id,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 type: type,
                 code: code,
                 name: name,
@@ -41803,7 +41739,7 @@ typedef $$SalesTableCreateCompanionBuilder =
       required String type,
       required String status,
       required String syncStatus,
-      Value<String?> tenantCode,
+      Value<String?> custCode,
       Value<String?> branchNo,
       Value<String?> branchYear,
       required String terminalId,
@@ -41843,7 +41779,7 @@ typedef $$SalesTableUpdateCompanionBuilder =
       Value<String> type,
       Value<String> status,
       Value<String> syncStatus,
-      Value<String?> tenantCode,
+      Value<String?> custCode,
       Value<String?> branchNo,
       Value<String?> branchYear,
       Value<String> terminalId,
@@ -42057,8 +41993,8 @@ class $$SalesTableFilterComposer extends Composer<_$AppDatabase, $SalesTable> {
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnFilters<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -42422,8 +42358,8 @@ class $$SalesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnOrderings<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -42604,10 +42540,8 @@ class $$SalesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get custCode =>
+      $composableBuilder(column: $table.custCode, builder: (column) => column);
 
   GeneratedColumn<String> get branchNo =>
       $composableBuilder(column: $table.branchNo, builder: (column) => column);
@@ -42940,7 +42874,7 @@ class $$SalesTableTableManager
                 Value<String> type = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String> syncStatus = const Value.absent(),
-                Value<String?> tenantCode = const Value.absent(),
+                Value<String?> custCode = const Value.absent(),
                 Value<String?> branchNo = const Value.absent(),
                 Value<String?> branchYear = const Value.absent(),
                 Value<String> terminalId = const Value.absent(),
@@ -42978,7 +42912,7 @@ class $$SalesTableTableManager
                 type: type,
                 status: status,
                 syncStatus: syncStatus,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 terminalId: terminalId,
@@ -43018,7 +42952,7 @@ class $$SalesTableTableManager
                 required String type,
                 required String status,
                 required String syncStatus,
-                Value<String?> tenantCode = const Value.absent(),
+                Value<String?> custCode = const Value.absent(),
                 Value<String?> branchNo = const Value.absent(),
                 Value<String?> branchYear = const Value.absent(),
                 required String terminalId,
@@ -43056,7 +42990,7 @@ class $$SalesTableTableManager
                 type: type,
                 status: status,
                 syncStatus: syncStatus,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 terminalId: terminalId,
@@ -47248,7 +47182,7 @@ typedef $$MasterSyncRunsTableCreateCompanionBuilder =
       required String id,
       required String mode,
       required String status,
-      Value<String?> tenantCode,
+      Value<String?> custCode,
       Value<String?> sourceUserId,
       Value<String?> branchNo,
       Value<String?> machineNo,
@@ -47266,7 +47200,7 @@ typedef $$MasterSyncRunsTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> mode,
       Value<String> status,
-      Value<String?> tenantCode,
+      Value<String?> custCode,
       Value<String?> sourceUserId,
       Value<String?> branchNo,
       Value<String?> machineNo,
@@ -47304,8 +47238,8 @@ class $$MasterSyncRunsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnFilters<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -47384,8 +47318,8 @@ class $$MasterSyncRunsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
+  ColumnOrderings<String> get custCode => $composableBuilder(
+    column: $table.custCode,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -47458,10 +47392,8 @@ class $$MasterSyncRunsTableAnnotationComposer
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
-  GeneratedColumn<String> get tenantCode => $composableBuilder(
-    column: $table.tenantCode,
-    builder: (column) => column,
-  );
+  GeneratedColumn<String> get custCode =>
+      $composableBuilder(column: $table.custCode, builder: (column) => column);
 
   GeneratedColumn<String> get sourceUserId => $composableBuilder(
     column: $table.sourceUserId,
@@ -47544,7 +47476,7 @@ class $$MasterSyncRunsTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> mode = const Value.absent(),
                 Value<String> status = const Value.absent(),
-                Value<String?> tenantCode = const Value.absent(),
+                Value<String?> custCode = const Value.absent(),
                 Value<String?> sourceUserId = const Value.absent(),
                 Value<String?> branchNo = const Value.absent(),
                 Value<String?> machineNo = const Value.absent(),
@@ -47560,7 +47492,7 @@ class $$MasterSyncRunsTableTableManager
                 id: id,
                 mode: mode,
                 status: status,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 sourceUserId: sourceUserId,
                 branchNo: branchNo,
                 machineNo: machineNo,
@@ -47578,7 +47510,7 @@ class $$MasterSyncRunsTableTableManager
                 required String id,
                 required String mode,
                 required String status,
-                Value<String?> tenantCode = const Value.absent(),
+                Value<String?> custCode = const Value.absent(),
                 Value<String?> sourceUserId = const Value.absent(),
                 Value<String?> branchNo = const Value.absent(),
                 Value<String?> machineNo = const Value.absent(),
@@ -47594,7 +47526,7 @@ class $$MasterSyncRunsTableTableManager
                 id: id,
                 mode: mode,
                 status: status,
-                tenantCode: tenantCode,
+                custCode: custCode,
                 sourceUserId: sourceUserId,
                 branchNo: branchNo,
                 machineNo: machineNo,

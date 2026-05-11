@@ -1,6 +1,6 @@
 // core/persistence/database.dart
 // WHY: Central Drift database declaration.
-// Uses DB filename pos_data_v2.sqlite. No old pos_data.sqlite data preserved.
+// Uses DB filename pos_data_v3.sqlite. No old pos_data.sqlite data preserved.
 // No migration from old schema. PRAGMA foreign_keys = ON.
 
 import 'package:drift/drift.dart';
@@ -69,7 +69,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -92,7 +92,7 @@ class AppDatabase extends _$AppDatabase {
   );
 
   static QueryExecutor _openConnection() {
-    // WHY: New filename ensures a clean DB. Old pos_data.sqlite is abandoned.
-    return driftDatabase(name: 'pos_data_v2');
+    // WHY: New filename ensures a clean DB after schema cleanup.
+    return driftDatabase(name: 'pos_data_v3');
   }
 }

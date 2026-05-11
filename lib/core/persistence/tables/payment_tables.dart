@@ -7,7 +7,7 @@ import 'package:drift/drift.dart';
 /// type stored as stable string code: 'cash', 'bank', 'card', etc.
 class PaymentMethods extends Table {
   TextColumn get id => text()();
-  TextColumn get tenantCode => text()();
+  TextColumn get custCode => text()();
   TextColumn get type => text()();
   TextColumn get code => text()();
   TextColumn get name => text()();
@@ -35,5 +35,5 @@ class PaymentMethods extends Table {
   Set<Column> get primaryKey => {id};
 
   @override
-  List<String> get customConstraints => ['UNIQUE (tenant_code, code)'];
+  List<String> get customConstraints => ['UNIQUE (cust_code, code)'];
 }

@@ -203,6 +203,158 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     }
   }
 
+  Future<void> _showHeldOrders(BuildContext context) async {
+    final cart = ref.read(cartProvider);
+
+    if (cart.isNotEmpty) {
+      AppSnackbar.showWarning(
+        context,
+        'أكمل أو امسح السلة الحالية قبل استرجاع طلب معلق.',
+      );
+      return;
+    }
+
+    final service = ref.read(heldOrdersServiceProvider);
+
+    try {
+      final orders = await service.getCurrentHeldOrders();
+
+      if (!context.mounted) return;
+
+      if (orders.isEmpty) {
+        AppSnackbar.showWarning(context, 'لا توجد طلبات معلقة.');
+        return;
+      }
+
+      await showModalBottomSheet<void>(
+        context: context,
+        useSafeArea: true,
+        isScrollControlled: true,
+        builder: (sheetContext) {
+          return SafeArea(
+            child: Padding(
+              padding: AppSpacing.paddingLg,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 520),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'الطلبات المعلقة',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: orders.length,
+                        separatorBuilder: (_, __) => const Divider(),
+                        itemBuilder: (itemContext, index) {
+                          final order = orders[index];
+                          final title =
+                              order.referenceName?.trim().isNotEmpty == true
+                              ? order.referenceName!
+                              : order.customerNameSnapshot?.trim().isNotEmpty ==
+                                    true
+                              ? order.customerNameSnapshot!
+                              : 'طلب معلق';
+
+                          return ListTile(
+                            leading: const Icon(Icons.pause_circle_outline),
+                            title: Text(title),
+                            subtitle: Text(
+                              '${PosFormatters.amount(order.grandTotal)} • ${PosFormatters.dateTime(order.heldAt)}',
+                            ),
+                            trailing: Wrap(
+                              spacing: AppSpacing.xs,
+                              children: [
+                                IconButton(
+                                  tooltip: 'استرجاع',
+                                  icon: const Icon(Icons.restore),
+                                  onPressed: () async {
+                                    try {
+                                      final snapshotJson = await service
+                                          .resumeHeldOrder(orderId: order.id);
+
+                                      ref
+                                          .read(cartProvider.notifier)
+                                          .restoreFromHeldOrderJson(
+                                            snapshotJson,
+                                          );
+
+                                      if (sheetContext.mounted) {
+                                        Navigator.of(sheetContext).pop();
+                                      }
+                                      if (context.mounted) {
+                                        AppSnackbar.showSuccess(
+                                          context,
+                                          'تم استرجاع الطلب المعلق.',
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        AppSnackbar.showError(
+                                          context,
+                                          ErrorMapper.userMessage(e),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                                IconButton(
+                                  tooltip: 'إلغاء',
+                                  icon: const Icon(Icons.delete_outline),
+                                  onPressed: () async {
+                                    try {
+                                      await service.cancelHeldOrder(
+                                        orderId: order.id,
+                                      );
+                                      if (sheetContext.mounted) {
+                                        Navigator.of(sheetContext).pop();
+                                      }
+                                      if (context.mounted) {
+                                        AppSnackbar.showSuccess(
+                                          context,
+                                          'تم إلغاء الطلب المعلق.',
+                                        );
+                                      }
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        AppSnackbar.showError(
+                                          context,
+                                          ErrorMapper.userMessage(e),
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    } on SaleException catch (e) {
+      if (context.mounted) {
+        AppSnackbar.showError(context, e.message);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        AppSnackbar.showError(context, ErrorMapper.userMessage(e));
+      }
+    }
+  }
+
   Future<void> _holdOrder(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final cart = ref.read(cartProvider);
@@ -348,6 +500,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                             const SizedBox(width: AppSpacing.xs),
                             _OverflowActions(
                               onHold: () => _holdOrder(context),
+                              onHeldOrders: () => _showHeldOrders(context),
                               onShift: () => context.push(AppRoutes.shift),
                               onHistory: () => context.push(AppRoutes.history),
                               onSync: () => context.push(AppRoutes.syncMonitor),
@@ -412,6 +565,11 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                           icon: Icons.pause_circle_outline,
                           label: l10n.hold,
                           onTap: () => _holdOrder(context),
+                        ),
+                        _TopBarButton(
+                          icon: Icons.restore_page_outlined,
+                          label: 'المعلقة',
+                          onTap: () => _showHeldOrders(context),
                         ),
                         _TopBarButton(
                           icon: Icons.analytics_outlined,
@@ -710,6 +868,7 @@ class _LogoutButton extends StatelessWidget {
 
 class _OverflowActions extends StatelessWidget {
   final VoidCallback onHold;
+  final VoidCallback onHeldOrders;
   final VoidCallback onShift;
   final VoidCallback onHistory;
   final VoidCallback onSync;
@@ -718,6 +877,7 @@ class _OverflowActions extends StatelessWidget {
 
   const _OverflowActions({
     required this.onHold,
+    required this.onHeldOrders,
     required this.onShift,
     required this.onHistory,
     required this.onSync,
@@ -742,6 +902,13 @@ class _OverflowActions extends StatelessWidget {
           child: _MenuAction(
             icon: Icons.pause_circle_outline,
             label: l10n.hold,
+          ),
+        ),
+        PopupMenuItem(
+          value: onHeldOrders,
+          child: const _MenuAction(
+            icon: Icons.restore_page_outlined,
+            label: 'الطلبات المعلقة',
           ),
         ),
         PopupMenuItem(

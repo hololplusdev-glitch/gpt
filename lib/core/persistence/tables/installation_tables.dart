@@ -31,7 +31,7 @@ class AppInstallation extends Table {
 
 class BranchProfile extends Table {
   TextColumn get id => text()();
-  TextColumn get tenantCode => text()();
+  TextColumn get custCode => text()();
   TextColumn get branchNo => text()();
   TextColumn get branchYear => text().nullable()();
   TextColumn get branchCode => text().nullable()();
@@ -60,7 +60,7 @@ class SyncProfileTable extends Table {
   TextColumn get baseUrl => text()();
   TextColumn get custCode => text()();
   TextColumn get bootstrapUserId => text().withDefault(const Constant('1'))();
-  IntColumn get pageLimit => integer().withDefault(const Constant(100))();
+  IntColumn get pageLimit => integer().withDefault(const Constant(500))();
   IntColumn get timeoutSeconds => integer().nullable()();
   BoolColumn get setupCompleted =>
       boolean().withDefault(const Constant(false))();
@@ -88,6 +88,10 @@ class LocalUserPins extends Table {
   Set<Column> get primaryKey => {custCode, userId};
 }
 
+@TableIndex(
+  name: 'idx_pos_machines_cust_machine',
+  columns: {#custCode, #machineNo},
+)
 class PosMachines extends Table {
   TextColumn get id => text()();
   TextColumn get name => text().nullable()();

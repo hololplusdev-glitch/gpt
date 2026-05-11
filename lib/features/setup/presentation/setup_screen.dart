@@ -424,7 +424,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
             const SizedBox(height: AppSpacing.sm),
             Center(
               child: TextButton(
-                onPressed: () => ref.read(setupProvider.notifier).cancelSetup(),
+                onPressed: _confirmCancelSetup,
                 child: const Text('إيقاف التهيئة'),
               ),
             ),
@@ -432,6 +432,34 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmCancelSetup() async {
+    final shouldCancel = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('إيقاف التهيئة؟'),
+          content: const Text(
+            'سيتم إيقاف التحميل وحذف أي بيانات جزئية تم تنزيلها. يمكنك إعادة التهيئة من جديد.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('متابعة التحميل'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('إيقاف التهيئة'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldCancel == true) {
+      ref.read(setupProvider.notifier).cancelSetup();
+    }
   }
 
   Future<void> _next(SetupState? setup, AppLocalizations l10n) async {

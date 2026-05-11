@@ -72,6 +72,17 @@ class PrintJobDao {
     );
   }
 
+  Future<List<PrintJob>> getOriginalJobs(String saleId) {
+    return (_db.select(_db.printJobs)
+          ..where(
+            (j) =>
+                j.saleId.equals(saleId) &
+                j.documentType.equals(PrintDocumentType.invoiceReceipt.code),
+          )
+          ..orderBy([(j) => OrderingTerm.asc(j.createdAt)]))
+        .get();
+  }
+
   Future<void> insert(PrintJobsCompanion job) {
     return _db.into(_db.printJobs).insert(job);
   }

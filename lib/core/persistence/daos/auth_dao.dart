@@ -43,21 +43,6 @@ class AuthDao {
         .getSingleOrNull();
   }
 
-  /// DEV-ONLY: Get all users to help debug empty responses.
-  Future<List<Map<String, dynamic>>> getAllUsersDebug() async {
-    final rows = await _db.select(_db.posUsers).get();
-    return rows
-        .map(
-          (user) => {
-            'id': user.id,
-            'username': user.username,
-            'usr_id': user.sourceUserId,
-            'login_name': user.loginName,
-          },
-        )
-        .toList();
-  }
-
   Future<PosUser?> findById(String userId) async {
     return (_db.select(
       _db.posUsers,
@@ -155,7 +140,6 @@ class AuthDao {
       (_) => random.nextInt(256),
     ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
-
 
   Future<void> writeSessionLog({
     required String id,
