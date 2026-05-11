@@ -156,7 +156,6 @@ class MasterDataSyncService {
     _validateSyncContext(context);
 
     final results = <MasterDataTypeResult>[];
-    var currentContext = context;
     final runId = _newId('md_run');
     final startedAt = _clock.now();
     final totalSteps = MasterDataType.syncOrder.length;
@@ -190,7 +189,7 @@ class MasterDataSyncService {
       );
 
       final result = await syncType(
-        currentContext,
+        context,
         type,
         mode: mode,
         runId: runId,
@@ -444,13 +443,6 @@ class MasterDataSyncService {
       await _masterDataDao.runInTransaction(() async {
         if (!plan.isEmpty) {
           await _masterDataDao.persistPlanInCurrentTransaction(plan);
-        }
-        if (type == MasterDataType.posMachine) {
-          await _applyMachineDefaults(
-            plan.machineDefaults,
-            context,
-            serverTime: firstServerTime,
-          );
         }
         await _saveSyncState(
           type,
@@ -710,32 +702,6 @@ class MasterDataSyncService {
     );
   }
 
-  Future<void> _applyMachineDefaults(
-    List<TerminalBootstrapDefaults> defaults,
-    MasterDataSyncContext context, {
-    String? serverTime,
-  }) async {
-    if (defaults.isEmpty) {
-      throw const SyncException(
-        'POS_MACHINE returned no terminal defaults.',
-        code: 'MASTER_DATA_MACHINE_DEFAULTS_MISSING',
-      );
-    }
-
-    final usable = defaults.any(
-      (defaults) =>
-          (defaults.defaultStoreId?.trim().isNotEmpty ?? false) &&
-          (defaults.priceLevelId?.trim().isNotEmpty ?? false),
-    );
-
-    if (!usable) {
-      throw const SyncException(
-        'POS_MACHINE returned machines without store/price level defaults.',
-        code: 'MASTER_DATA_MACHINE_DEFAULTS_INCOMPLETE',
-      );
-    }
-  }
-
   String _newId(String prefix) {
     final seq = _idSequence++;
     return '${prefix}_${_clock.now().microsecondsSinceEpoch}_$seq';
@@ -785,8 +751,8 @@ class MasterDataSyncService {
       modeCode: mode.code,
       tenantCode: context.custCode,
       userId: context.syncUserId,
-      branchNo: context.branchNo ?? '',
-      terminalNo: context.terminalNo ?? '',
+      branchNo: '',
+      terminalNo: '',
       at: at,
     );
   }

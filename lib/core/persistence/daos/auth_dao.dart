@@ -16,8 +16,6 @@ class AuthDao {
   AuthDao(this._db, {Clock clock = const SystemClock()}) : _clock = clock;
 
   /// Find user by username, ID, usr_id, or login_name.
-  /// In this POS flow the cashier types the numeric user ID, but keeping
-  /// login_name support makes the DAO tolerant to backend naming differences.
   Future<PosUser?> findByUsername(String username) async {
     final normalized = username.trim().toLowerCase();
     if (normalized.isEmpty) return null;
@@ -141,8 +139,6 @@ class AuthDao {
   String _hashPin(String pin, {required String salt}) {
     final payload = '$salt:$pin';
 
-    // Local-only hashing without adding a dependency.
-    // Good enough to avoid plain-text PIN storage in this offline POS context.
     var hash = 0xcbf29ce484222325;
     for (final unit in payload.codeUnits) {
       hash ^= unit;
