@@ -161,12 +161,16 @@ class _CartPanelState extends ConsumerState<CartPanel> {
             _PayButton(cart: cart, quoteState: quoteState),
           ],
         ],
-          );
-        },
+          
+        
       ),
+
     );
+
   }
+
 }
+
 
 class _CartItemTile extends ConsumerWidget {
   final CartItem item;
@@ -188,6 +192,12 @@ class _CartItemTile extends ConsumerWidget {
         AppSnackbar.showError(context, ErrorMapper.userMessage(error));
       }
     }
+
+    void removeItem() {
+      ref.read(cartProvider.notifier).removeItem(item.itemId, item.unitId);
+    }
+
+    final lineTotal = officialLineTotal ?? item.unitPrice * item.quantity;
 
     return TweenAnimationBuilder<Color?>(
       tween: ColorTween(
@@ -240,6 +250,15 @@ class _CartItemTile extends ConsumerWidget {
                       color: AppColors.success,
                     ),
                   ),
+                if (item.isPriceOverridden)
+                  Text(
+                    l10n.priceOverridden,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.warning,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
                 const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
@@ -264,9 +283,7 @@ class _CartItemTile extends ConsumerWidget {
                     ),
                     const Spacer(),
                     Text(
-                      PosFormatters.amount(
-                        officialLineTotal ?? item.unitPrice * item.quantity,
-                      ),
+                      PosFormatters.amount(lineTotal),
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -276,12 +293,8 @@ class _CartItemTile extends ConsumerWidget {
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     IconButton(
-                      tooltip: l10n.remove,
-                      onPressed: () {
-                        ref
-                            .read(cartProvider.notifier)
-                            .removeItem(item.itemId, item.unitId);
-                      },
+                      tooltip: 'حذف',
+                      onPressed: removeItem,
                       icon: const Icon(
                         Icons.delete_outline,
                         color: AppColors.error,
@@ -294,113 +307,111 @@ class _CartItemTile extends ConsumerWidget {
           }
 
           return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.productName,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  '${PosFormatters.amount(item.unitPrice)} x ${PosFormatters.quantity(item.quantity)}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                if (item.discountAmount > 0)
-                  Text(
-                    l10n.discountAmountLabel(
-                      PosFormatters.amount(item.discountAmount),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.success,
-                    ),
-                  ),
-                if (item.isPriceOverridden)
-                  Text(
-                    l10n.priceOverridden,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.warning,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _QtyButton(
-                icon: Icons.remove,
-                onTap: () => changeQuantity(item.quantity - 1),
-              ),
-              Container(
-                width: 36,
-                alignment: Alignment.center,
-                child: Text(
-                  PosFormatters.quantity(item.quantity),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.productName,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      '${PosFormatters.amount(item.unitPrice)} x ${PosFormatters.quantity(item.quantity)}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    if (item.discountAmount > 0)
+                      Text(
+                        l10n.discountAmountLabel(
+                          PosFormatters.amount(item.discountAmount),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.success,
+                        ),
+                      ),
+                    if (item.isPriceOverridden)
+                      Text(
+                        l10n.priceOverridden,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.warning,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              _QtyButton(
-                icon: Icons.add,
-                onTap: () => changeQuantity(item.quantity + 1),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _QtyButton(
+                    icon: Icons.remove,
+                    onTap: () => changeQuantity(item.quantity - 1),
+                  ),
+                  Container(
+                    width: 36,
+                    alignment: Alignment.center,
+                    child: Text(
+                      PosFormatters.quantity(item.quantity),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  _QtyButton(
+                    icon: Icons.add,
+                    onTap: () => changeQuantity(item.quantity + 1),
+                  ),
+                ],
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    PosFormatters.amount(lineTotal),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                    textAlign: TextAlign.end,
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: removeItem,
+                    borderRadius: BorderRadius.circular(4),
+                    child: const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Icon(
+                        Icons.delete_outline,
+                        color: AppColors.error,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                PosFormatters.amount(
-                  officialLineTotal ?? item.unitPrice * item.quantity,
-                ),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.primary,
-                ),
-                textAlign: TextAlign.end,
-              ),
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: () {
-                  ref
-                      .read(cartProvider.notifier)
-                      .removeItem(item.itemId, item.unitId);
-                },
-                borderRadius: BorderRadius.circular(4),
-                child: const Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: Icon(
-                    Icons.delete_outline,
-                    color: AppColors.error,
-                    size: 24,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
 }
+
 
 class _QtyButton extends StatelessWidget {
   final IconData icon;

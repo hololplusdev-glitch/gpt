@@ -357,8 +357,8 @@ class MasterDataSyncService {
     final hasLocalSeed = await _hasLocalSeedForIncremental(type, context);
     final sentLastUpdate =
         mode == MasterDataSyncMode.incremental && hasLocalSeed
-            ? oldServerTime
-            : null;
+        ? oldServerTime
+        : null;
     final typeRunId = _newId('md_type');
     final startedAt = _clock.now();
     await _insertTypeRun(
@@ -771,11 +771,7 @@ class MasterDataSyncService {
   }) async {
     final queryParams = context
         .copyWith(pageLimit: _effectivePageLimitFor(type, context.pageLimit))
-        .queryParameters(
-          type: type,
-          offset: offset,
-          lastUpdate: lastUpdate,
-        );
+        .queryParameters(type: type, offset: offset, lastUpdate: lastUpdate);
 
     // WHY: Validate baseUrl doesn't end with /data to prevent /data/data.
     final baseUrl = _apiClient.debugBaseUrl;

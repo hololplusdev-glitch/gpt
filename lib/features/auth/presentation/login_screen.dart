@@ -180,179 +180,184 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               constraints: BoxConstraints(
                 maxWidth: isCompact ? double.infinity : 460,
               ),
-            child: Container(
-              width: double.infinity,
-              padding: EdgeInsets.all(
-                isCompact ? AppSpacing.lg : AppSpacing.xxxl,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: AppSpacing.borderRadiusXl,
-                boxShadow: const [
-                  BoxShadow(
-                    color: AppColors.shadow,
-                    blurRadius: AppSpacing.xxl,
-                    offset: Offset(0, AppSpacing.sm),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.point_of_sale_rounded,
-                    size: isCompact
-                        ? AppSpacing.jumbo
-                        : AppSpacing.jumbo + AppSpacing.lg,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    l10n.appTitle,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(
+                  isCompact ? AppSpacing.lg : AppSpacing.xxxl,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: AppSpacing.borderRadiusXl,
+                  boxShadow: const [
+                    BoxShadow(
+                      color: AppColors.shadow,
+                      blurRadius: AppSpacing.xxl,
+                      offset: Offset(0, AppSpacing.sm),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.point_of_sale_rounded,
+                      size: isCompact
+                          ? AppSpacing.jumbo
+                          : AppSpacing.jumbo + AppSpacing.lg,
                       color: AppColors.primary,
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    'دخول محلي برقم المستخدم ونقطة التشغيل',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.textSecondary,
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      l10n.appTitle,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  const _LoginIdentityCard(),
-                  SizedBox(height: isCompact ? AppSpacing.lg : AppSpacing.xxl),
-                  if (sessionState.errorMessage != null) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      'دخول محلي برقم المستخدم ونقطة التشغيل',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    const _LoginIdentityCard(),
+                    SizedBox(
+                      height: isCompact ? AppSpacing.lg : AppSpacing.xxl,
+                    ),
+                    if (sessionState.errorMessage != null) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: AppSpacing.paddingMd,
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withValues(alpha: 0.1),
+                          borderRadius: AppSpacing.borderRadiusMd,
+                          border: Border.all(
+                            color: AppColors.error.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.error_outline,
+                              color: AppColors.error,
+                              size: AppSpacing.xl,
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: Text(
+                                sessionState.errorMessage!,
+                                style: const TextStyle(
+                                  color: AppColors.error,
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+                    AppTextField(
+                      controller: _userNumberController,
+                      focusNode: _userNumberFocus,
+                      textInputAction: TextInputAction.done,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      labelText: 'رقم المستخدم',
+                      prefixIcon: const Icon(Icons.badge_outlined),
+                      onChanged: (value) {
+                        if (_handleOwnerShortcut(value)) return;
+                        ref
+                            .read(posSessionControllerProvider.notifier)
+                            .resolveUserNumber(value);
+                      },
+                      onSubmitted: (value) {
+                        if (_handleOwnerShortcut(value)) return;
+                        if (sessionState.canLogin) _handleLoginPressed();
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    AppDropdown<String>(
+                      key: ValueKey(
+                        '${sessionState.resolvedUser?.id}:${sessionState.selectedMachineNo}:${sessionState.machineChoices.length}',
+                      ),
+                      value: sessionState.selectedMachineNo,
+                      labelText: 'نقطة التشغيل',
+                      hintText: sessionState.isResolvingUser
+                          ? 'جاري البحث...'
+                          : sessionState.machineChoices.isEmpty
+                          ? 'أدخل رقم المستخدم أولًا'
+                          : 'اختر نقطة التشغيل',
+                      prefixIcon: const Icon(Icons.storefront_outlined),
+                      items: sessionState.machineChoices
+                          .map(
+                            (choice) => DropdownMenuItem<String>(
+                              value: choice.machineNo,
+                              child: Text(choice.label),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: sessionState.machineChoices.length <= 1
+                          ? null
+                          : (value) => ref
+                                .read(posSessionControllerProvider.notifier)
+                                .selectMachine(value),
+                    ),
+                    SizedBox(
+                      height: isCompact ? AppSpacing.lg : AppSpacing.xxl,
+                    ),
+                    SizedBox(
+                      width: double.infinity,
+                      height: AppSpacing.jumbo + AppSpacing.xs,
+                      child: AppButton.primary(
+                        onPressed: sessionState.canLogin
+                            ? _handleLoginPressed
+                            : null,
+                        isLoading: sessionState.isLoading,
+                        label: 'دخول',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
                     Container(
                       width: double.infinity,
-                      padding: AppSpacing.paddingMd,
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.1),
-                        borderRadius: AppSpacing.borderRadiusMd,
-                        border: Border.all(
-                          color: AppColors.error.withValues(alpha: 0.3),
-                        ),
+                        color: AppColors.primary.withValues(alpha: 0.05),
+                        borderRadius: AppSpacing.borderRadiusSm,
                       ),
                       child: Row(
                         children: [
-                          const Icon(
-                            Icons.error_outline,
-                            color: AppColors.error,
-                            size: AppSpacing.xl,
+                          Icon(
+                            Icons.info_outline,
+                            size: AppSpacing.lg,
+                            color: AppColors.primary.withValues(alpha: 0.6),
                           ),
                           const SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: Text(
-                              sessionState.errorMessage!,
-                              style: const TextStyle(
-                                color: AppColors.error,
-                                fontSize: 13,
-                              ),
+                              isCompact
+                                  ? 'سيُطلب PIN بعد الضغط على دخول.'
+                                  : 'يتم تحديد نقاط التشغيل من صلاحيات DEVICE_PRIV المحلية. سيُطلب PIN بعد الضغط على دخول.',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.textHint,
+                                    fontSize: 11,
+                                  ),
                             ),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
+                    const _LoginFooter(),
                   ],
-                  AppTextField(
-                    controller: _userNumberController,
-                    focusNode: _userNumberFocus,
-                    textInputAction: TextInputAction.done,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    labelText: 'رقم المستخدم',
-                    prefixIcon: const Icon(Icons.badge_outlined),
-                    onChanged: (value) {
-                      if (_handleOwnerShortcut(value)) return;
-                      ref
-                          .read(posSessionControllerProvider.notifier)
-                          .resolveUserNumber(value);
-                    },
-                    onSubmitted: (value) {
-                      if (_handleOwnerShortcut(value)) return;
-                      if (sessionState.canLogin) _handleLoginPressed();
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  AppDropdown<String>(
-                    key: ValueKey(
-                      '${sessionState.resolvedUser?.id}:${sessionState.selectedMachineNo}:${sessionState.machineChoices.length}',
-                    ),
-                    value: sessionState.selectedMachineNo,
-                    labelText: 'نقطة التشغيل',
-                    hintText: sessionState.isResolvingUser
-                        ? 'جاري البحث...'
-                        : sessionState.machineChoices.isEmpty
-                        ? 'أدخل رقم المستخدم أولًا'
-                        : 'اختر نقطة التشغيل',
-                    prefixIcon: const Icon(Icons.storefront_outlined),
-                    items: sessionState.machineChoices
-                        .map(
-                          (choice) => DropdownMenuItem<String>(
-                            value: choice.machineNo,
-                            child: Text(choice.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: sessionState.machineChoices.length <= 1
-                        ? null
-                        : (value) => ref
-                              .read(posSessionControllerProvider.notifier)
-                              .selectMachine(value),
-                  ),
-                  SizedBox(height: isCompact ? AppSpacing.lg : AppSpacing.xxl),
-                  SizedBox(
-                    width: double.infinity,
-                    height: AppSpacing.jumbo + AppSpacing.xs,
-                    child: AppButton.primary(
-                      onPressed: sessionState.canLogin
-                          ? _handleLoginPressed
-                          : null,
-                      isLoading: sessionState.isLoading,
-                      label: 'دخول',
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withValues(alpha: 0.05),
-                      borderRadius: AppSpacing.borderRadiusSm,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: AppSpacing.lg,
-                          color: AppColors.primary.withValues(alpha: 0.6),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Expanded(
-                          child: Text(
-                            isCompact
-                                ? 'سيُطلب PIN بعد الضغط على دخول.'
-                                : 'يتم تحديد نقاط التشغيل من صلاحيات DEVICE_PRIV المحلية. سيُطلب PIN بعد الضغط على دخول.',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: AppColors.textHint,
-                                  fontSize: 11,
-                                ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  const _LoginFooter(),
-                ],
+                ),
               ),
-            ),
             ),
           ),
         ),
@@ -414,49 +419,49 @@ class _PinEntryDialogState extends State<_PinEntryDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-          AppTextField(
-            controller: _pinController,
-            autofocus: false,
-            labelText: widget.createMode ? 'PIN جديد' : 'PIN',
-            keyboardType: TextInputType.number,
-            obscureText: true,
-            textInputAction: widget.createMode
-                ? TextInputAction.next
-                : TextInputAction.done,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(4),
-            ],
-            onSubmitted: (_) {
-              if (!widget.createMode) _submit();
-            },
-          ),
-          if (widget.createMode) ...[
-            const SizedBox(height: AppSpacing.md),
             AppTextField(
-              controller: _confirmController,
+              controller: _pinController,
               autofocus: false,
-              labelText: 'تأكيد PIN',
+              labelText: widget.createMode ? 'PIN جديد' : 'PIN',
               keyboardType: TextInputType.number,
               obscureText: true,
-              textInputAction: TextInputAction.done,
+              textInputAction: widget.createMode
+                  ? TextInputAction.next
+                  : TextInputAction.done,
               inputFormatters: [
                 FilteringTextInputFormatter.digitsOnly,
                 LengthLimitingTextInputFormatter(4),
               ],
-              onSubmitted: (_) => _submit(),
+              onSubmitted: (_) {
+                if (!widget.createMode) _submit();
+              },
             ),
-          ],
-          if (_error != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            Align(
-              alignment: AlignmentDirectional.centerStart,
-              child: Text(
-                _error!,
-                style: const TextStyle(color: AppColors.error, fontSize: 12),
+            if (widget.createMode) ...[
+              const SizedBox(height: AppSpacing.md),
+              AppTextField(
+                controller: _confirmController,
+                autofocus: false,
+                labelText: 'تأكيد PIN',
+                keyboardType: TextInputType.number,
+                obscureText: true,
+                textInputAction: TextInputAction.done,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(4),
+                ],
+                onSubmitted: (_) => _submit(),
               ),
-            ),
-          ],
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  _error!,
+                  style: const TextStyle(color: AppColors.error, fontSize: 12),
+                ),
+              ),
+            ],
           ],
         ),
       ),

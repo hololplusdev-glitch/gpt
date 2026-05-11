@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
-import 'package:pos_flutter/core/errors/app_exception.dart';
 import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/core/services/master_data/master_data_mapper.dart';
 import 'package:pos_flutter/core/services/master_data/master_data_contract.dart';
@@ -280,12 +279,12 @@ class MasterDataDao {
   }
 
   Future<int> countCustomers(String custCode) async {
-    final rows = await (_db.select(_db.customers)
-          ..where(
-            (row) =>
-                row.custCode.equals(custCode) & row.inactive.equals(false),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.customers)..where(
+              (row) =>
+                  row.custCode.equals(custCode) & row.inactive.equals(false),
+            ))
+            .get();
 
     return rows.length;
   }

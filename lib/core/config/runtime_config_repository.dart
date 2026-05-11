@@ -73,7 +73,6 @@ class RuntimeConfigRepository {
     await prefs.setBool(_kUseSsl, profile.useSsl);
   }
 
-
   int _normalizePageLimit(int? value) {
     final limit = value ?? 500;
     if (limit < 500) return 500;

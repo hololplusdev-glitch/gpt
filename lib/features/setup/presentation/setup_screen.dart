@@ -585,7 +585,6 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   }
 }
 
-
 class _SetupBottomActions extends StatelessWidget {
   final bool isCompact;
   final bool showBack;
@@ -627,20 +626,11 @@ class _SetupBottomActions extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           primary,
-          if (showBack) ...[
-            const SizedBox(height: AppSpacing.sm),
-            back,
-          ],
+          if (showBack) ...[const SizedBox(height: AppSpacing.sm), back],
         ],
       );
     }
 
-    return Row(
-      children: [
-        if (showBack) back,
-        const Spacer(),
-        primary,
-      ],
-    );
+    return Row(children: [if (showBack) back, const Spacer(), primary]);
   }
 }

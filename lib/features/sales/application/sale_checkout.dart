@@ -698,9 +698,7 @@ class SaleCheckoutException extends BusinessException {
 class PaymentPolicy {
   final bool requireCardReference;
 
-  const PaymentPolicy({
-    required this.requireCardReference,
-  });
+  const PaymentPolicy({required this.requireCardReference});
 
   PaymentValidationResult validate({
     required CheckoutQuote quote,
