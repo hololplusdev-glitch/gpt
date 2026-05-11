@@ -409,12 +409,14 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
 
                 const SizedBox(height: 2),
                 // Price
-                Text(
-                  PosFormatters.amount(unitPrice),
-                  style: const TextStyle(
+                Text.rich(
+                  PosFormatters.amountRich(
+                    unitPrice,
+                    amountStyle: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: AppColors.primary,
+                  ),
                   ),
                 ),
               ],

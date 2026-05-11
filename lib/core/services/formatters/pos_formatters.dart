@@ -1,17 +1,48 @@
-import 'package:intl/intl.dart';
+import 'package:flutter/widgets.dart';
 import 'package:holol_POS/shared/models/enums.dart';
+import 'package:intl/intl.dart';
 
 class PosFormatters {
   const PosFormatters._();
+
+  static const String saudiRiyalSymbol = '\uE900';
+  static const String saudiRiyalFontFamily = 'saudi-riyal';
 
   static final DateFormat _dateTime = DateFormat('yyyy-MM-dd HH:mm');
   static final DateFormat _dateOnly = DateFormat('yyyy-MM-dd');
   static final DateFormat _timeOnly = DateFormat('HH:mm');
 
-  static const String saudiRiyalSymbol = '\uE900';
-
+  /// Plain text fallback. Use amountRich() in UI when possible.
   static String amount(num value) =>
       '${value.toStringAsFixed(2)} $saudiRiyalSymbol';
+
+  static TextSpan amountRich(
+    num value, {
+    TextStyle? amountStyle,
+    TextStyle? symbolStyle,
+    bool symbolFirst = false,
+  }) {
+    final amountText = value.toStringAsFixed(2);
+    final effectiveSymbolStyle = (symbolStyle ?? amountStyle ?? const TextStyle())
+        .copyWith(fontFamily: saudiRiyalFontFamily);
+
+    if (symbolFirst) {
+      return TextSpan(
+        children: [
+          TextSpan(text: saudiRiyalSymbol, style: effectiveSymbolStyle),
+          TextSpan(text: ' $amountText', style: amountStyle),
+        ],
+      );
+    }
+
+    return TextSpan(
+      children: [
+        TextSpan(text: amountText, style: amountStyle),
+        TextSpan(text: ' ', style: amountStyle),
+        TextSpan(text: saudiRiyalSymbol, style: effectiveSymbolStyle),
+      ],
+    );
+  }
 
   static String quantity(num value) =>
       value == value.roundToDouble() ? value.toInt().toString() : '$value';

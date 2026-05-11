@@ -276,12 +276,14 @@ class _CartItemTile extends ConsumerWidget {
                       onTap: () => changeQuantity(item.quantity + 1),
                     ),
                     const Spacer(),
-                    Text(
-                      PosFormatters.amount(lineTotal),
-                      style: const TextStyle(
+                    Text.rich(
+                      PosFormatters.amountRich(
+                        lineTotal,
+                        amountStyle: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
                         color: AppColors.primary,
+                      ),
                       ),
                       textAlign: TextAlign.end,
                     ),
@@ -374,12 +376,14 @@ class _CartItemTile extends ConsumerWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    PosFormatters.amount(lineTotal),
-                    style: const TextStyle(
+                  Text.rich(
+                    PosFormatters.amountRich(
+                      lineTotal,
+                      amountStyle: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: AppColors.primary,
+                    ),
                     ),
                     textAlign: TextAlign.end,
                   ),
@@ -472,12 +476,14 @@ class _CartTotals extends StatelessWidget {
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    Text(
-                      PosFormatters.amount(quote.grandTotal),
-                      style: const TextStyle(
+                    Text.rich(
+                      PosFormatters.amountRich(
+                        quote.grandTotal,
+                        amountStyle: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
+                      ),
                       ),
                     ),
                   ],

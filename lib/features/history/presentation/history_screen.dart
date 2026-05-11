@@ -262,12 +262,14 @@ class _SaleCard extends StatelessWidget {
                 children: [
                   Expanded(child: _InvoiceText(invoiceNo: invoiceNo)),
                   const SizedBox(width: AppSpacing.md),
-                  Text(
-                    PosFormatters.amount(sale.grandTotal),
-                    style: TextStyle(
+                  Text.rich(
+                    PosFormatters.amountRich(
+                      sale.grandTotal,
+                      amountStyle: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: statusColor,
+                    ),
                     ),
                     textAlign: TextAlign.end,
                   ),
@@ -360,11 +362,13 @@ class _AmountCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      PosFormatters.amount(sale.grandTotal),
-      style: TextStyle(
+    return Text.rich(
+      PosFormatters.amountRich(
+        sale.grandTotal,
+        amountStyle: TextStyle(
         fontWeight: FontWeight.w800,
         color: SaleStatusPresenter.color(sale.status),
+      ),
       ),
     );
   }
