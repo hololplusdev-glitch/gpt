@@ -1,6 +1,7 @@
 // features/shift/presentation/shift_screen.dart
-// WHY: Shift management UI - open/close shift with cash amounts.
-// Enforces the business rule: no selling without an open shift.
+// WHY: Shift gate + shift dashboard.
+// Runtime SSOT: ActivePosSession.openShiftId.
+// This screen never decides current shift from ShiftState.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,31 +29,38 @@ class ShiftScreen extends ConsumerStatefulWidget {
 }
 
 class _ShiftScreenState extends ConsumerState<ShiftScreen> {
-  final _cashController = TextEditingController();
+  final _openingCashController = TextEditingController();
+  final _actualCashController = TextEditingController();
   final _notesController = TextEditingController();
-  bool _isClosing = false;
 
   @override
   void dispose() {
-    _cashController.dispose();
+    _openingCashController.dispose();
+    _actualCashController.dispose();
     _notesController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final shiftState = ref.watch(shiftProvider);
+    final actionState = ref.watch(shiftProvider);
     final activeSession = ref.watch(activePosSessionProvider).valueOrNull;
+    final dashboardAsync = ref.watch(activeShiftDashboardProvider);
     final l10n = AppLocalizations.of(context)!;
+
+    final openShiftId = activeSession?.openShiftId?.trim();
+    final hasOpenShift = openShiftId != null && openShiftId.isNotEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text(shiftState.hasOpenShift ? l10n.closeShift : l10n.openShift),
+        title: Text(hasOpenShift ? 'الشفت الحالي' : l10n.openShift),
         actions: [
-          if (shiftState.hasOpenShift)
+          if (hasOpenShift)
             TextButton.icon(
-              onPressed: () => context.go(AppRoutes.cashier),
+              onPressed: actionState.isLoading
+                  ? null
+                  : () => context.go(AppRoutes.cashier),
               icon: const Icon(Icons.point_of_sale),
               label: Text(l10n.backToPos),
             ),
@@ -69,9 +77,26 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
               child: Card(
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.xxxl),
-                  child: shiftState.hasOpenShift
-                      ? _buildCloseShiftView(shiftState, activeSession, l10n)
-                      : _buildOpenShiftView(shiftState, activeSession, l10n),
+                  child: activeSession == null
+                      ? _buildNoSessionView(l10n)
+                      : hasOpenShift
+                      ? dashboardAsync.when(
+                          data: (dashboard) {
+                            if (dashboard == null) {
+                              return _buildMissingShiftView(actionState, l10n);
+                            }
+
+                            return _buildShiftDashboardView(
+                              dashboard,
+                              actionState,
+                              activeSession,
+                              l10n,
+                            );
+                          },
+                          loading: _buildLoadingView,
+                          error: (error, _) => _buildLoadErrorView(error),
+                        )
+                      : _buildOpenShiftView(actionState, activeSession, l10n),
                 ),
               ),
             ),
@@ -81,9 +106,82 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     );
   }
 
+  Widget _buildNoSessionView(AppLocalizations l10n) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _ShiftHeroIcon(icon: Icons.person_off, color: AppColors.warning),
+        const SizedBox(height: AppSpacing.lg),
+        const Text(
+          'لا توجد جلسة تشغيل نشطة.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppButton.primary(
+          onPressed: () => context.go(AppRoutes.login),
+          icon: Icons.login,
+          label: l10n.login,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLoadingView() {
+    return const Padding(
+      padding: EdgeInsets.all(AppSpacing.xxxl),
+      child: Center(child: CircularProgressIndicator()),
+    );
+  }
+
+  Widget _buildLoadErrorView(Object error) {
+    return AppInfoBanner.error(message: error.toString());
+  }
+
+  Widget _buildMissingShiftView(ShiftState actionState, AppLocalizations l10n) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _ShiftHeroIcon(icon: Icons.warning_amber, color: AppColors.error),
+        const SizedBox(height: AppSpacing.lg),
+        const Text(
+          'تعذر تحميل الشفت الحالي.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        const Text(
+          'الجلسة تشير إلى شفت غير موجود. سجل خروج ثم ادخل مرة أخرى.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        if (actionState.errorMessage != null) ...[
+          const SizedBox(height: AppSpacing.md),
+          AppInfoBanner.error(message: actionState.errorMessage!),
+        ],
+        const SizedBox(height: AppSpacing.xl),
+        AppButton.primary(
+          onPressed: () => context.go(AppRoutes.login),
+          icon: Icons.login,
+          label: l10n.login,
+        ),
+      ],
+    );
+  }
+
   Widget _buildOpenShiftView(
-    ShiftState shiftState,
-    ActivePosSession? activeSession,
+    ShiftState actionState,
+    ActivePosSession activeSession,
     AppLocalizations l10n,
   ) {
     return Column(
@@ -105,52 +203,59 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          l10n.cashierNameLabel(
-            activeSession?.activeUserName ?? l10n.unknownCashier,
-          ),
+          l10n.cashierNameLabel(activeSession.activeUserName),
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          'نقطة التشغيل: ${activeSession.activeMachineName}',
           textAlign: TextAlign.center,
           style: const TextStyle(color: AppColors.textSecondary),
         ),
         const SizedBox(height: AppSpacing.xxl),
         _AmountField(
-          controller: _cashController,
+          controller: _openingCashController,
           label: l10n.openingCashSar,
           hintText: l10n.zeroAmountHint,
           autofocus: true,
+          enabled: !actionState.isLoading,
         ),
-        if (shiftState.errorMessage != null) ...[
+        if (actionState.errorMessage != null) ...[
           const SizedBox(height: AppSpacing.md),
-          AppInfoBanner.error(message: shiftState.errorMessage!),
+          AppInfoBanner.error(message: actionState.errorMessage!),
         ],
         const SizedBox(height: AppSpacing.xxl),
         SizedBox(
           height: AppSpacing.jumbo + AppSpacing.sm,
           child: AppButton.primary(
-            onPressed: shiftState.isLoading ? null : _openShift,
-            isLoading: shiftState.isLoading,
+            onPressed: actionState.isLoading ? null : _openShift,
+            isLoading: actionState.isLoading,
             icon: Icons.play_arrow,
-            label: shiftState.isLoading ? l10n.openingShift : l10n.openShift,
+            label: actionState.isLoading ? l10n.openingShift : l10n.openShift,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCloseShiftView(
-    ShiftState shiftState,
-    ActivePosSession? activeSession,
+  Widget _buildShiftDashboardView(
+    ShiftDashboard dashboard,
+    ShiftState actionState,
+    ActivePosSession activeSession,
     AppLocalizations l10n,
   ) {
-    final shift = shiftState.activeShift!;
+    final shift = dashboard.shift;
+    final totals = dashboard.totals;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const _ShiftHeroIcon(icon: Icons.lock_clock, color: AppColors.warning),
+        const _ShiftHeroIcon(icon: Icons.analytics, color: AppColors.success),
         const SizedBox(height: AppSpacing.lg),
         Text(
-          l10n.closeShift,
+          'ملخص الشفت الحالي',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             color: AppColors.textPrimary,
@@ -163,63 +268,65 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
           textAlign: TextAlign.center,
           style: const TextStyle(color: AppColors.textSecondary),
         ),
-        const SizedBox(height: AppSpacing.lg),
-        KeyValueRow(
-          label: l10n.openingCash,
-          value: PosFormatters.amount(shift.openingCash),
-          verticalPadding: AppSpacing.xs,
-        ),
-        Container(
-          margin: const EdgeInsets.only(top: AppSpacing.md),
-          padding: AppSpacing.paddingMd,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceVariant,
-            borderRadius: AppSpacing.borderRadiusSm,
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.security, size: 16, color: AppColors.textSecondary),
-              SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  'Blind Close: Expected sales are hidden for security.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            ],
-          ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          '${activeSession.activeUserName} • ${activeSession.activeMachineName}',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: AppColors.textSecondary),
         ),
         const Divider(height: AppSpacing.xxxl),
+        _SectionTitle('الصندوق'),
+        _MoneyRow(label: l10n.openingCash, value: shift.openingCash),
+        _MoneyRow(label: 'مبيعات الكاش', value: totals.cashSales),
+        _MoneyRow(label: 'إيداعات الصندوق', value: dashboard.cashIn),
+        _MoneyRow(label: 'مصروفات الصندوق', value: dashboard.cashOut),
+        _MoneyRow(label: 'مردودات كاش', value: dashboard.cashRefund),
+        const Divider(height: AppSpacing.xl),
+        _MoneyRow(
+          label: 'المتوقع في الصندوق',
+          value: dashboard.expectedCash,
+          isStrong: true,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _SectionTitle('المبيعات'),
+        _CountRow(label: 'عدد الفواتير', value: totals.saleCount),
+        _MoneyRow(label: 'إجمالي المبيعات', value: totals.grossSales),
+        _MoneyRow(label: 'صافي المبيعات', value: totals.netSales),
+        _MoneyRow(label: 'الشبكة / البطاقات', value: totals.cardSales),
+        _MoneyRow(label: 'آجل / طرق أخرى', value: totals.otherSales),
+        _MoneyRow(label: 'الخصومات', value: totals.totalDiscounts),
+        _MoneyRow(label: 'الضريبة', value: totals.totalTaxes),
+        _MoneyRow(label: 'المرتجعات', value: totals.totalReturns),
+        _MoneyRow(label: 'الملغيات', value: totals.totalVoids),
+        const Divider(height: AppSpacing.xxxl),
         _AmountField(
-          controller: _cashController,
-          enabled: !shiftState.isLoading && !_isClosing,
+          controller: _actualCashController,
+          enabled: !actionState.isLoading,
           label: l10n.actualCashInDrawerSar,
           hintText: l10n.zeroAmountHint,
         ),
         const SizedBox(height: AppSpacing.md),
         AppTextField(
           controller: _notesController,
-          enabled: !shiftState.isLoading && !_isClosing,
+          enabled: !actionState.isLoading,
           maxLines: 2,
           labelText: l10n.closingNotesOptional,
           prefixIcon: const Icon(Icons.notes_outlined),
         ),
-        if (shiftState.errorMessage != null) ...[
+        if (actionState.errorMessage != null) ...[
           const SizedBox(height: AppSpacing.md),
-          AppInfoBanner.error(message: shiftState.errorMessage!),
+          AppInfoBanner.error(message: actionState.errorMessage!),
         ],
         const SizedBox(height: AppSpacing.xxl),
         SizedBox(
           height: AppSpacing.jumbo + AppSpacing.sm,
           child: AppButton.warning(
-            onPressed: shiftState.isLoading || _isClosing ? null : _closeShift,
-            isLoading: shiftState.isLoading,
+            onPressed: actionState.isLoading
+                ? null
+                : () => _closeShift(shift.id),
+            isLoading: actionState.isLoading,
             icon: Icons.stop,
-            label: shiftState.isLoading ? l10n.closingShift : l10n.closeShift,
+            label: actionState.isLoading ? l10n.closingShift : l10n.closeShift,
           ),
         ),
       ],
@@ -227,38 +334,102 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
   }
 
   Future<void> _openShift() async {
-    final cashText = _cashController.text.trim();
+    final cashText = _openingCashController.text.trim();
     final cashDouble = double.tryParse(cashText) ?? 0;
 
     final success = await ref
         .read(shiftProvider.notifier)
         .openShift(openingCash: cashDouble);
 
-    if (success && mounted) {
+    if (!mounted) return;
+
+    if (success) {
+      _openingCashController.clear();
+      ref.invalidate(activeShiftDashboardProvider);
       context.go(AppRoutes.cashier);
     }
   }
 
-  Future<void> _closeShift() async {
-    setState(() => _isClosing = true);
-
-    final cashText = _cashController.text.trim();
+  Future<void> _closeShift(String shiftId) async {
+    final cashText = _actualCashController.text.trim();
     final cashDouble = double.tryParse(cashText) ?? 0;
 
     final success = await ref
         .read(shiftProvider.notifier)
         .closeShift(
+          shiftId: shiftId,
           actualCash: cashDouble,
           closingNotes: _notesController.text.trim(),
         );
 
-    if (mounted) {
-      setState(() => _isClosing = false);
+    if (!mounted) return;
 
-      if (success) {
-        context.go(AppRoutes.login);
-      }
+    if (success) {
+      _actualCashController.clear();
+      _notesController.clear();
+      ref.invalidate(activeShiftDashboardProvider);
+      context.go(AppRoutes.shift);
     }
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  final String text;
+
+  const _SectionTitle(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: AppColors.primary,
+          fontWeight: FontWeight.w700,
+          fontSize: 15,
+        ),
+      ),
+    );
+  }
+}
+
+class _MoneyRow extends StatelessWidget {
+  final String label;
+  final double value;
+  final bool isStrong;
+
+  const _MoneyRow({
+    required this.label,
+    required this.value,
+    this.isStrong = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return KeyValueRow(
+      label: label,
+      value: PosFormatters.amount(value),
+      verticalPadding: AppSpacing.xs,
+      strong: isStrong,
+      valueColor: isStrong ? AppColors.primary : null,
+    );
+  }
+}
+
+class _CountRow extends StatelessWidget {
+  final String label;
+  final int value;
+
+  const _CountRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return KeyValueRow(
+      label: label,
+      value: value.toString(),
+      verticalPadding: AppSpacing.xs,
+    );
   }
 }
 

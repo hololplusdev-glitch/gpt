@@ -58,7 +58,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (BuildContext context, GoRouterState state) {
       final setupAsync = ref.read(setupProvider);
       final isSetupComplete = setupAsync.valueOrNull?.isSetupComplete ?? false;
-      final config = ref.read(posConfigProvider);
       final activeSession = ref.read(activePosSessionProvider).valueOrNull;
       final isAuthenticated = activeSession != null;
       final shiftRequired = isAuthenticated;
