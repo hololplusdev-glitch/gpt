@@ -56,69 +56,119 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
   Widget build(BuildContext context) {
     final setup = ref.watch(setupProvider).valueOrNull;
     final l10n = AppLocalizations.of(context)!;
+    final size = MediaQuery.sizeOf(context);
+    final isCompact = size.width < 600;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: AppSpacing.paddingLg,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.symmetric(
+              horizontal: isCompact ? AppSpacing.md : AppSpacing.lg,
+              vertical: isCompact ? AppSpacing.md : AppSpacing.xl,
+            ),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
+              constraints: BoxConstraints(
+                maxWidth: isCompact ? double.infinity : 840,
+              ),
               child: Card(
                 child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xxl),
+                  padding: EdgeInsets.all(
+                    isCompact ? AppSpacing.lg : AppSpacing.xxl,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        l10n.posSetup,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Text(
-                        _stepLabel(l10n),
-                        style: const TextStyle(color: AppColors.textSecondary),
+                      Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.tune,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.posSetup,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(fontWeight: FontWeight.w800),
+                                ),
+                                const SizedBox(height: AppSpacing.xxs),
+                                Text(
+                                  _stepLabel(l10n),
+                                  style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: AppSpacing.xl),
                       _buildStep(setup, l10n),
                       if (_message != null || setup?.errorMessage != null) ...[
                         const SizedBox(height: AppSpacing.md),
-                        Text(
-                          _message ?? setup!.errorMessage!,
-                          style: const TextStyle(color: AppColors.error),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.08),
+                            borderRadius: AppSpacing.borderRadiusMd,
+                            border: Border.all(
+                              color: AppColors.error.withValues(alpha: 0.25),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                color: AppColors.error,
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: Text(
+                                  _message ?? setup!.errorMessage!,
+                                  style: const TextStyle(
+                                    color: AppColors.error,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                       const SizedBox(height: AppSpacing.xl),
-                      Row(
-                        children: [
-                          if (_step > 0)
-                            TextButton(
-                              onPressed: _testing
-                                  ? null
-                                  : () => setState(() => _step--),
-                              child: Text(l10n.back),
-                            ),
-                          const Spacer(),
-                          if (setup?.isLoading ?? false)
-                            AppButton.primary(
-                              onPressed: null,
-                              isLoading: true,
-                              label: 'جاري تهيئة بيانات التشغيل',
-                            )
-                          else
-                            AppButton.primary(
-                              onPressed: _testing
-                                  ? null
-                                  : () => _next(setup, l10n),
-                              isLoading: _testing,
-                              label: _testing
-                                  ? 'جاري التحقق من الاتصال...'
-                                  : (_step == 2
-                                        ? 'بدء تهيئة بيانات التشغيل'
-                                        : l10n.next),
-                            ),
-                        ],
+                      _SetupBottomActions(
+                        isCompact: isCompact,
+                        showBack: _step > 0,
+                        canGoBack: !_testing,
+                        isSetupLoading: setup?.isLoading ?? false,
+                        isTesting: _testing,
+                        primaryLabel: _testing
+                            ? 'جاري التحقق من الاتصال...'
+                            : (_step == 2
+                                  ? 'بدء تهيئة بيانات التشغيل'
+                                  : l10n.next),
+                        onBack: () => setState(() => _step--),
+                        onPrimary: () => _next(setup, l10n),
+                        backLabel: l10n.back,
                       ),
                     ],
                   ),
@@ -308,10 +358,16 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.sm,
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
+              SizedBox(
+                width: MediaQuery.sizeOf(context).width < 600
+                    ? double.infinity
+                    : 360,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -526,5 +582,65 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     // Step 2: Finish button
     setState(() => _message = null);
     await ref.read(setupProvider.notifier).completeSetup();
+  }
+}
+
+
+class _SetupBottomActions extends StatelessWidget {
+  final bool isCompact;
+  final bool showBack;
+  final bool canGoBack;
+  final bool isSetupLoading;
+  final bool isTesting;
+  final String primaryLabel;
+  final String backLabel;
+  final VoidCallback onBack;
+  final VoidCallback onPrimary;
+
+  const _SetupBottomActions({
+    required this.isCompact,
+    required this.showBack,
+    required this.canGoBack,
+    required this.isSetupLoading,
+    required this.isTesting,
+    required this.primaryLabel,
+    required this.backLabel,
+    required this.onBack,
+    required this.onPrimary,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = AppButton.primary(
+      onPressed: isTesting || isSetupLoading ? null : onPrimary,
+      isLoading: isTesting || isSetupLoading,
+      label: isSetupLoading ? 'جاري تهيئة بيانات التشغيل' : primaryLabel,
+    );
+
+    final back = TextButton(
+      onPressed: showBack && canGoBack ? onBack : null,
+      child: Text(backLabel),
+    );
+
+    if (isCompact) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          primary,
+          if (showBack) ...[
+            const SizedBox(height: AppSpacing.sm),
+            back,
+          ],
+        ],
+      );
+    }
+
+    return Row(
+      children: [
+        if (showBack) back,
+        const Spacer(),
+        primary,
+      ],
+    );
   }
 }

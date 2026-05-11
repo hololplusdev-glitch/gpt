@@ -163,17 +163,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final sessionState = ref.watch(posSessionControllerProvider);
     final l10n = AppLocalizations.of(context)!;
+    final size = MediaQuery.sizeOf(context);
+    final isCompact = size.width < 600;
 
     return Scaffold(
       backgroundColor: AppColors.primary,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: AppSpacing.paddingLg,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.symmetric(
+              horizontal: isCompact ? AppSpacing.md : AppSpacing.lg,
+              vertical: isCompact ? AppSpacing.md : AppSpacing.xl,
+            ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isCompact ? double.infinity : 460,
+              ),
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.xxxl),
+              padding: EdgeInsets.all(
+                isCompact ? AppSpacing.lg : AppSpacing.xxxl,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.surface,
                 borderRadius: AppSpacing.borderRadiusXl,
@@ -188,9 +199,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.point_of_sale_rounded,
-                    size: AppSpacing.jumbo + AppSpacing.lg,
+                    size: isCompact
+                        ? AppSpacing.jumbo
+                        : AppSpacing.jumbo + AppSpacing.lg,
                     color: AppColors.primary,
                   ),
                   const SizedBox(height: AppSpacing.lg),
@@ -212,7 +225,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: AppSpacing.xl),
                   const _LoginIdentityCard(),
-                  const SizedBox(height: AppSpacing.xxl),
+                  SizedBox(height: isCompact ? AppSpacing.lg : AppSpacing.xxl),
                   if (sessionState.errorMessage != null) ...[
                     Container(
                       width: double.infinity,
@@ -292,7 +305,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               .read(posSessionControllerProvider.notifier)
                               .selectMachine(value),
                   ),
-                  const SizedBox(height: AppSpacing.xxl),
+                  SizedBox(height: isCompact ? AppSpacing.lg : AppSpacing.xxl),
                   SizedBox(
                     width: double.infinity,
                     height: AppSpacing.jumbo + AppSpacing.xs,
@@ -322,8 +335,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         const SizedBox(width: AppSpacing.sm),
                         Expanded(
                           child: Text(
-                            'يتم تحديد نقاط التشغيل من صلاحيات DEVICE_PRIV المحلية. '
-                            'سيُطلب PIN بعد الضغط على دخول.',
+                            isCompact
+                                ? 'سيُطلب PIN بعد الضغط على دخول.'
+                                : 'يتم تحديد نقاط التشغيل من صلاحيات DEVICE_PRIV المحلية. سيُطلب PIN بعد الضغط على دخول.',
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: AppColors.textHint,
@@ -338,6 +352,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const _LoginFooter(),
                 ],
               ),
+            ),
             ),
           ),
         ),
@@ -387,11 +402,18 @@ class _PinEntryDialogState extends State<_PinEntryDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 600;
+
     return AlertDialog(
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: isCompact ? AppSpacing.md : AppSpacing.xl,
+        vertical: AppSpacing.lg,
+      ),
       title: Text(widget.createMode ? 'إنشاء PIN' : 'إدخال PIN'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           AppTextField(
             controller: _pinController,
             autofocus: false,
@@ -435,7 +457,8 @@ class _PinEntryDialogState extends State<_PinEntryDialog> {
               ),
             ),
           ],
-        ],
+          ],
+        ),
       ),
       actions: [
         TextButton(
