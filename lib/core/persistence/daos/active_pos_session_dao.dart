@@ -263,17 +263,6 @@ class ActivePosSessionDao {
     return session;
   }
 
-  Future<void> attachOpenShift(String shiftId) async {
-    await (_db.update(
-      _db.activePosSessions,
-    )..where((row) => row.id.equals(1))).write(
-      ActivePosSessionsCompanion(
-        openShiftId: Value(shiftId),
-        updatedAt: Value(_clock.now()),
-      ),
-    );
-  }
-
   Future<void> clearOpenShift(String shiftId) async {
     final row = await _readActiveRow();
     if (row == null || row.openShiftId != shiftId) return;
