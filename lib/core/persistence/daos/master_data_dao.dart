@@ -329,6 +329,26 @@ class MasterDataDao {
     return row != null;
   }
 
+  String? _syncStateScopeLabel(String typeCode, String? scopeJson) {
+    if (scopeJson == null || scopeJson.trim().isEmpty) return null;
+
+    try {
+      final decoded = jsonDecode(scopeJson);
+      if (decoded is! Map) return null;
+
+      final userId = decoded['userId']?.toString().trim();
+      if (typeCode == MasterDataType.devicePrivilege.code &&
+          userId != null &&
+          userId.isNotEmpty) {
+        return 'usr=$userId';
+      }
+
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<List<MasterSyncStateView>> getMasterSyncStates() async {
     final rows = await (_db.select(
       _db.scopedSyncState,
@@ -337,6 +357,7 @@ class MasterDataDao {
         .map(
           (row) => MasterSyncStateView(
             syncType: row.type,
+            scopeLabel: _syncStateScopeLabel(row.type, row.scopeJson),
             lastSuccessTime: row.lastSuccessTime,
             lastServerTime: row.lastServerTime,
             lastStatus: row.lastStatus,

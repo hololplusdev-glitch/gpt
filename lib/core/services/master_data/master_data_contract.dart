@@ -224,6 +224,7 @@ class MasterDataContextException extends SyncException {
 /// View model for master sync state displayed in UI.
 class MasterSyncStateView {
   final String syncType;
+  final String? scopeLabel;
   final String? lastSuccessTime;
   final String? lastServerTime;
   final String lastStatus;
@@ -231,9 +232,16 @@ class MasterSyncStateView {
 
   const MasterSyncStateView({
     required this.syncType,
+    required this.scopeLabel,
     required this.lastSuccessTime,
     required this.lastServerTime,
     required this.lastStatus,
     required this.lastError,
   });
+
+  String get displayLabel {
+    final scope = scopeLabel?.trim();
+    if (scope == null || scope.isEmpty) return syncType;
+    return '$syncType / $scope';
+  }
 }

@@ -156,29 +156,6 @@ class AuthDao {
     ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
-  /// Compatibility method.
-  /// DEVICE_PRIV is the authoritative user-to-machine permission source.
-  Future<List<String>> getUserPermissions(
-    String userId,
-    String terminalId,
-  ) async {
-    final user = await findById(userId);
-    if (user == null || !user.isActive || !user.canLoginPos) {
-      return [];
-    }
-
-    final privilege =
-        await (_db.select(_db.posUserMachineAccess)..where(
-              (p) =>
-                  p.custCode.equals(user.custCode) &
-                  p.userId.equals(user.id) &
-                  p.machineNo.equals(terminalId) &
-                  p.canUseMachine.equals(true),
-            ))
-            .getSingleOrNull();
-
-    return privilege == null ? [] : ['USE_MACHINE'];
-  }
 
   Future<void> writeSessionLog({
     required String id,

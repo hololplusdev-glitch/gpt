@@ -75,6 +75,23 @@ class SettingsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.lg),
               AppSectionCard(
+                title: 'المبيعات',
+                icon: Icons.point_of_sale,
+                child: Column(
+                  children: [
+                    _SettingsTile(
+                      icon: Icons.analytics_outlined,
+                      title: 'الشفت الحالي',
+                      subtitle: 'عرض ملخص الشفت وإغلاقه',
+                      onTap: () {
+                        context.push(AppRoutes.shift);
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              AppSectionCard(
                 title: l10n.general,
                 icon: Icons.tune,
                 child: Column(

@@ -194,13 +194,23 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
       );
     } catch (e) {
       final isCancelled = e is AppException && e.code == 'CANCELLED';
+
+      // Setup download must be atomic from the user's perspective.
+      // If first-run setup fails or is cancelled, discard partial master data.
+      try {
+        await ref.read(masterDataDaoProvider).clearMasterDataCache();
+      } catch (_) {
+        // Keep the original setup error visible. Cache cleanup failure is secondary.
+      }
+
       state = AsyncData(
         state.value!.copyWith(
           isLoading: false,
+          isSetupComplete: false,
           clearSync: true,
           errorMessage: isCancelled
-              ? 'Download cancelled by user.'
-              : ErrorMapper.userMessage(e),
+              ? 'تم إيقاف التهيئة. لم يتم اعتماد البيانات الجزئية.'
+              : 'فشلت التهيئة ولم يتم اعتماد البيانات الجزئية: ${ErrorMapper.userMessage(e)}',
         ),
       );
     } finally {

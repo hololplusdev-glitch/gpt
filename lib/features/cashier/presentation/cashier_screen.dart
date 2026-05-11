@@ -348,6 +348,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                             const SizedBox(width: AppSpacing.xs),
                             _OverflowActions(
                               onHold: () => _holdOrder(context),
+                              onShift: () => context.push(AppRoutes.shift),
                               onHistory: () => context.push(AppRoutes.history),
                               onSync: () => context.push(AppRoutes.syncMonitor),
                               onDevices: () =>
@@ -411,6 +412,11 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                           icon: Icons.pause_circle_outline,
                           label: l10n.hold,
                           onTap: () => _holdOrder(context),
+                        ),
+                        _TopBarButton(
+                          icon: Icons.analytics_outlined,
+                          label: 'الشفت',
+                          onTap: () => context.push(AppRoutes.shift),
                         ),
                         _TopBarButton(
                           icon: Icons.history,
@@ -704,6 +710,7 @@ class _LogoutButton extends StatelessWidget {
 
 class _OverflowActions extends StatelessWidget {
   final VoidCallback onHold;
+  final VoidCallback onShift;
   final VoidCallback onHistory;
   final VoidCallback onSync;
   final VoidCallback onDevices;
@@ -711,6 +718,7 @@ class _OverflowActions extends StatelessWidget {
 
   const _OverflowActions({
     required this.onHold,
+    required this.onShift,
     required this.onHistory,
     required this.onSync,
     required this.onDevices,
@@ -734,6 +742,13 @@ class _OverflowActions extends StatelessWidget {
           child: _MenuAction(
             icon: Icons.pause_circle_outline,
             label: l10n.hold,
+          ),
+        ),
+        PopupMenuItem(
+          value: onShift,
+          child: const _MenuAction(
+            icon: Icons.analytics_outlined,
+            label: 'الشفت الحالي',
           ),
         ),
         PopupMenuItem(
