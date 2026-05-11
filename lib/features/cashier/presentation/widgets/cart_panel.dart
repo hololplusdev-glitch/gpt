@@ -34,6 +34,41 @@ class _CartPanelState extends ConsumerState<CartPanel> {
     super.dispose();
   }
 
+  Future<void> _confirmClearCart() async {
+    final cart = ref.read(cartProvider);
+    if (cart.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      requestFocus: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('مسح السلة'),
+          content: Text(
+            cart.items.length == 1
+                ? 'سيتم حذف الصنف الموجود في السلة.'
+                : 'سيتم حذف جميع الأصناف الموجودة في السلة.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('إلغاء'),
+            ),
+            FilledButton.icon(
+              onPressed: () => Navigator.of(context).pop(true),
+              icon: const Icon(Icons.delete_outline),
+              label: const Text('مسح السلة'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      ref.read(cartProvider.notifier).clearCart();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
@@ -82,9 +117,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                 const Spacer(),
                 if (cart.isNotEmpty)
                   AppButton.text(
-                    onPressed: () {
-                      ref.read(cartProvider.notifier).clearCart();
-                    },
+                    onPressed: _confirmClearCart,
                     icon: Icons.delete_outline,
                     customColor: AppColors.error,
                     label: l10n.clearCart,
@@ -408,6 +441,7 @@ class _PayButton extends StatelessWidget {
                   final result = await showDialog<Object?>(
                     context: context,
                     barrierDismissible: false,
+                    requestFocus: false,
                     builder: (context) => PaymentDialog(cart: cart),
                   );
 

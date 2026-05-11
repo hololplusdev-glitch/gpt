@@ -20,6 +20,7 @@ import 'package:pos_flutter/shared/presentation/widgets/app_dropdown.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_info_banner.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_loading.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
+import 'package:pos_flutter/shared/presentation/widgets/pos_numeric_keypad.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 
@@ -269,6 +270,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
+    final isCompact = size.width < 600;
 
     return PopScope(
       canPop: false,
@@ -277,15 +279,20 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         _cancelBeforeCompletion();
       },
       child: Dialog(
-        insetPadding: AppSpacing.paddingLg,
+        insetPadding: isCompact ? EdgeInsets.zero : AppSpacing.paddingLg,
         child: Container(
-          width: size.width > 760 ? 620 : size.width,
+          width: isCompact ? double.infinity : 620,
+          height: isCompact ? size.height : null,
           constraints: BoxConstraints(
-            maxHeight: size.height - AppSpacing.xxl * 2,
+            maxHeight: isCompact
+                ? size.height
+                : size.height - AppSpacing.xxl * 2,
           ),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: AppSpacing.borderRadiusLg,
+            borderRadius: isCompact
+                ? BorderRadius.zero
+                : AppSpacing.borderRadiusLg,
           ),
           clipBehavior: Clip.antiAlias,
           child: _isComplete ? _buildCompletionView() : _buildPaymentView(),
@@ -303,7 +310,11 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.all(AppSpacing.xl),
+          padding: EdgeInsets.all(
+            MediaQuery.sizeOf(context).width < 600
+                ? AppSpacing.lg
+                : AppSpacing.xl,
+          ),
           color: AppColors.primary,
           child: Row(
             children: [
@@ -328,7 +339,11 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         ),
         Flexible(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.xl),
+            padding: EdgeInsets.all(
+              MediaQuery.sizeOf(context).width < 600
+                  ? AppSpacing.lg
+                  : AppSpacing.xl,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -408,7 +423,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
           ],
           labelText: l10n.amountTenderedSar,
           prefixText: '${l10n.currency} ',
-          autofocus: true,
+          autofocus: false,
           onChanged: (_) => setState(_recalculateChange),
         ),
         const SizedBox(height: AppSpacing.md),

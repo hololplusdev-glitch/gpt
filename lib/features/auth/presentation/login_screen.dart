@@ -16,6 +16,7 @@ import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_dropdown.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
+import 'package:pos_flutter/shared/presentation/widgets/pos_numeric_keypad.dart';
 
 final loginIdentityCardProvider = FutureProvider.autoDispose<LoginIdentityInfo>(
   (ref) async {
@@ -55,6 +56,11 @@ String? _firstNonEmpty(List<String?> values) {
   }
 
   return null;
+}
+
+bool _shouldAutoFocusPosInput(BuildContext context) {
+  final media = MediaQuery.maybeOf(context);
+  return media != null && media.size.width >= 700;
 }
 
 String? _cleanIdentityText(String? value) {
@@ -99,7 +105,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
+      if (mounted && _shouldAutoFocusPosInput(context)) {
         _userNumberFocus.requestFocus();
       }
     });
@@ -154,6 +160,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return showDialog<String>(
       context: context,
       barrierDismissible: false,
+      requestFocus: false,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -181,6 +188,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   AppTextField(
                     controller: controller,
+                    autofocus: false,
                     labelText: createMode ? 'PIN جديد' : 'PIN',
                     keyboardType: TextInputType.number,
                     obscureText: true,
@@ -199,6 +207,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: AppSpacing.md),
                     AppTextField(
                       controller: confirmController,
+                      autofocus: false,
                       labelText: 'تأكيد PIN',
                       keyboardType: TextInputType.number,
                       obscureText: true,

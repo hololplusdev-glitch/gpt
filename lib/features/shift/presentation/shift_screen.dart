@@ -20,6 +20,7 @@ import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_info_banner.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
 import 'package:pos_flutter/shared/presentation/widgets/key_value_row.dart';
+import 'package:pos_flutter/shared/presentation/widgets/pos_numeric_keypad.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 
 class ShiftScreen extends ConsumerStatefulWidget {
@@ -222,7 +223,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
           controller: _openingCashController,
           label: l10n.openingCashSar,
           hintText: l10n.zeroAmountHint,
-          autofocus: true,
+          autofocus: false,
           enabled: !actionState.isLoading,
         ),
         if (actionState.errorMessage != null) ...[
@@ -314,6 +315,12 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
           enabled: !actionState.isLoading,
           label: l10n.actualCashInDrawerSar,
           hintText: l10n.zeroAmountHint,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        PosNumericKeypad(
+          controller: _actualCashController,
+          allowDecimal: true,
+          decimalPlaces: 2,
         ),
         const SizedBox(height: AppSpacing.md),
         AppTextField(
@@ -492,6 +499,7 @@ class _AmountField extends StatelessWidget {
     return AppTextField(
       controller: controller,
       enabled: enabled,
+      readOnly: true,
       autofocus: autofocus,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [
