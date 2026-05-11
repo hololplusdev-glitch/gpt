@@ -11,6 +11,7 @@ class PosNumericKeypad extends StatelessWidget {
   final VoidCallback? onChanged;
   final VoidCallback? onSubmit;
   final String? submitLabel;
+  final bool compact;
 
   const PosNumericKeypad({
     super.key,
@@ -21,6 +22,7 @@ class PosNumericKeypad extends StatelessWidget {
     this.onChanged,
     this.onSubmit,
     this.submitLabel,
+    this.compact = false,
   });
 
   @override
@@ -29,57 +31,70 @@ class PosNumericKeypad extends StatelessWidget {
         ? const ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', '⌫']
         : const ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '⌫'];
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: keys.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: AppSpacing.sm,
-            crossAxisSpacing: AppSpacing.sm,
-            childAspectRatio: 2.2,
-          ),
-          itemBuilder: (context, index) {
-            final key = keys[index];
-            final isDelete = key == '⌫';
-            final isClear = key == 'C';
+    return Container(
+      padding: EdgeInsets.all(compact ? AppSpacing.sm : AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant.withValues(alpha: 0.55),
+        borderRadius: AppSpacing.borderRadiusLg,
+        border: Border.all(
+          color: AppColors.textHint.withValues(alpha: 0.16),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: keys.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: compact ? AppSpacing.xs : AppSpacing.sm,
+              crossAxisSpacing: compact ? AppSpacing.xs : AppSpacing.sm,
+              childAspectRatio: compact ? 2.35 : 2.05,
+            ),
+            itemBuilder: (context, index) {
+              final key = keys[index];
+              final isDelete = key == '⌫';
+              final isClear = key == 'C';
+              final isUtility = isDelete || isClear;
 
-            return Material(
-              color: isDelete || isClear
-                  ? AppColors.surfaceVariant
-                  : AppColors.surface,
-              borderRadius: AppSpacing.borderRadiusMd,
-              child: InkWell(
+              return Material(
+                color: isUtility ? AppColors.surface : AppColors.cardSurface,
                 borderRadius: AppSpacing.borderRadiusMd,
-                onTap: () => _handleKey(key),
-                child: Center(
-                  child: Text(
-                    key,
-                    style: TextStyle(
-                      color: isDelete || isClear
-                          ? AppColors.error
-                          : AppColors.textPrimary,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
+                elevation: isUtility ? 0 : 1,
+                child: InkWell(
+                  borderRadius: AppSpacing.borderRadiusMd,
+                  onTap: () => _handleKey(key),
+                  child: Center(
+                    child: Text(
+                      key,
+                      style: TextStyle(
+                        color: isUtility
+                            ? AppColors.error
+                            : AppColors.textPrimary,
+                        fontSize: compact ? 20 : 24,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
-        ),
-        if (onSubmit != null && submitLabel != null) ...[
-          const SizedBox(height: AppSpacing.md),
-          SizedBox(
-            width: double.infinity,
-            height: AppSpacing.jumbo + AppSpacing.xs,
-            child: FilledButton(onPressed: onSubmit, child: Text(submitLabel!)),
+              );
+            },
           ),
+          if (onSubmit != null && submitLabel != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            SizedBox(
+              width: double.infinity,
+              height: AppSpacing.jumbo + AppSpacing.xs,
+              child: FilledButton(
+                onPressed: onSubmit,
+                child: Text(submitLabel!),
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 

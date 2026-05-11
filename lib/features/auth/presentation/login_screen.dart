@@ -16,6 +16,7 @@ import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_dropdown.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
+import 'package:pos_flutter/shared/presentation/widgets/app_info_banner.dart';
 import 'package:pos_flutter/shared/presentation/widgets/pos_numeric_keypad.dart';
 
 final loginIdentityCardProvider = FutureProvider.autoDispose<LoginIdentityInfo>(
@@ -144,111 +145,173 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (!mounted) return;
 
-    final pin = await _showPinDialog(createMode: !hasPin);
-
-    if (pin == null) return;
-
-    await controller.loginWithPin(pin);
+    await _showPinDialog(createMode: !hasPin);
   }
 
-  Future<String?> _showPinDialog({required bool createMode}) async {
-    final controller = TextEditingController();
+  Future<bool?> _showPinDialog({required bool createMode}) async {
+    final pinController = TextEditingController();
     final confirmController = TextEditingController();
 
     String? error;
+    var editingConfirm = false;
+    var isSubmitting = false;
 
-    return showDialog<String>(
+    Future<void> submit(
+      StateSetter setDialogState,
+      BuildContext dialogContext,
+    ) async {
+      if (isSubmitting) return;
+
+      final pin = pinController.text.trim();
+      final confirm = confirmController.text.trim();
+
+      if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
+        setDialogState(() => error = 'PIN يجب أن يكون 4 أرقام.');
+        return;
+      }
+
+      if (createMode && confirm.length < 4) {
+        setDialogState(() {
+          editingConfirm = true;
+          error = null;
+        });
+        return;
+      }
+
+      if (createMode && pin != confirm) {
+        HapticFeedback.heavyImpact();
+        setDialogState(() {
+          error = 'تأكيد PIN غير مطابق.';
+          pinController.clear();
+          confirmController.clear();
+          editingConfirm = false;
+        });
+        return;
+      }
+
+      setDialogState(() {
+        isSubmitting = true;
+        error = null;
+      });
+
+      final ok = await ref
+          .read(posSessionControllerProvider.notifier)
+          .loginWithPin(pin);
+
+      if (!dialogContext.mounted) return;
+
+      if (ok) {
+        Navigator.of(dialogContext).pop(true);
+        return;
+      }
+
+      HapticFeedback.heavyImpact();
+
+      final controllerState = ref.read(posSessionControllerProvider);
+      setDialogState(() {
+        isSubmitting = false;
+        error = controllerState.errorMessage ?? 'PIN غير صحيح.';
+        pinController.clear();
+        confirmController.clear();
+        editingConfirm = false;
+      });
+    }
+
+    void handlePinChanged(
+      StateSetter setDialogState,
+      BuildContext dialogContext,
+    ) {
+      if (error != null) {
+        setDialogState(() => error = null);
+      }
+
+      if (!createMode && pinController.text.length == 4) {
+        submit(setDialogState, dialogContext);
+        return;
+      }
+
+      if (createMode && !editingConfirm && pinController.text.length == 4) {
+        setDialogState(() => editingConfirm = true);
+        return;
+      }
+
+      if (createMode && editingConfirm && confirmController.text.length == 4) {
+        submit(setDialogState, dialogContext);
+        return;
+      }
+
+      setDialogState(() {});
+    }
+
+    final result = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       requestFocus: false,
-      builder: (context) {
+      builder: (dialogContext) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
-            void submit() {
-              final pin = controller.text.trim();
-              final confirm = confirmController.text.trim();
-
-              if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
-                setDialogState(() => error = 'PIN يجب أن يكون 4 أرقام.');
-                return;
-              }
-
-              if (createMode && pin != confirm) {
-                setDialogState(() => error = 'تأكيد PIN غير مطابق.');
-                return;
-              }
-
-              Navigator.of(context).pop(pin);
-            }
+          builder: (dialogContext, setDialogState) {
+            final activeController = createMode && editingConfirm
+                ? confirmController
+                : pinController;
 
             return AlertDialog(
               title: Text(createMode ? 'إنشاء PIN' : 'إدخال PIN'),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  AppTextField(
-                    controller: controller,
-                    autofocus: false,
-                    labelText: createMode ? 'PIN جديد' : 'PIN',
-                    keyboardType: TextInputType.number,
-                    obscureText: true,
-                    textInputAction: createMode
-                        ? TextInputAction.next
-                        : TextInputAction.done,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(4),
-                    ],
-                    onSubmitted: (_) {
-                      if (!createMode) submit();
-                    },
+                  _PinDots(
+                    value: pinController.text,
+                    label: createMode ? 'PIN جديد' : 'PIN',
+                    active: !createMode || !editingConfirm,
+                    onTap: () => setDialogState(() => editingConfirm = false),
                   ),
                   if (createMode) ...[
                     const SizedBox(height: AppSpacing.md),
-                    AppTextField(
-                      controller: confirmController,
-                      autofocus: false,
-                      labelText: 'تأكيد PIN',
-                      keyboardType: TextInputType.number,
-                      obscureText: true,
-                      textInputAction: TextInputAction.done,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(4),
-                      ],
-                      onSubmitted: (_) => submit(),
+                    _PinDots(
+                      value: confirmController.text,
+                      label: 'تأكيد PIN',
+                      active: editingConfirm,
+                      onTap: () => setDialogState(() => editingConfirm = true),
                     ),
                   ],
                   if (error != null) ...[
                     const SizedBox(height: AppSpacing.md),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text(
-                        error!,
-                        style: const TextStyle(
-                          color: AppColors.error,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
+                    AppInfoBanner.error(message: error!),
                   ],
+                  const SizedBox(height: AppSpacing.md),
+                  if (isSubmitting)
+                    const Padding(
+                      padding: EdgeInsets.all(AppSpacing.md),
+                      child: CircularProgressIndicator(),
+                    )
+                  else
+                    PosNumericKeypad(
+                      controller: activeController,
+                      allowDecimal: false,
+                      maxLength: 4,
+                      compact: true,
+                      onChanged: () =>
+                          handlePinChanged(setDialogState, dialogContext),
+                    ),
+                  const SizedBox(height: AppSpacing.sm),
+                  TextButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(false),
+                    child: const Text('إلغاء'),
+                  ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('إلغاء'),
-                ),
-                FilledButton(
-                  onPressed: submit,
-                  child: Text(createMode ? 'حفظ ودخول' : 'دخول'),
-                ),
-              ],
             );
           },
         );
       },
     );
+
+    pinController.dispose();
+    confirmController.dispose();
+
+    return result;
   }
 
   @override
@@ -431,6 +494,73 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ],
               ),
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PinDots extends StatelessWidget {
+  final String value;
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _PinDots({
+    required this.value,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final filled = value.length.clamp(0, 4);
+
+    return Material(
+      color: active
+          ? AppColors.primary.withValues(alpha: 0.08)
+          : AppColors.surfaceVariant,
+      borderRadius: AppSpacing.borderRadiusMd,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppSpacing.borderRadiusMd,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.md,
+          ),
+          child: Column(
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: active ? AppColors.primary : AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(4, (index) {
+                  final isFilled = index < filled;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 120),
+                    margin: const EdgeInsets.symmetric(horizontal: 6),
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isFilled
+                          ? AppColors.primary
+                          : AppColors.textHint.withValues(alpha: 0.26),
+                    ),
+                  );
+                }),
+              ),
+            ],
           ),
         ),
       ),

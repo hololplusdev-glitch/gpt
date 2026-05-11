@@ -226,6 +226,12 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
           autofocus: false,
           enabled: !actionState.isLoading,
         ),
+        const SizedBox(height: AppSpacing.md),
+        PosNumericKeypad(
+          controller: _openingCashController,
+          allowDecimal: true,
+          decimalPlaces: 2,
+        ),
         if (actionState.errorMessage != null) ...[
           const SizedBox(height: AppSpacing.md),
           AppInfoBanner.error(message: actionState.errorMessage!),
