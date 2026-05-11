@@ -237,36 +237,11 @@ class SaleCheckout {
       ),
     );
 
-    final warnings = <String>[];
-    var invoiceArchived = false;
-    var printQueued = false;
-
-    try {
-      await _invoiceDocumentBuilder.getOrCreateOriginal(saleId);
-      invoiceArchived = true;
-    } catch (_) {
-      warnings.add('Original invoice document could not be archived.');
-    }
-
-    if (_config.autoPrintAfterSale || session.autoPrint) {
-      try {
-        final document = await _invoiceDocumentBuilder.getOrCreateOriginal(
-          saleId,
-        );
-        final printJobs = await _printQueue.invoiceReceipt(
-          document: document,
-          createdAt: now,
-          createdBy: session.activeUserId,
-          requireAutoPrint: true,
-          preferredPrinterName: session.printerName,
-        );
-
-        await _salesDao.enqueuePrintJobs(printJobs);
-        printQueued = printJobs.isNotEmpty;
-      } catch (_) {
-        warnings.add('Print job could not be queued.');
-      }
-    }
+    await _archiveAndQueueAutoPrintBestEffort(
+      saleId: saleId,
+      session: session,
+      createdAt: now,
+    );
 
     return SaleCheckoutResult(
       saleId: saleId,
@@ -274,9 +249,6 @@ class SaleCheckout {
       selectedPaymentType: resolved.type,
       change: change,
       uploadQueued: true,
-      printQueued: printQueued,
-      invoiceArchived: invoiceArchived,
-      nonFatalWarnings: warnings,
     );
   }
 
@@ -680,19 +652,12 @@ class SaleCheckoutResult {
   final PaymentMethodType selectedPaymentType;
   final double change;
   final bool uploadQueued;
-  final bool printQueued;
-  final bool invoiceArchived;
-  final List<String> nonFatalWarnings;
-
   const SaleCheckoutResult({
     required this.saleId,
     required this.localSaleNo,
     required this.selectedPaymentType,
     required this.change,
     required this.uploadQueued,
-    required this.printQueued,
-    required this.invoiceArchived,
-    this.nonFatalWarnings = const [],
   });
 
   String get invoiceNo => localSaleNo;
