@@ -127,7 +127,7 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
         isLoading: true,
         clearError: true,
         syncProgress: 0.0,
-        syncStatus: 'Preparing...',
+        syncStatus: 'جاري تجهيز التهيئة...',
         syncPagination: null,
       ),
     );
@@ -154,16 +154,23 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
             throwOnFatalFailures: true,
             warningTypes: _setupWarningTypes,
             onProgress: (progress) {
+              final totalSections = progress.totalSections <= 0
+                  ? 1
+                  : progress.totalSections;
               final overallProgress =
-                  (progress.currentSection + progress.sectionProgress) /
-                  progress.totalSections;
+                  ((progress.currentSection + progress.sectionProgress) /
+                          totalSections)
+                      .clamp(0.0, 1.0);
               final paginationStr = progress.totalPages > 1
-                  ? '${progress.currentPage} of ${progress.totalPages}'
+                  ? 'صفحة ${progress.currentPage} من ${progress.totalPages}'
                   : '';
+              final label = progress.typeCode == MasterDataType.devicePrivilege.code
+                  ? progress.typeLabel
+                  : 'تحميل ${progress.typeCode}';
               state = AsyncData(
                 state.value!.copyWith(
                   syncProgress: overallProgress,
-                  syncStatus: 'Downloading initial data...',
+                  syncStatus: label,
                   syncPagination: paginationStr,
                 ),
               );
@@ -178,9 +185,10 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
         state.value!.copyWith(
           isSetupComplete: true,
           isLoading: false,
+          syncProgress: 1.0,
           syncStatus: warningSummary.isEmpty
-              ? null
-              : 'Completed with warnings: $warningSummary',
+              ? 'اكتملت تهيئة بيانات التشغيل'
+              : 'اكتملت مع تحذيرات: $warningSummary',
         ),
       );
     } catch (e) {

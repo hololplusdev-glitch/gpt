@@ -101,13 +101,10 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                             ),
                           const Spacer(),
                           if (setup?.isLoading ?? false)
-                            AppButton.outlined(
-                              onPressed: () => ref
-                                  .read(setupProvider.notifier)
-                                  .cancelSetup(),
-                              icon: Icons.cancel,
-                              customColor: AppColors.error,
-                              label: l10n.cancelSync,
+                            AppButton.primary(
+                              onPressed: null,
+                              isLoading: true,
+                              label: 'جاري تهيئة بيانات التشغيل',
                             )
                           else
                             AppButton.primary(
@@ -115,7 +112,11 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                                   ? null
                                   : () => _next(setup, l10n),
                               isLoading: _testing,
-                              label: _step == 2 ? l10n.finish : l10n.next,
+                              label: _testing
+                                  ? 'جاري التحقق من الاتصال...'
+                                  : (_step == 2
+                                      ? 'بدء تهيئة بيانات التشغيل'
+                                      : l10n.next),
                             ),
                         ],
                       ),
@@ -213,6 +214,25 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
             controller: _custCodeController,
             labelText: l10n.customerCode,
           ),
+          if (_testing) ...[
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: const [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: AppLoading(color: AppColors.primary),
+                ),
+                SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'جاري التحقق من الرابط وكود الشركة...',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       );
     }
@@ -233,7 +253,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
               const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Text(
-                  l10n.setupSuccess,
+                  (setup?.isSetupComplete ?? false)
+                      ? l10n.setupSuccess
+                      : 'تم التحقق من الاتصال. ابدأ الآن تحميل بيانات التشغيل للعمل بدون إنترنت.',
                   style: const TextStyle(
                     color: AppColors.success,
                     fontWeight: FontWeight.w500,
@@ -294,7 +316,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isDone ? l10n.setupSuccess : l10n.initialReadiness,
+                      isDone ? l10n.setupSuccess : 'تحميل بيانات التشغيل',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 18,
@@ -374,7 +396,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
-                  l10n.preparing,
+                  'يرجى عدم إغلاق التطبيق أثناء التهيئة',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -398,6 +420,16 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
               ],
             ],
           ),
+          if (!isDone) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Center(
+              child: TextButton(
+                onPressed: () =>
+                    ref.read(setupProvider.notifier).cancelSetup(),
+                child: const Text('إيقاف التهيئة'),
+              ),
+            ),
+          ],
         ],
       ),
     );

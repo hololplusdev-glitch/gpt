@@ -84,7 +84,7 @@ class MasterDataSyncService {
         bootstrapUserId: profile.bootstrapUserId.trim().isEmpty
             ? '1'
             : profile.bootstrapUserId.trim(),
-        pageLimit: profile.pageLimit,
+        pageLimit: 1,
       );
       final queryParams = context.queryParameters(
         type: MasterDataType.posMachine,
@@ -158,7 +158,7 @@ class MasterDataSyncService {
     final results = <MasterDataTypeResult>[];
     final runId = _newId('md_run');
     final startedAt = _clock.now();
-    final totalSteps = MasterDataType.syncOrder.length;
+    var totalSteps = MasterDataType.syncOrder.length;
     await _insertRun(runId: runId, mode: mode, context: context, at: startedAt);
     var cancelled = false;
 
@@ -232,6 +232,10 @@ class MasterDataSyncService {
           mode: mode,
           runId: runId,
           cancelHandle: cancelHandle,
+          onProgress: onProgress,
+          completedSectionsBeforeDevicePriv: results.length,
+          totalSectionsWithoutDevicePriv: MasterDataType.syncOrder.length,
+          onTotalSectionsResolved: (value) => totalSteps = value,
         );
 
         results.addAll(devicePrivilegeResults);
@@ -558,6 +562,10 @@ class MasterDataSyncService {
     required MasterDataSyncMode mode,
     required String runId,
     MasterDataSyncCancelHandle? cancelHandle,
+    void Function(MasterDataSyncProgress)? onProgress,
+    required int completedSectionsBeforeDevicePriv,
+    required int totalSectionsWithoutDevicePriv,
+    void Function(int totalSections)? onTotalSectionsResolved,
   }) async {
     final users = await _masterDataDao.listDownloadedPosUsers(context.custCode);
     final results = <MasterDataTypeResult>[];
@@ -573,7 +581,13 @@ class MasterDataSyncService {
       ];
     }
 
-    for (final user in users) {
+    final totalSections =
+        totalSectionsWithoutDevicePriv + users.length;
+    onTotalSectionsResolved?.call(totalSections);
+
+    for (var index = 0; index < users.length; index++) {
+      final user = users[index];
+
       if (cancelHandle?.isCancelled ?? false) {
         results.add(
           const MasterDataTypeResult(
@@ -586,6 +600,21 @@ class MasterDataSyncService {
         break;
       }
 
+      final userSection = completedSectionsBeforeDevicePriv + index;
+
+      onProgress?.call(
+        MasterDataSyncProgress(
+          typeCode: MasterDataType.devicePrivilege.code,
+          typeLabel:
+              'صلاحيات نقاط التشغيل للمستخدم ${user.id} (${index + 1}/${users.length})',
+          currentSection: userSection,
+          totalSections: totalSections,
+          sectionProgress: 0.0,
+          currentPage: 1,
+          totalPages: 1,
+        ),
+      );
+
       final userContext = context.copyWith(
         bootstrapUserId: user.id,
         branchNo: user.branchNo,
@@ -597,10 +626,22 @@ class MasterDataSyncService {
         mode: MasterDataSyncMode.forceFull,
         runId: runId,
         cancelHandle: cancelHandle,
+        onTypeProgress: (progress, currentPage, totalPages) {
+          onProgress?.call(
+            MasterDataSyncProgress(
+              typeCode: MasterDataType.devicePrivilege.code,
+              typeLabel:
+                  'صلاحيات نقاط التشغيل للمستخدم ${user.id} (${index + 1}/${users.length})',
+              currentSection: userSection,
+              totalSections: totalSections,
+              sectionProgress: progress,
+              currentPage: currentPage,
+              totalPages: totalPages,
+            ),
+          );
+        },
       );
 
-      // NO_MACHINE_PRIV for one user is not fatal for the entire setup.
-      // It simply means this user cannot login to any POS machine.
       if (result.errorCode == 'NO_MACHINE_PRIV') {
         results.add(
           MasterDataTypeResult(
@@ -618,6 +659,19 @@ class MasterDataSyncService {
       } else {
         results.add(result);
       }
+
+      onProgress?.call(
+        MasterDataSyncProgress(
+          typeCode: MasterDataType.devicePrivilege.code,
+          typeLabel:
+              'صلاحيات نقاط التشغيل للمستخدم ${user.id} (${index + 1}/${users.length})',
+          currentSection: userSection,
+          totalSections: totalSections,
+          sectionProgress: 1.0,
+          currentPage: 1,
+          totalPages: 1,
+        ),
+      );
     }
 
     return results;

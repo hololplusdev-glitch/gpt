@@ -214,7 +214,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
           ? AppButton.text(
               onPressed: _cancelDownload,
               icon: Icons.cancel_outlined,
-              label: 'Cancel',
+              label: 'إيقاف التحديث',
             )
           : null,
       child: Column(
@@ -222,7 +222,11 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
         children: [
           if (progress != null) ...[
             Text(
-              '${progress.type.code}  page ${progress.currentPage}/${progress.totalPages}',
+              progress.type == MasterDataType.devicePrivilege
+                  ? 'صلاحيات نقاط التشغيل'
+                  : 'تحميل ${progress.type.code}' + (progress.totalPages > 1
+                      ? ' — صفحة ${progress.currentPage}/${progress.totalPages}'
+                      : ''),
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: AppSpacing.sm),

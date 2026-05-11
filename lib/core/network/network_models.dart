@@ -25,7 +25,7 @@ class SyncProfile {
     String basePath = '/ords/erp/pos-api/v1',
     required this.custCode,
     this.bootstrapUserId = '1',
-    this.pageLimit = 100,
+    this.pageLimit = 500,
     this.timeoutSeconds = 30,
     this.useSsl = true,
     this.isValidated = false,
@@ -45,7 +45,7 @@ class SyncProfile {
     String url, {
     required String custCode,
     String bootstrapUserId = '1',
-    int pageLimit = 100,
+    int pageLimit = 500,
     int timeoutSeconds = 120,
   }) {
     final sanitized = _sanitizeBaseUrl(url);
