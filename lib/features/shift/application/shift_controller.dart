@@ -1,4 +1,4 @@
-// features/shift/application/shift_notifier.dart
+// features/shift/application/shift_controller.dart
 // WHY: Shift command controller + shift dashboard projection.
 // Runtime SSOT is ActivePosSession.openShiftId.
 // This file must not own "current shift" truth.

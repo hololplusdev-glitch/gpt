@@ -14,7 +14,7 @@ import 'package:pos_flutter/core/design_system/spacing.dart';
 import 'package:pos_flutter/core/l10n/app_localizations.dart';
 import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
-import 'package:pos_flutter/features/shift/application/shift_notifier.dart';
+import 'package:pos_flutter/features/shift/application/shift_controller.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_info_banner.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
