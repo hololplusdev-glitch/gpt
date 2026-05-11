@@ -232,11 +232,8 @@ class PosSessionController extends StateNotifier<PosSessionState> {
       final session = await _sessionDao.startSession(
         user: user,
         machine: machine,
+        openShiftId: existingMachineShift?.id,
       );
-
-      if (existingMachineShift != null) {
-        await _sessionDao.attachOpenShift(existingMachineShift.id);
-      }
 
       await _refreshActiveSession();
 

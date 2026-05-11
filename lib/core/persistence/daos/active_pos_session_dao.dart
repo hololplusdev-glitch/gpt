@@ -217,6 +217,7 @@ class ActivePosSessionDao {
   Future<ActivePosSession> startSession({
     required PosUser user,
     required PosMachine machine,
+    String? openShiftId,
   }) async {
     _validateUser(user);
     _validateMachine(machine);
@@ -248,7 +249,7 @@ class ActivePosSessionDao {
             custCode: Value(user.custCode),
             activeUserId: Value(user.id),
             activeMachineNo: Value(machine.machineNo),
-            openShiftId: const Value(null),
+            openShiftId: Value(openShiftId),
             loginAt: Value(now),
             updatedAt: Value(now),
           ),
