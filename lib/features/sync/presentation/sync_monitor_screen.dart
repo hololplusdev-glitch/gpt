@@ -136,7 +136,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
       final failed = download.fatalFailures;
       final readinessWarnings = download.readinessWarnings;
       final resultMessage = result.allNoChanges
-          ? 'تم فحص البيانات الأساسية، لا توجد تغييرات جديدة.'
+          ? 'تم فحص بيانات التشغيل، لا توجد تغييرات جديدة.'
           : failed.isNotEmpty
           ? l10n.masterDataDownloadSummary(result.rowCount, failed.length)
           : l10n.masterDataDownloadSummary(result.rowCount, 0);
@@ -208,7 +208,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
   Widget _buildMasterDownloadSection(AppLocalizations l10n) {
     final progress = _progress;
     return AppSectionCard(
-      title: 'Master Data Download',
+      title: 'تحديث بيانات التشغيل',
       icon: Icons.cloud_download_outlined,
       action: _isSyncing
           ? AppButton.text(
@@ -264,7 +264,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
     AsyncValue<_SyncCounts> countsAsync,
   ) {
     return AppSectionCard(
-      title: 'Pending Invoice Upload',
+      title: 'رفع الفواتير المعلقة',
       icon: Icons.cloud_upload_outlined,
       child: Column(
         children: [
@@ -316,13 +316,13 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
       scrollDirection: Axis.horizontal,
       child: DataTable(
         columns: const [
-          DataColumn(label: Text('Type')),
-          DataColumn(label: Text('status')),
-          DataColumn(label: Text('rows')),
-          DataColumn(label: Text('old_server_time')),
-          DataColumn(label: Text('new_server_time')),
-          DataColumn(label: Text('error')),
-          DataColumn(label: Text('warnings')),
+          DataColumn(label: Text('النوع')),
+          DataColumn(label: Text('الحالة')),
+          DataColumn(label: Text('الصفوف')),
+          DataColumn(label: Text('آخر وقت سابق')),
+          DataColumn(label: Text('آخر وقت جديد')),
+          DataColumn(label: Text('الخطأ')),
+          DataColumn(label: Text('التحذيرات')),
         ],
         rows: results
             .map(
@@ -351,13 +351,13 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
 
   Widget _buildStateSection(AsyncValue<List<MasterSyncStateView>> stateAsync) {
     return AppSectionCard(
-      title: 'Master Sync State',
+      title: 'حالة تحديث بيانات التشغيل',
       icon: Icons.history,
       child: stateAsync.when(
         data: (rows) {
           if (rows.isEmpty) {
             return const Text(
-              'No master data sync state yet.',
+              'لا توجد حالة تحديث بيانات تشغيل بعد.',
               style: TextStyle(color: AppColors.textSecondary),
             );
           }
@@ -365,8 +365,8 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
             scrollDirection: Axis.horizontal,
             child: DataTable(
               columns: const [
-                DataColumn(label: Text('Type')),
-                DataColumn(label: Text('status')),
+                DataColumn(label: Text('النوع')),
+                DataColumn(label: Text('الحالة')),
                 DataColumn(label: Text('last_server_time')),
                 DataColumn(label: Text('last_success_time')),
                 DataColumn(label: Text('last_error')),

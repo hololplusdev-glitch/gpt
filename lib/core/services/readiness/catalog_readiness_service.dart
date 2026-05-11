@@ -69,7 +69,7 @@ class CatalogReadinessService {
     final hasStoreId = storeId.isNotEmpty;
     final hasPriceLevelId = priceLevelId.isNotEmpty;
     if (!hasStoreId || !hasPriceLevelId) {
-      blockers.add('POS_MACHINE defaults missing');
+      blockers.add('Runtime context missing');
     }
 
     // Check 2: At least one active item exists.

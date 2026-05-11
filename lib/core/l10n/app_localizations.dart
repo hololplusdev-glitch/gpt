@@ -731,7 +731,7 @@ abstract class AppLocalizations {
   /// No description provided for @syncMonitor.
   ///
   /// In en, this message translates to:
-  /// **'Sync Monitor'**
+  /// **'Data Update & Upload'**
   String get syncMonitor;
 
   /// No description provided for @pendingUpload.
@@ -755,13 +755,13 @@ abstract class AppLocalizations {
   /// No description provided for @downloading.
   ///
   /// In en, this message translates to:
-  /// **'Downloading...'**
+  /// **'Updating operating data...'**
   String get downloading;
 
   /// No description provided for @downloadMasterData.
   ///
   /// In en, this message translates to:
-  /// **'Download Master Data'**
+  /// **'Update Operating Data'**
   String get downloadMasterData;
 
   /// No description provided for @pendingInvoiceUploadUnavailable.
@@ -773,7 +773,7 @@ abstract class AppLocalizations {
   /// No description provided for @masterDataDownloadSummary.
   ///
   /// In en, this message translates to:
-  /// **'Master data downloaded: {rows} rows, Failed groups: {failedGroups}'**
+  /// **'Operating data updated: {rows} rows, Failed groups: {failedGroups}'**
   String masterDataDownloadSummary(int rows, int failedGroups);
 
   /// No description provided for @syncNotConfigured.

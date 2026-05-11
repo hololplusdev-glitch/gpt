@@ -346,7 +346,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncStatus => 'Sync Status';
 
   @override
-  String get syncMonitor => 'Sync Monitor';
+  String get syncMonitor => 'Data Update & Upload';
 
   @override
   String get pendingUpload => 'Pending upload';
@@ -358,18 +358,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get uploaded => 'Uploaded';
 
   @override
-  String get downloading => 'Downloading...';
+  String get downloading => 'Updating operating data...';
 
   @override
-  String get downloadMasterData => 'Download Master Data';
+  String get downloadMasterData => 'Update Operating Data';
 
   @override
   String get pendingInvoiceUploadUnavailable =>
-      'Pending Invoice Upload - API not documented';
+      'Pending invoice upload is currently unavailable';
 
   @override
   String masterDataDownloadSummary(int rows, int failedGroups) {
-    return 'Master data downloaded: $rows rows, Failed groups: $failedGroups';
+    return 'Operating data updated: $rows rows, Failed groups: $failedGroups';
   }
 
   @override
