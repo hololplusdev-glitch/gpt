@@ -16,7 +16,6 @@ import 'package:pos_flutter/features/pos_devices/presentation/pos_devices_screen
 import 'package:pos_flutter/features/settings/presentation/settings_screen.dart';
 import 'package:pos_flutter/features/setup/application/setup_notifier.dart';
 import 'package:pos_flutter/features/setup/presentation/setup_screen.dart';
-import 'package:pos_flutter/features/shift/application/shift_notifier.dart';
 import 'package:pos_flutter/features/shift/presentation/shift_screen.dart';
 import 'package:pos_flutter/features/sync/presentation/sync_monitor_screen.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
@@ -50,7 +49,6 @@ final routerProvider = Provider<GoRouter>((ref) {
   ref
     ..onDispose(refreshNotifier.dispose)
     ..listen(setupProvider, (_, __) => refreshNotifier.refresh())
-    ..listen(shiftProvider, (_, __) => refreshNotifier.refresh())
     ..listen(posConfigRevisionProvider, (_, __) => refreshNotifier.refresh())
     ..listen(activePosSessionProvider, (_, __) => refreshNotifier.refresh());
 
@@ -60,11 +58,13 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (BuildContext context, GoRouterState state) {
       final setupAsync = ref.read(setupProvider);
       final isSetupComplete = setupAsync.valueOrNull?.isSetupComplete ?? false;
-      final shiftState = ref.read(shiftProvider);
-      final useShift = ref.read(posConfigProvider).useShift;
-
-      final isAuthenticated =
-          ref.read(activePosSessionProvider).valueOrNull != null;
+      final config = ref.read(posConfigProvider);
+      final activeSession = ref.read(activePosSessionProvider).valueOrNull;
+      final isAuthenticated = activeSession != null;
+      final shiftRequired =
+          isAuthenticated && (config.useShift || activeSession.requiresShift);
+      final hasOpenShift =
+          activeSession?.openShiftId?.trim().isNotEmpty == true;
       final isBootRoute = state.matchedLocation == AppRoutes.boot;
       final isLoginRoute = state.matchedLocation == AppRoutes.login;
       final isSetupRoute = state.matchedLocation == AppRoutes.setup;
@@ -84,7 +84,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ? AppRoutes.setup
             : !isAuthenticated
             ? AppRoutes.login
-            : useShift && !shiftState.hasOpenShift
+            : shiftRequired && !hasOpenShift
             ? AppRoutes.shift
             : AppRoutes.cashier;
         return target;
@@ -106,7 +106,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (isAuthenticated && isLoginRoute) {
-        final target = !useShift || shiftState.hasOpenShift
+        final target = !shiftRequired || hasOpenShift
             ? AppRoutes.cashier
             : AppRoutes.shift;
         return target;

@@ -1,4 +1,5 @@
 import 'package:pos_flutter/shared/models/enums.dart';
+import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
 
 class SaleLineInput {
   final String itemId;
@@ -55,6 +56,25 @@ class SaleLineInput {
     'priceSource': priceSource,
     'notes': notes,
   };
+}
+
+extension SaleLineInputPricingMapper on SaleLineInput {
+  PricingLineInput toPricingLineInput() {
+    return PricingLineInput(
+      itemId: itemId,
+      unitId: unitId,
+      unitPrice: unitPrice,
+      quantity: quantity,
+      discountAmount: discountAmount,
+      taxRate: taxRate,
+    );
+  }
+}
+
+extension SaleLineInputListPricingMapper on Iterable<SaleLineInput> {
+  List<PricingLineInput> toPricingLineInputs() {
+    return map((line) => line.toPricingLineInput()).toList();
+  }
 }
 
 class SalePaymentInput {

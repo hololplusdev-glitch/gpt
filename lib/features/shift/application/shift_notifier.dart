@@ -1,5 +1,6 @@
 // features/shift/application/shift_notifier.dart
-// WHY: Riverpod state for the active shift. UI observes this to enforce shift guards.
+// WHY: UI state for the active shift screen only.
+// Runtime truth and guards must use ActivePosSession.openShiftId.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pos_flutter/core/errors/app_exception.dart';
@@ -51,6 +52,7 @@ class ShiftNotifier extends StateNotifier<ShiftState> {
       final session = _requireSession();
       final shift = await _shiftService.getCurrentShift(
         session.activeMachineNo,
+        cashierId: session.activeUserId,
       );
       state = ShiftState(activeShift: shift);
     } catch (e) {

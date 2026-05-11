@@ -141,7 +141,7 @@ class Cart {
   bool get isNotEmpty => items.isNotEmpty;
 
   int get totalItemCount {
-    return items.fold(0, (sum, item) => sum + item.quantity.round());
+    return items.length;
   }
 
   CartItem? findLine(String itemId, String? unitId) {
@@ -266,18 +266,7 @@ class Cart {
     required bool priceIncludesTax,
   }) {
     return pricingEngine.calculateQuote(
-      lines: toSaleLineInputs()
-          .map(
-            (line) => PricingLineInput(
-              itemId: line.itemId,
-              unitId: line.unitId,
-              unitPrice: line.unitPrice,
-              quantity: line.quantity,
-              discountAmount: line.discountAmount,
-              taxRate: line.taxRate,
-            ),
-          )
-          .toList(),
+      lines: toSaleLineInputs().toPricingLineInputs(),
       taxRate: 0,
       useTax: useTax,
       priceIncludesTax: priceIncludesTax,

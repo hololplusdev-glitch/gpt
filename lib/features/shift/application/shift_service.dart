@@ -13,6 +13,7 @@ import 'package:pos_flutter/core/persistence/daos/shift_dao.dart';
 import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/core/persistence/pos_config_repository.dart';
 import 'package:pos_flutter/core/services/time/clock.dart';
+import 'package:pos_flutter/core/services/sync/upload_queue.dart';
 import 'package:pos_flutter/shared/models/enums.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
@@ -21,15 +22,15 @@ import 'package:uuid/uuid.dart';
 class ShiftService {
   final ShiftDao _shiftDao;
   final SalesDao _salesDao;
-  final ActivePosSessionDao _sessionDao;
   final PosConfigRepository _config;
+  final UploadQueue _uploadQueue;
   final Clock _clock;
 
   ShiftService({
     required ShiftDao shiftDao,
     required SalesDao salesDao,
-    required ActivePosSessionDao sessionDao,
     required PosConfigRepository config,
+    required UploadQueue uploadQueue,
     Clock clock = const SystemClock(),
   }) : _shiftDao = shiftDao,
        _salesDao = salesDao,
@@ -83,22 +84,14 @@ class ShiftService {
       idempotencyKey: idempotencyKey,
     );
 
-    final outboxEntry = OutboxEventsCompanion.insert(
-      id: 'OBX_${_uuid.v4()}',
-      eventType: OutboxEventType.shiftOpened.code,
-      entityType: OutboxEntityType.shift.code,
-      entityId: localId,
-      payloadJson: jsonEncode({
-        'localId': localId,
-        'machineNo': session.activeMachineNo,
-        'cashierId': session.activeUserId,
-        'cashierName': session.activeUserName,
-        'openingCash': openingCash,
-        'openedAt': now.toIso8601String(),
-        'expiresAt': expiresAt.toIso8601String(),
-      }),
-      status: OutboxStatus.pending.code,
-      createdAt: now,
+    final outboxEntry = _uploadQueue.shiftOpened(
+      localId: localId,
+      machineNo: session.activeMachineNo,
+      cashierId: session.activeUserId,
+      cashierName: session.activeUserName,
+      openingCash: openingCash,
+      openedAt: now,
+      expiresAt: expiresAt,
       idempotencyKey: idempotencyKey,
     );
 
@@ -117,8 +110,8 @@ class ShiftService {
       shift: shiftEntry,
       outboxEntry: outboxEntry,
       auditLogEntry: auditLogEntry,
+      attachOpenShiftId: localId,
     );
-    await _sessionDao.attachOpenShift(localId);
 
     return (await _shiftDao.getById(localId))!;
   }
@@ -169,34 +162,25 @@ class ShiftService {
     final difference = actualCash - expectedCash;
 
     final now = _clock.now();
-    final outboxEntry = OutboxEventsCompanion.insert(
-      id: 'OBX_${_uuid.v4()}',
-      eventType: OutboxEventType.shiftClosed.code,
-      entityType: OutboxEntityType.shift.code,
-      entityId: localId,
-      payloadJson: jsonEncode({
-        'localId': localId,
-        'machineNo': session.activeMachineNo,
-        'cashierId': session.activeUserId,
-        'cashierName': session.activeUserName,
-        'expectedCash': expectedCash,
-        'actualCash': actualCash,
-        'difference': difference,
-        'grossSales': totals.grossSales,
-        'netSales': totals.netSales,
-        'cashSales': totals.cashSales,
-        'cardSales': totals.cardSales,
-        'otherSales': totals.otherSales,
-        'totalDiscounts': totals.totalDiscounts,
-        'totalTaxes': totals.totalTaxes,
-        'totalReturns': totals.totalReturns,
-        'totalVoids': totals.totalVoids,
-        'saleCount': totals.saleCount,
-        'closedAt': now.toIso8601String(),
-      }),
-      status: OutboxStatus.pending.code,
-      createdAt: now,
-      idempotencyKey: 'shift_close_$localId',
+    final outboxEntry = _uploadQueue.shiftClosed(
+      localId: localId,
+      machineNo: session.activeMachineNo,
+      cashierId: session.activeUserId,
+      cashierName: session.activeUserName,
+      expectedCash: expectedCash,
+      actualCash: actualCash,
+      difference: difference,
+      grossSales: totals.grossSales,
+      netSales: totals.netSales,
+      cashSales: totals.cashSales,
+      cardSales: totals.cardSales,
+      otherSales: totals.otherSales,
+      totalDiscounts: totals.totalDiscounts,
+      totalTaxes: totals.totalTaxes,
+      totalReturns: totals.totalReturns,
+      totalVoids: totals.totalVoids,
+      saleCount: totals.saleCount,
+      closedAt: now,
     );
 
     final auditLogEntry = AuditLogCompanion.insert(
@@ -235,8 +219,8 @@ class ShiftService {
       closingNotes: closingNotes,
       outboxEntry: outboxEntry,
       auditLogEntry: auditLogEntry,
+      clearOpenShiftId: localId,
     );
-    await _sessionDao.clearOpenShift(localId);
   }
 
   // ---------------------------------------------------------------------------
@@ -256,20 +240,11 @@ class ShiftService {
     final newExpiry = currentExpiry.add(Duration(minutes: minutes));
 
     final now = _clock.now();
-    final outboxEntry = OutboxEventsCompanion.insert(
-      id: 'OBX_${_uuid.v4()}',
-      eventType: OutboxEventType.shiftExtended.code,
-      entityType: OutboxEntityType.shift.code,
-      entityId: localId,
-      payloadJson: jsonEncode({
-        'localId': localId,
-        'extendedByMinutes': minutes,
-        'newExpiry': newExpiry.toIso8601String(),
-        'extendedAt': now.toIso8601String(),
-      }),
-      status: OutboxStatus.pending.code,
-      createdAt: now,
-      idempotencyKey: 'shift_extend_$localId',
+    final outboxEntry = _uploadQueue.shiftExtended(
+      localId: localId,
+      extendedByMinutes: minutes,
+      newExpiry: newExpiry,
+      extendedAt: now,
     );
 
     final auditLogEntry = AuditLogCompanion.insert(
@@ -323,8 +298,8 @@ class ShiftService {
   // ---------------------------------------------------------------------------
 
   /// Get current open shift for terminal.
-  Future<Shift?> getCurrentShift(String machineNo) async {
-    return _shiftDao.getOpenShift(machineNo);
+  Future<Shift?> getCurrentShift(String machineNo, {String? cashierId}) async {
+    return _shiftDao.getOpenShift(machineNo, cashierId: cashierId);
   }
 }
 
@@ -337,8 +312,8 @@ final shiftServiceProvider = Provider<ShiftService>((ref) {
   return ShiftService(
     shiftDao: ref.watch(shiftDaoProvider),
     salesDao: ref.watch(salesDaoProvider),
-    sessionDao: ref.watch(activePosSessionDaoProvider),
     config: ref.watch(posConfigProvider),
+    uploadQueue: ref.watch(uploadQueueProvider),
     clock: ref.watch(clockProvider),
   );
 });

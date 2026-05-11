@@ -14,16 +14,23 @@ class ShiftDao {
 
   ShiftDao(this._db, {Clock clock = const SystemClock()}) : _clock = clock;
 
-  /// Get the current open shift for a terminal/cashier.
-  Future<Shift?> getOpenShift(String machineNo) async {
-    return (_db.select(_db.shifts)
-          ..where(
-            (s) =>
-                s.machineNo.equals(machineNo) &
-                (s.status.equals('open') | s.status.equals('closing')),
-          )
-          ..limit(1))
-        .getSingleOrNull();
+  /// Get the current open shift for a terminal.
+  /// If cashierId is provided, only that cashier's open shift is returned.
+  Future<Shift?> getOpenShift(String machineNo, {String? cashierId}) async {
+    final query = _db.select(_db.shifts)
+      ..where(
+        (s) =>
+            s.machineNo.equals(machineNo) &
+            (s.status.equals('open') | s.status.equals('closing')),
+      );
+
+    final normalizedCashierId = cashierId?.trim();
+    if (normalizedCashierId != null && normalizedCashierId.isNotEmpty) {
+      query.where((s) => s.cashierId.equals(normalizedCashierId));
+    }
+
+    query.limit(1);
+    return query.getSingleOrNull();
   }
 
   /// Get shift by local ID.
@@ -37,11 +44,23 @@ class ShiftDao {
     required ShiftsCompanion shift,
     required OutboxEventsCompanion outboxEntry,
     required AuditLogCompanion auditLogEntry,
+    String? attachOpenShiftId,
   }) async {
     await _db.transaction(() async {
       await _db.into(_db.shifts).insert(shift);
       await _db.into(_db.outboxEvents).insert(outboxEntry);
       await _db.into(_db.auditLog).insert(auditLogEntry);
+
+      if (attachOpenShiftId != null) {
+        await (_db.update(
+          _db.activePosSessions,
+        )..where((row) => row.id.equals(1))).write(
+          ActivePosSessionsCompanion(
+            openShiftId: Value(attachOpenShiftId),
+            updatedAt: Value(_clock.now()),
+          ),
+        );
+      }
     });
   }
 
@@ -89,6 +108,7 @@ class ShiftDao {
     required OutboxEventsCompanion outboxEntry,
     required AuditLogCompanion auditLogEntry,
     String? closingNotes,
+    String? clearOpenShiftId,
   }) async {
     final summaryJson = _buildSummaryJson(
       grossSales: grossSales,
@@ -102,6 +122,7 @@ class ShiftDao {
       totalVoids: totalVoids,
       saleCount: saleCount,
     );
+
     await _db.transaction(() async {
       await (_db.update(_db.shifts)..where((s) => s.id.equals(localId))).write(
         ShiftsCompanion(
@@ -117,6 +138,20 @@ class ShiftDao {
       );
       await _db.into(_db.outboxEvents).insert(outboxEntry);
       await _db.into(_db.auditLog).insert(auditLogEntry);
+
+      if (clearOpenShiftId != null) {
+        await (_db.update(_db.activePosSessions)
+              ..where(
+                (row) =>
+                    row.id.equals(1) & row.openShiftId.equals(clearOpenShiftId),
+              ))
+            .write(
+          ActivePosSessionsCompanion(
+            openShiftId: const Value<String?>(null),
+            updatedAt: Value(_clock.now()),
+          ),
+        );
+      }
     });
   }
 

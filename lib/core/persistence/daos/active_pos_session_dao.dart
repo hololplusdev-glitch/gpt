@@ -32,6 +32,11 @@ class ActivePosSession {
   final String? costCenterId;
   final String? printerName;
   final bool priceIncludesTax;
+  final bool requiresShift;
+  final bool autoPrint;
+  final bool allowDuplicateItems;
+  final String? invoiceSeries;
+  final String? returnInvoiceSeries;
   final String? openShiftId;
   final DateTime loginAt;
 
@@ -54,6 +59,11 @@ class ActivePosSession {
     required this.costCenterId,
     required this.printerName,
     required this.priceIncludesTax,
+    required this.requiresShift,
+    required this.autoPrint,
+    required this.allowDuplicateItems,
+    required this.invoiceSeries,
+    required this.returnInvoiceSeries,
     required this.openShiftId,
     required this.loginAt,
   });
@@ -373,6 +383,11 @@ class ActivePosSessionDao {
       costCenterId: user.costCenterId,
       printerName: machine.printerName,
       priceIncludesTax: machine.priceIncludesTax,
+      requiresShift: machine.requiresShift,
+      autoPrint: machine.autoPrint,
+      allowDuplicateItems: machine.allowDuplicateItems,
+      invoiceSeries: machine.invoiceSeries,
+      returnInvoiceSeries: machine.returnInvoiceSeries,
       openShiftId: row.openShiftId,
       loginAt: row.loginAt,
     );

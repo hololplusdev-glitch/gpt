@@ -12,7 +12,6 @@ import 'package:pos_flutter/core/l10n/app_localizations.dart';
 import 'package:pos_flutter/core/persistence/database.dart';
 import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:pos_flutter/features/auth/application/auth_notifier.dart';
-import 'package:pos_flutter/features/shift/application/shift_notifier.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_dropdown.dart';
@@ -211,24 +210,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
     }
 
-    final config = ref.read(posConfigProvider);
-
     final success = await ref
         .read(cashierSelectionProvider.notifier)
         .selectCashierAndMachine(user.id, machineNo);
 
     if (!mounted || !success) return;
 
-    if (config.useShift) {
-      final activeSession = await ref
-          .read(activePosSessionDaoProvider)
-          .getActive();
-      if (activeSession != null) {
-        await ref.read(shiftProvider.notifier).loadCurrentShift();
-      }
-    }
-
-    // Router decides the next page based on ActivePosSession + open shift.
+    // Router decides the next page from ActivePosSession.openShiftId.
   }
 
   Future<String?> _showPinDialog({required bool createMode}) async {

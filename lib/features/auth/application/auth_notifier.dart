@@ -3,6 +3,7 @@ import 'package:pos_flutter/core/errors/app_exception.dart';
 import 'package:pos_flutter/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:pos_flutter/core/persistence/daos/audit_dao.dart';
 import 'package:pos_flutter/core/persistence/daos/auth_dao.dart';
+import 'package:pos_flutter/core/persistence/daos/shift_dao.dart';
 import 'package:pos_flutter/shared/models/enums.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
@@ -20,6 +21,7 @@ class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
   final AuthDao _authDao;
   final AuditDao _auditDao;
   final ActivePosSessionDao _sessionDao;
+  final ShiftDao _shiftDao;
 
   static const _uuid = Uuid();
 
@@ -27,9 +29,11 @@ class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
     required AuthDao authDao,
     required AuditDao auditDao,
     required ActivePosSessionDao sessionDao,
+    required ShiftDao shiftDao,
   }) : _authDao = authDao,
        _auditDao = auditDao,
        _sessionDao = sessionDao,
+       _shiftDao = shiftDao,
        super(const CashierSelectionState());
 
   /// Only supported login flow:
@@ -72,6 +76,14 @@ class CashierSelectionNotifier extends StateNotifier<CashierSelectionState> {
         user: user,
         machine: machine,
       );
+
+      final existingShift = await _shiftDao.getOpenShift(
+        session.activeMachineNo,
+        cashierId: session.activeUserId,
+      );
+      if (existingShift != null) {
+        await _sessionDao.attachOpenShift(existingShift.id);
+      }
 
       final sessionId = session.sessionId ?? 'SESS_${_uuid.v4()}';
 
@@ -124,5 +136,6 @@ final cashierSelectionProvider =
         authDao: ref.watch(authDaoProvider),
         auditDao: ref.watch(auditDaoProvider),
         sessionDao: ref.watch(activePosSessionDaoProvider),
+        shiftDao: ref.watch(shiftDaoProvider),
       );
     });

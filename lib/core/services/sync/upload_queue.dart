@@ -74,4 +74,108 @@ class UploadQueue {
       idempotencyKey: Value('void_$saleId'),
     );
   }
+  OutboxEventsCompanion shiftOpened({
+    required String localId,
+    required String machineNo,
+    required String cashierId,
+    required String cashierName,
+    required double openingCash,
+    required DateTime openedAt,
+    required DateTime expiresAt,
+    required String idempotencyKey,
+  }) {
+    return OutboxEventsCompanion.insert(
+      id: 'OBX_${_uuid.v4()}',
+      eventType: OutboxEventType.shiftOpened.code,
+      entityType: OutboxEntityType.shift.code,
+      entityId: localId,
+      payloadJson: jsonEncode({
+        'localId': localId,
+        'machineNo': machineNo,
+        'cashierId': cashierId,
+        'cashierName': cashierName,
+        'openingCash': openingCash,
+        'openedAt': openedAt.toIso8601String(),
+        'expiresAt': expiresAt.toIso8601String(),
+      }),
+      status: OutboxStatus.pending.code,
+      createdAt: openedAt,
+      idempotencyKey: idempotencyKey,
+    );
+  }
+
+  OutboxEventsCompanion shiftClosed({
+    required String localId,
+    required String machineNo,
+    required String cashierId,
+    required String cashierName,
+    required double expectedCash,
+    required double actualCash,
+    required double difference,
+    required double grossSales,
+    required double netSales,
+    required double cashSales,
+    required double cardSales,
+    required double otherSales,
+    required double totalDiscounts,
+    required double totalTaxes,
+    required double totalReturns,
+    required double totalVoids,
+    required int saleCount,
+    required DateTime closedAt,
+  }) {
+    return OutboxEventsCompanion.insert(
+      id: 'OBX_${_uuid.v4()}',
+      eventType: OutboxEventType.shiftClosed.code,
+      entityType: OutboxEntityType.shift.code,
+      entityId: localId,
+      payloadJson: jsonEncode({
+        'localId': localId,
+        'machineNo': machineNo,
+        'cashierId': cashierId,
+        'cashierName': cashierName,
+        'expectedCash': expectedCash,
+        'actualCash': actualCash,
+        'difference': difference,
+        'grossSales': grossSales,
+        'netSales': netSales,
+        'cashSales': cashSales,
+        'cardSales': cardSales,
+        'otherSales': otherSales,
+        'totalDiscounts': totalDiscounts,
+        'totalTaxes': totalTaxes,
+        'totalReturns': totalReturns,
+        'totalVoids': totalVoids,
+        'saleCount': saleCount,
+        'closedAt': closedAt.toIso8601String(),
+      }),
+      status: OutboxStatus.pending.code,
+      createdAt: closedAt,
+      idempotencyKey: 'shift_close_$localId',
+    );
+  }
+
+  OutboxEventsCompanion shiftExtended({
+    required String localId,
+    required int extendedByMinutes,
+    required DateTime newExpiry,
+    required DateTime extendedAt,
+  }) {
+    return OutboxEventsCompanion.insert(
+      id: 'OBX_${_uuid.v4()}',
+      eventType: OutboxEventType.shiftExtended.code,
+      entityType: OutboxEntityType.shift.code,
+      entityId: localId,
+      payloadJson: jsonEncode({
+        'localId': localId,
+        'extendedByMinutes': extendedByMinutes,
+        'newExpiry': newExpiry.toIso8601String(),
+        'extendedAt': extendedAt.toIso8601String(),
+      }),
+      status: OutboxStatus.pending.code,
+      createdAt: extendedAt,
+      idempotencyKey: 'shift_extend_$localId',
+    );
+  }
+
 }
