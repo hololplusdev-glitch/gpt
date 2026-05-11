@@ -117,19 +117,33 @@ class SaleCheckout {
     if (resolved.needsPaymentProfile) {
       final profile = await _paymentProfileService.getActivePaymentProfile();
 
+      // Network/Card policy:
+      // - Network is never treated as cash.
+      // - If a real integrated terminal is unavailable, allow manual network
+      //   recording with a warning already shown in PaymentDialog.
+      // - Future terminal integration should replace this branch with actual
+      //   send/wait/approve flow and terminal approval fields.
       if (profile == null || !profile.enabled) {
-        throw const SaleCheckoutException('Card payment is not configured.');
-      }
+        effectiveType = PaymentMethodType.manualCard;
+        profileRequiresReference = resolved.requiresReference;
+      } else {
+        final mode = PaymentProfileMode.fromCode(profile.mode);
 
-      final mode = PaymentProfileMode.fromCode(profile.mode);
-      if (mode == PaymentProfileMode.integrated) {
-        throw const SaleCheckoutException(
-          'Integrated payment is not available.',
-        );
+        if (mode == PaymentProfileMode.integrated &&
+            !_paymentProfileService.integratedAvailable(profile)) {
+          effectiveType = PaymentMethodType.manualCard;
+          profileRequiresReference =
+              profile.requireReference || resolved.requiresReference;
+        } else if (mode == PaymentProfileMode.integrated) {
+          throw const SaleCheckoutException(
+            'Integrated payment flow is not implemented yet.',
+          );
+        } else {
+          effectiveType = PaymentMethodType.manualCard;
+          profileRequiresReference =
+              profile.requireReference || resolved.requiresReference;
+        }
       }
-
-      effectiveType = PaymentMethodType.manualCard;
-      profileRequiresReference = profile.requireReference;
     }
 
     final requirements = checkoutPaymentRequirements(

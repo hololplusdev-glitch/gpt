@@ -50,7 +50,6 @@ class MasterDataPersistencePlan {
 }
 
 class MasterDataMapper {
-
   MasterDataPersistencePlan mapRows({
     required MasterDataType type,
     required MasterDataSyncContext context,

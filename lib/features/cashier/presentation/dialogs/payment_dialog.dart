@@ -73,8 +73,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     _quote = quoteState.quote;
     _errorMessage = quoteState.quote == null
         ? quoteState.error == null
-            ? l10n.unableToPrepareCheckoutTotal
-            : ErrorMapper.userMessage(quoteState.error!)
+              ? l10n.unableToPrepareCheckoutTotal
+              : ErrorMapper.userMessage(quoteState.error!)
         : null;
 
     _tenderedController.text = _totalAmount.toStringAsFixed(2);
@@ -91,7 +91,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   void _recalculateChange() {
     final tendered =
         double.tryParse(_tenderedController.text.trim().replaceAll(',', '.')) ??
-            0.0;
+        0.0;
     final change = PricingEngine.roundAmount(tendered - _totalAmount);
     _change = change > 0 ? change : 0.0;
   }
@@ -138,7 +138,9 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     });
 
     try {
-      final result = await ref.read(saleCheckoutProvider).complete(
+      final result = await ref
+          .read(saleCheckoutProvider)
+          .complete(
             SaleCheckoutRequest(
               cart: widget.cart,
               checkoutAttemptId: _checkoutAttemptId,
@@ -180,7 +182,9 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     }
   }
 
-  PaymentMethodOption? _methodForSelectedKind(List<PaymentMethodOption> methods) {
+  PaymentMethodOption? _methodForSelectedKind(
+    List<PaymentMethodOption> methods,
+  ) {
     return switch (_selectedKind) {
       _CheckoutTenderKind.cash => _cashMethod(methods),
       _CheckoutTenderKind.network => _networkMethod(methods),
@@ -454,7 +458,9 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     final profile = ref.watch(activePaymentProfileProvider).valueOrNull;
     final profileMode = PaymentProfileMode.fromCode(profile?.mode);
     final integratedConfigured =
-        profile != null && profile.enabled && profileMode == PaymentProfileMode.integrated;
+        profile != null &&
+        profile.enabled &&
+        profileMode == PaymentProfileMode.integrated;
     final integratedReady = profile == null
         ? false
         : ref.read(paymentProfileServiceProvider).integratedAvailable(profile);
@@ -472,15 +478,14 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AppInfoBanner(
-          message: warning,
-          type: AppBannerType.warning,
-        ),
+        AppInfoBanner(message: warning, type: AppBannerType.warning),
         const SizedBox(height: AppSpacing.lg),
         AppTextField(
           controller: _referenceController,
           textInputAction: TextInputAction.done,
-          labelText: requiresReference ? 'رقم مرجع الشبكة *' : 'رقم مرجع الشبكة',
+          labelText: requiresReference
+              ? 'رقم مرجع الشبكة *'
+              : 'رقم مرجع الشبكة',
           prefixIcon: const Icon(Icons.confirmation_number_outlined),
         ),
         const SizedBox(height: AppSpacing.xl),
@@ -498,7 +503,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       mainAxisSize: MainAxisSize.min,
       children: [
         const AppInfoBanner(
-          message: 'البيع الآجل يتطلب اختيار عميل. سيتم تسجيل كامل المبلغ كرصيد مستحق على العميل.',
+          message:
+              'البيع الآجل يتطلب اختيار عميل. سيتم تسجيل كامل المبلغ كرصيد مستحق على العميل.',
           type: AppBannerType.info,
         ),
         const SizedBox(height: AppSpacing.lg),
@@ -508,9 +514,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             padding: EdgeInsets.all(AppSpacing.lg),
             child: AppLoading(),
           ),
-          error: (error, _) => AppInfoBanner.error(
-            message: ErrorMapper.userMessage(error),
-          ),
+          error: (error, _) =>
+              AppInfoBanner.error(message: ErrorMapper.userMessage(error)),
         ),
         const SizedBox(height: AppSpacing.xl),
         _CompleteButton(
@@ -565,7 +570,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   Widget _buildCompletionView() {
     final l10n = AppLocalizations.of(context)!;
 
-    final title = _completedPaymentMethodType == PaymentMethodType.customerCredit
+    final title =
+        _completedPaymentMethodType == PaymentMethodType.customerCredit
         ? 'تم تسجيل البيع الآجل'
         : l10n.paymentSuccessful;
 
@@ -639,9 +645,9 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     final id = _saleId;
     if (id == null) return;
 
-    Navigator.of(context).pop(
-      PaymentDialogResult.completed(saleId: id, openInvoice: true),
-    );
+    Navigator.of(
+      context,
+    ).pop(PaymentDialogResult.completed(saleId: id, openInvoice: true));
   }
 }
 
@@ -745,7 +751,9 @@ class _TenderKindButton extends StatelessWidget {
                 Text(
                   label,
                   style: TextStyle(
-                    color: selected ? AppColors.onPrimary : AppColors.textPrimary,
+                    color: selected
+                        ? AppColors.onPrimary
+                        : AppColors.textPrimary,
                     fontWeight: FontWeight.w800,
                     fontSize: 15,
                   ),
