@@ -20,7 +20,6 @@ import 'package:pos_flutter/shared/presentation/widgets/app_dropdown.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_info_banner.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_loading.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
-import 'package:pos_flutter/shared/presentation/widgets/pos_numeric_keypad.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 
