@@ -731,7 +731,7 @@ class _TenderKindButton extends StatelessWidget {
           onTap: onTap,
           borderRadius: AppSpacing.borderRadiusMd,
           child: Padding(
-            padding: const EdgeInsets.symmetric(
+            padding:  EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
               vertical: MediaQuery.sizeOf(context).width < 600
                   ? AppSpacing.md
