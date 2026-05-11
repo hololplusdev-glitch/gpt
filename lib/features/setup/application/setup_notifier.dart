@@ -76,6 +76,25 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
     if (config.syncProfile != null) {
       ref.read(apiClientProvider).configure(config.syncProfile!);
       await ref.read(posConfigProvider).initialize();
+
+      if (isComplete) {
+        final hasSeed = await ref
+            .read(masterDataDaoProvider)
+            .hasMinimumSetupSeed(
+              custCode: config.syncProfile!.custCode,
+              bootstrapUserId: config.syncProfile!.bootstrapUserId,
+            );
+
+        if (!hasSeed) {
+          isComplete = false;
+          await repo.setSetupComplete(false);
+          await ref.read(activePosSessionDaoProvider).clearActive();
+          ref.invalidate(activePosSessionProvider);
+          ref.invalidate(posSessionControllerProvider);
+          ref.invalidate(shiftControllerProvider);
+          ref.invalidate(catalogReadinessProvider);
+        }
+      }
     } else if (isComplete) {
       isComplete = false;
       await repo.setSetupComplete(false);

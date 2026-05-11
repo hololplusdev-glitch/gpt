@@ -278,6 +278,52 @@ class MasterDataDao {
         .get();
   }
 
+  Future<bool> hasMinimumSetupSeed({
+    required String custCode,
+    required String bootstrapUserId,
+  }) async {
+    final normalizedCustCode = custCode.trim();
+    final normalizedBootstrapUserId = bootstrapUserId.trim();
+
+    if (normalizedCustCode.isEmpty || normalizedBootstrapUserId.isEmpty) {
+      return false;
+    }
+
+    final setupUser = await (_db.select(_db.posUsers)
+          ..where(
+            (user) =>
+                user.custCode.equals(normalizedCustCode) &
+                user.isActive.equals(true) &
+                (user.id.equals(normalizedBootstrapUserId) |
+                    user.sourceUserId.equals(normalizedBootstrapUserId)),
+          ))
+        .getSingleOrNull();
+
+    if (setupUser == null) {
+      return false;
+    }
+
+    final machine = await (_db.select(_db.posMachines)
+          ..where((row) => row.custCode.equals(normalizedCustCode))
+          ..limit(1))
+        .getSingleOrNull();
+
+    if (machine == null) {
+      return false;
+    }
+
+    final devicePrivilege = await (_db.select(_db.posUserMachineAccess)
+          ..where(
+            (row) =>
+                row.custCode.equals(normalizedCustCode) &
+                row.canUseMachine.equals(true),
+          )
+          ..limit(1))
+        .getSingleOrNull();
+
+    return devicePrivilege != null;
+  }
+
   Future<int> countCustomers(String custCode) async {
     final rows =
         await (_db.select(_db.customers)..where(
