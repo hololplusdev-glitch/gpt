@@ -433,32 +433,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             type: AppBannerType.info,
           ),
         const SizedBox(height: AppSpacing.md),
-        Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.sm,
-          children: [
-            _QuickAmountButton(
-              label: l10n.exact,
-              onTap: () {
-                setState(() {
-                  _tenderedController.text = _totalAmount.toStringAsFixed(2);
-                  _recalculateChange();
-                });
-              },
-            ),
-            for (final amount in [5, 10, 20, 50, 100, 200, 500])
-              if (amount.toDouble() >= _totalAmount)
-                _QuickAmountButton(
-                  label: '$amount',
-                  onTap: () {
-                    setState(() {
-                      _tenderedController.text = amount.toStringAsFixed(2);
-                      _recalculateChange();
-                    });
-                  },
-                ),
-          ],
-        ),
         const SizedBox(height: AppSpacing.xl),
         _CompleteButton(
           isProcessing: _isProcessing,
@@ -816,25 +790,6 @@ class _CompleteButton extends StatelessWidget {
         isLoading: isProcessing,
         label: label,
       ),
-    );
-  }
-}
-
-class _QuickAmountButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _QuickAmountButton({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton(
-      onPressed: onTap,
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size(AppSpacing.jumbo, AppSpacing.jumbo),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-      ),
-      child: Text(label),
     );
   }
 }
