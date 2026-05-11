@@ -396,7 +396,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     final cart = ref.watch(cartProvider);
     final l10n = AppLocalizations.of(context)!;
     final size = MediaQuery.sizeOf(context);
-    final isWide = size.width > 900;
+    final isWide = size.width >= 1024;
 
     final activeSession = ref.watch(activePosSessionProvider).valueOrNull;
 
@@ -581,20 +581,14 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                           label: l10n.salesHistory,
                           onTap: () => context.push(AppRoutes.history),
                         ),
-                        _TopBarButton(
-                          icon: Icons.sync,
-                          label: l10n.syncStatus,
-                          onTap: () => context.push(AppRoutes.syncMonitor),
-                        ),
-                        _TopBarButton(
-                          icon: Icons.devices_other,
-                          label: l10n.devices,
-                          onTap: () => context.push(AppRoutes.posDevices),
-                        ),
-                        _TopBarButton(
-                          icon: Icons.settings,
-                          label: l10n.settings,
-                          onTap: () => context.push(AppRoutes.settings),
+                        _OverflowActions(
+                          onHold: () => _holdOrder(context),
+                          onHeldOrders: () => _showHeldOrders(context),
+                          onShift: () => context.push(AppRoutes.shift),
+                          onHistory: () => context.push(AppRoutes.history),
+                          onSync: () => context.push(AppRoutes.syncMonitor),
+                          onDevices: () => context.push(AppRoutes.posDevices),
+                          onSettings: () => context.push(AppRoutes.settings),
                         ),
                         const SizedBox(width: AppSpacing.sm),
                         _CashierBadge(cashierName: cashierName),
@@ -626,7 +620,10 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   Widget _buildNarrowLayout(bool hasCartItems) {
     return Stack(
       children: [
-        const ProductGrid(),
+        Padding(
+          padding: EdgeInsets.only(bottom: hasCartItems ? 96 : 0),
+          child: const ProductGrid(),
+        ),
         if (hasCartItems)
           Positioned(
             left: 0,
@@ -643,10 +640,35 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        return const FractionallySizedBox(
-          heightFactor: 0.85,
-          child: CartPanel(),
+        return FractionallySizedBox(
+          heightFactor: MediaQuery.sizeOf(context).height < 720 ? 0.96 : 0.92,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(AppSpacing.lg),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  color: AppColors.surface,
+                  padding: const EdgeInsets.only(top: AppSpacing.sm),
+                  child: Center(
+                    child: Container(
+                      width: 44,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                ),
+                const Expanded(child: CartPanel()),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -704,7 +726,7 @@ class _SearchField extends StatelessWidget {
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 520),
       child: SizedBox(
-        height: AppSpacing.jumbo - AppSpacing.sm,
+        height: AppSpacing.jumbo,
         child: TextField(
           controller: controller,
           focusNode: focusNode,
@@ -975,8 +997,16 @@ class _CartPreviewBar extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: AppSpacing.paddingMd,
-        padding: AppSpacing.paddingLg,
+        margin: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.md,
+          AppSpacing.md,
+          AppSpacing.lg,
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.md,
+        ),
         decoration: BoxDecoration(
           color: AppColors.primary,
           borderRadius: AppSpacing.borderRadiusLg,

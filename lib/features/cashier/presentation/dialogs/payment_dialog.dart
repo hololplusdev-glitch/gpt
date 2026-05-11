@@ -360,8 +360,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   PosFormatters.amount(_totalAmount),
-                  style: const TextStyle(
-                    fontSize: 38,
+                  style: TextStyle(
+                    fontSize: MediaQuery.sizeOf(context).width < 600 ? 32 : 38,
                     fontWeight: FontWeight.w800,
                     color: AppColors.primary,
                   ),
@@ -564,7 +564,11 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         : l10n.paymentSuccessful;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSpacing.xxxl),
+      padding: EdgeInsets.all(
+        MediaQuery.sizeOf(context).width < 600
+            ? AppSpacing.xl
+            : AppSpacing.xxxl,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -667,9 +671,11 @@ class _TenderKindSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isCompact = MediaQuery.sizeOf(context).width < 600;
+
     return Wrap(
-      spacing: AppSpacing.md,
-      runSpacing: AppSpacing.md,
+      spacing: isCompact ? AppSpacing.sm : AppSpacing.md,
+      runSpacing: AppSpacing.sm,
       alignment: WrapAlignment.center,
       children: [
         _TenderKindButton(
@@ -716,7 +722,9 @@ class _TenderKindButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: AppSpacing.jumbo * 3.3,
+      width: MediaQuery.sizeOf(context).width < 600
+          ? 104
+          : AppSpacing.jumbo * 3.3,
       child: Material(
         color: selected ? AppColors.primary : AppColors.surfaceVariant,
         borderRadius: AppSpacing.borderRadiusMd,
@@ -726,7 +734,9 @@ class _TenderKindButton extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.md,
-              vertical: AppSpacing.lg,
+              vertical: MediaQuery.sizeOf(context).width < 600
+                  ? AppSpacing.md
+                  : AppSpacing.lg,
             ),
             child: Column(
               children: [

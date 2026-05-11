@@ -161,6 +161,8 @@ class _CartPanelState extends ConsumerState<CartPanel> {
             _PayButton(cart: cart, quoteState: quoteState),
           ],
         ],
+          );
+        },
       ),
     );
   }
@@ -203,7 +205,95 @@ class _CartItemTile extends ConsumerWidget {
           child: child,
         );
       },
-      child: Row(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 420;
+
+          if (isCompact) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.productName,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  '${PosFormatters.amount(item.unitPrice)} x ${PosFormatters.quantity(item.quantity)}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                if (item.discountAmount > 0)
+                  Text(
+                    l10n.discountAmountLabel(
+                      PosFormatters.amount(item.discountAmount),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.success,
+                    ),
+                  ),
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    _QtyButton(
+                      icon: Icons.remove,
+                      onTap: () => changeQuantity(item.quantity - 1),
+                    ),
+                    Container(
+                      width: 44,
+                      alignment: Alignment.center,
+                      child: Text(
+                        PosFormatters.quantity(item.quantity),
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    _QtyButton(
+                      icon: Icons.add,
+                      onTap: () => changeQuantity(item.quantity + 1),
+                    ),
+                    const Spacer(),
+                    Text(
+                      PosFormatters.amount(
+                        officialLineTotal ?? item.unitPrice * item.quantity,
+                      ),
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                      textAlign: TextAlign.end,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    IconButton(
+                      tooltip: l10n.remove,
+                      onPressed: () {
+                        ref
+                            .read(cartProvider.notifier)
+                            .removeItem(item.itemId, item.unitId);
+                      },
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: AppColors.error,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          }
+
+          return Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
@@ -430,10 +520,15 @@ class _PayButton extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Container(
-      padding: AppSpacing.paddingLg,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.lg + MediaQuery.paddingOf(context).bottom,
+      ),
       child: SizedBox(
         width: double.infinity,
-        height: 56,
+        height: 58,
         child: AppButton.primary(
           onPressed: cart.isEmpty || quote == null
               ? null

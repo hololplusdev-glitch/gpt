@@ -40,13 +40,12 @@ class ProductGrid extends ConsumerWidget {
           color: AppColors.surface,
           child: categoriesAsync.when(
             data: (categories) => SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.md,
                 vertical: AppSpacing.sm,
               ),
-              child: Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
+              child: Row(
                 children: [
                   _CategoryChip(
                     label: l10n.allCategories,
@@ -57,13 +56,18 @@ class ProductGrid extends ConsumerWidget {
                   ),
                   ...categories.map((cat) {
                     final isSelected = cat.id == selectedCategory;
-                    return _CategoryChip(
-                      label: cat.name,
-                      isSelected: isSelected,
-                      onTap: () {
-                        ref.read(selectedCategoryProvider.notifier).state =
-                            cat.id;
-                      },
+                    return Padding(
+                      padding: const EdgeInsetsDirectional.only(
+                        start: AppSpacing.sm,
+                      ),
+                      child: _CategoryChip(
+                        label: cat.name,
+                        isSelected: isSelected,
+                        onTap: () {
+                          ref.read(selectedCategoryProvider.notifier).state =
+                              cat.id;
+                        },
+                      ),
                     );
                   }),
                 ],
@@ -132,17 +136,28 @@ class ProductGrid extends ConsumerWidget {
               return LayoutBuilder(
                 builder: (context, constraints) {
                   final crossAxisCount = switch (constraints.maxWidth) {
+                    > 1500 => 7,
                     > 1200 => 6,
                     > 900 => 5,
-                    > 600 => 4,
-                    > 400 => 3,
+                    > 620 => 4,
+                    > 420 => 3,
                     _ => 2,
                   };
+                  final aspectRatio = switch (constraints.maxWidth) {
+                    > 900 => 0.98,
+                    > 420 => 0.92,
+                    _ => 0.86,
+                  };
                   return GridView.builder(
-                    padding: AppSpacing.paddingMd,
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                      AppSpacing.xl,
+                    ),
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: crossAxisCount,
-                      childAspectRatio: 0.85,
+                      childAspectRatio: aspectRatio,
                       crossAxisSpacing: AppSpacing.sm,
                       mainAxisSpacing: AppSpacing.sm,
                     ),
@@ -331,7 +346,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
               Text(
                 item.name,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.bold,
                   height: 1.2,
                   color: isEmpty ? AppColors.textHint : AppColors.textPrimary,
@@ -361,8 +376,8 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                 // Unit Dropdown or Text
                 if (allUnits != null && allUnits.length > 1)
                   Container(
-                    height: 28,
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    height: 34,
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceVariant,
                       borderRadius: BorderRadius.circular(4),
