@@ -367,9 +367,9 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
               columns: const [
                 DataColumn(label: Text('النوع')),
                 DataColumn(label: Text('الحالة')),
-                DataColumn(label: Text('last_server_time')),
-                DataColumn(label: Text('last_success_time')),
-                DataColumn(label: Text('last_error')),
+                DataColumn(label: Text('آخر وقت من السيرفر')),
+                DataColumn(label: Text('آخر نجاح')),
+                DataColumn(label: Text('آخر خطأ')),
               ],
               rows: rows
                   .map(

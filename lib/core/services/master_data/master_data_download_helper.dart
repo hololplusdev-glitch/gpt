@@ -94,8 +94,22 @@ class MasterDataDownloadHelper {
         .where((result) => !warningTypes.contains(result.type))
         .toList();
     if (throwOnFatalFailures && fatalFailures.isNotEmpty) {
+      final details = fatalFailures
+          .map((result) {
+            final reason = result.error?.trim();
+            final code = result.errorCode?.trim();
+            final suffix = [
+              if (code != null && code.isNotEmpty) code,
+              if (reason != null && reason.isNotEmpty) reason,
+            ].join(' - ');
+            return suffix.isEmpty
+                ? result.type.code
+                : '${result.type.code}: $suffix';
+          })
+          .join(' | ');
+
       throw SyncException(
-        'Master data download failed. Check the connection and try again.',
+        'فشل تحديث بيانات التشغيل: $details',
         code: 'MASTER_DATA_DOWNLOAD_FAILED',
       );
     }
