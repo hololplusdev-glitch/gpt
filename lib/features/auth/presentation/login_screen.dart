@@ -201,7 +201,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!dialogContext.mounted) return;
 
       if (ok) {
-        Navigator.of(dialogContext).pop(true);
+        // loginWithPin refreshes ActivePosSession, which lets GoRouter redirect
+        // away from LoginScreen. Do not pop synchronously here; the dialog route
+        // may already be gone or the Navigator may be locked by the redirect.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!dialogContext.mounted) return;
+
+          final navigator = Navigator.maybeOf(dialogContext);
+          if (navigator == null || !navigator.canPop()) return;
+
+          navigator.pop(true);
+        });
         return;
       }
 
