@@ -143,20 +143,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     if (!mounted) return;
 
-    await _showPinDialog(createMode: !hasPin);
+    final pin = await _showPinDialog(createMode: !hasPin);
+
+    if (pin == null) return;
+
+    await controller.loginWithPin(pin);
   }
 
   Future<String?> _showPinDialog({required bool createMode}) async {
-    final controller = TextEditingController();
-    final confirmController = TextEditingController();
-
     String? error;
 
-    final result = await showDialog<String>(
+    return showDialog<String>(
       context: context,
       barrierDismissible: false,
       requestFocus: false,
       builder: (context) {
+        final controller = TextEditingController();
+        final confirmController = TextEditingController();
+
         return StatefulBuilder(
           builder: (context, setDialogState) {
             void submit() {
@@ -244,11 +248,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         );
       },
     );
-
-    controller.dispose();
-    confirmController.dispose();
-
-    return result;
   }
 
   @override
