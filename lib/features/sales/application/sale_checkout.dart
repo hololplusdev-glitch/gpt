@@ -186,7 +186,6 @@ class SaleCheckout {
 
     final paymentResult = PaymentPolicy(
       requireCardReference: false,
-      allowCustomerCredit: _config.allowCustomerCredit,
     ).validate(quote: quote, payments: payments);
 
     final localInvoiceNo = await _invoiceNumberService.generateNext(
@@ -698,11 +697,9 @@ class SaleCheckoutException extends BusinessException {
 
 class PaymentPolicy {
   final bool requireCardReference;
-  final bool allowCustomerCredit;
 
   const PaymentPolicy({
     required this.requireCardReference,
-    required this.allowCustomerCredit,
   });
 
   PaymentValidationResult validate({
@@ -769,11 +766,8 @@ class PaymentPolicy {
       }
 
       if (type == PaymentMethodType.customerCredit) {
-        if (!allowCustomerCredit) {
-          throw const SaleCheckoutException('Customer credit is not allowed.');
-        }
-
         // Credit sale is an accounts-receivable balance, not a collected payment.
+        // It is allowed only after SaleCheckout.complete has verified customerId.
         // Keep the SalePayment row as the payment arrangement snapshot, but do
         // not include it in paidTotal.
         continue;
@@ -785,7 +779,10 @@ class PaymentPolicy {
 
     final remaining = quote.grandTotal - paidTotal;
 
-    if (remaining > 0 && !allowCustomerCredit) {
+    if (remaining > 0 &&
+        !payments.any(
+          (payment) => payment.resolvedType == PaymentMethodType.customerCredit,
+        )) {
       throw SaleCheckoutException(
         'Payment of ${paidTotal.toStringAsFixed(2)} is insufficient for total ${quote.grandTotal.toStringAsFixed(2)}',
       );

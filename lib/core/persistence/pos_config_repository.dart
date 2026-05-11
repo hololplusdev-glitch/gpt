@@ -99,7 +99,6 @@ class PosConfigRepository {
       getBool(PosConfigKeys.allowDuplicateItemsInCart);
   bool get priceIncludesTax => getBool(PosConfigKeys.priceIncludesTax);
   bool get requireCardReference => getBool(PosConfigKeys.requireCardReference);
-  bool get allowCustomerCredit => getBool(PosConfigKeys.allowCustomerCredit);
   bool get autoPrintAfterSale =>
       getBool(PosConfigKeys.autoPrintAfterSale, fallback: true);
   String get localInvoiceNumberPattern => getString(

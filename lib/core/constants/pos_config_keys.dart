@@ -25,7 +25,6 @@ abstract final class PosConfigKeys {
 
   // -- Payment rules --
   static const requireCardReference = 'require_card_reference';
-  static const allowCustomerCredit = 'allow_customer_credit';
 
   // -- Print --
   static const autoPrintAfterSale = 'auto_print_after_sale';
@@ -55,7 +54,6 @@ abstract final class PosConfigDefaults {
     PosConfigKeys.allowDuplicateItemsInCart: 'false',
     PosConfigKeys.priceIncludesTax: 'false',
     PosConfigKeys.requireCardReference: 'false',
-    PosConfigKeys.allowCustomerCredit: 'false',
     PosConfigKeys.autoPrintAfterSale: 'true',
     PosConfigKeys.localInvoiceNumberPattern: '{STATION}-{YYYYMMDD}-{SEQ}',
     PosConfigKeys.offlineLoginExpiryDays: '30',
