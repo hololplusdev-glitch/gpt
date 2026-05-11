@@ -280,13 +280,13 @@ class MasterDataDao {
   }
 
   Future<int> countDevicePrivileges(String custCode) async {
-    final rows = await (_db.select(_db.posUserMachineAccess)
-          ..where(
-            (row) =>
-                row.custCode.equals(custCode) &
-                row.canUseMachine.equals(true),
-          ))
-        .get();
+    final rows =
+        await (_db.select(_db.posUserMachineAccess)..where(
+              (row) =>
+                  row.custCode.equals(custCode) &
+                  row.canUseMachine.equals(true),
+            ))
+            .get();
 
     return rows.length;
   }
@@ -295,11 +295,9 @@ class MasterDataDao {
     required String custCode,
     required String userId,
   }) async {
-    await (_db.delete(_db.posUserMachineAccess)
-          ..where(
-            (row) =>
-                row.custCode.equals(custCode) & row.userId.equals(userId),
-          ))
+    await (_db.delete(_db.posUserMachineAccess)..where(
+          (row) => row.custCode.equals(custCode) & row.userId.equals(userId),
+        ))
         .go();
   }
 

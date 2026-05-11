@@ -224,9 +224,10 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
             Text(
               progress.type == MasterDataType.devicePrivilege
                   ? 'صلاحيات نقاط التشغيل'
-                  : 'تحميل ${progress.type.code}' + (progress.totalPages > 1
-                      ? ' — صفحة ${progress.currentPage}/${progress.totalPages}'
-                      : ''),
+                  : 'تحميل ${progress.type.code}' +
+                        (progress.totalPages > 1
+                            ? ' — صفحة ${progress.currentPage}/${progress.totalPages}'
+                            : ''),
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: AppSpacing.sm),

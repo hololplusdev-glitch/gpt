@@ -228,20 +228,21 @@ class MasterDataSyncService {
       if (type == MasterDataType.posMachine && !result.isFailure) {
         final devicePrivilegeResults =
             await _syncDevicePrivilegesForDownloadedUsers(
-          context,
-          mode: mode,
-          runId: runId,
-          cancelHandle: cancelHandle,
-          onProgress: onProgress,
-          completedSectionsBeforeDevicePriv: results.length,
-          totalSectionsWithoutDevicePriv: MasterDataType.syncOrder.length,
-          onTotalSectionsResolved: (value) => totalSteps = value,
-        );
+              context,
+              mode: mode,
+              runId: runId,
+              cancelHandle: cancelHandle,
+              onProgress: onProgress,
+              completedSectionsBeforeDevicePriv: results.length,
+              totalSectionsWithoutDevicePriv: MasterDataType.syncOrder.length,
+              onTotalSectionsResolved: (value) => totalSteps = value,
+            );
 
         results.addAll(devicePrivilegeResults);
 
-        final totalPrivileges =
-            await _masterDataDao.countDevicePrivileges(context.custCode);
+        final totalPrivileges = await _masterDataDao.countDevicePrivileges(
+          context.custCode,
+        );
 
         if (totalPrivileges == 0) {
           results.add(
@@ -249,8 +250,7 @@ class MasterDataSyncService {
               type: MasterDataType.devicePrivilege,
               status: MasterDataTypeRunStatus.failed,
               errorCode: 'NO_DEVICE_PRIVILEGES',
-              error:
-                  'No DEVICE_PRIV rows were downloaded for any POS user.',
+              error: 'No DEVICE_PRIV rows were downloaded for any POS user.',
             ),
           );
           break;
@@ -581,8 +581,7 @@ class MasterDataSyncService {
       ];
     }
 
-    final totalSections =
-        totalSectionsWithoutDevicePriv + users.length;
+    final totalSections = totalSectionsWithoutDevicePriv + users.length;
     onTotalSectionsResolved?.call(totalSections);
 
     for (var index = 0; index < users.length; index++) {
@@ -651,9 +650,7 @@ class MasterDataSyncService {
             rowsSaved: 0,
             errorCode: null,
             error: null,
-            warnings: [
-              'No POS machine privileges for user ${user.id}.',
-            ],
+            warnings: ['No POS machine privileges for user ${user.id}.'],
           ),
         );
       } else {

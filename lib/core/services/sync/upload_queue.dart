@@ -74,6 +74,7 @@ class UploadQueue {
       idempotencyKey: Value('void_$saleId'),
     );
   }
+
   OutboxEventsCompanion shiftOpened({
     required String localId,
     required String machineNo,
@@ -177,5 +178,4 @@ class UploadQueue {
       idempotencyKey: 'shift_extend_$localId',
     );
   }
-
 }

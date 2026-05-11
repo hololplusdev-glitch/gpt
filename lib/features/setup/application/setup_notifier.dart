@@ -164,7 +164,8 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
               final paginationStr = progress.totalPages > 1
                   ? 'صفحة ${progress.currentPage} من ${progress.totalPages}'
                   : '';
-              final label = progress.typeCode == MasterDataType.devicePrivilege.code
+              final label =
+                  progress.typeCode == MasterDataType.devicePrivilege.code
                   ? progress.typeLabel
                   : 'تحميل ${progress.typeCode}';
               state = AsyncData(

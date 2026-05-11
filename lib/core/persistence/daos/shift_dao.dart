@@ -140,17 +140,16 @@ class ShiftDao {
       await _db.into(_db.auditLog).insert(auditLogEntry);
 
       if (clearOpenShiftId != null) {
-        await (_db.update(_db.activePosSessions)
-              ..where(
-                (row) =>
-                    row.id.equals(1) & row.openShiftId.equals(clearOpenShiftId),
-              ))
+        await (_db.update(_db.activePosSessions)..where(
+              (row) =>
+                  row.id.equals(1) & row.openShiftId.equals(clearOpenShiftId),
+            ))
             .write(
-          ActivePosSessionsCompanion(
-            openShiftId: const Value<String?>(null),
-            updatedAt: Value(_clock.now()),
-          ),
-        );
+              ActivePosSessionsCompanion(
+                openShiftId: const Value<String?>(null),
+                updatedAt: Value(_clock.now()),
+              ),
+            );
       }
     });
   }

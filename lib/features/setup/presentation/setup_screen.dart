@@ -115,8 +115,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                               label: _testing
                                   ? 'جاري التحقق من الاتصال...'
                                   : (_step == 2
-                                      ? 'بدء تهيئة بيانات التشغيل'
-                                      : l10n.next),
+                                        ? 'بدء تهيئة بيانات التشغيل'
+                                        : l10n.next),
                             ),
                         ],
                       ),
@@ -424,8 +424,7 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
             const SizedBox(height: AppSpacing.sm),
             Center(
               child: TextButton(
-                onPressed: () =>
-                    ref.read(setupProvider.notifier).cancelSetup(),
+                onPressed: () => ref.read(setupProvider.notifier).cancelSetup(),
                 child: const Text('إيقاف التهيئة'),
               ),
             ),

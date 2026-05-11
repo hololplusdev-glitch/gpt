@@ -73,10 +73,7 @@ class RuntimeMachineChoice {
   final PosUserMachineAccessData privilege;
   final PosMachine machine;
 
-  const RuntimeMachineChoice({
-    required this.privilege,
-    required this.machine,
-  });
+  const RuntimeMachineChoice({required this.privilege, required this.machine});
 
   String get machineNo => privilege.machineNo;
 
@@ -114,7 +111,7 @@ class ActivePosSessionDao {
   final Clock _clock;
 
   const ActivePosSessionDao(this._db, {Clock clock = const SystemClock()})
-      : _clock = clock;
+    : _clock = clock;
 
   static const _uuid = Uuid();
 
@@ -176,14 +173,13 @@ class ActivePosSessionDao {
     required String userId,
     required String machineNo,
   }) {
-    return (_db.select(_db.posUserMachineAccess)
-          ..where(
-            (row) =>
-                row.custCode.equals(custCode) &
-                row.userId.equals(userId) &
-                row.machineNo.equals(machineNo) &
-                row.canUseMachine.equals(true),
-          ))
+    return (_db.select(_db.posUserMachineAccess)..where(
+          (row) =>
+              row.custCode.equals(custCode) &
+              row.userId.equals(userId) &
+              row.machineNo.equals(machineNo) &
+              row.canUseMachine.equals(true),
+        ))
         .getSingleOrNull();
   }
 
@@ -245,7 +241,9 @@ class ActivePosSessionDao {
 
     final now = _clock.now();
 
-    await _db.into(_db.activePosSessions).insertOnConflictUpdate(
+    await _db
+        .into(_db.activePosSessions)
+        .insertOnConflictUpdate(
           ActivePosSessionsCompanion(
             id: const Value(1),
             sessionId: Value('SESS_${_uuid.v4()}'),
@@ -296,13 +294,13 @@ class ActivePosSessionDao {
   }
 
   Future<ActivePosSession> _derive(ActivePosSessionRow row) async {
-    final user = await (_db.select(_db.posUsers)
-          ..where(
-            (u) =>
-                u.custCode.equals(row.custCode) &
-                u.id.equals(row.activeUserId),
-          ))
-        .getSingleOrNull();
+    final user =
+        await (_db.select(_db.posUsers)..where(
+              (u) =>
+                  u.custCode.equals(row.custCode) &
+                  u.id.equals(row.activeUserId),
+            ))
+            .getSingleOrNull();
 
     final machine = await getMachine(
       custCode: row.custCode,
