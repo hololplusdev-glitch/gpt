@@ -159,8 +159,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
 
     final choices = await sessionDao.listRuntimeMachineChoicesForUser(
-      custCode: user.custCode,
-      userId: user.id,
+      user: user,
     );
     if (!mounted || token != _resolveToken) return;
 

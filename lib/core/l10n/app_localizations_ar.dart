@@ -346,7 +346,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get syncStatus => 'حالة المزامنة';
 
   @override
-  String get syncMonitor => 'تحديث البيانات والرفع';
+  String get syncMonitor => 'مراقبة المزامنة';
 
   @override
   String get pendingUpload => 'بانتظار الرفع';
@@ -358,18 +358,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get uploaded => 'تم الرفع';
 
   @override
-  String get downloading => 'جاري تحديث بيانات التشغيل...';
+  String get downloading => 'جاري التنزيل...';
 
   @override
-  String get downloadMasterData => 'تحديث بيانات التشغيل';
+  String get downloadMasterData => 'تنزيل البيانات الأساسية';
 
   @override
   String get pendingInvoiceUploadUnavailable =>
-      'رفع الفواتير المعلقة - غير متاح حاليًا';
+      'رفع الفواتير المعلقة - الواجهة غير موثقة';
 
   @override
   String masterDataDownloadSummary(int rows, int failedGroups) {
-    return 'تم تحديث بيانات التشغيل: $rows صف، المجموعات الفاشلة: $failedGroups';
+    return 'تم تنزيل البيانات الأساسية: $rows صف، المجموعات الفاشلة: $failedGroups';
   }
 
   @override

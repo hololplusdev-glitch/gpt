@@ -4,8 +4,16 @@ import 'package:pos_flutter/core/services/time/clock.dart';
 import 'package:uuid/uuid.dart';
 
 /// Public POS runtime facade.
-/// The DB row stores only pointers; business runtime values are derived
-/// from pos_users + pos_machines + pos_user_machine_access.
+/// The DB row stores only pointers. Runtime values are derived from:
+/// USER + DEVICE_PRIV runtime profile + POS_MACHINE.
+///
+/// Runtime Access Policy:
+/// - DEVICE_PRIV.usr_id is treated as download/admin context in this API profile,
+///   not as user authorization.
+/// - Admin users see all runtime machine profiles.
+/// - Normal users see profiles matching USER.defaultStoreId.
+/// - Runtime context priority:
+///   DEVICE_PRIV profile > POS_MACHINE > USER.
 class ActivePosSession {
   final String? sessionId;
   final String custCode;
@@ -52,24 +60,29 @@ class ActivePosSession {
   });
 }
 
+/// Login choice exposed to UI.
+/// UI must not reimplement USER/DEVICE_PRIV/POS_MACHINE policy.
 class RuntimeMachineChoice {
-  final PosUserMachineAccessData access;
+  final PosUserMachineAccessData profile;
   final PosMachine machine;
 
-  const RuntimeMachineChoice({required this.access, required this.machine});
+  const RuntimeMachineChoice({
+    required this.profile,
+    required this.machine,
+  });
 
-  String get machineNo => access.machineNo;
+  String get machineNo => profile.machineNo;
 
   String get label {
     final terminalName = _firstNonEmptyStatic([
-      access.terminalName,
+      profile.terminalName,
       machine.name,
       machine.machineNo,
     ])!;
 
-    final storeId = _firstNonEmptyStatic([access.storeId, machine.storeId]);
+    final storeId = _firstNonEmptyStatic([profile.storeId, machine.storeId]);
     final priceLevelId = _firstNonEmptyStatic([
-      access.priceLevelId,
+      profile.priceLevelId,
       machine.priceLevelId,
     ]);
 
@@ -125,19 +138,23 @@ class ActivePosSessionDao {
         .get();
   }
 
+  /// Legacy-compatible method name.
+  /// Do not use DEVICE_PRIV.userId as authorization.
+  /// The effective policy is USER.defaultStoreId/admin against runtime profile store.
   Future<List<PosUserMachineAccessData>> listAllowedMachinesForUser({
     required String custCode,
     required String userId,
-  }) {
-    return (_db.select(_db.posUserMachineAccess)
+  }) async {
+    final user = await (_db.select(_db.posUsers)
           ..where(
-            (row) =>
-                row.custCode.equals(custCode) &
-                row.userId.equals(userId) &
-                row.canUseMachine.equals(true),
-          )
-          ..orderBy([(row) => OrderingTerm.asc(row.machineNo)]))
-        .get();
+            (row) => row.custCode.equals(custCode) & row.id.equals(userId),
+          ))
+        .getSingleOrNull();
+
+    if (user == null) return [];
+
+    final choices = await listRuntimeMachineChoicesForUser(user: user);
+    return choices.map((choice) => choice.profile).toList();
   }
 
   Future<PosMachine?> getMachine({
@@ -151,30 +168,74 @@ class ActivePosSessionDao {
         .getSingleOrNull();
   }
 
-  /// SSOT for login machine choices.
-  /// UI must not re-implement DEVICE_PRIV + POS_MACHINE joining logic.
-  Future<List<RuntimeMachineChoice>> listRuntimeMachineChoicesForUser({
+  Future<List<PosUserMachineAccessData>> _listRuntimeMachineProfiles({
     required String custCode,
-    required String userId,
+  }) {
+    return (_db.select(_db.posUserMachineAccess)
+          ..where(
+            (row) =>
+                row.custCode.equals(custCode) &
+                row.canUseMachine.equals(true),
+          )
+          ..orderBy([(row) => OrderingTerm.asc(row.machineNo)]))
+        .get();
+  }
+
+  Future<PosUserMachineAccessData?> _runtimeMachineProfile({
+    required String custCode,
+    required String machineNo,
   }) async {
-    final accesses = await listAllowedMachinesForUser(
-      custCode: custCode,
-      userId: userId,
-    );
+    final rows = await (_db.select(_db.posUserMachineAccess)
+          ..where(
+            (row) =>
+                row.custCode.equals(custCode) &
+                row.machineNo.equals(machineNo) &
+                row.canUseMachine.equals(true),
+          )
+          ..orderBy([(row) => OrderingTerm.asc(row.userId)]))
+        .get();
 
+    if (rows.isEmpty) return null;
+
+    // In this API profile DEVICE_PRIV.usr_id is the download/admin context.
+    // If duplicates exist for a machine, keep the first stable row.
+    return rows.first;
+  }
+
+  /// SSOT for login machine choices.
+  /// Policy:
+  /// - Admin sees all active runtime profiles.
+  /// - Normal user sees runtime profiles matching USER.defaultStoreId.
+  Future<List<RuntimeMachineChoice>> listRuntimeMachineChoicesForUser({
+    required PosUser user,
+  }) async {
+    _validateUser(user);
+
+    final profiles = await _listRuntimeMachineProfiles(custCode: user.custCode);
     final choices = <RuntimeMachineChoice>[];
+    final seenMachineNos = <String>{};
 
-    for (final access in accesses) {
+    for (final profile in profiles) {
+      if (!seenMachineNos.add(profile.machineNo)) {
+        continue;
+      }
+
       final machine = await getMachine(
-        custCode: custCode,
-        machineNo: access.machineNo,
+        custCode: user.custCode,
+        machineNo: profile.machineNo,
       );
 
       if (machine == null || !machine.isActive) {
         continue;
       }
 
-      choices.add(RuntimeMachineChoice(access: access, machine: machine));
+      if (_canUserUseRuntimeProfile(
+        user: user,
+        profile: profile,
+        machine: machine,
+      )) {
+        choices.add(RuntimeMachineChoice(profile: profile, machine: machine));
+      }
     }
 
     return choices;
@@ -193,21 +254,26 @@ class ActivePosSessionDao {
       );
     }
 
-    final allowed = await _canUseMachine(
+    final profile = await _runtimeMachineProfile(
       custCode: user.custCode,
-      userId: user.id,
       machineNo: machine.machineNo,
     );
 
-    if (!allowed) {
+    if (profile == null) {
+      throw StateError('Selected POS machine has no runtime profile.');
+    }
+
+    if (!_canUserUseRuntimeProfile(
+      user: user,
+      profile: profile,
+      machine: machine,
+    )) {
       throw StateError('User is not allowed to use this POS machine.');
     }
 
     final now = _clock.now();
 
-    await _db
-        .into(_db.activePosSessions)
-        .insertOnConflictUpdate(
+    await _db.into(_db.activePosSessions).insertOnConflictUpdate(
           ActivePosSessionsCompanion(
             id: const Value(1),
             sessionId: Value('SESS_${_uuid.v4()}'),
@@ -258,13 +324,13 @@ class ActivePosSessionDao {
   }
 
   Future<ActivePosSession> _derive(ActivePosSessionRow row) async {
-    final user =
-        await (_db.select(_db.posUsers)..where(
-              (u) =>
-                  u.custCode.equals(row.custCode) &
-                  u.id.equals(row.activeUserId),
-            ))
-            .getSingleOrNull();
+    final user = await (_db.select(_db.posUsers)
+          ..where(
+            (u) =>
+                u.custCode.equals(row.custCode) &
+                u.id.equals(row.activeUserId),
+          ))
+        .getSingleOrNull();
 
     final machine = await getMachine(
       custCode: row.custCode,
@@ -281,37 +347,44 @@ class ActivePosSessionDao {
     _validateUser(user);
     _validateMachine(machine);
 
-    final access = await _machineAccess(
+    final profile = await _runtimeMachineProfile(
       custCode: row.custCode,
-      userId: row.activeUserId,
       machineNo: row.activeMachineNo,
     );
 
-    if (access == null) {
-      throw StateError('Active POS session machine access is no longer valid.');
+    if (profile == null) {
+      throw StateError('Active POS session runtime profile is no longer valid.');
+    }
+
+    if (!_canUserUseRuntimeProfile(
+      user: user,
+      profile: profile,
+      machine: machine,
+    )) {
+      throw StateError('Active POS session is no longer allowed.');
     }
 
     final branchNo = _firstNonEmpty([
-      access.branchNo,
+      profile.branchNo,
       machine.branchNo,
       user.branchNo,
     ]);
     final branchYear = _firstNonEmpty([
-      access.branchYear,
+      profile.branchYear,
       machine.branchYear,
       user.branchYear,
     ]);
     final storeId = _firstNonEmpty([
-      access.storeId,
+      profile.storeId,
       machine.storeId,
       user.defaultStoreId,
     ]);
     final priceLevelId = _firstNonEmpty([
-      access.priceLevelId,
+      profile.priceLevelId,
       machine.priceLevelId,
     ]);
     final defaultBankId = _firstNonEmpty([
-      access.defaultBankId,
+      profile.defaultBankId,
       machine.defaultBankId,
     ]);
 
@@ -332,12 +405,12 @@ class ActivePosSessionDao {
       activeUserName: user.displayName,
       activeMachineNo: machine.machineNo,
       activeMachineName:
-          access.terminalName ?? machine.name ?? machine.machineNo,
+          profile.terminalName ?? machine.name ?? machine.machineNo,
       activeBranchNo: branchNo,
       activeBranchYear: branchYear,
       activeStoreId: storeId,
       activePriceLevelId: priceLevelId,
-      activeUseTax: access.useTax ?? machine.useTax,
+      activeUseTax: profile.useTax ?? machine.useTax,
       activeDefaultBankId: defaultBankId,
       activeDefaultCardTypeId: machine.defaultCardTypeId,
       cashId: machine.cashId,
@@ -350,40 +423,45 @@ class ActivePosSessionDao {
     );
   }
 
-  Future<PosUserMachineAccessData?> _machineAccess({
-    required String custCode,
-    required String userId,
-    required String machineNo,
-  }) async {
-    return (_db.select(_db.posUserMachineAccess)..where(
-          (row) =>
-              row.custCode.equals(custCode) &
-              row.userId.equals(userId) &
-              row.machineNo.equals(machineNo) &
-              row.canUseMachine.equals(true),
-        ))
-        .getSingleOrNull();
+  bool _canUserUseRuntimeProfile({
+    required PosUser user,
+    required PosUserMachineAccessData profile,
+    required PosMachine machine,
+  }) {
+    if (_isAdminUser(user)) {
+      return true;
+    }
+
+    final userStoreId = _trimOrNull(user.defaultStoreId);
+    if (userStoreId == null) {
+      return false;
+    }
+
+    final profileStoreId = _firstNonEmpty([
+      profile.storeId,
+      machine.storeId,
+    ]);
+
+    return profileStoreId == userStoreId;
   }
 
-  Future<bool> _canUseMachine({
-    required String custCode,
-    required String userId,
-    required String machineNo,
-  }) async {
-    return await _machineAccess(
-          custCode: custCode,
-          userId: userId,
-          machineNo: machineNo,
-        ) !=
-        null;
+  bool _isAdminUser(PosUser user) {
+    final level = _trimOrNull(user.userLevel);
+    return level == '1';
   }
 
   String? _firstNonEmpty(List<String?> values) {
     for (final value in values) {
-      final trimmed = value?.trim();
-      if (trimmed != null && trimmed.isNotEmpty) return trimmed;
+      final trimmed = _trimOrNull(value);
+      if (trimmed != null) return trimmed;
     }
     return null;
+  }
+
+  String? _trimOrNull(String? value) {
+    final trimmed = value?.trim();
+    if (trimmed == null || trimmed.isEmpty) return null;
+    return trimmed;
   }
 
   void _validateUser(PosUser user) {

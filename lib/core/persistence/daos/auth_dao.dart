@@ -156,19 +156,58 @@ class AuthDao {
     ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 
-  /// Terminal access only. Not full authorization.
+  /// Deprecated compatibility method.
+  /// Runtime machine policy is centralized in ActivePosSessionDao.
+  /// Do not infer USER->MACHINE authorization from DEVICE_PRIV.usr_id.
   Future<List<String>> getUserPermissions(
     String userId,
     String terminalId,
   ) async {
-    final row =
-        await (_db.select(_db.posUserMachineAccess)..where(
-              (p) => p.userId.equals(userId) & p.machineNo.equals(terminalId),
+    final user = await findById(userId);
+    if (user == null || !user.isActive || !user.canLoginPos) {
+      return [];
+    }
+
+    final machine =
+        await (_db.select(_db.posMachines)..where(
+              (m) =>
+                  m.custCode.equals(user.custCode) &
+                  m.machineNo.equals(terminalId) &
+                  m.isActive.equals(true),
             ))
             .getSingleOrNull();
 
-    if (row == null) return [];
-    return [if (row.canUseMachine) 'USE_MACHINE'];
+    if (machine == null) return [];
+
+    final profiles =
+        await (_db.select(_db.posUserMachineAccess)..where(
+              (p) =>
+                  p.custCode.equals(user.custCode) &
+                  p.machineNo.equals(terminalId) &
+                  p.canUseMachine.equals(true),
+            ))
+            .get();
+
+    if (profiles.isEmpty) return [];
+
+    final isAdmin = user.userLevel?.trim() == '1';
+    if (isAdmin) return ['USE_MACHINE'];
+
+    final userStoreId = user.defaultStoreId?.trim();
+    if (userStoreId == null || userStoreId.isEmpty) return [];
+
+    for (final profile in profiles) {
+      final profileStoreId =
+          profile.storeId?.trim().isNotEmpty == true
+              ? profile.storeId!.trim()
+              : machine.storeId?.trim();
+
+      if (profileStoreId == userStoreId) {
+        return ['USE_MACHINE'];
+      }
+    }
+
+    return [];
   }
 
   Future<void> writeSessionLog({
