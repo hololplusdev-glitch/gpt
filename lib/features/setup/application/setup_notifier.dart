@@ -257,7 +257,6 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
   }
 
   static const _setupWarningTypes = {
-    MasterDataType.customer,
     MasterDataType.bank,
     MasterDataType.cash,
     MasterDataType.creditCardType,

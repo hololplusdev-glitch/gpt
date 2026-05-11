@@ -354,9 +354,11 @@ class MasterDataSyncService {
     onTypeProgress,
   }) async {
     final oldServerTime = await _lastServerTime(type, context);
-    final sentLastUpdate = mode == MasterDataSyncMode.incremental
-        ? oldServerTime
-        : null;
+    final hasLocalSeed = await _hasLocalSeedForIncremental(type, context);
+    final sentLastUpdate =
+        mode == MasterDataSyncMode.incremental && hasLocalSeed
+            ? oldServerTime
+            : null;
     final typeRunId = _newId('md_type');
     final startedAt = _clock.now();
     await _insertTypeRun(
@@ -554,6 +556,18 @@ class MasterDataSyncService {
             : jsonEncode(<String, dynamic>{'warnings': warnings}),
         warnings: List.unmodifiable(warnings),
       );
+    }
+  }
+
+  Future<bool> _hasLocalSeedForIncremental(
+    MasterDataType type,
+    MasterDataSyncContext context,
+  ) async {
+    switch (type) {
+      case MasterDataType.customer:
+        return await _masterDataDao.countCustomers(context.custCode) > 0;
+      default:
+        return true;
     }
   }
 

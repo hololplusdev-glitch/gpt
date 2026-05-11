@@ -43,7 +43,7 @@ class RuntimeConfigRepository {
         basePath: prefs.getString(_kBasePath) ?? '/ords/erp/pos-api/v1',
         custCode: custCode,
         bootstrapUserId: prefs.getString(_kBootstrapUserId) ?? '1',
-        pageLimit: prefs.getInt(_kPageLimit) ?? 100,
+        pageLimit: _normalizePageLimit(prefs.getInt(_kPageLimit)),
         useSsl: prefs.getBool(_kUseSsl) ?? true,
       );
     } else if (isComplete) {
@@ -69,8 +69,16 @@ class RuntimeConfigRepository {
     await prefs.setString(_kBasePath, profile.basePath);
     await prefs.setString(_kCustCode, profile.custCode);
     await prefs.setString(_kBootstrapUserId, profile.bootstrapUserId);
-    await prefs.setInt(_kPageLimit, profile.pageLimit);
+    await prefs.setInt(_kPageLimit, _normalizePageLimit(profile.pageLimit));
     await prefs.setBool(_kUseSsl, profile.useSsl);
+  }
+
+
+  int _normalizePageLimit(int? value) {
+    final limit = value ?? 500;
+    if (limit < 500) return 500;
+    if (limit > 1000) return 1000;
+    return limit;
   }
 
   Future<void> setSetupComplete(bool value) async {

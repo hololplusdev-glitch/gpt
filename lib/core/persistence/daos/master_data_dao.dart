@@ -279,6 +279,17 @@ class MasterDataDao {
         .get();
   }
 
+  Future<int> countCustomers(String custCode) async {
+    final rows = await (_db.select(_db.customers)
+          ..where(
+            (row) =>
+                row.custCode.equals(custCode) & row.inactive.equals(false),
+          ))
+        .get();
+
+    return rows.length;
+  }
+
   Future<int> countDevicePrivileges(String custCode) async {
     final rows =
         await (_db.select(_db.posUserMachineAccess)..where(

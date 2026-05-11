@@ -99,7 +99,7 @@ class MasterDataSyncContext {
     required this.custCode,
     this.bootstrapUserId = '1',
     this.branchNo,
-    this.pageLimit = 100,
+    this.pageLimit = 500,
   });
 
   String get syncUserId => bootstrapUserId;
