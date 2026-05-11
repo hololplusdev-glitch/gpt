@@ -252,6 +252,35 @@ class SaleCheckout {
     );
   }
 
+  Future<void> _archiveAndQueueAutoPrintBestEffort({
+    required String saleId,
+    required ActivePosSession session,
+    required DateTime createdAt,
+  }) async {
+    try {
+      final document = await _invoiceDocumentBuilder.getOrCreateOriginal(
+        saleId,
+      );
+
+      if (!(_config.autoPrintAfterSale || session.autoPrint)) {
+        return;
+      }
+
+      final printJobs = await _printQueue.invoiceReceipt(
+        document: document,
+        createdAt: createdAt,
+        createdBy: session.activeUserId,
+        requireAutoPrint: true,
+        preferredPrinterName: session.printerName,
+      );
+
+      await _salesDao.enqueuePrintJobs(printJobs);
+    } catch (_) {
+      // Best-effort only.
+      // Sale completion must not depend on archive/printer state.
+    }
+  }
+
   Future<List<SaleLineInput>> _resolveOfficialPrices({
     required ActivePosSession session,
     required List<SaleLineInput> draftLines,
