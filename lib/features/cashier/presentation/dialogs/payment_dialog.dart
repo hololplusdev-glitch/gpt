@@ -6,12 +6,13 @@ import 'package:pos_flutter/core/design_system/spacing.dart';
 import 'package:pos_flutter/core/errors/app_exception.dart';
 import 'package:pos_flutter/core/l10n/app_localizations.dart';
 import 'package:pos_flutter/core/services/formatters/pos_formatters.dart';
+import 'package:pos_flutter/core/services/payments/payment_method_resolver.dart';
 import 'package:pos_flutter/core/services/pricing/pricing_engine.dart';
-import 'package:pos_flutter/features/cashier/domain/models/cart.dart';
 import 'package:pos_flutter/features/cashier/application/cart_quote_provider.dart';
-import 'package:pos_flutter/features/sales/application/sale_checkout.dart';
 import 'package:pos_flutter/features/cashier/application/product_providers.dart';
+import 'package:pos_flutter/features/cashier/domain/models/cart.dart';
 import 'package:pos_flutter/features/cashier/domain/models/payment_method_option.dart';
+import 'package:pos_flutter/features/sales/application/sale_checkout.dart';
 import 'package:pos_flutter/shared/models/customer.dart';
 import 'package:pos_flutter/shared/models/enums.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
@@ -21,6 +22,8 @@ import 'package:pos_flutter/shared/presentation/widgets/app_loading.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
 import 'package:pos_flutter/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
+
+enum _CheckoutTenderKind { cash, network, credit }
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final Cart cart;
@@ -36,7 +39,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   final _referenceController = TextEditingController();
   final String _checkoutAttemptId = 'CHK_${const Uuid().v4()}';
 
-  String? _selectedPaymentMethodId;
+  _CheckoutTenderKind _selectedKind = _CheckoutTenderKind.cash;
+
   String? _selectedCustomerId;
   String? _selectedCustomerName;
   String? _selectedCustomerTaxNumber;
@@ -69,11 +73,12 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     _quote = quoteState.quote;
     _errorMessage = quoteState.quote == null
         ? quoteState.error == null
-              ? l10n.unableToPrepareCheckoutTotal
-              : ErrorMapper.userMessage(quoteState.error!)
+            ? l10n.unableToPrepareCheckoutTotal
+            : ErrorMapper.userMessage(quoteState.error!)
         : null;
 
     _tenderedController.text = _totalAmount.toStringAsFixed(2);
+    _recalculateChange();
   }
 
   @override
@@ -81,6 +86,27 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     _tenderedController.dispose();
     _referenceController.dispose();
     super.dispose();
+  }
+
+  void _recalculateChange() {
+    final tendered =
+        double.tryParse(_tenderedController.text.trim().replaceAll(',', '.')) ??
+            0.0;
+    final change = PricingEngine.roundAmount(tendered - _totalAmount);
+    _change = change > 0 ? change : 0.0;
+  }
+
+  void _selectKind(_CheckoutTenderKind kind) {
+    setState(() {
+      _selectedKind = kind;
+      _errorMessage = null;
+      _referenceController.clear();
+
+      if (kind == _CheckoutTenderKind.cash) {
+        _tenderedController.text = _totalAmount.toStringAsFixed(2);
+        _recalculateChange();
+      }
+    });
   }
 
   Future<void> _processPayment() async {
@@ -94,9 +120,15 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     final methods = await ref.read(paymentMethodsProvider.future);
     if (!mounted) return;
 
-    final method = _selectedPaymentMethod(methods);
+    final method = _methodForSelectedKind(methods);
     if (method == null) {
-      setState(() => _errorMessage = l10n.noActivePaymentMethodConfigured);
+      setState(() => _errorMessage = _missingMethodMessage());
+      return;
+    }
+
+    if (_selectedKind == _CheckoutTenderKind.credit &&
+        (_selectedCustomerId == null || _selectedCustomerId!.trim().isEmpty)) {
+      setState(() => _errorMessage = 'البيع الآجل يتطلب اختيار عميل.');
       return;
     }
 
@@ -106,14 +138,14 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     });
 
     try {
-      final result = await ref
-          .read(saleCheckoutProvider)
-          .complete(
+      final result = await ref.read(saleCheckoutProvider).complete(
             SaleCheckoutRequest(
               cart: widget.cart,
               checkoutAttemptId: _checkoutAttemptId,
               paymentMethod: method,
-              tenderedText: _tenderedController.text,
+              tenderedText: _selectedKind == _CheckoutTenderKind.cash
+                  ? _tenderedController.text
+                  : _totalAmount.toStringAsFixed(2),
               reference: _referenceController.text,
               customerId: _selectedCustomerId,
               customerName: _selectedCustomerName,
@@ -148,37 +180,75 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     }
   }
 
-  PaymentMethodOption? _selectedPaymentMethod(
-    List<PaymentMethodOption> methods,
-  ) {
-    if (methods.isEmpty) return null;
+  PaymentMethodOption? _methodForSelectedKind(List<PaymentMethodOption> methods) {
+    return switch (_selectedKind) {
+      _CheckoutTenderKind.cash => _cashMethod(methods),
+      _CheckoutTenderKind.network => _networkMethod(methods),
+      _CheckoutTenderKind.credit => _creditMethod(methods),
+    };
+  }
 
-    final selectedId = _selectedPaymentMethodId;
-    if (selectedId != null) {
-      for (final method in methods) {
-        if (method.id == selectedId) return method;
+  PaymentMethodOption? _cashMethod(List<PaymentMethodOption> methods) {
+    for (final method in methods) {
+      if (method.type.isCash) return method;
+    }
+    return null;
+  }
+
+  PaymentMethodOption _networkMethod(List<PaymentMethodOption> methods) {
+    // Business meaning:
+    // Network = card/payment-terminal payment.
+    //
+    // Current technical state:
+    // integratedAvailable() is false until real terminal integration exists.
+    // Therefore we intentionally record a manual network/card payment with warning.
+    for (final method in methods) {
+      if (method.type.isManualCard) return method;
+    }
+
+    for (final method in methods) {
+      if (method.type.isCard) {
+        return PaymentMethodOption(
+          id: 'MANUAL_CARD_FALLBACK',
+          code: PaymentMethodCodes.manualCard,
+          name: 'شبكة',
+          type: PaymentMethodType.manualCard,
+          requiresReference: method.requiresReference,
+          bankId: method.bankId,
+          cardTypeId: method.cardTypeId,
+        );
       }
     }
 
-    final session = ref.read(activePosSessionProvider).valueOrNull;
-    if (session != null) {
-      for (final id in [
-        session.activeDefaultBankId ?? '',
-        session.activeDefaultCardTypeId ?? '',
-        session.cashId ?? '',
-      ]) {
-        if (id.isEmpty) continue;
-
-        for (final method in methods) {
-          if (method.id == id) return method;
-        }
-      }
-    }
-
-    return methods.firstWhere(
-      (method) => method.type.isCash,
-      orElse: () => methods.first,
+    return const PaymentMethodOption(
+      id: 'MANUAL_CARD_FALLBACK',
+      code: PaymentMethodCodes.manualCard,
+      name: 'شبكة',
+      type: PaymentMethodType.manualCard,
+      requiresReference: true,
     );
+  }
+
+  PaymentMethodOption _creditMethod(List<PaymentMethodOption> methods) {
+    for (final method in methods) {
+      if (method.type == PaymentMethodType.customerCredit) return method;
+    }
+
+    return const PaymentMethodOption(
+      id: 'CUSTOMER_CREDIT',
+      code: 'CUSTOMER_CREDIT',
+      name: 'آجل',
+      type: PaymentMethodType.customerCredit,
+      requiresReference: false,
+    );
+  }
+
+  String _missingMethodMessage() {
+    return switch (_selectedKind) {
+      _CheckoutTenderKind.cash => 'لا توجد طريقة دفع كاش مفعلة.',
+      _CheckoutTenderKind.network => 'لا توجد طريقة دفع شبكة مفعلة.',
+      _CheckoutTenderKind.credit => 'لا توجد طريقة دفع آجل مفعلة.',
+    };
   }
 
   void _cancelBeforeCompletion() {
@@ -205,7 +275,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       child: Dialog(
         insetPadding: AppSpacing.paddingLg,
         child: Container(
-          width: size.width > 700 ? 560 : size.width,
+          width: size.width > 760 ? 620 : size.width,
           constraints: BoxConstraints(
             maxHeight: size.height - AppSpacing.xxl * 2,
           ),
@@ -222,8 +292,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
   Widget _buildPaymentView() {
     final l10n = AppLocalizations.of(context)!;
-    final methods = ref.watch(paymentMethodsProvider);
     final customers = ref.watch(customersProvider);
+    final methods = ref.watch(paymentMethodsProvider);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -262,23 +332,30 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                   AppInfoBanner.error(message: _errorMessage!),
                   const SizedBox(height: AppSpacing.lg),
                 ],
+                const Text(
+                  'إجمالي الفاتورة',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   PosFormatters.amount(_totalAmount),
                   style: const TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 38,
+                    fontWeight: FontWeight.w800,
                     color: AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                customers.when(
-                  data: _buildCustomerSelector,
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, _) => const SizedBox.shrink(),
+                _TenderKindSelector(
+                  selectedKind: _selectedKind,
+                  onSelected: _selectKind,
                 ),
-                const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.xl),
                 methods.when(
-                  data: _buildPaymentControls,
+                  data: (items) => _buildSelectedMethodBody(items, customers),
                   loading: () => const Padding(
                     padding: EdgeInsets.all(AppSpacing.xl),
                     child: AppLoading(),
@@ -295,17 +372,171 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     );
   }
 
+  Widget _buildSelectedMethodBody(
+    List<PaymentMethodOption> methods,
+    AsyncValue<List<Customer>> customers,
+  ) {
+    final method = _methodForSelectedKind(methods);
+    if (method == null) {
+      return AppInfoBanner.error(message: _missingMethodMessage());
+    }
+
+    return switch (_selectedKind) {
+      _CheckoutTenderKind.cash => _buildCashBody(),
+      _CheckoutTenderKind.network => _buildNetworkBody(method),
+      _CheckoutTenderKind.credit => _buildCreditBody(customers),
+    };
+  }
+
+  Widget _buildCashBody() {
+    final l10n = AppLocalizations.of(context)!;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppTextField(
+          controller: _tenderedController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+          ],
+          labelText: l10n.amountTenderedSar,
+          prefixText: '${l10n.currency} ',
+          autofocus: true,
+          onChanged: (_) => setState(_recalculateChange),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        if (_change > 0)
+          AppInfoBanner(
+            message: '${l10n.change}: ${PosFormatters.amount(_change)}',
+            type: AppBannerType.info,
+          ),
+        const SizedBox(height: AppSpacing.md),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            _QuickAmountButton(
+              label: l10n.exact,
+              onTap: () {
+                setState(() {
+                  _tenderedController.text = _totalAmount.toStringAsFixed(2);
+                  _recalculateChange();
+                });
+              },
+            ),
+            for (final amount in [5, 10, 20, 50, 100, 200, 500])
+              if (amount.toDouble() >= _totalAmount)
+                _QuickAmountButton(
+                  label: '$amount',
+                  onTap: () {
+                    setState(() {
+                      _tenderedController.text = amount.toStringAsFixed(2);
+                      _recalculateChange();
+                    });
+                  },
+                ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        _CompleteButton(
+          isProcessing: _isProcessing,
+          label: l10n.completePayment,
+          onPressed: _processPayment,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNetworkBody(PaymentMethodOption method) {
+    final profile = ref.watch(activePaymentProfileProvider).valueOrNull;
+    final profileMode = PaymentProfileMode.fromCode(profile?.mode);
+    final integratedConfigured =
+        profile != null && profile.enabled && profileMode == PaymentProfileMode.integrated;
+    final integratedReady = profile == null
+        ? false
+        : ref.read(paymentProfileServiceProvider).integratedAvailable(profile);
+
+    final warning = integratedConfigured && !integratedReady
+        ? 'جهاز الدفع غير متصل. سيتم تسجيل عملية شبكة يدويًا مع حفظها كدفعة شبكة.'
+        : 'لم يتم تفعيل ربط جهاز الدفع بعد. سيتم تسجيل عملية شبكة يدويًا مع حفظها كدفعة شبكة.';
+
+    final resolved = resolveCheckoutPaymentMethod(method);
+    final requiresReference = checkoutPaymentRequirements(
+      resolved,
+      paymentProfileRequiresReference: profile?.requireReference ?? false,
+    ).requiresReference;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppInfoBanner(
+          message: warning,
+          type: AppBannerType.warning,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AppTextField(
+          controller: _referenceController,
+          textInputAction: TextInputAction.done,
+          labelText: requiresReference ? 'رقم مرجع الشبكة *' : 'رقم مرجع الشبكة',
+          prefixIcon: const Icon(Icons.confirmation_number_outlined),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        _CompleteButton(
+          isProcessing: _isProcessing,
+          label: 'تسجيل دفع شبكة',
+          onPressed: _processPayment,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCreditBody(AsyncValue<List<Customer>> customers) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const AppInfoBanner(
+          message: 'البيع الآجل يتطلب اختيار عميل. سيتم تسجيل كامل المبلغ كرصيد مستحق على العميل.',
+          type: AppBannerType.info,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        customers.when(
+          data: _buildCustomerSelector,
+          loading: () => const Padding(
+            padding: EdgeInsets.all(AppSpacing.lg),
+            child: AppLoading(),
+          ),
+          error: (error, _) => AppInfoBanner.error(
+            message: ErrorMapper.userMessage(error),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        _CompleteButton(
+          isProcessing: _isProcessing,
+          label: 'إتمام بيع آجل',
+          onPressed: _processPayment,
+        ),
+      ],
+    );
+  }
+
   Widget _buildCustomerSelector(List<Customer> customers) {
-    if (customers.isEmpty) return const SizedBox.shrink();
+    if (customers.isEmpty) {
+      return AppInfoBanner.error(
+        message: 'لا يوجد عملاء محملون. لا يمكن إتمام بيع آجل بدون عميل.',
+      );
+    }
 
     final l10n = AppLocalizations.of(context)!;
 
     return AppDropdown<String>(
       value: _selectedCustomerId ?? '',
-      labelText: l10n.customer,
+      labelText: '${l10n.customer} *',
       prefixIcon: const Icon(Icons.person_outline),
       items: [
-        DropdownMenuItem(value: '', child: Text(l10n.noCustomer)),
+        const DropdownMenuItem(value: '', child: Text('اختر العميل')),
         for (final customer in customers)
           DropdownMenuItem(
             value: customer.id,
@@ -331,113 +562,12 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     );
   }
 
-  Widget _buildPaymentControls(List<PaymentMethodOption> methods) {
-    final l10n = AppLocalizations.of(context)!;
-    final selected = _selectedPaymentMethod(methods);
-
-    if (selected == null) {
-      return AppInfoBanner.error(message: l10n.noActivePaymentMethodConfigured);
-    }
-
-    final profile = ref.watch(activePaymentProfileProvider).valueOrNull;
-
-    final requirements = checkoutPaymentRequirements(
-      resolveCheckoutPaymentMethod(selected),
-      paymentProfileRequiresReference: profile?.requireReference ?? false,
-    );
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Wrap(
-          spacing: AppSpacing.md,
-          runSpacing: AppSpacing.md,
-          alignment: WrapAlignment.center,
-          children: [
-            for (final method in methods)
-              _MethodButton(
-                icon: _paymentMethodIcon(method.type),
-                label: method.name,
-                isSelected: selected.id == method.id,
-                onTap: () {
-                  setState(() {
-                    _selectedPaymentMethodId = method.id;
-                    _referenceController.clear();
-
-                    if (method.type.isCash) {
-                      _tenderedController.text = _totalAmount.toStringAsFixed(
-                        2,
-                      );
-                    }
-                  });
-                },
-              ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        if (selected.type.isCash) ...[
-          AppTextField(
-            controller: _tenderedController,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-            ],
-            labelText: l10n.amountTenderedSar,
-            prefixText: '${l10n.currency} ',
-            autofocus: true,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              _QuickAmountButton(
-                label: l10n.exact,
-                onTap: () {
-                  _tenderedController.text = _totalAmount.toStringAsFixed(2);
-                },
-              ),
-              for (final amount in [5, 10, 20, 50, 100, 200, 500])
-                if (amount.toDouble() >= _totalAmount)
-                  _QuickAmountButton(
-                    label: '$amount',
-                    onTap: () {
-                      _tenderedController.text = amount.toStringAsFixed(2);
-                    },
-                  ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-        if (requirements.showsReference) ...[
-          AppTextField(
-            controller: _referenceController,
-            textInputAction: TextInputAction.done,
-            labelText: requirements.requiresReference
-                ? '${l10n.paymentReference} *'
-                : l10n.paymentReference,
-            prefixIcon: const Icon(Icons.confirmation_number_outlined),
-          ),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-        SizedBox(
-          width: double.infinity,
-          height: AppSpacing.jumbo + AppSpacing.sm,
-          child: AppButton.primary(
-            onPressed: _isProcessing ? null : _processPayment,
-            customColor: AppColors.payButton,
-            isLoading: _isProcessing,
-            label: _processButtonLabel(selected.type, l10n),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildCompletionView() {
     final l10n = AppLocalizations.of(context)!;
+
+    final title = _completedPaymentMethodType == PaymentMethodType.customerCredit
+        ? 'تم تسجيل البيع الآجل'
+        : l10n.paymentSuccessful;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(AppSpacing.xxxl),
@@ -451,7 +581,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
           ),
           const SizedBox(height: AppSpacing.xl),
           Text(
-            l10n.paymentSuccessful,
+            title,
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
           ),
@@ -502,7 +632,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
   void _finishPayment() {
     final id = _saleId;
-
     Navigator.of(context).pop(PaymentDialogResult.completed(saleId: id));
   }
 
@@ -510,28 +639,9 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     final id = _saleId;
     if (id == null) return;
 
-    Navigator.of(
-      context,
-    ).pop(PaymentDialogResult.completed(saleId: id, openInvoice: true));
-  }
-
-  IconData _paymentMethodIcon(PaymentMethodType type) {
-    return switch (type) {
-      PaymentMethodType.cash => Icons.payments_outlined,
-      PaymentMethodType.manualCard => Icons.credit_card,
-      PaymentMethodType.integratedCard => Icons.credit_card,
-      PaymentMethodType.bankTransfer => Icons.account_balance,
-      PaymentMethodType.customerCredit => Icons.person_outline,
-      PaymentMethodType.cheque => Icons.receipt_long,
-      PaymentMethodType.wallet => Icons.account_balance_wallet_outlined,
-    };
-  }
-
-  String _processButtonLabel(PaymentMethodType type, AppLocalizations l10n) {
-    if (type.isCash) return l10n.completePayment;
-    if (type.isManualCard) return l10n.recordCardPayment;
-    if (type == PaymentMethodType.bankTransfer) return l10n.recordBankPayment;
-    return l10n.recordPayment;
+    Navigator.of(context).pop(
+      PaymentDialogResult.completed(saleId: id, openInvoice: true),
+    );
   }
 }
 
@@ -552,58 +662,136 @@ class PaymentDialogResult {
   }) : this._(completed: true, saleId: saleId, openInvoice: openInvoice);
 }
 
-class _MethodButton extends StatelessWidget {
+class _TenderKindSelector extends StatelessWidget {
+  final _CheckoutTenderKind selectedKind;
+  final ValueChanged<_CheckoutTenderKind> onSelected;
+
+  const _TenderKindSelector({
+    required this.selectedKind,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: AppSpacing.md,
+      runSpacing: AppSpacing.md,
+      alignment: WrapAlignment.center,
+      children: [
+        _TenderKindButton(
+          icon: Icons.payments_outlined,
+          label: 'كاش',
+          subtitle: 'نقدي',
+          selected: selectedKind == _CheckoutTenderKind.cash,
+          onTap: () => onSelected(_CheckoutTenderKind.cash),
+        ),
+        _TenderKindButton(
+          icon: Icons.credit_card,
+          label: 'شبكة',
+          subtitle: 'جهاز دفع / يدوي',
+          selected: selectedKind == _CheckoutTenderKind.network,
+          onTap: () => onSelected(_CheckoutTenderKind.network),
+        ),
+        _TenderKindButton(
+          icon: Icons.person_outline,
+          label: 'آجل',
+          subtitle: 'على حساب عميل',
+          selected: selectedKind == _CheckoutTenderKind.credit,
+          onTap: () => onSelected(_CheckoutTenderKind.credit),
+        ),
+      ],
+    );
+  }
+}
+
+class _TenderKindButton extends StatelessWidget {
   final IconData icon;
   final String label;
-  final bool isSelected;
+  final String subtitle;
+  final bool selected;
   final VoidCallback onTap;
 
-  const _MethodButton({
+  const _TenderKindButton({
     required this.icon,
     required this.label,
-    required this.isSelected,
+    required this.subtitle,
+    required this.selected,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: AppSpacing.jumbo * 3,
+      width: AppSpacing.jumbo * 3.3,
       child: Material(
-        color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
+        color: selected ? AppColors.primary : AppColors.surfaceVariant,
         borderRadius: AppSpacing.borderRadiusMd,
         child: InkWell(
           onTap: onTap,
           borderRadius: AppSpacing.borderRadiusMd,
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.lg,
+            ),
             child: Column(
               children: [
                 Icon(
                   icon,
-                  color: isSelected
-                      ? AppColors.onPrimary
-                      : AppColors.textPrimary,
+                  color: selected ? AppColors.onPrimary : AppColors.textPrimary,
                   size: AppSpacing.xxl,
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: isSelected
-                        ? AppColors.onPrimary
-                        : AppColors.textPrimary,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
+                    color: selected ? AppColors.onPrimary : AppColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: selected
+                        ? AppColors.onPrimary.withValues(alpha: 0.8)
+                        : AppColors.textSecondary,
+                    fontSize: 11,
                   ),
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CompleteButton extends StatelessWidget {
+  final bool isProcessing;
+  final String label;
+  final VoidCallback onPressed;
+
+  const _CompleteButton({
+    required this.isProcessing,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: AppSpacing.jumbo + AppSpacing.sm,
+      child: AppButton.primary(
+        onPressed: isProcessing ? null : onPressed,
+        customColor: AppColors.payButton,
+        isLoading: isProcessing,
+        label: label,
       ),
     );
   }

@@ -143,6 +143,17 @@ class SaleCheckout {
       throw const SaleCheckoutException('Payment reference is required.');
     }
 
+    final isCustomerCredit =
+        effectiveType == PaymentMethodType.customerCredit ||
+        resolved.type == PaymentMethodType.customerCredit;
+
+    if (isCustomerCredit &&
+        (request.customerId == null || request.customerId!.trim().isEmpty)) {
+      throw const SaleCheckoutException(
+        'Customer is required for credit sale.',
+      );
+    }
+
     final payments = [
       SalePaymentInput(
         paymentMethodId: resolved.methodId,
@@ -747,6 +758,17 @@ class PaymentPolicy {
         throw const SaleCheckoutException(
           'Integrated card payment requires terminal approval.',
         );
+      }
+
+      if (type == PaymentMethodType.customerCredit) {
+        if (!allowCustomerCredit) {
+          throw const SaleCheckoutException('Customer credit is not allowed.');
+        }
+
+        // Credit sale is an accounts-receivable balance, not a collected payment.
+        // Keep the SalePayment row as the payment arrangement snapshot, but do
+        // not include it in paidTotal.
+        continue;
       }
 
       paidTotal += payment.amount;
