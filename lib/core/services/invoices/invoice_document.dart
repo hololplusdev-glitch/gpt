@@ -681,27 +681,23 @@ class InvoiceCopyInfo {
   final bool isCopy;
   final int copyNumber;
   final String label;
-  final String? reason;
 
   const InvoiceCopyInfo({
     required this.isCopy,
     required this.copyNumber,
     required this.label,
-    this.reason,
   });
 
   const InvoiceCopyInfo.original()
     : isCopy = false,
       copyNumber = 0,
-      label = 'Original',
-      reason = null;
+      label = 'Original';
 
-  factory InvoiceCopyInfo.reprint({required int copyNumber, String? reason}) {
+  factory InvoiceCopyInfo.reprint({required int copyNumber}) {
     return InvoiceCopyInfo(
       isCopy: true,
       copyNumber: copyNumber,
       label: 'Reprint / نسخة رقم $copyNumber',
-      reason: reason,
     );
   }
 
@@ -709,7 +705,6 @@ class InvoiceCopyInfo {
     'isCopy': isCopy,
     'copyNumber': copyNumber,
     'label': label,
-    'reason': reason,
   };
 
   factory InvoiceCopyInfo.fromJson(Map<String, dynamic> json) {
@@ -717,7 +712,6 @@ class InvoiceCopyInfo {
       isCopy: json['isCopy'] as bool? ?? false,
       copyNumber: json['copyNumber'] as int? ?? 0,
       label: json['label'] as String? ?? 'Original',
-      reason: json['reason'] as String?,
     );
   }
 }

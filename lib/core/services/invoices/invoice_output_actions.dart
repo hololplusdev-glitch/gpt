@@ -82,16 +82,12 @@ class InvoiceOutputActions {
     return _processJobs(jobIds);
   }
 
-  Future<InvoicePrintResult> reprint(
-    String saleId, {
-    String? reason,
-    String? createdBy,
-  }) async {
+  Future<InvoicePrintResult> reprint(String saleId, {String? createdBy}) async {
     final original = await getOrCreateOriginal(saleId);
     final copyNumber = await _printJobService.nextCopyNumber(saleId);
 
     final copy = original.copyWithCopyInfo(
-      InvoiceCopyInfo.reprint(copyNumber: copyNumber, reason: reason),
+      InvoiceCopyInfo.reprint(copyNumber: copyNumber),
     );
 
     final jobIds = await _printQueue.enqueueInvoiceReceipt(

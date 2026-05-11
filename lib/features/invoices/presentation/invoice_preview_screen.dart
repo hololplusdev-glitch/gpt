@@ -22,8 +22,6 @@ import 'package:pos_flutter/shared/presentation/widgets/key_value_row.dart';
 import 'package:pos_flutter/shared/presentation/utils/app_snackbar.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_button.dart';
 import 'package:pos_flutter/shared/presentation/widgets/app_loading.dart';
-import 'package:pos_flutter/shared/presentation/widgets/app_text_field.dart';
-import 'package:pos_flutter/shared/presentation/dialogs/app_dialog.dart';
 
 final invoiceDocumentProvider = FutureProvider.autoDispose
     .family<InvoiceDocument, String>((ref, id) {
@@ -256,12 +254,9 @@ class _Actions extends ConsumerWidget {
   }) async {
     final output = ref.read(invoiceOutputActionsProvider);
     final activeSession = ref.read(activePosSessionProvider).valueOrNull;
-    final reason = reprint ? await _askReprintReason(context) : null;
-    if (reprint && reason == null) return;
     final result = reprint
         ? await output.reprint(
             document.saleId,
-            reason: reason,
             createdBy: activeSession?.activeUserId ?? document.cashier.userId,
           )
         : await output.printOriginal(
@@ -280,27 +275,6 @@ class _Actions extends ConsumerWidget {
       AppSnackbar.showSuccess(context, 'تم إرسال الفاتورة للطباعة.');
     }
     ref.invalidate(invoicePrintHistoryProvider(document.saleId));
-  }
-
-  Future<String?> _askReprintReason(BuildContext context) async {
-    final controller = TextEditingController();
-    final result = await AppDialog.show<String>(
-      context: context,
-      dialog: AppDialog(
-        title: 'Reprint reason',
-        content: AppTextField(
-          controller: controller,
-          autofocus: true,
-          labelText: 'Reason (optional)',
-          hintText: 'Customer copy, printer failure...',
-        ),
-        cancelLabel: 'Cancel',
-        confirmLabel: 'Reprint',
-        onConfirm: () => Navigator.of(context).pop(controller.text.trim()),
-      ),
-    );
-    controller.dispose();
-    return result;
   }
 
   Future<void> _savePdf(BuildContext context, WidgetRef ref) async {

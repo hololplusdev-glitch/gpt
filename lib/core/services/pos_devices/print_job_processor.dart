@@ -117,7 +117,6 @@ class PrintJobProcessor {
         documentType: job.documentType,
         isReprint: document.copyInfo.isCopy,
         copyNumber: document.copyInfo.copyNumber,
-        reprintReason: document.copyInfo.reason,
         printedBy: job.createdBy,
         status: error == null
             ? PrintJobStatus.printed.code

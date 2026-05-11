@@ -161,16 +161,10 @@ class _CartPanelState extends ConsumerState<CartPanel> {
             _PayButton(cart: cart, quoteState: quoteState),
           ],
         ],
-          
-        
       ),
-
     );
-
   }
-
 }
-
 
 class _CartItemTile extends ConsumerWidget {
   final CartItem item;
@@ -411,7 +405,6 @@ class _CartItemTile extends ConsumerWidget {
     );
   }
 }
-
 
 class _QtyButton extends StatelessWidget {
   final IconData icon;
