@@ -70,6 +70,7 @@ class MasterDataDownloadHelper {
 
     final summary = await _syncService.syncAll(
       MasterDataSyncContext(
+        custCode: syncProfile.custCode.trim(),
         bootstrapUserId: syncProfile.bootstrapUserId.trim().isEmpty
             ? '1'
             : syncProfile.bootstrapUserId.trim(),

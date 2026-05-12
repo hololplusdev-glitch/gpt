@@ -4,7 +4,6 @@ import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/network/api_client.dart';
 import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
 import 'package:holol_POS/core/persistence/daos/master_data_dao.dart';
-import 'package:holol_POS/core/services/master_data/backend_value_reader.dart';
 import 'package:holol_POS/core/services/master_data/master_data_mapper.dart';
 import 'package:holol_POS/core/services/master_data/master_data_contract.dart';
 

@@ -371,12 +371,10 @@ EXISTS (
         requested.sourceUnitId,
         requested.localId,
         if (unit != null) unit.id,
-        if (unit?.sourceUnitId != null) unit!.sourceUnitId!,
+        if (unit != null) _sourceUnitIdForUnitData(unit),
       };
       final allCandidates = (pricesByItem[requested.itemId] ?? const [])
-          .where(
-            (price) => price.unitId != null && unitIds.contains(price.unitId),
-          )
+          .where((price) => unitIds.contains(price.unitId))
           .toList();
       final candidates = allCandidates;
       if (candidates.isEmpty) {
@@ -396,9 +394,7 @@ EXISTS (
       )] = ResolvedItemPrice(
         unitPrice: price.unitPrice,
         unitId: effectiveUnit == null
-            ? (price.unitId == null
-                  ? null
-                  : _sourceUnitIdFromLocalId(price.unitId!))
+            ? _sourceUnitIdFromLocalId(price.unitId)
             : _sourceUnitIdForUnitData(effectiveUnit),
         unitName: effectiveUnit?.name,
         barcode: null,
@@ -440,7 +436,7 @@ EXISTS (
     final unitIds = {
       unitId,
       if (unit != null) unit.id,
-      if (unit?.sourceUnitId != null) unit!.sourceUnitId!,
+      if (unit != null) _sourceUnitIdForUnitData(unit),
     };
     final rows =
         await (_db.select(_db.itemPrices)..where(
@@ -452,20 +448,15 @@ EXISTS (
             ))
             .get();
     final candidates = rows
-        .where(
-          (price) => price.unitId != null && unitIds.contains(price.unitId),
-        )
+        .where((price) => unitIds.contains(price.unitId))
         .toList();
     if (candidates.isEmpty) return null;
     final price = candidates.first;
-    final effectiveUnit =
-        unit ?? await _getUnitByAnyId(itemId, price.unitId ?? '');
+    final effectiveUnit = unit ?? await _getUnitByAnyId(itemId, price.unitId);
     return ResolvedItemPrice(
       unitPrice: price.unitPrice,
       unitId: effectiveUnit == null
-          ? (price.unitId == null
-                ? null
-                : _sourceUnitIdFromLocalId(price.unitId!))
+          ? _sourceUnitIdFromLocalId(price.unitId)
           : _sourceUnitIdForUnitData(effectiveUnit),
       unitName: effectiveUnit?.name,
       barcode: null,

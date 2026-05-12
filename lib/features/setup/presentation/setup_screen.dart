@@ -549,7 +549,6 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           profile = SyncProfile(
             host: _hostController.text.trim(),
             custCode: _custCodeController.text.trim(),
-            custCode: _custCodeController.text.trim(),
             port: portText.isNotEmpty ? int.tryParse(portText) : null,
             basePath: _basePathController.text.trim(),
             useSsl: _useSsl,
