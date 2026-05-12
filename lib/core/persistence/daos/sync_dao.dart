@@ -147,6 +147,20 @@ class SyncDao {
     );
   }
 
+  /// Restore an event back to pending without consuming retries.
+  ///
+  /// Used when the upload API is unavailable. This is not a business failure
+  /// and must not convert the event to failed/blocked.
+  Future<void> restorePending(String id, {String? reason}) async {
+    await (_db.update(_db.outboxEvents)..where((s) => s.id.equals(id))).write(
+      OutboxEventsCompanion(
+        status: Value(OutboxStatus.pending.code),
+        lastError: Value(reason),
+        lastAttemptAt: Value(_clock.now()),
+      ),
+    );
+  }
+
   /// Recover sync entries left in uploading after a crash or app kill.
   Future<int> recoverStuckUploading({
     Duration leaseTimeout = const Duration(minutes: 15),
@@ -252,10 +266,28 @@ class SyncDao {
   }
 
   int _compareBySyncPriority(OutboxEvent a, OutboxEvent b) {
-    // Assuming eventType is stored as String now, but syncEventPriority took int.
-    // We can fallback or parse if needed, but here we just return by createdAt to fix the type errors
-    // or map it back if we have the method.
-    // For now, let's just sort by createdAt since eventTypes might be strings.
+    final priorityCompare = _syncPriority(a).compareTo(_syncPriority(b));
+    if (priorityCompare != 0) return priorityCompare;
     return a.createdAt.compareTo(b.createdAt);
+  }
+
+  int _syncPriority(OutboxEvent entry) {
+    final type = OutboxEventType.fromCode(entry.eventType);
+
+    switch (type) {
+      case OutboxEventType.shiftOpened:
+        return 10;
+      case OutboxEventType.saleCreated:
+      case OutboxEventType.returnCreated:
+        return 20;
+      case OutboxEventType.saleVoided:
+        return 30;
+      case OutboxEventType.shiftExtended:
+        return 40;
+      case OutboxEventType.shiftClosed:
+        return 50;
+      case null:
+        return 999;
+    }
   }
 }

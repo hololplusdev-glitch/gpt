@@ -14,9 +14,11 @@ import 'package:uuid/uuid.dart';
 
 /// Local upload outbox processor.
 ///
-/// The current Backend APEX offline contract only documents master-data download.
-/// Until an invoice upload endpoint is provided, this service must block
-/// queued sale/shift events instead of pretending they uploaded.
+/// SSOT rules:
+/// - SyncDao owns outbox status transitions.
+/// - DbSyncService owns upload orchestration only.
+/// - Missing upload API must not mutate business events to blocked.
+/// - blocked is reserved for permanent server rejection or unrecoverable payload.
 class DbSyncService {
   final SyncDao _syncDao;
   final AuditDao _auditDao;
@@ -35,40 +37,95 @@ class DbSyncService {
   Future<SyncResult> processQueue({required String terminalId}) async {
     var synced = 0;
     var failed = 0;
+    var uploadUnavailable = 0;
 
     final recovered = await _syncDao.recoverStuckUploading();
 
+    if (!_apiClient.isConfigured) {
+      final remaining = await _remainingRetryableCount();
+
+      if (remaining > 0 || recovered > 0) {
+        await _auditDao.log(
+          id: 'AUD_${_uuid.v4()}',
+          action: AuditAction.syncFailed,
+          actorId: 'SYSTEM',
+          detailsJson: jsonEncode({
+            'synced': 0,
+            'failed': 0,
+            'uploadUnavailable': remaining,
+            'remaining': remaining,
+            'blockedCount': await _syncDao.getBlockedCount(),
+            'recoveredStuckUploading': recovered,
+            'reason': 'upload_api_not_configured',
+          }),
+          terminalId: terminalId,
+        );
+      }
+
+      return SyncResult(
+        synced: 0,
+        failed: 0,
+        uploadUnavailable: remaining,
+        remaining: remaining,
+        blockedCount: await _syncDao.getBlockedCount(),
+        recoveredStuckUploading: recovered,
+      );
+    }
+
     final pending = await _syncDao.getPending(limit: 50);
     final processedIds = pending.map((entry) => entry.id).toSet();
+
     for (final entry in pending) {
-      final accepted = await _processEntry(entry);
-      if (accepted) {
-        synced++;
-      } else {
-        failed++;
+      final result = await _processEntry(entry);
+
+      switch (result) {
+        case _OutboxEntryProcessResult.accepted:
+          synced++;
+        case _OutboxEntryProcessResult.failed:
+          failed++;
+        case _OutboxEntryProcessResult.uploadUnavailable:
+          uploadUnavailable++;
+      }
+
+      if (result == _OutboxEntryProcessResult.uploadUnavailable) {
+        break;
       }
     }
 
-    final retryable = (await _syncDao.getRetryable(
-      limit: 20,
-    )).where((entry) => !processedIds.contains(entry.id));
-    for (final entry in retryable) {
-      final accepted = await _processEntry(entry);
-      if (accepted) {
-        synced++;
-      } else {
-        failed++;
+    if (uploadUnavailable == 0) {
+      final retryable = (await _syncDao.getRetryable(
+        limit: 20,
+      )).where((entry) => !processedIds.contains(entry.id));
+
+      for (final entry in retryable) {
+        final result = await _processEntry(entry);
+
+        switch (result) {
+          case _OutboxEntryProcessResult.accepted:
+            synced++;
+          case _OutboxEntryProcessResult.failed:
+            failed++;
+          case _OutboxEntryProcessResult.uploadUnavailable:
+            uploadUnavailable++;
+        }
+
+        if (result == _OutboxEntryProcessResult.uploadUnavailable) {
+          break;
+        }
       }
     }
 
-    if (synced > 0 || failed > 0) {
+    if (synced > 0 || failed > 0 || uploadUnavailable > 0 || recovered > 0) {
       await _auditDao.log(
         id: 'AUD_${_uuid.v4()}',
-        action: synced > 0 ? AuditAction.syncSucceeded : AuditAction.syncFailed,
+        action: synced > 0 && failed == 0 && uploadUnavailable == 0
+            ? AuditAction.syncSucceeded
+            : AuditAction.syncFailed,
         actorId: 'SYSTEM',
         detailsJson: jsonEncode({
           'synced': synced,
           'failed': failed,
+          'uploadUnavailable': uploadUnavailable,
           'remaining': await _remainingRetryableCount(),
           'blockedCount': await _syncDao.getBlockedCount(),
           'recoveredStuckUploading': recovered,
@@ -80,6 +137,7 @@ class DbSyncService {
     return SyncResult(
       synced: synced,
       failed: failed,
+      uploadUnavailable: uploadUnavailable,
       remaining: await _remainingRetryableCount(),
       blockedCount: await _syncDao.getBlockedCount(),
       recoveredStuckUploading: recovered,
@@ -90,18 +148,34 @@ class DbSyncService {
     return _syncDao.getPendingCount();
   }
 
-  Future<bool> _processEntry(OutboxEvent entry) async {
+  Future<_OutboxEntryProcessResult> _processEntry(OutboxEvent entry) async {
     try {
       await _syncDao.markUploading(entry.id);
-      await _upload(entry.payloadJson);
-      await _syncDao.markUploaded(entry: entry, syncLogId: 'SL_${_uuid.v4()}');
-      return true;
-    } on UploadApiUnavailableException catch (e) {
+
+      final upload = await _upload(entry);
+
+      await _syncDao.markUploaded(
+        entry: entry,
+        syncLogId: 'SL_${_uuid.v4()}',
+        serverId: upload.serverId,
+        serverMappingId: upload.serverMappingId,
+        serverResponse: upload.responseSummary,
+      );
+
+      return _OutboxEntryProcessResult.accepted;
+    } on UploadApiUnavailableException catch (_) {
+      await _syncDao.restorePending(
+        entry.id,
+        reason: 'Upload API unavailable. Event remains pending.',
+      );
+      return _OutboxEntryProcessResult.uploadUnavailable;
+    } on SyncRejectedException catch (e) {
       await _syncDao.markBlocked(
         entry.id,
-        blockedReason: 'upload_api_unavailable',
+        blockedReason: 'server_rejected',
         error: e.message,
       );
+
       await _syncDao.logAttempt(
         id: 'SL_${_uuid.v4()}',
         outboxEventId: entry.id,
@@ -110,10 +184,13 @@ class DbSyncService {
         success: false,
         errorMessage: e.message,
       );
-      return false;
+
+      return _OutboxEntryProcessResult.failed;
     } catch (e) {
       final message = ErrorMapper.userMessage(e);
+
       await _syncDao.markFailed(entry.id, message);
+
       await _syncDao.logAttempt(
         id: 'SL_${_uuid.v4()}',
         outboxEventId: entry.id,
@@ -122,7 +199,8 @@ class DbSyncService {
         success: false,
         errorMessage: message,
       );
-      return false;
+
+      return _OutboxEntryProcessResult.failed;
     }
   }
 
@@ -131,16 +209,34 @@ class DbSyncService {
         await _syncDao.getRetryableCount();
   }
 
-  Future<void> _upload(String _) async {
+  Future<_UploadAccepted> _upload(OutboxEvent entry) async {
     if (!_apiClient.isConfigured) {
       throw const UploadApiUnavailableException(
         'Invoice upload API is not configured.',
       );
     }
+
+    // Upload endpoint contract is intentionally not guessed here.
+    // When Backend provides the contract, this method becomes the single owner
+    // of request path, payload envelope, response parsing, and idempotency.
     throw const UploadApiUnavailableException(
       'Invoice upload API is not documented yet. Pending invoices remain local.',
     );
   }
+}
+
+enum _OutboxEntryProcessResult { accepted, failed, uploadUnavailable }
+
+class _UploadAccepted {
+  final String? serverId;
+  final String? serverMappingId;
+  final String? responseSummary;
+
+  const _UploadAccepted({
+    this.serverId,
+    this.serverMappingId,
+    this.responseSummary,
+  });
 }
 
 class UploadApiUnavailableException extends SyncTransportException {
@@ -158,6 +254,7 @@ class SyncRejectedException extends SyncException {
 class SyncResult {
   final int synced;
   final int failed;
+  final int uploadUnavailable;
   final int remaining;
   final int blockedCount;
   final int recoveredStuckUploading;
@@ -165,12 +262,16 @@ class SyncResult {
   const SyncResult({
     required this.synced,
     required this.failed,
+    this.uploadUnavailable = 0,
     required this.remaining,
     required this.blockedCount,
     required this.recoveredStuckUploading,
   });
 
+  bool get hasWorkRemaining => remaining > 0 || uploadUnavailable > 0;
+
   @override
-  String toString() =>
-      'SyncResult(synced: $synced, failed: $failed, remaining: $remaining, blockedCount: $blockedCount)';
+  String toString() {
+    return 'SyncResult(synced: $synced, failed: $failed, uploadUnavailable: $uploadUnavailable, remaining: $remaining, blockedCount: $blockedCount)';
+  }
 }
