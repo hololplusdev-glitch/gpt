@@ -142,7 +142,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
           : l10n.masterDataDownloadSummary(result.rowCount, 0);
       setState(() {
         _isSyncing = false;
-        _lastSummary = download.summaryWithReadinessWarnings;
+        _lastSummary = download.summary;
         _lastResult = readinessWarnings.isEmpty
             ? resultMessage
             : '$resultMessage\n${readinessWarnings.join('\n')}';
