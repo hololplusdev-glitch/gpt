@@ -773,7 +773,7 @@ class SaleCheckoutRequest {
   final String? customerName;
   final String? customerTaxNumber;
 
-  const SaleCheckoutRequest({
+  SaleCheckoutRequest({
     required this.cart,
     required this.checkoutAttemptId,
     required this.paymentIntent,
@@ -781,7 +781,7 @@ class SaleCheckoutRequest {
     this.customerId,
     this.customerName,
     this.customerTaxNumber,
-  }) : paymentIntents = paymentIntents ?? const [paymentIntent];
+  }) : paymentIntents = paymentIntents ?? [paymentIntent];
 }
 
 class CheckoutPaymentRequirements {
