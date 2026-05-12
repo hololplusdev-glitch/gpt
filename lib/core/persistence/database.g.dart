@@ -4389,17 +4389,6 @@ class $ActivePosSessionsTable extends ActivePosSessions
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _openShiftIdMeta = const VerificationMeta(
-    'openShiftId',
-  );
-  @override
-  late final GeneratedColumn<String> openShiftId = GeneratedColumn<String>(
-    'open_shift_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _loginAtMeta = const VerificationMeta(
     'loginAt',
   );
@@ -4429,7 +4418,6 @@ class $ActivePosSessionsTable extends ActivePosSessions
     custCode,
     activeUserId,
     activeMachineNo,
-    openShiftId,
     loginAt,
     updatedAt,
   ];
@@ -4484,15 +4472,6 @@ class $ActivePosSessionsTable extends ActivePosSessions
     } else if (isInserting) {
       context.missing(_activeMachineNoMeta);
     }
-    if (data.containsKey('open_shift_id')) {
-      context.handle(
-        _openShiftIdMeta,
-        openShiftId.isAcceptableOrUnknown(
-          data['open_shift_id']!,
-          _openShiftIdMeta,
-        ),
-      );
-    }
     if (data.containsKey('login_at')) {
       context.handle(
         _loginAtMeta,
@@ -4538,10 +4517,6 @@ class $ActivePosSessionsTable extends ActivePosSessions
         DriftSqlType.string,
         data['${effectivePrefix}active_machine_no'],
       )!,
-      openShiftId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}open_shift_id'],
-      ),
       loginAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}login_at'],
@@ -4566,7 +4541,6 @@ class ActivePosSessionRow extends DataClass
   final String custCode;
   final String activeUserId;
   final String activeMachineNo;
-  final String? openShiftId;
   final DateTime loginAt;
   final DateTime updatedAt;
   const ActivePosSessionRow({
@@ -4575,7 +4549,6 @@ class ActivePosSessionRow extends DataClass
     required this.custCode,
     required this.activeUserId,
     required this.activeMachineNo,
-    this.openShiftId,
     required this.loginAt,
     required this.updatedAt,
   });
@@ -4589,9 +4562,6 @@ class ActivePosSessionRow extends DataClass
     map['cust_code'] = Variable<String>(custCode);
     map['active_user_id'] = Variable<String>(activeUserId);
     map['active_machine_no'] = Variable<String>(activeMachineNo);
-    if (!nullToAbsent || openShiftId != null) {
-      map['open_shift_id'] = Variable<String>(openShiftId);
-    }
     map['login_at'] = Variable<DateTime>(loginAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -4606,9 +4576,6 @@ class ActivePosSessionRow extends DataClass
       custCode: Value(custCode),
       activeUserId: Value(activeUserId),
       activeMachineNo: Value(activeMachineNo),
-      openShiftId: openShiftId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(openShiftId),
       loginAt: Value(loginAt),
       updatedAt: Value(updatedAt),
     );
@@ -4625,7 +4592,6 @@ class ActivePosSessionRow extends DataClass
       custCode: serializer.fromJson<String>(json['custCode']),
       activeUserId: serializer.fromJson<String>(json['activeUserId']),
       activeMachineNo: serializer.fromJson<String>(json['activeMachineNo']),
-      openShiftId: serializer.fromJson<String?>(json['openShiftId']),
       loginAt: serializer.fromJson<DateTime>(json['loginAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -4639,7 +4605,6 @@ class ActivePosSessionRow extends DataClass
       'custCode': serializer.toJson<String>(custCode),
       'activeUserId': serializer.toJson<String>(activeUserId),
       'activeMachineNo': serializer.toJson<String>(activeMachineNo),
-      'openShiftId': serializer.toJson<String?>(openShiftId),
       'loginAt': serializer.toJson<DateTime>(loginAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -4651,7 +4616,6 @@ class ActivePosSessionRow extends DataClass
     String? custCode,
     String? activeUserId,
     String? activeMachineNo,
-    Value<String?> openShiftId = const Value.absent(),
     DateTime? loginAt,
     DateTime? updatedAt,
   }) => ActivePosSessionRow(
@@ -4660,7 +4624,6 @@ class ActivePosSessionRow extends DataClass
     custCode: custCode ?? this.custCode,
     activeUserId: activeUserId ?? this.activeUserId,
     activeMachineNo: activeMachineNo ?? this.activeMachineNo,
-    openShiftId: openShiftId.present ? openShiftId.value : this.openShiftId,
     loginAt: loginAt ?? this.loginAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -4675,9 +4638,6 @@ class ActivePosSessionRow extends DataClass
       activeMachineNo: data.activeMachineNo.present
           ? data.activeMachineNo.value
           : this.activeMachineNo,
-      openShiftId: data.openShiftId.present
-          ? data.openShiftId.value
-          : this.openShiftId,
       loginAt: data.loginAt.present ? data.loginAt.value : this.loginAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -4691,7 +4651,6 @@ class ActivePosSessionRow extends DataClass
           ..write('custCode: $custCode, ')
           ..write('activeUserId: $activeUserId, ')
           ..write('activeMachineNo: $activeMachineNo, ')
-          ..write('openShiftId: $openShiftId, ')
           ..write('loginAt: $loginAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -4705,7 +4664,6 @@ class ActivePosSessionRow extends DataClass
     custCode,
     activeUserId,
     activeMachineNo,
-    openShiftId,
     loginAt,
     updatedAt,
   );
@@ -4718,7 +4676,6 @@ class ActivePosSessionRow extends DataClass
           other.custCode == this.custCode &&
           other.activeUserId == this.activeUserId &&
           other.activeMachineNo == this.activeMachineNo &&
-          other.openShiftId == this.openShiftId &&
           other.loginAt == this.loginAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -4729,7 +4686,6 @@ class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSessionRow> {
   final Value<String> custCode;
   final Value<String> activeUserId;
   final Value<String> activeMachineNo;
-  final Value<String?> openShiftId;
   final Value<DateTime> loginAt;
   final Value<DateTime> updatedAt;
   const ActivePosSessionsCompanion({
@@ -4738,7 +4694,6 @@ class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSessionRow> {
     this.custCode = const Value.absent(),
     this.activeUserId = const Value.absent(),
     this.activeMachineNo = const Value.absent(),
-    this.openShiftId = const Value.absent(),
     this.loginAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -4748,7 +4703,6 @@ class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSessionRow> {
     required String custCode,
     required String activeUserId,
     required String activeMachineNo,
-    this.openShiftId = const Value.absent(),
     required DateTime loginAt,
     required DateTime updatedAt,
   }) : custCode = Value(custCode),
@@ -4762,7 +4716,6 @@ class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSessionRow> {
     Expression<String>? custCode,
     Expression<String>? activeUserId,
     Expression<String>? activeMachineNo,
-    Expression<String>? openShiftId,
     Expression<DateTime>? loginAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -4772,7 +4725,6 @@ class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSessionRow> {
       if (custCode != null) 'cust_code': custCode,
       if (activeUserId != null) 'active_user_id': activeUserId,
       if (activeMachineNo != null) 'active_machine_no': activeMachineNo,
-      if (openShiftId != null) 'open_shift_id': openShiftId,
       if (loginAt != null) 'login_at': loginAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -4784,7 +4736,6 @@ class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSessionRow> {
     Value<String>? custCode,
     Value<String>? activeUserId,
     Value<String>? activeMachineNo,
-    Value<String?>? openShiftId,
     Value<DateTime>? loginAt,
     Value<DateTime>? updatedAt,
   }) {
@@ -4794,7 +4745,6 @@ class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSessionRow> {
       custCode: custCode ?? this.custCode,
       activeUserId: activeUserId ?? this.activeUserId,
       activeMachineNo: activeMachineNo ?? this.activeMachineNo,
-      openShiftId: openShiftId ?? this.openShiftId,
       loginAt: loginAt ?? this.loginAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -4818,9 +4768,6 @@ class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSessionRow> {
     if (activeMachineNo.present) {
       map['active_machine_no'] = Variable<String>(activeMachineNo.value);
     }
-    if (openShiftId.present) {
-      map['open_shift_id'] = Variable<String>(openShiftId.value);
-    }
     if (loginAt.present) {
       map['login_at'] = Variable<DateTime>(loginAt.value);
     }
@@ -4838,7 +4785,6 @@ class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSessionRow> {
           ..write('custCode: $custCode, ')
           ..write('activeUserId: $activeUserId, ')
           ..write('activeMachineNo: $activeMachineNo, ')
-          ..write('openShiftId: $openShiftId, ')
           ..write('loginAt: $loginAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -14313,17 +14259,6 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, Shift> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
-    'syncStatus',
-  );
-  @override
-  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
-    'sync_status',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _openedAtMeta = const VerificationMeta(
     'openedAt',
   );
@@ -14407,7 +14342,6 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, Shift> {
     actualCash,
     difference,
     status,
-    syncStatus,
     openedAt,
     closedAt,
     expiresAt,
@@ -14534,14 +14468,6 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, Shift> {
     } else if (isInserting) {
       context.missing(_statusMeta);
     }
-    if (data.containsKey('sync_status')) {
-      context.handle(
-        _syncStatusMeta,
-        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_syncStatusMeta);
-    }
     if (data.containsKey('opened_at')) {
       context.handle(
         _openedAtMeta,
@@ -14660,10 +14586,6 @@ class $ShiftsTable extends Shifts with TableInfo<$ShiftsTable, Shift> {
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
-      syncStatus: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}sync_status'],
-      )!,
       openedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}opened_at'],
@@ -14713,7 +14635,6 @@ class Shift extends DataClass implements Insertable<Shift> {
   final double actualCash;
   final double difference;
   final String status;
-  final String syncStatus;
   final DateTime openedAt;
   final DateTime? closedAt;
   final DateTime? expiresAt;
@@ -14736,7 +14657,6 @@ class Shift extends DataClass implements Insertable<Shift> {
     required this.actualCash,
     required this.difference,
     required this.status,
-    required this.syncStatus,
     required this.openedAt,
     this.closedAt,
     this.expiresAt,
@@ -14778,7 +14698,6 @@ class Shift extends DataClass implements Insertable<Shift> {
     map['actual_cash'] = Variable<double>(actualCash);
     map['difference'] = Variable<double>(difference);
     map['status'] = Variable<String>(status);
-    map['sync_status'] = Variable<String>(syncStatus);
     map['opened_at'] = Variable<DateTime>(openedAt);
     if (!nullToAbsent || closedAt != null) {
       map['closed_at'] = Variable<DateTime>(closedAt);
@@ -14829,7 +14748,6 @@ class Shift extends DataClass implements Insertable<Shift> {
       actualCash: Value(actualCash),
       difference: Value(difference),
       status: Value(status),
-      syncStatus: Value(syncStatus),
       openedAt: Value(openedAt),
       closedAt: closedAt == null && nullToAbsent
           ? const Value.absent()
@@ -14868,7 +14786,6 @@ class Shift extends DataClass implements Insertable<Shift> {
       actualCash: serializer.fromJson<double>(json['actualCash']),
       difference: serializer.fromJson<double>(json['difference']),
       status: serializer.fromJson<String>(json['status']),
-      syncStatus: serializer.fromJson<String>(json['syncStatus']),
       openedAt: serializer.fromJson<DateTime>(json['openedAt']),
       closedAt: serializer.fromJson<DateTime?>(json['closedAt']),
       expiresAt: serializer.fromJson<DateTime?>(json['expiresAt']),
@@ -14896,7 +14813,6 @@ class Shift extends DataClass implements Insertable<Shift> {
       'actualCash': serializer.toJson<double>(actualCash),
       'difference': serializer.toJson<double>(difference),
       'status': serializer.toJson<String>(status),
-      'syncStatus': serializer.toJson<String>(syncStatus),
       'openedAt': serializer.toJson<DateTime>(openedAt),
       'closedAt': serializer.toJson<DateTime?>(closedAt),
       'expiresAt': serializer.toJson<DateTime?>(expiresAt),
@@ -14922,7 +14838,6 @@ class Shift extends DataClass implements Insertable<Shift> {
     double? actualCash,
     double? difference,
     String? status,
-    String? syncStatus,
     DateTime? openedAt,
     Value<DateTime?> closedAt = const Value.absent(),
     Value<DateTime?> expiresAt = const Value.absent(),
@@ -14945,7 +14860,6 @@ class Shift extends DataClass implements Insertable<Shift> {
     actualCash: actualCash ?? this.actualCash,
     difference: difference ?? this.difference,
     status: status ?? this.status,
-    syncStatus: syncStatus ?? this.syncStatus,
     openedAt: openedAt ?? this.openedAt,
     closedAt: closedAt.present ? closedAt.value : this.closedAt,
     expiresAt: expiresAt.present ? expiresAt.value : this.expiresAt,
@@ -14986,9 +14900,6 @@ class Shift extends DataClass implements Insertable<Shift> {
           ? data.difference.value
           : this.difference,
       status: data.status.present ? data.status.value : this.status,
-      syncStatus: data.syncStatus.present
-          ? data.syncStatus.value
-          : this.syncStatus,
       openedAt: data.openedAt.present ? data.openedAt.value : this.openedAt,
       closedAt: data.closedAt.present ? data.closedAt.value : this.closedAt,
       expiresAt: data.expiresAt.present ? data.expiresAt.value : this.expiresAt,
@@ -15022,7 +14933,6 @@ class Shift extends DataClass implements Insertable<Shift> {
           ..write('actualCash: $actualCash, ')
           ..write('difference: $difference, ')
           ..write('status: $status, ')
-          ..write('syncStatus: $syncStatus, ')
           ..write('openedAt: $openedAt, ')
           ..write('closedAt: $closedAt, ')
           ..write('expiresAt: $expiresAt, ')
@@ -15050,7 +14960,6 @@ class Shift extends DataClass implements Insertable<Shift> {
     actualCash,
     difference,
     status,
-    syncStatus,
     openedAt,
     closedAt,
     expiresAt,
@@ -15077,7 +14986,6 @@ class Shift extends DataClass implements Insertable<Shift> {
           other.actualCash == this.actualCash &&
           other.difference == this.difference &&
           other.status == this.status &&
-          other.syncStatus == this.syncStatus &&
           other.openedAt == this.openedAt &&
           other.closedAt == this.closedAt &&
           other.expiresAt == this.expiresAt &&
@@ -15102,7 +15010,6 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
   final Value<double> actualCash;
   final Value<double> difference;
   final Value<String> status;
-  final Value<String> syncStatus;
   final Value<DateTime> openedAt;
   final Value<DateTime?> closedAt;
   final Value<DateTime?> expiresAt;
@@ -15126,7 +15033,6 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
     this.actualCash = const Value.absent(),
     this.difference = const Value.absent(),
     this.status = const Value.absent(),
-    this.syncStatus = const Value.absent(),
     this.openedAt = const Value.absent(),
     this.closedAt = const Value.absent(),
     this.expiresAt = const Value.absent(),
@@ -15151,7 +15057,6 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
     this.actualCash = const Value.absent(),
     this.difference = const Value.absent(),
     required String status,
-    required String syncStatus,
     required DateTime openedAt,
     this.closedAt = const Value.absent(),
     this.expiresAt = const Value.absent(),
@@ -15163,7 +15068,6 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
        cashierId = Value(cashierId),
        openingCash = Value(openingCash),
        status = Value(status),
-       syncStatus = Value(syncStatus),
        openedAt = Value(openedAt),
        idempotencyKey = Value(idempotencyKey);
   static Insertable<Shift> custom({
@@ -15182,7 +15086,6 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
     Expression<double>? actualCash,
     Expression<double>? difference,
     Expression<String>? status,
-    Expression<String>? syncStatus,
     Expression<DateTime>? openedAt,
     Expression<DateTime>? closedAt,
     Expression<DateTime>? expiresAt,
@@ -15207,7 +15110,6 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
       if (actualCash != null) 'actual_cash': actualCash,
       if (difference != null) 'difference': difference,
       if (status != null) 'status': status,
-      if (syncStatus != null) 'sync_status': syncStatus,
       if (openedAt != null) 'opened_at': openedAt,
       if (closedAt != null) 'closed_at': closedAt,
       if (expiresAt != null) 'expires_at': expiresAt,
@@ -15234,7 +15136,6 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
     Value<double>? actualCash,
     Value<double>? difference,
     Value<String>? status,
-    Value<String>? syncStatus,
     Value<DateTime>? openedAt,
     Value<DateTime?>? closedAt,
     Value<DateTime?>? expiresAt,
@@ -15259,7 +15160,6 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
       actualCash: actualCash ?? this.actualCash,
       difference: difference ?? this.difference,
       status: status ?? this.status,
-      syncStatus: syncStatus ?? this.syncStatus,
       openedAt: openedAt ?? this.openedAt,
       closedAt: closedAt ?? this.closedAt,
       expiresAt: expiresAt ?? this.expiresAt,
@@ -15318,9 +15218,6 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
     if (status.present) {
       map['status'] = Variable<String>(status.value);
     }
-    if (syncStatus.present) {
-      map['sync_status'] = Variable<String>(syncStatus.value);
-    }
     if (openedAt.present) {
       map['opened_at'] = Variable<DateTime>(openedAt.value);
     }
@@ -15363,7 +15260,6 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
           ..write('actualCash: $actualCash, ')
           ..write('difference: $difference, ')
           ..write('status: $status, ')
-          ..write('syncStatus: $syncStatus, ')
           ..write('openedAt: $openedAt, ')
           ..write('closedAt: $closedAt, ')
           ..write('expiresAt: $expiresAt, ')
@@ -15908,17 +15804,6 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _syncStatusMeta = const VerificationMeta(
-    'syncStatus',
-  );
-  @override
-  late final GeneratedColumn<String> syncStatus = GeneratedColumn<String>(
-    'sync_status',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _custCodeMeta = const VerificationMeta(
     'custCode',
   );
@@ -16243,7 +16128,6 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     idempotencyKey,
     type,
     status,
-    syncStatus,
     custCode,
     branchNo,
     branchYear,
@@ -16342,14 +16226,6 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
       );
     } else if (isInserting) {
       context.missing(_statusMeta);
-    }
-    if (data.containsKey('sync_status')) {
-      context.handle(
-        _syncStatusMeta,
-        syncStatus.isAcceptableOrUnknown(data['sync_status']!, _syncStatusMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_syncStatusMeta);
     }
     if (data.containsKey('cust_code')) {
       context.handle(
@@ -16601,10 +16477,6 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
         DriftSqlType.string,
         data['${effectivePrefix}status'],
       )!,
-      syncStatus: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}sync_status'],
-      )!,
       custCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}cust_code'],
@@ -16734,7 +16606,6 @@ class Sale extends DataClass implements Insertable<Sale> {
   final String idempotencyKey;
   final String type;
   final String status;
-  final String syncStatus;
   final String? custCode;
   final String? branchNo;
   final String? branchYear;
@@ -16771,7 +16642,6 @@ class Sale extends DataClass implements Insertable<Sale> {
     required this.idempotencyKey,
     required this.type,
     required this.status,
-    required this.syncStatus,
     this.custCode,
     this.branchNo,
     this.branchYear,
@@ -16815,7 +16685,6 @@ class Sale extends DataClass implements Insertable<Sale> {
     map['idempotency_key'] = Variable<String>(idempotencyKey);
     map['type'] = Variable<String>(type);
     map['status'] = Variable<String>(status);
-    map['sync_status'] = Variable<String>(syncStatus);
     if (!nullToAbsent || custCode != null) {
       map['cust_code'] = Variable<String>(custCode);
     }
@@ -16896,7 +16765,6 @@ class Sale extends DataClass implements Insertable<Sale> {
       idempotencyKey: Value(idempotencyKey),
       type: Value(type),
       status: Value(status),
-      syncStatus: Value(syncStatus),
       custCode: custCode == null && nullToAbsent
           ? const Value.absent()
           : Value(custCode),
@@ -16976,7 +16844,6 @@ class Sale extends DataClass implements Insertable<Sale> {
       idempotencyKey: serializer.fromJson<String>(json['idempotencyKey']),
       type: serializer.fromJson<String>(json['type']),
       status: serializer.fromJson<String>(json['status']),
-      syncStatus: serializer.fromJson<String>(json['syncStatus']),
       custCode: serializer.fromJson<String?>(json['custCode']),
       branchNo: serializer.fromJson<String?>(json['branchNo']),
       branchYear: serializer.fromJson<String?>(json['branchYear']),
@@ -17024,7 +16891,6 @@ class Sale extends DataClass implements Insertable<Sale> {
       'idempotencyKey': serializer.toJson<String>(idempotencyKey),
       'type': serializer.toJson<String>(type),
       'status': serializer.toJson<String>(status),
-      'syncStatus': serializer.toJson<String>(syncStatus),
       'custCode': serializer.toJson<String?>(custCode),
       'branchNo': serializer.toJson<String?>(branchNo),
       'branchYear': serializer.toJson<String?>(branchYear),
@@ -17066,7 +16932,6 @@ class Sale extends DataClass implements Insertable<Sale> {
     String? idempotencyKey,
     String? type,
     String? status,
-    String? syncStatus,
     Value<String?> custCode = const Value.absent(),
     Value<String?> branchNo = const Value.absent(),
     Value<String?> branchYear = const Value.absent(),
@@ -17105,7 +16970,6 @@ class Sale extends DataClass implements Insertable<Sale> {
     idempotencyKey: idempotencyKey ?? this.idempotencyKey,
     type: type ?? this.type,
     status: status ?? this.status,
-    syncStatus: syncStatus ?? this.syncStatus,
     custCode: custCode.present ? custCode.value : this.custCode,
     branchNo: branchNo.present ? branchNo.value : this.branchNo,
     branchYear: branchYear.present ? branchYear.value : this.branchYear,
@@ -17160,9 +17024,6 @@ class Sale extends DataClass implements Insertable<Sale> {
           : this.idempotencyKey,
       type: data.type.present ? data.type.value : this.type,
       status: data.status.present ? data.status.value : this.status,
-      syncStatus: data.syncStatus.present
-          ? data.syncStatus.value
-          : this.syncStatus,
       custCode: data.custCode.present ? data.custCode.value : this.custCode,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       branchYear: data.branchYear.present
@@ -17234,7 +17095,6 @@ class Sale extends DataClass implements Insertable<Sale> {
           ..write('idempotencyKey: $idempotencyKey, ')
           ..write('type: $type, ')
           ..write('status: $status, ')
-          ..write('syncStatus: $syncStatus, ')
           ..write('custCode: $custCode, ')
           ..write('branchNo: $branchNo, ')
           ..write('branchYear: $branchYear, ')
@@ -17276,7 +17136,6 @@ class Sale extends DataClass implements Insertable<Sale> {
     idempotencyKey,
     type,
     status,
-    syncStatus,
     custCode,
     branchNo,
     branchYear,
@@ -17317,7 +17176,6 @@ class Sale extends DataClass implements Insertable<Sale> {
           other.idempotencyKey == this.idempotencyKey &&
           other.type == this.type &&
           other.status == this.status &&
-          other.syncStatus == this.syncStatus &&
           other.custCode == this.custCode &&
           other.branchNo == this.branchNo &&
           other.branchYear == this.branchYear &&
@@ -17356,7 +17214,6 @@ class SalesCompanion extends UpdateCompanion<Sale> {
   final Value<String> idempotencyKey;
   final Value<String> type;
   final Value<String> status;
-  final Value<String> syncStatus;
   final Value<String?> custCode;
   final Value<String?> branchNo;
   final Value<String?> branchYear;
@@ -17394,7 +17251,6 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     this.idempotencyKey = const Value.absent(),
     this.type = const Value.absent(),
     this.status = const Value.absent(),
-    this.syncStatus = const Value.absent(),
     this.custCode = const Value.absent(),
     this.branchNo = const Value.absent(),
     this.branchYear = const Value.absent(),
@@ -17433,7 +17289,6 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     required String idempotencyKey,
     required String type,
     required String status,
-    required String syncStatus,
     this.custCode = const Value.absent(),
     this.branchNo = const Value.absent(),
     this.branchYear = const Value.absent(),
@@ -17468,7 +17323,6 @@ class SalesCompanion extends UpdateCompanion<Sale> {
        idempotencyKey = Value(idempotencyKey),
        type = Value(type),
        status = Value(status),
-       syncStatus = Value(syncStatus),
        terminalId = Value(terminalId),
        shiftId = Value(shiftId),
        cashierId = Value(cashierId),
@@ -17483,7 +17337,6 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     Expression<String>? idempotencyKey,
     Expression<String>? type,
     Expression<String>? status,
-    Expression<String>? syncStatus,
     Expression<String>? custCode,
     Expression<String>? branchNo,
     Expression<String>? branchYear,
@@ -17522,7 +17375,6 @@ class SalesCompanion extends UpdateCompanion<Sale> {
       if (idempotencyKey != null) 'idempotency_key': idempotencyKey,
       if (type != null) 'type': type,
       if (status != null) 'status': status,
-      if (syncStatus != null) 'sync_status': syncStatus,
       if (custCode != null) 'cust_code': custCode,
       if (branchNo != null) 'branch_no': branchNo,
       if (branchYear != null) 'branch_year': branchYear,
@@ -17566,7 +17418,6 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     Value<String>? idempotencyKey,
     Value<String>? type,
     Value<String>? status,
-    Value<String>? syncStatus,
     Value<String?>? custCode,
     Value<String?>? branchNo,
     Value<String?>? branchYear,
@@ -17605,7 +17456,6 @@ class SalesCompanion extends UpdateCompanion<Sale> {
       idempotencyKey: idempotencyKey ?? this.idempotencyKey,
       type: type ?? this.type,
       status: status ?? this.status,
-      syncStatus: syncStatus ?? this.syncStatus,
       custCode: custCode ?? this.custCode,
       branchNo: branchNo ?? this.branchNo,
       branchYear: branchYear ?? this.branchYear,
@@ -17662,9 +17512,6 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     }
     if (status.present) {
       map['status'] = Variable<String>(status.value);
-    }
-    if (syncStatus.present) {
-      map['sync_status'] = Variable<String>(syncStatus.value);
     }
     if (custCode.present) {
       map['cust_code'] = Variable<String>(custCode.value);
@@ -17772,7 +17619,6 @@ class SalesCompanion extends UpdateCompanion<Sale> {
           ..write('idempotencyKey: $idempotencyKey, ')
           ..write('type: $type, ')
           ..write('status: $status, ')
-          ..write('syncStatus: $syncStatus, ')
           ..write('custCode: $custCode, ')
           ..write('branchNo: $branchNo, ')
           ..write('branchYear: $branchYear, ')
@@ -32315,10 +32161,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_sales_completed_at',
     'CREATE INDEX idx_sales_completed_at ON sales (completed_at)',
   );
-  late final Index idxSalesSyncStatus = Index(
-    'idx_sales_sync_status',
-    'CREATE INDEX idx_sales_sync_status ON sales (sync_status)',
-  );
   late final Index idxSalesStatus = Index(
     'idx_sales_status',
     'CREATE INDEX idx_sales_status ON sales (status)',
@@ -32451,7 +32293,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxShiftsOpenedAt,
     idxSalesShiftId,
     idxSalesCompletedAt,
-    idxSalesSyncStatus,
     idxSalesStatus,
     idxSalesTerminalLocalNo,
     idxSaleLinesSaleId,
@@ -34465,7 +34306,6 @@ typedef $$ActivePosSessionsTableCreateCompanionBuilder =
       required String custCode,
       required String activeUserId,
       required String activeMachineNo,
-      Value<String?> openShiftId,
       required DateTime loginAt,
       required DateTime updatedAt,
     });
@@ -34476,7 +34316,6 @@ typedef $$ActivePosSessionsTableUpdateCompanionBuilder =
       Value<String> custCode,
       Value<String> activeUserId,
       Value<String> activeMachineNo,
-      Value<String?> openShiftId,
       Value<DateTime> loginAt,
       Value<DateTime> updatedAt,
     });
@@ -34512,11 +34351,6 @@ class $$ActivePosSessionsTableFilterComposer
 
   ColumnFilters<String> get activeMachineNo => $composableBuilder(
     column: $table.activeMachineNo,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get openShiftId => $composableBuilder(
-    column: $table.openShiftId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -34565,11 +34399,6 @@ class $$ActivePosSessionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get openShiftId => $composableBuilder(
-    column: $table.openShiftId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<DateTime> get loginAt => $composableBuilder(
     column: $table.loginAt,
     builder: (column) => ColumnOrderings(column),
@@ -34606,11 +34435,6 @@ class $$ActivePosSessionsTableAnnotationComposer
 
   GeneratedColumn<String> get activeMachineNo => $composableBuilder(
     column: $table.activeMachineNo,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get openShiftId => $composableBuilder(
-    column: $table.openShiftId,
     builder: (column) => column,
   );
 
@@ -34666,7 +34490,6 @@ class $$ActivePosSessionsTableTableManager
                 Value<String> custCode = const Value.absent(),
                 Value<String> activeUserId = const Value.absent(),
                 Value<String> activeMachineNo = const Value.absent(),
-                Value<String?> openShiftId = const Value.absent(),
                 Value<DateTime> loginAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => ActivePosSessionsCompanion(
@@ -34675,7 +34498,6 @@ class $$ActivePosSessionsTableTableManager
                 custCode: custCode,
                 activeUserId: activeUserId,
                 activeMachineNo: activeMachineNo,
-                openShiftId: openShiftId,
                 loginAt: loginAt,
                 updatedAt: updatedAt,
               ),
@@ -34686,7 +34508,6 @@ class $$ActivePosSessionsTableTableManager
                 required String custCode,
                 required String activeUserId,
                 required String activeMachineNo,
-                Value<String?> openShiftId = const Value.absent(),
                 required DateTime loginAt,
                 required DateTime updatedAt,
               }) => ActivePosSessionsCompanion.insert(
@@ -34695,7 +34516,6 @@ class $$ActivePosSessionsTableTableManager
                 custCode: custCode,
                 activeUserId: activeUserId,
                 activeMachineNo: activeMachineNo,
-                openShiftId: openShiftId,
                 loginAt: loginAt,
                 updatedAt: updatedAt,
               ),
@@ -39130,7 +38950,6 @@ typedef $$ShiftsTableCreateCompanionBuilder =
       Value<double> actualCash,
       Value<double> difference,
       required String status,
-      required String syncStatus,
       required DateTime openedAt,
       Value<DateTime?> closedAt,
       Value<DateTime?> expiresAt,
@@ -39156,7 +38975,6 @@ typedef $$ShiftsTableUpdateCompanionBuilder =
       Value<double> actualCash,
       Value<double> difference,
       Value<String> status,
-      Value<String> syncStatus,
       Value<DateTime> openedAt,
       Value<DateTime?> closedAt,
       Value<DateTime?> expiresAt,
@@ -39247,11 +39065,6 @@ class $$ShiftsTableFilterComposer
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -39370,11 +39183,6 @@ class $$ShiftsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<DateTime> get openedAt => $composableBuilder(
     column: $table.openedAt,
     builder: (column) => ColumnOrderings(column),
@@ -39474,11 +39282,6 @@ class $$ShiftsTableAnnotationComposer
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
 
-  GeneratedColumn<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<DateTime> get openedAt =>
       $composableBuilder(column: $table.openedAt, builder: (column) => column);
 
@@ -39547,7 +39350,6 @@ class $$ShiftsTableTableManager
                 Value<double> actualCash = const Value.absent(),
                 Value<double> difference = const Value.absent(),
                 Value<String> status = const Value.absent(),
-                Value<String> syncStatus = const Value.absent(),
                 Value<DateTime> openedAt = const Value.absent(),
                 Value<DateTime?> closedAt = const Value.absent(),
                 Value<DateTime?> expiresAt = const Value.absent(),
@@ -39571,7 +39373,6 @@ class $$ShiftsTableTableManager
                 actualCash: actualCash,
                 difference: difference,
                 status: status,
-                syncStatus: syncStatus,
                 openedAt: openedAt,
                 closedAt: closedAt,
                 expiresAt: expiresAt,
@@ -39597,7 +39398,6 @@ class $$ShiftsTableTableManager
                 Value<double> actualCash = const Value.absent(),
                 Value<double> difference = const Value.absent(),
                 required String status,
-                required String syncStatus,
                 required DateTime openedAt,
                 Value<DateTime?> closedAt = const Value.absent(),
                 Value<DateTime?> expiresAt = const Value.absent(),
@@ -39621,7 +39421,6 @@ class $$ShiftsTableTableManager
                 actualCash: actualCash,
                 difference: difference,
                 status: status,
-                syncStatus: syncStatus,
                 openedAt: openedAt,
                 closedAt: closedAt,
                 expiresAt: expiresAt,
@@ -39914,7 +39713,6 @@ typedef $$SalesTableCreateCompanionBuilder =
       required String idempotencyKey,
       required String type,
       required String status,
-      required String syncStatus,
       Value<String?> custCode,
       Value<String?> branchNo,
       Value<String?> branchYear,
@@ -39954,7 +39752,6 @@ typedef $$SalesTableUpdateCompanionBuilder =
       Value<String> idempotencyKey,
       Value<String> type,
       Value<String> status,
-      Value<String> syncStatus,
       Value<String?> custCode,
       Value<String?> branchNo,
       Value<String?> branchYear,
@@ -40141,11 +39938,6 @@ class $$SalesTableFilterComposer extends Composer<_$AppDatabase, $SalesTable> {
 
   ColumnFilters<String> get status => $composableBuilder(
     column: $table.status,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -40484,11 +40276,6 @@ class $$SalesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get custCode => $composableBuilder(
     column: $table.custCode,
     builder: (column) => ColumnOrderings(column),
@@ -40665,11 +40452,6 @@ class $$SalesTableAnnotationComposer
 
   GeneratedColumn<String> get status =>
       $composableBuilder(column: $table.status, builder: (column) => column);
-
-  GeneratedColumn<String> get syncStatus => $composableBuilder(
-    column: $table.syncStatus,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<String> get custCode =>
       $composableBuilder(column: $table.custCode, builder: (column) => column);
@@ -40978,7 +40760,6 @@ class $$SalesTableTableManager
                 Value<String> idempotencyKey = const Value.absent(),
                 Value<String> type = const Value.absent(),
                 Value<String> status = const Value.absent(),
-                Value<String> syncStatus = const Value.absent(),
                 Value<String?> custCode = const Value.absent(),
                 Value<String?> branchNo = const Value.absent(),
                 Value<String?> branchYear = const Value.absent(),
@@ -41016,7 +40797,6 @@ class $$SalesTableTableManager
                 idempotencyKey: idempotencyKey,
                 type: type,
                 status: status,
-                syncStatus: syncStatus,
                 custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,
@@ -41056,7 +40836,6 @@ class $$SalesTableTableManager
                 required String idempotencyKey,
                 required String type,
                 required String status,
-                required String syncStatus,
                 Value<String?> custCode = const Value.absent(),
                 Value<String?> branchNo = const Value.absent(),
                 Value<String?> branchYear = const Value.absent(),
@@ -41094,7 +40873,6 @@ class $$SalesTableTableManager
                 idempotencyKey: idempotencyKey,
                 type: type,
                 status: status,
-                syncStatus: syncStatus,
                 custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,

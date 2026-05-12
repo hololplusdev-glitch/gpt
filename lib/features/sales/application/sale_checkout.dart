@@ -432,6 +432,7 @@ class SaleCheckout {
           unitName: price.unitName ?? line.unitName,
           unitSize: line.unitSize,
           barcode: line.barcode,
+          quantity: line.quantity,
           unitPrice: price.unitPrice,
           taxRate: price.taxRate,
           discountType: line.discountType,

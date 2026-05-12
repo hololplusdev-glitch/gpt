@@ -369,7 +369,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         ? 'جهاز الدفع غير متصل. سيتم تسجيل عملية شبكة يدويًا مع حفظها كدفعة شبكة.'
         : 'لم يتم تفعيل ربط جهاز الدفع بعد. سيتم تسجيل عملية شبكة يدويًا مع حفظها كدفعة شبكة.';
 
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

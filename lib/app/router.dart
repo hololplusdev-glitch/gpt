@@ -53,7 +53,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     ..listen(setupProvider, (_, __) => refreshNotifier.refresh())
     ..listen(posConfigRevisionProvider, (_, __) => refreshNotifier.refresh())
     ..listen(activePosSessionProvider, (_, __) => refreshNotifier.refresh())
-    ..listen(activeShiftDashboardProvider, (_, __) => refreshNotifier.refresh());
+    ..listen(
+      activeShiftDashboardProvider,
+      (_, __) => refreshNotifier.refresh(),
+    );
 
   return GoRouter(
     initialLocation: AppRoutes.boot,
