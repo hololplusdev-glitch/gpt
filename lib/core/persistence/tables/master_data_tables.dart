@@ -192,7 +192,7 @@ class ItemBarcodes extends Table {
 // ITEM PRICES
 // =============================================================================
 
-/// Item prices per price level, store, and quantity tier.
+/// Item prices per price level and store.
 /// From backend ITEM_PRICE p_type.
 @TableIndex(
   name: 'idx_item_prices_lookup',
@@ -205,8 +205,6 @@ class ItemPrices extends Table {
   TextColumn get unitId => text().nullable()();
   TextColumn get storeId => text().nullable()();
   TextColumn get priceLevelId => text().nullable()();
-  RealColumn get fromQty => real().nullable()();
-  RealColumn get toQty => real().nullable()();
   RealColumn get unitPrice => real()();
   RealColumn get costPrice => real().nullable()();
   DateTimeColumn get effectiveFrom => dateTime().nullable()();

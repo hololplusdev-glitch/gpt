@@ -44,7 +44,6 @@ class HeldOrdersService {
 
   CheckoutQuote previewQuote({
     required List<SaleLineInput> lineItems,
-    SaleDiscountInput? invoiceDiscount,
   }) {
     final session = _requireActiveSession();
 
@@ -54,12 +53,6 @@ class HeldOrdersService {
         taxRate: 0,
         useTax: session.activeUseTax,
         priceIncludesTax: session.priceIncludesTax,
-        invoiceDiscount: invoiceDiscount == null
-            ? null
-            : PricingDiscountInput(
-                type: invoiceDiscount.type,
-                value: invoiceDiscount.value,
-              ),
       );
     } on PricingException catch (e) {
       throw SaleException(e.message);
@@ -237,19 +230,6 @@ class HeldOrdersService {
   }
 }
 
-class SaleDiscountInput {
-  final DiscountType type;
-  final double value;
-  final String? reason;
-  final String? approvedBy;
-
-  const SaleDiscountInput({
-    required this.type,
-    required this.value,
-    this.reason,
-    this.approvedBy,
-  });
-}
 
 class SaleException extends BusinessException {
   const SaleException(super.message) : super(code: 'sale_error');

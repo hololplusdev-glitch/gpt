@@ -18,7 +18,6 @@ import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
 import 'package:holol_POS/core/services/sync/upload_queue.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
 import 'package:holol_POS/features/cashier/domain/models/cart.dart';
-import 'package:holol_POS/features/cashier/domain/models/payment_method_option.dart';
 import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
@@ -88,7 +87,7 @@ class SaleCheckout {
     _validateSaleInputs(lineItems: officialLines);
 
     final quote = _quoteSale(officialLines);
-    final resolved = resolveCheckoutPaymentMethod(request.paymentMethod);
+    final resolved = await _resolvePaymentIntent(request.paymentIntent);
 
     var tendered = quote.grandTotal;
     var change = 0.0;
@@ -96,7 +95,9 @@ class SaleCheckout {
     if (resolved.allowsChange) {
       tendered =
           double.tryParse(
-            request.tenderedText.trim().isEmpty ? '0' : request.tenderedText,
+            request.paymentIntent.tenderedText.trim().isEmpty
+                ? '0'
+                : request.paymentIntent.tenderedText,
           ) ??
           double.nan;
 
@@ -151,7 +152,7 @@ class SaleCheckout {
       paymentProfileRequiresReference: profileRequiresReference,
     );
 
-    final reference = request.reference.trim();
+    final reference = request.paymentIntent.reference.trim();
 
     if (requirements.requiresReference && reference.isEmpty) {
       throw const SaleCheckoutException('Payment reference is required.');
@@ -216,12 +217,57 @@ class SaleCheckout {
       now: now,
     );
 
+    final invoiceDocument = await _invoiceDocumentBuilder.buildFromCheckoutSnapshot(
+      saleId: saleId,
+      localInvoiceNo: localInvoiceNo,
+      invoiceDateTime: now,
+      statusCode: SaleStatus.completed.code,
+      syncStatusCode: OutboxStatus.pending.code,
+      terminalId: session.activeMachineNo,
+      machineNo: session.activeMachineNo,
+      branchNo: session.activeBranchNo,
+      branchYear: session.activeBranchYear,
+      storeId: session.activeStoreId,
+      priceLevelId: session.activePriceLevelId,
+      useTax: session.activeUseTax,
+      cashierId: session.activeUserId,
+      cashierName: session.activeUserName,
+      customerId: request.customerId,
+      customerName: request.customerName,
+      customerTaxNumber: request.customerTaxNumber,
+      lines: officialLines,
+      quote: quote,
+      payments: payments,
+      taxes: envelope.taxes,
+    );
+
+    final invoiceArchive = InvoiceDocumentsCompanion.insert(
+      id: 'DOC_$saleId',
+      saleId: saleId,
+      snapshotJson: Value(invoiceDocument.toJsonString()),
+      hash: Value(invoiceDocument.auditHash),
+      archivedAt: Value(now),
+      validationStatus: Value(invoiceDocument.validationStatus),
+      validationError: Value(invoiceDocument.validationMessage),
+    );
+
+    final printJobs = (_config.autoPrintAfterSale || session.autoPrint)
+        ? await _printQueue.invoiceReceipt(
+            document: invoiceDocument,
+            createdAt: now,
+            createdBy: session.activeUserId,
+            requireAutoPrint: true,
+            preferredPrinterName: session.printerName,
+          )
+        : const <PrintJobsCompanion>[];
+
     await _salesDao.persistSaleEnvelope(
       header: envelope.header,
       items: envelope.items,
       payments: envelope.payments,
       taxes: envelope.taxes,
-      discounts: envelope.discounts,
+      invoiceDocument: invoiceArchive,
+      printJobs: printJobs,
       auditLogEntry: envelope.auditLogEntry,
       outboxEntry: _uploadQueue.saleCreated(
         saleId: saleId,
@@ -236,47 +282,95 @@ class SaleCheckout {
       ),
     );
 
-    await _archiveAndQueueAutoPrintBestEffort(
-      saleId: saleId,
-      session: session,
-      createdAt: now,
-    );
-
     return SaleCheckoutResult(
       saleId: saleId,
       localSaleNo: localInvoiceNo,
-      selectedPaymentType: resolved.type,
+      selectedPaymentType: effectiveType,
       change: change,
       uploadQueued: true,
     );
   }
 
-  Future<void> _archiveAndQueueAutoPrintBestEffort({
-    required String saleId,
-    required ActivePosSession session,
-    required DateTime createdAt,
-  }) async {
-    try {
-      final document = await _invoiceDocumentBuilder.getOrCreateOriginal(
-        saleId,
-      );
 
-      if (!(_config.autoPrintAfterSale || session.autoPrint)) {
-        return;
+  Future<ResolvedPaymentMethod> _resolvePaymentIntent(
+    SalePaymentIntent intent,
+  ) async {
+    final methods = await _catalogDao.getActivePaymentMethods();
+
+    PaymentMethod? firstWhere(bool Function(PaymentMethod method) test) {
+      for (final method in methods) {
+        final type = PaymentMethodResolver.typeFromStored(
+          methodCode: method.code,
+          storedTypeCode: method.type,
+        );
+        if (type != null && test(method)) return method;
       }
+      return null;
+    }
 
-      final printJobs = await _printQueue.invoiceReceipt(
-        document: document,
-        createdAt: createdAt,
-        createdBy: session.activeUserId,
-        requireAutoPrint: true,
-        preferredPrinterName: session.printerName,
+    PaymentMethodType? typeOf(PaymentMethod method) {
+      return PaymentMethodResolver.typeFromStored(
+        methodCode: method.code,
+        storedTypeCode: method.type,
       );
+    }
 
-      await _salesDao.enqueuePrintJobs(printJobs);
-    } catch (_) {
-      // Best-effort only.
-      // Sale completion must not depend on archive/printer state.
+    ResolvedPaymentMethod fromRow(PaymentMethod method) {
+      return PaymentMethodResolver.resolve(
+        methodId: method.id,
+        code: method.code,
+        displayName: method.name,
+        storedTypeCode: method.type,
+        requiresReference: method.requiresReference,
+        bankId: method.bankId,
+        cardTypeId: method.cardTypeId,
+      );
+    }
+
+    switch (intent.kind) {
+      case SaleTenderKind.cash:
+        final method = firstWhere((method) => typeOf(method)?.isCash ?? false);
+        if (method == null) {
+          throw const SaleCheckoutException('لا توجد طريقة دفع كاش مفعلة.');
+        }
+        return fromRow(method);
+
+      case SaleTenderKind.network:
+        final manual = firstWhere(
+          (method) => typeOf(method) == PaymentMethodType.manualCard,
+        );
+        if (manual != null) return fromRow(manual);
+
+        final card = firstWhere((method) => typeOf(method)?.isCard ?? false);
+        if (card != null) return fromRow(card);
+
+        return const ResolvedPaymentMethod(
+          methodId: 'MANUAL_CARD_FALLBACK',
+          code: PaymentMethodCodes.manualCard,
+          displayName: 'شبكة',
+          type: PaymentMethodType.manualCard,
+          requiresReference: true,
+          allowsChange: false,
+          isManual: true,
+          needsPaymentProfile: false,
+        );
+
+      case SaleTenderKind.credit:
+        final method = firstWhere(
+          (method) => typeOf(method) == PaymentMethodType.customerCredit,
+        );
+        if (method != null) return fromRow(method);
+
+        return const ResolvedPaymentMethod(
+          methodId: 'CUSTOMER_CREDIT',
+          code: 'CUSTOMER_CREDIT',
+          displayName: 'آجل',
+          type: PaymentMethodType.customerCredit,
+          requiresReference: false,
+          allowsChange: false,
+          isManual: true,
+          needsPaymentProfile: false,
+        );
     }
   }
 
@@ -318,9 +412,7 @@ class SaleCheckout {
             line: line,
             officialUnitPrice: price.unitPrice,
           ),
-          isPriceOverridden: false,
           allowDiscount: price.allowDiscount,
-          priceSource: price.priceSource,
           notes: line.notes,
         ),
       );
@@ -464,15 +556,12 @@ class SaleCheckout {
           lineDiscountType: Value(p.input.discountType?.code),
           lineDiscountValue: Value(p.input.discountValue),
           lineDiscountAmount: Value(p.input.discountAmount),
-          invoiceDiscountShare: const Value(0),
           grossAmount: Value(p.input.unitPrice * p.input.quantity),
           allowDiscountSnapshot: Value(p.input.allowDiscount),
-          priceSource: Value(_priceSourceForLine(p.input)),
           storeId: Value(session.activeStoreId),
           priceLevelId: Value(session.activePriceLevelId),
           unitSize: Value(p.input.unitSize),
           lineTotal: Value(p.lineTotal),
-          overrideReason: const Value(null),
           notes: Value(p.input.notes),
         ),
       );
@@ -559,7 +648,6 @@ class SaleCheckout {
       items: itemCompanions,
       payments: paymentCompanions,
       taxes: taxCompanions,
-      discounts: null,
       auditLogEntry: auditLogEntry,
     );
   }
@@ -619,9 +707,7 @@ class SaleCheckout {
 class SaleCheckoutRequest {
   final Cart cart;
   final String checkoutAttemptId;
-  final PaymentMethodOption paymentMethod;
-  final String tenderedText;
-  final String reference;
+  final SalePaymentIntent paymentIntent;
   final String? customerId;
   final String? customerName;
   final String? customerTaxNumber;
@@ -629,9 +715,7 @@ class SaleCheckoutRequest {
   const SaleCheckoutRequest({
     required this.cart,
     required this.checkoutAttemptId,
-    required this.paymentMethod,
-    required this.tenderedText,
-    required this.reference,
+    required this.paymentIntent,
     this.customerId,
     this.customerName,
     this.customerTaxNumber,
@@ -648,17 +732,6 @@ class CheckoutPaymentRequirements {
   });
 }
 
-ResolvedPaymentMethod resolveCheckoutPaymentMethod(PaymentMethodOption method) {
-  return PaymentMethodResolver.resolve(
-    methodId: method.id,
-    code: method.code,
-    displayName: method.name,
-    storedTypeCode: method.type.code,
-    requiresReference: method.requiresReference,
-    bankId: method.bankId,
-    cardTypeId: method.cardTypeId,
-  );
-}
 
 CheckoutPaymentRequirements checkoutPaymentRequirements(
   ResolvedPaymentMethod method, {
@@ -822,7 +895,6 @@ class _SaleEnvelope {
   final List<SaleLinesCompanion> items;
   final List<SalePaymentsCompanion> payments;
   final List<SaleTaxSummaryCompanion> taxes;
-  final List<SaleAdjustmentsCompanion>? discounts;
   final AuditLogCompanion auditLogEntry;
 
   const _SaleEnvelope({
@@ -830,7 +902,6 @@ class _SaleEnvelope {
     required this.items,
     required this.payments,
     required this.taxes,
-    required this.discounts,
     required this.auditLogEntry,
   });
 }
@@ -853,10 +924,6 @@ const int _quantityScale = 1000;
 
 int _toQtyScaled(double quantity) => (quantity * _quantityScale).round();
 
-String _priceSourceForLine(SaleLineInput input) {
-  if (input.isPriceOverridden) return PriceSource.manualOverride.code;
-  return input.priceSource;
-}
 
 final saleCheckoutProvider = Provider<SaleCheckout>((ref) {
   return SaleCheckout(

@@ -66,7 +66,6 @@ class Sales extends Table {
 }
 
 /// Sale line items.
-/// price_source: 'item_price','tier_price','manual_override'
 @TableIndex(name: 'idx_sale_lines_sale_id', columns: {#saleId})
 @TableIndex(name: 'idx_sale_lines_item_id', columns: {#itemId})
 class SaleLines extends Table {
@@ -86,19 +85,14 @@ class SaleLines extends Table {
   RealColumn get lineDiscountValue => real().nullable()();
   RealColumn get lineDiscountAmount =>
       real().withDefault(const Constant(0.0))();
-  RealColumn get invoiceDiscountShare =>
-      real().withDefault(const Constant(0.0))();
   RealColumn get taxableAmount => real().withDefault(const Constant(0.0))();
   RealColumn get taxRate => real().withDefault(const Constant(0.0))();
   RealColumn get taxAmount => real().withDefault(const Constant(0.0))();
   RealColumn get lineTotal => real()();
   BoolColumn get allowDiscountSnapshot => boolean().nullable()();
-  TextColumn get priceSource => text().nullable()();
   RealColumn get unitSize => real().nullable()();
   TextColumn get storeId => text().nullable()();
   TextColumn get priceLevelId => text().nullable()();
-  TextColumn get overrideReason => text().nullable()();
-  TextColumn get approvedBy => text().nullable()();
   TextColumn get notes => text().nullable()();
 
   @override
@@ -129,29 +123,6 @@ class SalePayments extends Table {
   TextColumn get cardScheme => text().nullable()();
   TextColumn get cardLast4 => text().nullable()();
   TextColumn get status => text()(); // stable string code
-  DateTimeColumn get createdAt => dateTime()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-/// Sale adjustments.
-/// Supports invoice/line/customer/manual/promo/coupon discounts.
-/// scope: 'invoice','line'
-/// type: 'percentage','fixed'
-/// source: 'manual','customer','promo','coupon','system'
-@TableIndex(name: 'idx_sale_adjustments_sale_id', columns: {#saleId})
-class SaleAdjustments extends Table {
-  TextColumn get id => text()();
-  TextColumn get saleId => text().references(Sales, #id)();
-  TextColumn get lineId => text().nullable()();
-  TextColumn get scope => text()(); // 'invoice','line'
-  TextColumn get type => text()(); // 'percentage','fixed'
-  TextColumn get source => text()(); // 'manual','customer', etc.
-  RealColumn get value => real()();
-  RealColumn get amount => real()();
-  TextColumn get reason => text().nullable()();
-  TextColumn get approvedBy => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
 
   @override
@@ -217,23 +188,3 @@ class HeldOrders extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Held order line items.
-class HeldOrderLines extends Table {
-  TextColumn get id => text()();
-  TextColumn get heldOrderId => text()();
-  TextColumn get itemId => text()();
-  TextColumn get unitId => text().nullable()();
-  TextColumn get barcode => text().nullable()();
-  TextColumn get itemNameSnapshot => text()();
-  TextColumn get unitNameSnapshot => text().nullable()();
-  IntColumn get qtyScaled => integer()();
-  IntColumn get qtyScale => integer().withDefault(const Constant(0))();
-  RealColumn get unitPrice => real()();
-  RealColumn get discountAmount => real().withDefault(const Constant(0.0))();
-  RealColumn get taxAmount => real().withDefault(const Constant(0.0))();
-  RealColumn get lineTotal => real()();
-  TextColumn get notes => text().nullable()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}

@@ -15,8 +15,6 @@ class CartItem {
   final double discountAmount;
   final DiscountType? discountType;
   final double? discountValue;
-  final bool isPriceOverridden;
-  final double? overrideUnitPrice;
   final String? notes;
 
   const CartItem({
@@ -25,8 +23,6 @@ class CartItem {
     this.discountAmount = 0.0,
     this.discountType,
     this.discountValue,
-    this.isPriceOverridden = false,
-    this.overrideUnitPrice,
     this.notes,
   });
 
@@ -35,10 +31,9 @@ class CartItem {
   String get productName => sellableItem.itemName;
   String get unitName => sellableItem.unitName;
   String? get barcode => sellableItem.barcode;
-  double get unitPrice => overrideUnitPrice ?? sellableItem.unitPrice;
+  double get unitPrice => sellableItem.unitPrice;
   double get taxRate => sellableItem.taxRate;
   bool get allowDiscount => sellableItem.allowDiscount;
-  String get priceSource => sellableItem.priceSource;
   String get lineKey => '$itemId|$unitId';
 
   CartItem copyWith({
@@ -47,9 +42,6 @@ class CartItem {
     double? discountAmount,
     DiscountType? discountType,
     double? discountValue,
-    bool? isPriceOverridden,
-    double? overrideUnitPrice,
-    bool clearOverrideUnitPrice = false,
     String? notes,
   }) {
     return CartItem(
@@ -58,10 +50,6 @@ class CartItem {
       discountAmount: discountAmount ?? this.discountAmount,
       discountType: discountType ?? this.discountType,
       discountValue: discountValue ?? this.discountValue,
-      isPriceOverridden: isPriceOverridden ?? this.isPriceOverridden,
-      overrideUnitPrice: clearOverrideUnitPrice
-          ? null
-          : (overrideUnitPrice ?? this.overrideUnitPrice),
       notes: notes ?? this.notes,
     );
   }
@@ -79,9 +67,7 @@ class CartItem {
       discountType: discountType,
       discountValue: discountValue,
       discountAmount: discountAmount,
-      isPriceOverridden: isPriceOverridden,
       allowDiscount: allowDiscount,
-      priceSource: priceSource,
       notes: notes,
     );
   }
@@ -99,9 +85,7 @@ class CartItem {
       'discountType': discountType?.code,
       'discountValue': discountValue,
       'discountAmount': discountAmount,
-      'isPriceOverridden': isPriceOverridden,
       'allowDiscount': allowDiscount,
-      'priceSource': priceSource,
       'notes': notes,
     };
   }
@@ -119,14 +103,11 @@ class CartItem {
         unitPrice: _double(json['unitPrice']),
         taxRate: _double(json['taxRate']),
         allowDiscount: json['allowDiscount'] as bool? ?? false,
-        priceSource:
-            json['priceSource'] as String? ?? PriceSource.itemPrice.code,
       ),
       quantity: _double(json['quantity'], fallback: 1.0),
       discountType: _parseDiscountType(json['discountType']),
       discountValue: _nullableDouble(json['discountValue']),
       discountAmount: _double(json['discountAmount']),
-      isPriceOverridden: json['isPriceOverridden'] as bool? ?? false,
       notes: json['notes'] as String?,
     );
   }
@@ -233,18 +214,6 @@ class Cart {
     );
   }
 
-  Cart overridePrice(String itemId, String? unitId, double newPrice) {
-    return Cart(
-      items: items.map((item) {
-        if (!_sameLine(item, itemId, unitId)) return item;
-
-        return item.copyWith(
-          overrideUnitPrice: newPrice,
-          isPriceOverridden: true,
-        );
-      }).toList(),
-    );
-  }
 
   Cart removeItem(String itemId, String? unitId) {
     return Cart(
@@ -394,7 +363,7 @@ class CartController extends StateNotifier<Cart> {
 
     var next = state.changeQuantity(itemId, unitId, newQuantity);
 
-    if (!current.isPriceOverridden && unitId != null && unitId.isNotEmpty) {
+    if (unitId != null && unitId.isNotEmpty) {
       final price = await _resolvePrice(itemId, unitId, newQuantity);
 
       next = next.applyResolvedPrice(
@@ -409,7 +378,6 @@ class CartController extends StateNotifier<Cart> {
           unitPrice: price.unitPrice,
           taxRate: price.taxRate,
           allowDiscount: price.allowDiscount,
-          priceSource: price.priceSource,
         ),
       );
     }
@@ -433,9 +401,6 @@ class CartController extends StateNotifier<Cart> {
     );
   }
 
-  void overridePrice(String itemId, String? unitId, double newPrice) {
-    state = state.overridePrice(itemId, unitId, newPrice);
-  }
 
   void removeItem(String itemId, String? unitId) {
     state = state.removeItem(itemId, unitId);

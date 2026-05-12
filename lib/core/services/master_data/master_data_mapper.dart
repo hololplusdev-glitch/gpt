@@ -422,16 +422,12 @@ class MasterDataMapper {
           final custCode = data.text(['cust_code']) ?? context.custCode;
           final storeId = data.text(['st_id']) ?? '';
           final unitId = data.text(['unit_id']);
-          final frQty = data.decimal(['fr_qty']);
-          final toQty = data.decimal(['to_qty']);
           final id = [
             custCode,
             priceLevelId,
             itemId,
             storeId,
             unitId ?? '',
-            _normalizedQtyKey(frQty),
-            _normalizedQtyKey(toQty),
           ].join(':');
           final price = data.decimal(['itm_price', 'price']);
           if (price == null) {
@@ -449,8 +445,6 @@ class MasterDataMapper {
               unitId: Value(unitId),
               priceLevelId: Value(priceLevelId),
               storeId: Value(storeId),
-              fromQty: Value(frQty),
-              toQty: Value(toQty),
               unitPrice: Value(price),
               costPrice: Value(data.decimal(['cost_price'])),
               sourceUpdatedAt: Value(data.text(['last_update'])),
@@ -580,8 +574,3 @@ class _BackendRow {
   }
 }
 
-String _normalizedQtyKey(double? value) {
-  if (value == null || value == 0) return '0';
-  if (value == value.roundToDouble()) return value.toInt().toString();
-  return value.toString();
-}

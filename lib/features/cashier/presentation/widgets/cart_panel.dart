@@ -244,15 +244,6 @@ class _CartItemTile extends ConsumerWidget {
                       color: AppColors.success,
                     ),
                   ),
-                if (item.isPriceOverridden)
-                  Text(
-                    l10n.priceOverridden,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.warning,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
                 const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
@@ -334,15 +325,6 @@ class _CartItemTile extends ConsumerWidget {
                         style: const TextStyle(
                           fontSize: 11,
                           color: AppColors.success,
-                        ),
-                      ),
-                    if (item.isPriceOverridden)
-                      Text(
-                        l10n.priceOverridden,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.warning,
-                          fontStyle: FontStyle.italic,
                         ),
                       ),
                   ],

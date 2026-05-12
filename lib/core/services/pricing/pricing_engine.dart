@@ -1,5 +1,4 @@
 import 'package:holol_POS/core/errors/app_exception.dart';
-import 'package:holol_POS/shared/models/enums.dart';
 
 class PricingEngine {
   const PricingEngine();
@@ -9,7 +8,6 @@ class PricingEngine {
     required double taxRate,
     required bool useTax,
     required bool priceIncludesTax,
-    PricingDiscountInput? invoiceDiscount,
   }) {
     if (lines.isEmpty) {
       throw const PricingException('No items to price.');
@@ -41,30 +39,13 @@ class PricingEngine {
       pricedLines.add(pricedLine);
     }
 
-    var invoiceDiscountAmount = 0.0;
-    if (invoiceDiscount != null) {
-      final discountBase = roundAmount(subtotal - lineDiscountTotal);
-      invoiceDiscountAmount = switch (invoiceDiscount.type) {
-        DiscountType.percentage => roundAmount(
-          discountBase * invoiceDiscount.value / 100,
-        ),
-        DiscountType.fixed => roundAmount(invoiceDiscount.value),
-      };
-      if (invoiceDiscountAmount < 0 || invoiceDiscountAmount > lineTotalSum) {
-        throw const PricingException('Invalid invoice discount amount.');
-      }
-    }
-
-    final discountTotal = roundAmount(
-      lineDiscountTotal + invoiceDiscountAmount,
-    );
-    final grandTotal = roundAmount(lineTotalSum - invoiceDiscountAmount);
+    final discountTotal = roundAmount(lineDiscountTotal);
+    final grandTotal = roundAmount(lineTotalSum);
 
     return CheckoutQuote(
       lines: pricedLines,
       subtotal: subtotal,
       lineDiscountTotal: lineDiscountTotal,
-      invoiceDiscountAmount: invoiceDiscountAmount,
       discountTotal: discountTotal,
       taxTotal: taxTotal,
       grandTotal: grandTotal,
@@ -132,18 +113,11 @@ class PricingLineInput {
   });
 }
 
-class PricingDiscountInput {
-  final DiscountType type;
-  final double value;
-
-  const PricingDiscountInput({required this.type, required this.value});
-}
 
 class CheckoutQuote {
   final List<PricedLine> lines;
   final double subtotal;
   final double lineDiscountTotal;
-  final double invoiceDiscountAmount;
   final double discountTotal;
   final double taxTotal;
   final double grandTotal;
@@ -153,7 +127,6 @@ class CheckoutQuote {
     required this.lines,
     required this.subtotal,
     required this.lineDiscountTotal,
-    required this.invoiceDiscountAmount,
     required this.discountTotal,
     required this.taxTotal,
     required this.grandTotal,

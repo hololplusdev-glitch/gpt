@@ -4,7 +4,8 @@
 
 import 'package:holol_POS/core/l10n/app_localizations.dart';
 import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
-import 'package:holol_POS/core/persistence/database.dart' show Sale;
+import 'package:holol_POS/core/persistence/database.dart'
+    show Sale, SaleTaxSummaryCompanion;
 import 'package:holol_POS/core/services/formatters/pos_formatters.dart';
 import 'package:holol_POS/core/services/invoices/invoice_archive_repository.dart';
 import 'package:holol_POS/core/services/invoices/invoice_audit_hasher.dart';
@@ -12,6 +13,8 @@ import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 import 'package:holol_POS/core/services/invoices/invoice_validation_service.dart';
 import 'package:holol_POS/core/services/invoices/qr_payload_builder.dart';
 import 'package:holol_POS/core/services/payments/payment_method_resolver.dart';
+import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
+import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 
 class InvoiceDocumentLabels {
@@ -175,6 +178,204 @@ class InvoiceDocumentBuilder {
     return document;
   }
 
+  Future<InvoiceDocument> buildFromCheckoutSnapshot({
+    required String saleId,
+    required String localInvoiceNo,
+    required DateTime invoiceDateTime,
+    required String statusCode,
+    required String syncStatusCode,
+    required String terminalId,
+    required String? machineNo,
+    required String? branchNo,
+    required String? branchYear,
+    required String? storeId,
+    required String? priceLevelId,
+    required bool useTax,
+    required String cashierId,
+    required String? cashierName,
+    required String? customerId,
+    required String? customerName,
+    required String? customerTaxNumber,
+    required List<SaleLineInput> lines,
+    required CheckoutQuote quote,
+    required List<SalePaymentInput> payments,
+    required List<SaleTaxSummaryCompanion> taxes,
+    String? notes,
+    InvoiceDocumentLabels labels = const InvoiceDocumentLabels.ar(),
+  }) async {
+    final branch = await _loadBranchFromContext(
+      terminalId: terminalId,
+      branchNo: branchNo,
+      branchYear: branchYear,
+    );
+    final seller = _sellerFromBranch(branch);
+
+    final invoiceLines = <InvoiceLineDocument>[];
+    for (var i = 0; i < lines.length; i++) {
+      final line = lines[i];
+      final priced = quote.lines[i];
+      invoiceLines.add(
+        InvoiceLineDocument(
+          itemId: line.itemId,
+          itemName: line.itemName,
+          unitId: line.unitId,
+          unitName: _clean(line.unitName),
+          unitSize: line.unitSize,
+          barcode: _clean(line.barcode),
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          lineSubtotal: priced.grossAmount,
+          discountType: line.discountType?.code,
+          discountValue: line.discountValue,
+          discountAmount: line.discountAmount,
+          taxRate: line.taxRate,
+          taxAmount: priced.taxAmount,
+          lineTotal: priced.lineTotal,
+          allowDiscount: line.allowDiscount,
+          priceOverridden: false,
+          storeId: _clean(storeId),
+          priceLevelId: _clean(priceLevelId),
+          display: InvoiceLineDisplay(
+            quantity: PosFormatters.quantity(line.quantity),
+            unitPrice: PosFormatters.amount(line.unitPrice),
+            lineSubtotal: PosFormatters.amount(priced.grossAmount),
+            discountAmount: PosFormatters.amount(line.discountAmount),
+            taxRate: PosFormatters.percent(line.taxRate),
+            taxAmount: PosFormatters.amount(priced.taxAmount),
+            lineTotal: PosFormatters.amount(priced.lineTotal),
+          ),
+        ),
+      );
+    }
+
+    final invoiceTaxes = taxes.map((tax) {
+      final rate = tax.taxRate.value;
+      final taxableAmount = tax.taxableAmount.value;
+      final taxAmount = tax.taxAmount.value;
+      return InvoiceTaxDocument(
+        taxRate: rate,
+        taxableAmount: taxableAmount,
+        taxAmount: taxAmount,
+        displayRate: PosFormatters.percent(rate),
+        displayTaxableAmount: PosFormatters.amount(taxableAmount),
+        displayTaxAmount: PosFormatters.amount(taxAmount),
+      );
+    }).toList();
+
+    final invoicePayments = payments.map((payment) {
+      final type = payment.paymentMethodType;
+      final manualRecord = PaymentMethodResolver.isManual(type);
+      final name = payment.paymentMethodName ?? payment.paymentMethodCode;
+      return InvoicePaymentDocument(
+        paymentMethodId: payment.paymentMethodId,
+        paymentMethodCode: payment.paymentMethodCode,
+        methodName: name,
+        methodType: type.code,
+        amount: payment.amount,
+        cashTendered: payment.cashTendered,
+        changeGiven: payment.changeGiven,
+        referenceNo: _clean(payment.referenceNo),
+        bankId: _clean(payment.bankId),
+        cardTypeId: _clean(payment.cardTypeId),
+        manualRecord: manualRecord,
+        displayMethod: PaymentMethodResolver.describe(
+          methodCode: payment.paymentMethodCode,
+          methodName: name,
+          type: type,
+          manualRecord: manualRecord,
+        ),
+        displayAmount: PosFormatters.amount(payment.amount),
+      );
+    }).toList();
+
+    var document = InvoiceDocument(
+      saleId: saleId,
+      localInvoiceNo: localInvoiceNo,
+      invoiceDateTime: invoiceDateTime,
+      invoiceTypeLabel: labels.invoiceTypeSales,
+      statusCode: statusCode,
+      statusLabel: PosFormatters.saleStatusLabel(statusCode),
+      syncStatusLabel: PosFormatters.saleSyncStatusLabel(syncStatusCode),
+      seller: seller,
+      branch: branch,
+      terminal: InvoiceTerminalInfo(
+        terminalId: terminalId,
+        machineNumber: machineNo,
+        storeId: storeId,
+        priceLevelId: priceLevelId,
+        useTax: useTax,
+      ),
+      cashier: InvoiceCashierInfo(
+        userId: cashierId,
+        name: _clean(cashierName) ?? cashierId,
+      ),
+      customer: _customerFromValues(customerId, customerName, customerTaxNumber),
+      lines: invoiceLines,
+      taxSummary: invoiceTaxes,
+      payments: invoicePayments,
+      totals: InvoiceTotalsDocument(
+        subtotal: quote.subtotal,
+        discountTotal: quote.discountTotal,
+        taxTotal: quote.taxTotal,
+        netTotal: quote.grandTotal,
+        paidTotal: payments.fold(
+          0.0,
+          (sum, p) =>
+              sum +
+              (p.paymentMethodType == PaymentMethodType.customerCredit
+                  ? 0.0
+                  : p.amount),
+        ),
+        remainingTotal: payments.any(
+          (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
+        )
+            ? quote.grandTotal
+            : 0.0,
+        changeAmount: payments.fold(
+          0.0,
+          (sum, p) => sum + (p.changeGiven ?? 0.0),
+        ),
+        displaySubtotal: PosFormatters.amount(quote.subtotal),
+        displayDiscountTotal: PosFormatters.amount(quote.discountTotal),
+        displayTaxTotal: PosFormatters.amount(quote.taxTotal),
+        displayNetTotal: PosFormatters.amount(quote.grandTotal),
+        displayPaidTotal: PosFormatters.amount(
+          payments.fold(
+            0.0,
+            (sum, p) =>
+                sum +
+                (p.paymentMethodType == PaymentMethodType.customerCredit
+                    ? 0.0
+                    : p.amount),
+          ),
+        ),
+        displayRemainingTotal: PosFormatters.amount(
+          payments.any(
+            (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
+          )
+              ? quote.grandTotal
+              : 0.0,
+        ),
+        displayChangeAmount: PosFormatters.amount(
+          payments.fold(0.0, (sum, p) => sum + (p.changeGiven ?? 0.0)),
+        ),
+      ),
+      copyInfo: const InvoiceCopyInfo.original(),
+      printStatusLabel: labels.printStatusPending,
+      notes: notes,
+      arabicPrintNotice: labels.arabicPrintNotice,
+    );
+
+    document = document.copyWith(qrPayload: _qrPayloadBuilder.build(document));
+    final validation = _validationService.validate(document);
+    final auditHash = _auditHasher.hash(document);
+    return document.copyWith(
+      auditHash: auditHash,
+      validationStatus: validation.isValid ? 'valid' : 'invalid',
+      validationMessage: validation.message,
+    );
+  }
+
   Future<InvoiceBranchInfo> _loadBranch(Sale sale) async {
     final branch = await _salesDao.getInvoiceBranch(sale);
     final name =
@@ -198,6 +399,39 @@ class InvoiceDocumentBuilder {
       address: address.isEmpty ? null : address,
       branchNumber: sale.branchNo ?? _clean(branch?.branchNo),
       branchYear: sale.branchYear ?? _clean(branch?.branchYear),
+    );
+  }
+
+  Future<InvoiceBranchInfo> _loadBranchFromContext({
+    required String terminalId,
+    required String? branchNo,
+    required String? branchYear,
+  }) async {
+    final branch = await _salesDao.getInvoiceBranchByContext(
+      terminalId: terminalId,
+      branchNo: branchNo,
+    );
+    final name =
+        _clean(branch?.commercialName) ??
+        _clean(branch?.nameAr) ??
+        _clean(branch?.name) ??
+        branchNo ??
+        terminalId;
+    final address = [
+      _clean(branch?.address),
+      _clean(branch?.streetName),
+      _clean(branch?.buildingNo),
+      _clean(branch?.postalZone),
+    ].whereType<String>().where((v) => v.isNotEmpty).join(' ');
+    return InvoiceBranchInfo(
+      id: branchNo ?? '',
+      name: name,
+      taxNumber: _clean(branch?.taxNumber),
+      commercialRegistration: _clean(branch?.commercialRegistrationNo),
+      city: _clean(branch?.cityName),
+      address: address.isEmpty ? null : address,
+      branchNumber: branchNo ?? _clean(branch?.branchNo),
+      branchYear: branchYear ?? _clean(branch?.branchYear),
     );
   }
 
@@ -237,7 +471,7 @@ class InvoiceDocumentBuilder {
         taxAmount: taxAmount,
         lineTotal: lineTotal,
         allowDiscount: line.allowDiscountSnapshot ?? false,
-        priceOverridden: line.overrideReason != null,
+        priceOverridden: false,
         storeId: _clean(line.storeId),
         priceLevelId: _clean(line.priceLevelId),
         display: InvoiceLineDisplay(
@@ -333,6 +567,21 @@ class InvoiceDocumentBuilder {
       id: sale.customerId,
       name: name ?? sale.customerId ?? '',
       taxNumber: _clean(sale.customerTaxNumberSnapshot),
+    );
+  }
+
+  InvoiceCustomerInfo? _customerFromValues(
+    String? id,
+    String? name,
+    String? taxNumber,
+  ) {
+    final cleanName = _clean(name);
+    final cleanId = _clean(id);
+    if (cleanName == null && cleanId == null) return null;
+    return InvoiceCustomerInfo(
+      id: cleanId,
+      name: cleanName ?? cleanId ?? '',
+      taxNumber: _clean(taxNumber),
     );
   }
 

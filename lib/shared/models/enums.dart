@@ -171,64 +171,6 @@ extension PaymentMethodTypeRules on PaymentMethodType {
   bool get allowsChange => isCash;
 }
 
-// =============================================================================
-// ADJUSTMENTS
-// =============================================================================
-
-/// Whether the adjustment applies to the whole invoice or a single line.
-enum AdjustmentScope {
-  invoice('invoice'),
-  line('line');
-
-  final String code;
-  const AdjustmentScope(this.code);
-
-  static AdjustmentScope? fromCode(String? code) =>
-      AdjustmentScope.values.where((e) => e.code == code).firstOrNull;
-}
-
-/// How the adjustment value is interpreted.
-enum AdjustmentType {
-  percentage('percentage'),
-  fixed('fixed');
-
-  final String code;
-  const AdjustmentType(this.code);
-
-  static AdjustmentType? fromCode(String? code) =>
-      AdjustmentType.values.where((e) => e.code == code).firstOrNull;
-}
-
-/// Who/what initiated the adjustment.
-enum AdjustmentSource {
-  manual('manual'),
-  customer('customer'),
-  promo('promo'),
-  coupon('coupon');
-
-  final String code;
-  const AdjustmentSource(this.code);
-
-  static AdjustmentSource? fromCode(String? code) =>
-      AdjustmentSource.values.where((e) => e.code == code).firstOrNull;
-}
-
-// =============================================================================
-// PRICING
-// =============================================================================
-
-/// How a line item's price was resolved.
-enum PriceSource {
-  itemPrice('item_price'),
-  tierPrice('tier_price'),
-  manualOverride('manual_override');
-
-  final String code;
-  const PriceSource(this.code);
-
-  static PriceSource? fromCode(String? code) =>
-      PriceSource.values.where((e) => e.code == code).firstOrNull;
-}
 
 // =============================================================================
 // PRINTING

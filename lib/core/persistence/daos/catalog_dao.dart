@@ -5,7 +5,6 @@
 import 'package:drift/drift.dart';
 import 'package:holol_POS/core/persistence/database.dart' hide Customer;
 import 'package:holol_POS/shared/models/customer.dart';
-import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
 
 /// Data access for catalog tables.
@@ -126,8 +125,6 @@ EXISTS (
     AND p.price_level_id = ?
     AND p.unit_price > 0
     AND p.store_id = ?
-    AND (p.from_qty IS NULL OR p.from_qty <= 1)
-    AND (p.to_qty IS NULL OR p.to_qty = 0 OR p.to_qty >= 1)
 )
 ''';
   }
@@ -383,13 +380,11 @@ EXISTS (
           .where(
             (price) => price.unitId != null && unitIds.contains(price.unitId),
           )
-          .where((price) => _matchesQty(price, quantity))
           .toList();
       final candidates = allCandidates;
       if (candidates.isEmpty) {
         continue;
       }
-      candidates.sort((a, b) => _comparePriceTier(a, b, quantity));
       final price = candidates.first;
       final effectiveUnit =
           unit ??
@@ -412,9 +407,6 @@ EXISTS (
         barcode: null,
         taxRate: item.taxRate,
         allowDiscount: item.allowDiscount,
-        priceSource: _isOpenTier(price)
-            ? PriceSource.itemPrice.code
-            : PriceSource.tierPrice.code,
       );
     }
     return resolved;
@@ -436,7 +428,6 @@ EXISTS (
       unitPrice: price.unitPrice,
       taxRate: price.taxRate != 0 ? price.taxRate : item.taxRate,
       allowDiscount: price.allowDiscount,
-      priceSource: price.priceSource,
     );
   }
 
@@ -468,10 +459,8 @@ EXISTS (
         .where(
           (price) => price.unitId != null && unitIds.contains(price.unitId),
         )
-        .where((price) => _matchesQty(price, quantity))
         .toList();
     if (candidates.isEmpty) return null;
-    candidates.sort((a, b) => _comparePriceTier(a, b, quantity));
     final price = candidates.first;
     final effectiveUnit =
         unit ?? await _getUnitByAnyId(itemId, price.unitId ?? '');
@@ -486,9 +475,6 @@ EXISTS (
       barcode: null,
       taxRate: item.taxRate,
       allowDiscount: item.allowDiscount,
-      priceSource: _isOpenTier(price)
-          ? PriceSource.itemPrice.code
-          : PriceSource.tierPrice.code,
     );
   }
 
@@ -647,32 +633,6 @@ EXISTS (
     return unit.sourceUnitId ?? _sourceUnitIdFromLocalId(unit.id);
   }
 
-  bool _matchesQty(ItemPrice price, double quantity) {
-    final qty = quantity;
-    final frQty = price.fromQty;
-    final toQty = price.toQty;
-    final isOpenTier =
-        (frQty == null || frQty == 0) && (toQty == null || toQty == 0);
-    if (isOpenTier) return true;
-    return (frQty == null || frQty <= qty) &&
-        (toQty == null || toQty == 0 || toQty >= qty);
-  }
-
-  int _comparePriceTier(ItemPrice a, ItemPrice b, double quantity) {
-    final aOpen = _isOpenTier(a);
-    final bOpen = _isOpenTier(b);
-    if (aOpen != bOpen) return aOpen ? 1 : -1;
-    final qty = quantity;
-    final aExact = a.fromQty == qty && a.toQty == qty;
-    final bExact = b.fromQty == qty && b.toQty == qty;
-    if (aExact != bExact) return aExact ? -1 : 1;
-    return (b.fromQty ?? 0).compareTo(a.fromQty ?? 0);
-  }
-
-  bool _isOpenTier(ItemPrice price) {
-    return (price.fromQty == null || price.fromQty == 0) &&
-        (price.toQty == null || price.toQty == 0);
-  }
 
   ItemUnit? _firstUnitWhere(
     List<ItemUnit> units,
@@ -746,7 +706,6 @@ class ResolvedItemPrice {
   final String? barcode;
   final double taxRate;
   final bool allowDiscount;
-  final String priceSource;
 
   const ResolvedItemPrice({
     required this.unitPrice,
@@ -755,6 +714,5 @@ class ResolvedItemPrice {
     required this.barcode,
     required this.taxRate,
     required this.allowDiscount,
-    required this.priceSource,
   });
 }

@@ -14,9 +14,7 @@ class SaleLineInput {
   final DiscountType? discountType;
   final double? discountValue;
   final double discountAmount;
-  final bool isPriceOverridden;
   final bool allowDiscount;
-  final String priceSource;
   final String? notes;
 
   const SaleLineInput({
@@ -32,9 +30,7 @@ class SaleLineInput {
     this.discountType,
     this.discountValue,
     this.discountAmount = 0.0,
-    this.isPriceOverridden = false,
     this.allowDiscount = false,
-    required this.priceSource,
     this.notes,
   });
 
@@ -51,9 +47,7 @@ class SaleLineInput {
     'discountType': discountType?.code,
     'discountValue': discountValue,
     'discountAmount': discountAmount,
-    'isPriceOverridden': isPriceOverridden,
     'allowDiscount': allowDiscount,
-    'priceSource': priceSource,
     'notes': notes,
   };
 }
@@ -75,6 +69,20 @@ extension SaleLineInputListPricingMapper on Iterable<SaleLineInput> {
   List<PricingLineInput> toPricingLineInputs() {
     return map((line) => line.toPricingLineInput()).toList();
   }
+}
+
+enum SaleTenderKind { cash, network, credit }
+
+class SalePaymentIntent {
+  final SaleTenderKind kind;
+  final String tenderedText;
+  final String reference;
+
+  const SalePaymentIntent({
+    required this.kind,
+    required this.tenderedText,
+    required this.reference,
+  });
 }
 
 class SalePaymentInput {

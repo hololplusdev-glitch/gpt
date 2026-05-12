@@ -1,6 +1,6 @@
 // core/persistence/daos/sales_dao.dart
 // WHY: Atomic DB access for the entire sales pipeline.
-// Sales, lines, payments, taxes, adjustments — all persisted in one call.
+// Sales, lines, payments, taxes, invoice archive, outbox, and print jobs are persisted in one call.
 
 import 'package:drift/drift.dart';
 import 'package:holol_POS/core/persistence/database.dart';
@@ -25,9 +25,9 @@ class SalesDao {
     required List<SalePaymentsCompanion> payments,
     required AuditLogCompanion auditLogEntry,
     OutboxEventsCompanion? outboxEntry,
+    InvoiceDocumentsCompanion? invoiceDocument,
     List<PrintJobsCompanion>? printJobs,
     List<SaleTaxSummaryCompanion>? taxes,
-    List<SaleAdjustmentsCompanion>? discounts,
   }) async {
     await _db.transaction(() async {
       await _db.into(_db.sales).insert(header);
@@ -42,10 +42,8 @@ class SalesDao {
           await _db.into(_db.saleTaxSummary).insert(tax);
         }
       }
-      if (discounts != null) {
-        for (final discount in discounts) {
-          await _db.into(_db.saleAdjustments).insert(discount);
-        }
+      if (invoiceDocument != null) {
+        await _db.into(_db.invoiceDocuments).insert(invoiceDocument);
       }
       if (outboxEntry != null) {
         await _db.into(_db.outboxEvents).insert(outboxEntry);
@@ -121,6 +119,20 @@ class SalesDao {
           (branch) =>
               branch.id.equals(sale.branchNo ?? '') |
               branch.branchNo.equals(sale.branchNo ?? '') |
+              branch.branchNo.equals(braNbr),
+        ))
+        .getSingleOrNull();
+  }
+
+  Future<BranchProfileData?> getInvoiceBranchByContext({
+    required String terminalId,
+    String? branchNo,
+  }) {
+    final braNbr = branchNo ?? terminalId;
+    return (_db.select(_db.branchProfile)..where(
+          (branch) =>
+              branch.id.equals(branchNo ?? '') |
+              branch.branchNo.equals(branchNo ?? '') |
               branch.branchNo.equals(braNbr),
         ))
         .getSingleOrNull();

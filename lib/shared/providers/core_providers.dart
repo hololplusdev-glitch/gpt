@@ -193,7 +193,6 @@ final invoicePdfExporterProvider = Provider<InvoicePdfExporter>((ref) {
 
 final printQueueProvider = Provider<PrintQueue>((ref) {
   return PrintQueue(
-    printJobDao: ref.watch(printJobDaoProvider),
     printerProfileDao: ref.watch(printerProfileDaoProvider),
   );
 });

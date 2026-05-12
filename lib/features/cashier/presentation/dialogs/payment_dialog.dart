@@ -10,8 +10,8 @@ import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
 import 'package:holol_POS/features/cashier/application/cart_quote_provider.dart';
 import 'package:holol_POS/features/cashier/application/product_providers.dart';
 import 'package:holol_POS/features/cashier/domain/models/cart.dart';
-import 'package:holol_POS/features/cashier/domain/models/payment_method_option.dart';
 import 'package:holol_POS/features/sales/application/sale_checkout.dart';
+import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/customer.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
@@ -58,6 +58,14 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   String? _saleId;
 
   double get _totalAmount => _quote?.grandTotal ?? 0.0;
+
+  SaleTenderKind get _saleTenderKind {
+    return switch (_selectedKind) {
+      _CheckoutTenderKind.cash => SaleTenderKind.cash,
+      _CheckoutTenderKind.network => SaleTenderKind.network,
+      _CheckoutTenderKind.credit => SaleTenderKind.credit,
+    };
+  }
 
   @override
   void didChangeDependencies() {
@@ -116,15 +124,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       return;
     }
 
-    final methods = await ref.read(paymentMethodsProvider.future);
-    if (!mounted) return;
-
-    final method = _methodForSelectedKind(methods);
-    if (method == null) {
-      setState(() => _errorMessage = _missingMethodMessage());
-      return;
-    }
-
     if (_selectedKind == _CheckoutTenderKind.credit &&
         (_selectedCustomerId == null || _selectedCustomerId!.trim().isEmpty)) {
       setState(() => _errorMessage = 'البيع الآجل يتطلب اختيار عميل.');
@@ -143,11 +142,13 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             SaleCheckoutRequest(
               cart: widget.cart,
               checkoutAttemptId: _checkoutAttemptId,
-              paymentMethod: method,
-              tenderedText: _selectedKind == _CheckoutTenderKind.cash
-                  ? _tenderedController.text
-                  : _totalAmount.toStringAsFixed(2),
-              reference: _referenceController.text,
+              paymentIntent: SalePaymentIntent(
+                kind: _saleTenderKind,
+                tenderedText: _selectedKind == _CheckoutTenderKind.cash
+                    ? _tenderedController.text
+                    : _totalAmount.toStringAsFixed(2),
+                reference: _referenceController.text,
+              ),
               customerId: _selectedCustomerId,
               customerName: _selectedCustomerName,
               customerTaxNumber: _selectedCustomerTaxNumber,
@@ -181,78 +182,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     }
   }
 
-  PaymentMethodOption? _methodForSelectedKind(
-    List<PaymentMethodOption> methods,
-  ) {
-    return switch (_selectedKind) {
-      _CheckoutTenderKind.cash => _cashMethod(methods),
-      _CheckoutTenderKind.network => _networkMethod(methods),
-      _CheckoutTenderKind.credit => _creditMethod(methods),
-    };
-  }
-
-  PaymentMethodOption? _cashMethod(List<PaymentMethodOption> methods) {
-    for (final method in methods) {
-      if (method.type.isCash) return method;
-    }
-    return null;
-  }
-
-  PaymentMethodOption _networkMethod(List<PaymentMethodOption> methods) {
-    // Business meaning:
-    // Network = card/payment-terminal payment.
-    //
-    // Current technical state:
-    // integratedAvailable() is false until real terminal integration exists.
-    // Therefore we intentionally record a manual network/card payment with warning.
-    for (final method in methods) {
-      if (method.type.isManualCard) return method;
-    }
-
-    for (final method in methods) {
-      if (method.type.isCard) {
-        return PaymentMethodOption(
-          id: 'MANUAL_CARD_FALLBACK',
-          code: PaymentMethodCodes.manualCard,
-          name: 'شبكة',
-          type: PaymentMethodType.manualCard,
-          requiresReference: method.requiresReference,
-          bankId: method.bankId,
-          cardTypeId: method.cardTypeId,
-        );
-      }
-    }
-
-    return const PaymentMethodOption(
-      id: 'MANUAL_CARD_FALLBACK',
-      code: PaymentMethodCodes.manualCard,
-      name: 'شبكة',
-      type: PaymentMethodType.manualCard,
-      requiresReference: true,
-    );
-  }
-
-  PaymentMethodOption _creditMethod(List<PaymentMethodOption> methods) {
-    for (final method in methods) {
-      if (method.type == PaymentMethodType.customerCredit) return method;
-    }
-
-    return const PaymentMethodOption(
-      id: 'CUSTOMER_CREDIT',
-      code: 'CUSTOMER_CREDIT',
-      name: 'آجل',
-      type: PaymentMethodType.customerCredit,
-      requiresReference: false,
-    );
-  }
-
-  String _missingMethodMessage() {
-    return switch (_selectedKind) {
-      _CheckoutTenderKind.cash => 'لا توجد طريقة دفع كاش مفعلة.',
-      _CheckoutTenderKind.network => 'لا توجد طريقة دفع شبكة مفعلة.',
-      _CheckoutTenderKind.credit => 'لا توجد طريقة دفع آجل مفعلة.',
-    };
-  }
 
   void _cancelBeforeCompletion() {
     if (_isProcessing) return;
@@ -302,8 +231,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   Widget _buildPaymentView() {
     final l10n = AppLocalizations.of(context)!;
     final customers = ref.watch(customersProvider);
-    final methods = ref.watch(paymentMethodsProvider);
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -373,16 +300,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                   onSelected: _selectKind,
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                methods.when(
-                  data: (items) => _buildSelectedMethodBody(items, customers),
-                  loading: () => const Padding(
-                    padding: EdgeInsets.all(AppSpacing.xl),
-                    child: AppLoading(),
-                  ),
-                  error: (error, _) => AppInfoBanner.error(
-                    message: ErrorMapper.userMessage(error),
-                  ),
-                ),
+                _buildSelectedMethodBody(customers),
               ],
             ),
           ),
@@ -391,18 +309,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     );
   }
 
-  Widget _buildSelectedMethodBody(
-    List<PaymentMethodOption> methods,
-    AsyncValue<List<Customer>> customers,
-  ) {
-    final method = _methodForSelectedKind(methods);
-    if (method == null) {
-      return AppInfoBanner.error(message: _missingMethodMessage());
-    }
-
+  Widget _buildSelectedMethodBody(AsyncValue<List<Customer>> customers) {
     return switch (_selectedKind) {
       _CheckoutTenderKind.cash => _buildCashBody(),
-      _CheckoutTenderKind.network => _buildNetworkBody(method),
+      _CheckoutTenderKind.network => _buildNetworkBody(),
       _CheckoutTenderKind.credit => _buildCreditBody(customers),
     };
   }
@@ -443,7 +353,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     );
   }
 
-  Widget _buildNetworkBody(PaymentMethodOption method) {
+  Widget _buildNetworkBody() {
     final profile = ref.watch(activePaymentProfileProvider).valueOrNull;
     final profileMode = PaymentProfileMode.fromCode(profile?.mode);
     final integratedConfigured =
@@ -458,11 +368,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         ? 'جهاز الدفع غير متصل. سيتم تسجيل عملية شبكة يدويًا مع حفظها كدفعة شبكة.'
         : 'لم يتم تفعيل ربط جهاز الدفع بعد. سيتم تسجيل عملية شبكة يدويًا مع حفظها كدفعة شبكة.';
 
-    final resolved = resolveCheckoutPaymentMethod(method);
-    final requiresReference = checkoutPaymentRequirements(
-      resolved,
-      paymentProfileRequiresReference: profile?.requireReference ?? false,
-    ).requiresReference;
+    final requiresReference = profile?.requireReference ?? true;
 
     return Column(
       mainAxisSize: MainAxisSize.min,

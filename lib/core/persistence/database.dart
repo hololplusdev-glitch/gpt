@@ -40,11 +40,9 @@ part 'database.g.dart';
     Sales,
     SaleLines,
     SalePayments,
-    SaleAdjustments,
     SaleTaxSummary,
     InvoiceDocuments,
     HeldOrders,
-    HeldOrderLines,
     // -- Download Sync --
     MasterSyncState,
     ScopedSyncState,

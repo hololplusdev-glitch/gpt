@@ -72,14 +72,15 @@ class InvoiceOutputActions {
     }
 
     final document = await getOrCreateOriginal(saleId);
-    final jobIds = await _printQueue.enqueueInvoiceReceipt(
+    final jobs = await _printQueue.invoiceReceipt(
       document: document,
       createdAt: _clock.now(),
       createdBy: createdBy,
       requireAutoPrint: requireAutoPrint,
     );
+    await _printJobDao.insertAll(jobs);
 
-    return _processJobs(jobIds);
+    return _processJobs(jobs.map((job) => job.id.value).toList());
   }
 
   Future<InvoicePrintResult> reprint(String saleId, {String? createdBy}) async {
@@ -90,14 +91,15 @@ class InvoiceOutputActions {
       InvoiceCopyInfo.reprint(copyNumber: copyNumber),
     );
 
-    final jobIds = await _printQueue.enqueueInvoiceReceipt(
+    final jobs = await _printQueue.invoiceReceipt(
       document: copy,
       createdAt: _clock.now(),
       createdBy: createdBy,
       documentType: PrintDocumentType.invoiceReceiptCopy,
     );
+    await _printJobDao.insertAll(jobs);
 
-    return _processJobs(jobIds);
+    return _processJobs(jobs.map((job) => job.id.value).toList());
   }
 
   Future<File> savePdf(String saleId) async {
