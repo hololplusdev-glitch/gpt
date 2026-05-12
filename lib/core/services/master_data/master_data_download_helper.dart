@@ -94,22 +94,8 @@ class MasterDataDownloadHelper {
         .where((result) => !warningTypes.contains(result.type))
         .toList();
     if (throwOnFatalFailures && fatalFailures.isNotEmpty) {
-      final details = fatalFailures
-          .map((result) {
-            final reason = result.error?.trim();
-            final code = result.errorCode?.trim();
-            final suffix = [
-              if (code != null && code.isNotEmpty) code,
-              if (reason != null && reason.isNotEmpty) reason,
-            ].join(' - ');
-            return suffix.isEmpty
-                ? result.type.code
-                : '${result.type.code}: $suffix';
-          })
-          .join(' | ');
-
       throw SyncException(
-        'فشل تحديث بيانات التشغيل: $details',
+        'فشل تحديث بيانات التشغيل: ${_failureSummary(fatalFailures)}',
         code: 'MASTER_DATA_DOWNLOAD_FAILED',
       );
     }
@@ -129,6 +115,26 @@ class MasterDataDownloadHelper {
       warningFailures: warningFailures,
       readinessWarnings: readiness.syncWarnings,
     );
+  }
+
+  String _failureSummary(List<MasterDataTypeResult> failures) {
+    return failures.map(_formatFailure).join(' | ');
+  }
+
+  String _formatFailure(MasterDataTypeResult result) {
+    final code = _clean(result.errorCode);
+    final reason = _clean(result.error);
+    final parts = [if (code.isNotEmpty) code, if (reason.isNotEmpty) reason];
+
+    if (parts.isEmpty) return result.type.code;
+
+    return '${result.type.code}: ${parts.join(' - ')}';
+  }
+
+  String _clean(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty || text.toLowerCase() == 'null') return '';
+    return text;
   }
 }
 

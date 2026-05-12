@@ -752,14 +752,77 @@ class MasterDataSyncService {
   }
 
   int _effectivePageLimitFor(MasterDataType type, int configuredLimit) {
-    // CUSTOMER payload is much larger than lightweight setup tables.
-    // Old stable versions used p_limit=100. Keep customers small to avoid
-    // ORDS/server/Dio connection resets on large JSON pages.
-    if (type == MasterDataType.customer) {
-      return configuredLimit < 100 ? configuredLimit : 100;
+    // Heavy payloads can trigger ORDS/server/Dio connection resets when fetched
+    // with very large pages. Keep these bounded while preserving the user's
+    // configured limit for lightweight setup tables.
+    switch (type) {
+      case MasterDataType.item:
+      case MasterDataType.itemPrice:
+      case MasterDataType.customer:
+        return configuredLimit < 100 ? configuredLimit : 100;
+      default:
+        return configuredLimit;
+    }
+  }
+
+  Future<Response<dynamic>> _getPageResponseWithRetry({
+    required Map<String, dynamic> queryParams,
+    MasterDataSyncCancelHandle? cancelHandle,
+  }) async {
+    const maxAttempts = 3;
+    Object? lastError;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
+      if (cancelHandle?.isCancelled ?? false) {
+        throw const SyncException(
+          'Sync was cancelled by user.',
+          code: 'CANCELLED',
+        );
+      }
+
+      try {
+        return await _apiClient.get<dynamic>(
+          ApiPaths.data,
+          queryParameters: queryParams,
+          cancelToken: cancelHandle?._token,
+        );
+      } catch (error) {
+        lastError = error;
+
+        if (!_isRetryablePageFetchError(error) || attempt == maxAttempts) {
+          rethrow;
+        }
+
+        await Future<void>.delayed(
+          Duration(milliseconds: 350 * attempt * attempt),
+        );
+      }
     }
 
-    return configuredLimit;
+    throw lastError ??
+        const SyncException(
+          'Master data page request failed.',
+          code: 'MASTER_DATA_PAGE_REQUEST_FAILED',
+        );
+  }
+
+  bool _isRetryablePageFetchError(Object error) {
+    if (error is! AppException) return false;
+
+    final code = error.code ?? '';
+    if (code == 'CANCELLED') return false;
+
+    if (code == 'NETWORK_ERROR' || code == 'UNKNOWN_NETWORK_ERROR') {
+      return true;
+    }
+
+    if (code.startsWith('HTTP_')) {
+      final status = int.tryParse(code.substring(5));
+      if (status == null) return false;
+      return status == 408 || status == 429 || status >= 500;
+    }
+
+    return false;
   }
 
   Future<_MasterDataPage> _fetchPage({
@@ -783,10 +846,9 @@ class MasterDataSyncService {
       );
     }
 
-    final response = await _apiClient.get<dynamic>(
-      ApiPaths.data,
-      queryParameters: queryParams,
-      cancelToken: cancelHandle?._token,
+    final response = await _getPageResponseWithRetry(
+      queryParams: queryParams,
+      cancelHandle: cancelHandle,
     );
     final body = response.data;
 
