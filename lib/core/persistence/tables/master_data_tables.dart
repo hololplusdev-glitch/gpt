@@ -1,6 +1,5 @@
 // core/persistence/tables/master_data_tables.dart
 // WHY: Server-derived master data cached locally for offline operation.
-// All tables use cust_code, source_updated_at, cached_at pattern.
 // No Backend-style column names — clean internal schema.
 
 import 'package:drift/drift.dart';

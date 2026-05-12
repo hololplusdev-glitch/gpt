@@ -39,7 +39,6 @@ class MasterSyncRuns extends Table {
   TextColumn get id => text()();
   TextColumn get mode => text()();
   TextColumn get status => text()();
-  TextColumn get custCode => text().nullable()();
   TextColumn get sourceUserId => text().nullable()();
   TextColumn get branchNo => text().nullable()();
   TextColumn get machineNo => text().nullable()();

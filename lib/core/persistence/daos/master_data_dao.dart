@@ -115,23 +115,20 @@ class MasterDataDao {
   String _syncKey(String typeCode, MasterDataSyncContext context) {
     return <String>[
       typeCode,
-      'cust=${context.custCode.trim()}',
       'usr=${context.syncUserId.trim()}',
     ].join('|');
   }
 
   String _scopeJson(MasterDataSyncContext context) {
     return jsonEncode({
-      'custCode': context.custCode,
       'userId': context.syncUserId,
-      'downloadScope': 'tenant',
+      'downloadScope': 'single_setup_customer',
     });
   }
 
   Future<void> insertRun({
     required String runId,
     required String modeCode,
-    required String custCode,
     required String userId,
     required String branchNo,
     required String terminalNo,
@@ -265,11 +262,10 @@ class MasterDataDao {
         );
   }
 
-  Future<List<PosUser>> listDownloadedPosUsers(String custCode) {
+  Future<List<PosUser>> listDownloadedPosUsers() {
     return (_db.select(_db.posUsers)
           ..where(
             (user) =>
-                user.custCode.equals(custCode) &
                 user.isActive.equals(true) &
                 user.canLoginPos.equals(true),
           )
@@ -278,7 +274,6 @@ class MasterDataDao {
   }
 
   Future<bool> hasMinimumSetupSeed({
-    required String custCode,
     required String bootstrapUserId,
   }) async {
     final normalizedCustCode = custCode.trim();
@@ -290,9 +285,7 @@ class MasterDataDao {
 
     final setupUser =
         await (_db.select(_db.posUsers)..where(
-              (user) =>
-                  user.custCode.equals(normalizedCustCode) &
-                  user.isActive.equals(true) &
+              (user) =>user.isActive.equals(true) &
                   (user.id.equals(normalizedBootstrapUserId) |
                       user.sourceUserId.equals(normalizedBootstrapUserId)),
             ))
@@ -315,9 +308,7 @@ class MasterDataDao {
     final devicePrivilege =
         await (_db.select(_db.posUserMachineAccess)
               ..where(
-                (row) =>
-                    row.custCode.equals(normalizedCustCode) &
-                    row.canUseMachine.equals(true),
+                (row) =>row.canUseMachine.equals(true),
               )
               ..limit(1))
             .getSingleOrNull();
@@ -325,23 +316,20 @@ class MasterDataDao {
     return devicePrivilege != null;
   }
 
-  Future<int> countCustomers(String custCode) async {
+  Future<int> countCustomers() async {
     final rows =
         await (_db.select(_db.customers)..where(
-              (row) =>
-                  row.custCode.equals(custCode) & row.inactive.equals(false),
+              (row) => row.inactive.equals(false),
             ))
             .get();
 
     return rows.length;
   }
 
-  Future<int> countDevicePrivileges(String custCode) async {
+  Future<int> countDevicePrivileges() async {
     final rows =
         await (_db.select(_db.posUserMachineAccess)..where(
-              (row) =>
-                  row.custCode.equals(custCode) &
-                  row.canUseMachine.equals(true),
+              (row) => row.canUseMachine.equals(true),
             ))
             .get();
 
@@ -349,11 +337,10 @@ class MasterDataDao {
   }
 
   Future<void> deleteDevicePrivilegesForUser({
-    required String custCode,
     required String userId,
   }) async {
     await (_db.delete(_db.posUserMachineAccess)..where(
-          (row) => row.custCode.equals(custCode) & row.userId.equals(userId),
+          (row) =>row.userId.equals(userId),
         ))
         .go();
   }
