@@ -171,7 +171,6 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
             cancelHandle: _cancelToken,
             requireReady: false,
             throwOnFatalFailures: true,
-            warningTypes: MasterDataType.setupWarningTypes,
             onProgress: (progress) {
               final totalSections = progress.totalSections <= 0
                   ? 1

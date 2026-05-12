@@ -31,9 +31,9 @@ class LocalApiClient {
     _dio = Dio(
       BaseOptions(
         baseUrl: profile.baseUrl,
-        connectTimeout: Duration(seconds: profile.timeoutSeconds),
-        receiveTimeout: Duration(seconds: profile.timeoutSeconds),
-        sendTimeout: Duration(seconds: profile.timeoutSeconds),
+        connectTimeout: Duration(seconds: profile.effectiveTimeoutSeconds),
+        receiveTimeout: Duration(seconds: profile.effectiveTimeoutSeconds),
+        sendTimeout: Duration(seconds: profile.effectiveTimeoutSeconds),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',

@@ -70,10 +70,12 @@ class MasterDataDownloadHelper {
     required MasterDataSyncMode mode,
     MasterDataSyncCancelHandle? cancelHandle,
     void Function(MasterDataSyncProgress)? onProgress,
-    Set<MasterDataType> warningTypes = const {},
+    Set<MasterDataType>? warningTypes,
     bool requireReady = false,
     bool throwOnFatalFailures = false,
   }) async {
+    final effectiveWarningTypes = warningTypes ?? mode.defaultWarningTypes;
+
     final summary = await _syncService.syncAll(
       MasterDataSyncContext(
         custCode: syncProfile.custCode.trim(),
@@ -88,10 +90,10 @@ class MasterDataDownloadHelper {
     );
     final failed = summary.results.where((result) => result.isFailure).toList();
     final warningFailures = failed
-        .where((result) => warningTypes.contains(result.type))
+        .where((result) => effectiveWarningTypes.contains(result.type))
         .toList();
     final fatalFailures = failed
-        .where((result) => !warningTypes.contains(result.type))
+        .where((result) => !effectiveWarningTypes.contains(result.type))
         .toList();
     if (throwOnFatalFailures && fatalFailures.isNotEmpty) {
       throw SyncException(

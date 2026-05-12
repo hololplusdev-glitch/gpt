@@ -86,6 +86,13 @@ class SyncProfile {
     return ':$port';
   }
 
+
+  /// Runtime-safe page limit used by download requests.
+  int get effectivePageLimit => pageLimit <= 0 ? 100 : pageLimit;
+
+  /// Runtime-safe network timeout used by Dio.
+  int get effectiveTimeoutSeconds => timeoutSeconds <= 0 ? 30 : timeoutSeconds;
+
   SyncProfile copyWith({
     String? host,
     int? port,

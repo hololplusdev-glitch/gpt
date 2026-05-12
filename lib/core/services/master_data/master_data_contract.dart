@@ -84,6 +84,21 @@ enum MasterDataSyncMode {
   const MasterDataSyncMode(this.code);
 
   final String code;
+
+  /// Default warning policy for each download mode.
+  ///
+  /// Setup is allowed to finish with non-critical setup table warnings.
+  /// Normal incremental/full sync should report failures as failures unless a
+  /// caller explicitly overrides the policy.
+  Set<MasterDataType> get defaultWarningTypes {
+    switch (this) {
+      case MasterDataSyncMode.initial:
+        return MasterDataType.setupWarningTypes;
+      case MasterDataSyncMode.incremental:
+      case MasterDataSyncMode.forceFull:
+        return const {};
+    }
+  }
 }
 
 enum MasterDataRunStatus {
@@ -131,6 +146,24 @@ class MasterDataSyncContext {
 
   String get syncUserId => bootstrapUserId;
 
+  String get normalizedCustCode => custCode.trim();
+
+  String get normalizedBootstrapUserId {
+    final normalized = bootstrapUserId.trim();
+    return normalized.isEmpty ? '1' : normalized;
+  }
+
+  String? get normalizedBranchNo {
+    final normalized = branchNo?.trim();
+    if (normalized == null || normalized.isEmpty) return null;
+    return normalized;
+  }
+
+  int effectivePageLimitFor(MasterDataType type) {
+    return type.effectivePageLimit(pageLimit);
+  }
+
+
   MasterDataSyncContext copyWith({
     String? custCode,
     String? bootstrapUserId,
@@ -151,6 +184,54 @@ class MasterDataSyncContext {
     required int offset,
     String? lastUpdate,
   }) {
+    final normalizedLastUpdate = lastUpdate?.trim();
+
+    final params = <String, dynamic>{
+      'p_type': type.code,
+      'p_cust_code': normalizedCustCode,
+      'p_usr_id': normalizedBootstrapUserId,
+      'p_limit': effectivePageLimitFor(type),
+      'p_offset': offset < 0 ? 0 : offset,
+    };
+
+    final branch = normalizedBranchNo;
+    if (branch != null) {
+      params['p_bra_nbr'] = branch;
+    }
+
+    if (normalizedLastUpdate != null &&
+        normalizedLastUpdate.isNotEmpty &&
+        normalizedLastUpdate.toLowerCase() != 'null') {
+      params['p_last_update'] = normalizedLastUpdate;
+    }
+
+    return params;
+  }
+) {
+    final normalizedLastUpdate = lastUpdate?.trim();
+
+    final params = <String, dynamic>{
+      'p_type': type.code,
+      'p_cust_code': normalizedCustCode,
+      'p_usr_id': normalizedBootstrapUserId,
+      'p_limit': effectivePageLimitFor(type),
+      'p_offset': offset < 0 ? 0 : offset,
+    };
+
+    final branch = normalizedBranchNo;
+    if (branch != null) {
+      params['p_bra_nbr'] = branch;
+    }
+
+    if (normalizedLastUpdate != null &&
+        normalizedLastUpdate.isNotEmpty &&
+        normalizedLastUpdate.toLowerCase() != 'null') {
+      params['p_last_update'] = normalizedLastUpdate;
+    }
+
+    return params;
+  }
+) {
     final params = <String, dynamic>{
       'p_type': type.code,
       'p_cust_code': custCode,
@@ -201,7 +282,7 @@ class MasterDataSyncSummary {
   /// Whether a mandatory type failed, causing
   /// the sync to abort early.
   bool get abortedEarly => results.any(
-    (r) => r.isFailure && MasterDataType.mandatoryTypes.contains(r.type),
+    (r) => r.isFailure && r.type.isMandatory,
   );
 }
 
