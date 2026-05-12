@@ -20,38 +20,30 @@ class MasterDataDownloadResult {
     required this.warningFailures,
     required this.readinessWarnings,
   });
-
-  MasterDataSyncSummary get summaryWithReadinessWarnings {
-    if (readinessWarnings.isEmpty) return summary;
-    final updatedResults = summary.results.map((result) {
-      if (result.type != MasterDataType.itemPrice) return result;
-      return MasterDataTypeResult(
-        type: result.type,
-        status: result.status,
-        rowsReceived: result.rowsReceived,
-        rowsSaved: result.rowsSaved,
-        pagesCount: result.pagesCount,
-        serverTime: result.serverTime,
-        oldServerTime: result.oldServerTime,
-        newServerTime: result.newServerTime,
-        sentLastUpdate: result.sentLastUpdate,
-        errorCode: result.errorCode,
-        error: result.error,
-        detailsJson: result.detailsJson,
-        warnings: [...result.warnings, ...readinessWarnings],
-      );
-    }).toList();
-    return MasterDataSyncSummary(
-      updatedResults,
-      runId: summary.runId,
-      mode: summary.mode,
-      status: summary.status,
-    );
-  }
-
   String warningFailureSummary() {
     if (warningFailures.isEmpty) return '';
     return warningFailures.map((result) => result.type.code).join(', ');
+  }
+
+  String readinessWarningSummary() {
+    if (readinessWarnings.isEmpty) return '';
+    return readinessWarnings.join(' | ');
+  }
+
+  String operationalWarningSummary() {
+    final parts = <String>[];
+
+    final typeWarnings = warningFailureSummary();
+    if (typeWarnings.isNotEmpty) {
+      parts.add('أنواع اكتملت كتحذير: $typeWarnings');
+    }
+
+    final readiness = readinessWarningSummary();
+    if (readiness.isNotEmpty) {
+      parts.add('تحذيرات الجاهزية: $readiness');
+    }
+
+    return parts.join(' | ');
   }
 }
 

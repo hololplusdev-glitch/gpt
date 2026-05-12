@@ -197,7 +197,7 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
           );
 
       await _verifySetupUserExists(syncProfile.bootstrapUserId.trim());
-      final warningSummary = download.warningFailureSummary();
+      final warningSummary = download.operationalWarningSummary();
       invalidateMasterDataDownloadProviders(ref);
       await ref.read(runtimeConfigRepositoryProvider).setSetupComplete(true);
       state = AsyncData(
