@@ -150,77 +150,79 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         _mixedCreditRemainder = false;
       }
     });
-List<SalePaymentIntent> _buildPaymentIntents() {
-  switch (_selectedKind) {
-    case _CheckoutTenderKind.cash:
-      return [
-        SalePaymentIntent(
-          kind: SaleTenderKind.cash,
-          amount: _totalAmount,
-          tenderedAmount: _parseMoney(_tenderedController.text),
-        ),
-      ];
+  }
 
-    case _CheckoutTenderKind.network:
-      return [
-        SalePaymentIntent(
-          kind: SaleTenderKind.network,
-          amount: _totalAmount,
-          tenderedAmount: _totalAmount,
-          reference: _referenceController.text.trim(),
-        ),
-      ];
-
-    case _CheckoutTenderKind.credit:
-      return [
-        SalePaymentIntent(
-          kind: SaleTenderKind.credit,
-          amount: _totalAmount,
-          tenderedAmount: _totalAmount,
-        ),
-      ];
-
-    case _CheckoutTenderKind.mixed:
-      final intents = <SalePaymentIntent>[];
-
-      final cash = _mixedCashAmount;
-      final network = _mixedNetworkAmount;
-      final remaining = _mixedRemainingAmount;
-
-      if (!cash.isNaN && cash > 0) {
-        intents.add(
+  List<SalePaymentIntent> _buildPaymentIntents() {
+    switch (_selectedKind) {
+      case _CheckoutTenderKind.cash:
+        return [
           SalePaymentIntent(
             kind: SaleTenderKind.cash,
-            amount: cash,
-            tenderedAmount: cash,
+            amount: _totalAmount,
+            tenderedAmount: _parseMoney(_tenderedController.text),
           ),
-        );
-      }
+        ];
 
-      if (!network.isNaN && network > 0) {
-        intents.add(
+      case _CheckoutTenderKind.network:
+        return [
           SalePaymentIntent(
             kind: SaleTenderKind.network,
-            amount: network,
-            tenderedAmount: network,
-            reference: _mixedNetworkReferenceController.text.trim(),
+            amount: _totalAmount,
+            tenderedAmount: _totalAmount,
+            reference: _referenceController.text.trim(),
           ),
-        );
-      }
+        ];
 
-      if (_mixedCreditRemainder && !remaining.isNaN && remaining > 0.01) {
-        intents.add(
+      case _CheckoutTenderKind.credit:
+        return [
           SalePaymentIntent(
             kind: SaleTenderKind.credit,
-            amount: remaining,
-            tenderedAmount: remaining,
+            amount: _totalAmount,
+            tenderedAmount: _totalAmount,
           ),
-        );
-      }
+        ];
 
-      return intents;
+      case _CheckoutTenderKind.mixed:
+        final intents = <SalePaymentIntent>[];
+
+        final cash = _mixedCashAmount;
+        final network = _mixedNetworkAmount;
+        final remaining = _mixedRemainingAmount;
+
+        if (!cash.isNaN && cash > 0) {
+          intents.add(
+            SalePaymentIntent(
+              kind: SaleTenderKind.cash,
+              amount: cash,
+              tenderedAmount: cash,
+            ),
+          );
+        }
+
+        if (!network.isNaN && network > 0) {
+          intents.add(
+            SalePaymentIntent(
+              kind: SaleTenderKind.network,
+              amount: network,
+              tenderedAmount: network,
+              reference: _mixedNetworkReferenceController.text.trim(),
+            ),
+          );
+        }
+
+        if (_mixedCreditRemainder && !remaining.isNaN && remaining > 0.01) {
+          intents.add(
+            SalePaymentIntent(
+              kind: SaleTenderKind.credit,
+              amount: remaining,
+              tenderedAmount: remaining,
+            ),
+          );
+        }
+
+        return intents;
+    }
   }
-}
 
   String? _validatePaymentBeforeSubmit() {
     if (_quote == null) {
@@ -490,6 +492,7 @@ List<SalePaymentIntent> _buildPaymentIntents() {
       ],
     );
   }
+
   Widget _buildCreditBody(AsyncValue<List<Customer>> customers) {
     return Column(
       mainAxisSize: MainAxisSize.min,
