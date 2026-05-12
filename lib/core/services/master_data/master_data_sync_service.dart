@@ -65,7 +65,6 @@ class MasterDataSyncService {
   MasterDataSyncCancelHandle createCancelHandle() =>
       MasterDataSyncCancelHandle();
 
-
   int _latencyMsSince(DateTime startedAt) {
     final value = _clock.now().difference(startedAt).inMilliseconds;
     return value < 0 ? 0 : value;
@@ -130,10 +129,7 @@ class MasterDataSyncService {
         return HealthCheckResult(
           status: HealthStatus.degraded,
           service: 'Backend API',
-          error: _responseErrorMessage(
-            data,
-            fallback: 'API rejected request',
-          ),
+          error: _responseErrorMessage(data, fallback: 'API rejected request'),
           latencyMs: _latencyMsSince(startedAt),
           checkedAt: _clock.now(),
         );
@@ -160,7 +156,6 @@ class MasterDataSyncService {
     return Map<String, dynamic>.from(body);
   }
 
-
   String _responseStatus(Map<String, dynamic> data) {
     return _cleanResponseText(data['status']).toUpperCase();
   }
@@ -172,7 +167,6 @@ class MasterDataSyncService {
   bool _isErrorResponse(String status) {
     return status == 'ERROR';
   }
-
 
   String _responseErrorMessage(
     Map<String, dynamic> data, {
@@ -457,6 +451,15 @@ class MasterDataSyncService {
             cancelHandle: cancelHandle,
           );
         } catch (error) {
+          final pageFailureMessage = _pageFailureMessage(
+            error: error,
+            type: type,
+            pageNo: pageNo,
+            offset: offset,
+            limit: context.effectivePageLimitFor(type),
+            lastUpdate: sentLastUpdate,
+          );
+
           await _insertPageRun(
             id: _newId('md_page'),
             typeRunId: typeRunId,
@@ -466,9 +469,10 @@ class MasterDataSyncService {
             limit: context.effectivePageLimitFor(type),
             durationMs: _clock.now().difference(pageStartedAt).inMilliseconds,
             status: MasterDataTypeRunStatus.failed,
-            errorMessage: ErrorMapper.userMessage(error),
+            errorMessage: pageFailureMessage,
           );
-          rethrow;
+
+          throw SyncException(pageFailureMessage, code: _errorCode(error));
         }
 
         pagesCount++;
@@ -625,6 +629,26 @@ class MasterDataSyncService {
         warnings: List.unmodifiable(warnings),
       );
     }
+  }
+
+  String _pageFailureMessage({
+    required Object error,
+    required MasterDataType type,
+    required int pageNo,
+    required int offset,
+    required int limit,
+    required String? lastUpdate,
+  }) {
+    final details = <String>[
+      type.code,
+      'page=$pageNo',
+      'offset=$offset',
+      'limit=$limit',
+      if (lastUpdate != null && lastUpdate.trim().isNotEmpty)
+        'lastUpdate=${lastUpdate.trim()}',
+    ].join(' ');
+
+    return '$details: ${ErrorMapper.userMessage(error)}';
   }
 
   Future<bool> _hasLocalSeedForIncremental(
@@ -819,7 +843,6 @@ class MasterDataSyncService {
     // Login/readiness will validate whether the cached data can run POS offline.
   }
 
-
   Future<Response<dynamic>> _getPageResponseWithRetry({
     required Map<String, dynamic> queryParams,
     MasterDataSyncCancelHandle? cancelHandle,
@@ -879,7 +902,6 @@ class MasterDataSyncService {
 
     return false;
   }
-
 
   Future<_MasterDataPage> _fetchPage({
     required MasterDataSyncContext context,

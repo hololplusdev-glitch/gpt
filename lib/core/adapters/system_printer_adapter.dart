@@ -56,10 +56,7 @@ class SystemPrinterAdapter implements PrinterAdapter {
         ),
         usePrinterSettings: true,
         onLayout: (_) {
-          return _renderer.render(
-            document,
-            paperWidthMm: profile.paperWidthMm,
-          );
+          return _renderer.render(document, paperWidthMm: profile.paperWidthMm);
         },
       );
 

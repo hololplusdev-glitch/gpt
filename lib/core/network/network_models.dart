@@ -86,7 +86,6 @@ class SyncProfile {
     return ':$port';
   }
 
-
   /// Runtime-safe page limit used by download requests.
   int get effectivePageLimit => pageLimit <= 0 ? 100 : pageLimit;
 

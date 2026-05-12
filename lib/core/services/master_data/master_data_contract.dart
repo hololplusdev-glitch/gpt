@@ -53,11 +53,7 @@ enum MasterDataType {
   /// Types allowed to fail as warnings during first-run setup.
   ///
   /// Keep this policy here, not in SetupNotifier.
-  static const setupWarningTypes = {
-    bank,
-    cash,
-    creditCardType,
-  };
+  static const setupWarningTypes = {bank, cash, creditCardType};
 
   bool get isMandatory => mandatoryTypes.contains(this);
 

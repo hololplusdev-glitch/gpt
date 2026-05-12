@@ -204,7 +204,12 @@ class ThermalReceiptPdfRenderer {
   }
 
   pw.Widget _items(InvoiceDocument document, InvoicePdfFontSet fonts) {
-    final headerLabels = [labels.unitPrice, labels.quantity, labels.discount, labels.total];
+    final headerLabels = [
+      labels.unitPrice,
+      labels.quantity,
+      labels.discount,
+      labels.total,
+    ];
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
@@ -292,10 +297,7 @@ class ThermalReceiptPdfRenderer {
 
     return pw.Table(
       border: pw.TableBorder.all(width: 0.7),
-      columnWidths: const {
-        0: pw.FlexColumnWidth(2),
-        1: pw.FlexColumnWidth(1),
-      },
+      columnWidths: const {0: pw.FlexColumnWidth(2), 1: pw.FlexColumnWidth(1)},
       children: [
         for (final row in rows)
           pw.TableRow(
@@ -318,10 +320,7 @@ class ThermalReceiptPdfRenderer {
   pw.Widget _payments(InvoiceDocument document, InvoicePdfFontSet fonts) {
     return pw.Table(
       border: pw.TableBorder.all(width: 0.7),
-      columnWidths: const {
-        0: pw.FlexColumnWidth(2),
-        1: pw.FlexColumnWidth(1),
-      },
+      columnWidths: const {0: pw.FlexColumnWidth(2), 1: pw.FlexColumnWidth(1)},
       children: [
         for (final payment in document.payments)
           pw.TableRow(

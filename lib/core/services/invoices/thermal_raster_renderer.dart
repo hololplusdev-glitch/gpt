@@ -8,9 +8,7 @@ import 'package:holol_POS/core/services/invoices/receipt_template_renderer.dart'
 class ThermalRasterRenderer {
   final ReceiptTemplateLabels labels;
 
-  const ThermalRasterRenderer({
-    this.labels = const ReceiptTemplateLabels.ar(),
-  });
+  const ThermalRasterRenderer({this.labels = const ReceiptTemplateLabels.ar()});
 
   Future<List<int>> renderEscPosRaster(
     InvoiceDocument document, {
@@ -248,13 +246,33 @@ class _ReceiptPainter {
 
   double _invoiceInfo(Canvas canvas, double y) {
     final values = <({String label, String value, TextDirection dir})>[
-      (label: labels.receiptInvoiceTitle(document.localInvoiceNo), value: document.localInvoiceNo, dir: TextDirection.ltr),
-      (label: '', value: _date(document.invoiceDateTime), dir: TextDirection.ltr),
-      (label: '', value: _time(document.invoiceDateTime), dir: TextDirection.ltr),
+      (
+        label: labels.receiptInvoiceTitle(document.localInvoiceNo),
+        value: document.localInvoiceNo,
+        dir: TextDirection.ltr,
+      ),
+      (
+        label: '',
+        value: _date(document.invoiceDateTime),
+        dir: TextDirection.ltr,
+      ),
+      (
+        label: '',
+        value: _time(document.invoiceDateTime),
+        dir: TextDirection.ltr,
+      ),
       if (document.customer?.name.isNotEmpty == true)
-        (label: labels.customer, value: document.customer!.name, dir: TextDirection.rtl),
+        (
+          label: labels.customer,
+          value: document.customer!.name,
+          dir: TextDirection.rtl,
+        ),
       if (document.customer?.taxNumber?.isNotEmpty == true)
-        (label: labels.taxNumber, value: document.customer!.taxNumber!, dir: TextDirection.ltr),
+        (
+          label: labels.taxNumber,
+          value: document.customer!.taxNumber!,
+          dir: TextDirection.ltr,
+        ),
     ];
 
     final h = rowH * values.length;
@@ -291,7 +309,12 @@ class _ReceiptPainter {
       text.draw(
         canvas,
         values[i].value,
-        Rect.fromLTWH(row.left + labelW + 5, row.top + 3, valueW - 10, rowH - 6),
+        Rect.fromLTWH(
+          row.left + labelW + 5,
+          row.top + 3,
+          valueW - 10,
+          rowH - 6,
+        ),
         size: font,
         bold: true,
         align: TextAlign.center,
@@ -308,7 +331,12 @@ class _ReceiptPainter {
 
     final headerH = paperWidthMm == 58 ? 32.0 : 36.0;
     final headerRect = Rect.fromLTWH(margin, y, w, headerH);
-    final headerLabels = [labels.unitPrice, labels.quantity, labels.discount, labels.total];
+    final headerLabels = [
+      labels.unitPrice,
+      labels.quantity,
+      labels.discount,
+      labels.total,
+    ];
 
     _box(canvas, headerRect, fill: const Color(0xFFEFEFEF));
 
@@ -316,7 +344,11 @@ class _ReceiptPainter {
       final cell = Rect.fromLTWH(margin + i * colW, y, colW, headerH);
 
       if (i > 0) {
-        _line(canvas, Offset(cell.left, headerRect.top), Offset(cell.left, headerRect.bottom));
+        _line(
+          canvas,
+          Offset(cell.left, headerRect.top),
+          Offset(cell.left, headerRect.bottom),
+        );
       }
 
       text.draw(
@@ -347,7 +379,11 @@ class _ReceiptPainter {
       for (var i = 0; i < values.length; i++) {
         final cell = Rect.fromLTWH(margin + i * colW, y, colW, 26);
         if (i > 0) {
-          _line(canvas, Offset(cell.left, row.top), Offset(cell.left, row.bottom));
+          _line(
+            canvas,
+            Offset(cell.left, row.top),
+            Offset(cell.left, row.bottom),
+          );
         }
 
         text.draw(
@@ -422,7 +458,12 @@ class _ReceiptPainter {
       text.draw(
         canvas,
         rows[i].value,
-        Rect.fromLTWH(row.left + labelW + 5, row.top + 3, valueW - 10, rowH - 6),
+        Rect.fromLTWH(
+          row.left + labelW + 5,
+          row.top + 3,
+          valueW - 10,
+          rowH - 6,
+        ),
         size: font + 1,
         bold: true,
         align: TextAlign.center,
@@ -472,7 +513,12 @@ class _ReceiptPainter {
       text.draw(
         canvas,
         payment.displayAmount,
-        Rect.fromLTWH(row.left + labelW + 5, row.top + 3, valueW - 10, rowH - 6),
+        Rect.fromLTWH(
+          row.left + labelW + 5,
+          row.top + 3,
+          valueW - 10,
+          rowH - 6,
+        ),
         size: font + 1,
         bold: true,
         align: TextAlign.center,
@@ -600,7 +646,8 @@ class _Text {
       ellipsis: '…',
     )..layout(maxWidth: rect.width);
 
-    final dy = rect.top + ((rect.height - painter.height) / 2).clamp(0, rect.height);
+    final dy =
+        rect.top + ((rect.height - painter.height) / 2).clamp(0, rect.height);
     painter.paint(canvas, Offset(rect.left, dy));
     return rect.top + rect.height;
   }
