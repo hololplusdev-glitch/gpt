@@ -467,6 +467,41 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     };
   }
 
+  Widget _buildCashBody() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppTextField(
+          controller: _tenderedController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: [
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+          ],
+          labelText: 'المبلغ المستلم',
+          prefixIcon: const Icon(Icons.payments_outlined),
+          onChanged: (_) {
+            setState(() {
+              _recalculateChange();
+            });
+          },
+        ),
+        if (_change > 0) ...[
+          const SizedBox(height: AppSpacing.lg),
+          AppInfoBanner(
+            message: 'الباقي: ${PosFormatters.amount(_change)}',
+            type: AppBannerType.info,
+          ),
+        ],
+        const SizedBox(height: AppSpacing.xl),
+        _CompleteButton(
+          isProcessing: _isProcessing,
+          label: 'إتمام الدفع النقدي',
+          onPressed: _processPayment,
+        ),
+      ],
+    );
+  }
+
   Widget _buildNetworkBody() {
     return Column(
       mainAxisSize: MainAxisSize.min,
