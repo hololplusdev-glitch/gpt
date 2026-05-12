@@ -8,6 +8,7 @@ class SaleLineInput {
   final String unitName;
   final double? unitSize;
   final String? barcode;
+  final bool useQtyFraction;
   final double quantity;
   final double unitPrice;
   final double taxRate;
@@ -24,6 +25,7 @@ class SaleLineInput {
     required this.unitName,
     this.unitSize,
     this.barcode,
+    this.useQtyFraction = false,
     required this.quantity,
     required this.unitPrice,
     this.taxRate = 0.0,
@@ -41,6 +43,7 @@ class SaleLineInput {
     'unitName': unitName,
     'unitSize': unitSize,
     'barcode': barcode,
+    'useQtyFraction': useQtyFraction,
     'quantity': quantity,
     'unitPrice': unitPrice,
     'taxRate': taxRate,
@@ -59,7 +62,10 @@ extension SaleLineInputPricingMapper on SaleLineInput {
       unitId: unitId,
       unitPrice: unitPrice,
       quantity: quantity,
+      discountType: discountType,
+      discountValue: discountValue,
       discountAmount: discountAmount,
+      allowDiscount: allowDiscount,
       taxRate: taxRate,
     );
   }

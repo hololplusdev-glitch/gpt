@@ -252,6 +252,7 @@ EXISTS (
             itemId: unit.itemId,
             sourceUnitId: _sourceUnitIdForUnitData(unit),
             unitName: unit.name,
+            unitSize: unit.unitSize,
             barcode: null, // Barcodes moved to ItemBarcodes
             isDefault: unit.isDefault,
           ),
@@ -291,6 +292,7 @@ EXISTS (
               itemId: unit.itemId,
               sourceUnitId: sourceUnitId,
               unitName: unit.name,
+              unitSize: unit.unitSize,
               barcode: null,
               isDefault: unit.isDefault,
             ),
@@ -397,9 +399,11 @@ EXISTS (
             ? _sourceUnitIdFromLocalId(price.unitId)
             : _sourceUnitIdForUnitData(effectiveUnit),
         unitName: effectiveUnit?.name,
+        unitSize: effectiveUnit?.unitSize,
         barcode: null,
         taxRate: item.taxRate,
         allowDiscount: item.allowDiscount,
+        useQtyFraction: item.useQtyFraction,
       );
     }
     return resolved;
@@ -417,10 +421,12 @@ EXISTS (
       unitId: price.unitId ?? fallbackUnitId,
       itemName: item.name,
       unitName: price.unitName ?? fallbackUnitName ?? '',
+      unitSize: price.unitSize,
       barcode: barcode ?? price.barcode,
       unitPrice: price.unitPrice,
       taxRate: price.taxRate != 0 ? price.taxRate : item.taxRate,
       allowDiscount: price.allowDiscount,
+      useQtyFraction: price.useQtyFraction,
     );
   }
 
@@ -654,6 +660,7 @@ class SellableItemUnit {
   final String itemId;
   final String sourceUnitId;
   final String unitName;
+  final double? unitSize;
   final String? barcode;
   final bool isDefault;
 
@@ -662,6 +669,7 @@ class SellableItemUnit {
     required this.itemId,
     required this.sourceUnitId,
     required this.unitName,
+    this.unitSize,
     this.barcode,
     required this.isDefault,
   });
@@ -688,16 +696,20 @@ class ResolvedItemPrice {
   final double unitPrice;
   final String? unitId;
   final String? unitName;
+  final double? unitSize;
   final String? barcode;
   final double taxRate;
   final bool allowDiscount;
+  final bool useQtyFraction;
 
   const ResolvedItemPrice({
     required this.unitPrice,
     required this.unitId,
     required this.unitName,
+    required this.unitSize,
     required this.barcode,
     required this.taxRate,
     required this.allowDiscount,
+    required this.useQtyFraction,
   });
 }

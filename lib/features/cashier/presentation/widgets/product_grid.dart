@@ -248,10 +248,10 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
       await ref
           .read(cartProvider.notifier)
           .addSellableItem(selectedUnit.sellableItem);
-    } catch (_) {
+    } catch (error) {
       HapticFeedback.heavyImpact();
       if (mounted) {
-        AppSnackbar.showError(context, l10n.unableToAddItemToCart);
+        AppSnackbar.showError(context, ErrorMapper.userMessage(error));
       }
     }
   }

@@ -72,7 +72,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
     switch (result) {
       case ScanSuccess():
-        final newQuantity = await ref
+        final addResult = await ref
             .read(cartProvider.notifier)
             .addSellableItem(result.item);
 
@@ -85,12 +85,12 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
         AppSnackbar.showSuccess(
           context,
-          newQuantity > 1
+          addResult.wasIncremented
               ? l10n.scanAddedProductQuantity(
-                  result.item.itemName,
-                  newQuantity.round(),
+                  addResult.itemName,
+                  addResult.quantity.round(),
                 )
-              : l10n.scanAddedProduct(result.item.itemName),
+              : l10n.scanAddedProduct(addResult.itemName),
         );
 
       case ScanNotFound():
@@ -1032,7 +1032,7 @@ class _CartPreviewBar extends ConsumerWidget {
                 borderRadius: AppSpacing.borderRadiusSm,
               ),
               child: Text(
-                '${cart.totalItemCount}',
+                '${cart.totalLinesCount}',
                 style: const TextStyle(
                   color: AppColors.onPrimary,
                   fontWeight: FontWeight.w700,

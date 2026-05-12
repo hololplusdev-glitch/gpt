@@ -108,7 +108,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                 ),
                 const SizedBox(width: AppSpacing.sm),
                 Text(
-                  l10n.cartWithCount(cart.totalItemCount),
+                  l10n.cartWithCount(cart.totalLinesCount),
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,

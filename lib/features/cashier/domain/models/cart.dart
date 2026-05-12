@@ -1,13 +1,25 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
-import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
 import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
 import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
+import 'package:holol_POS/shared/providers/core_providers.dart';
+
+class AddToCartResult {
+  final String itemName;
+  final double quantity;
+  final bool wasIncremented;
+
+  const AddToCartResult({
+    required this.itemName,
+    required this.quantity,
+    required this.wasIncremented,
+  });
+}
 
 class CartItem {
   final SellableItemSnapshot sellableItem;
@@ -30,6 +42,8 @@ class CartItem {
   String get unitId => sellableItem.unitId;
   String get productName => sellableItem.itemName;
   String get unitName => sellableItem.unitName;
+  double? get unitSize => sellableItem.unitSize;
+  bool get useQtyFraction => sellableItem.useQtyFraction;
   String? get barcode => sellableItem.barcode;
   double get unitPrice => sellableItem.unitPrice;
   double get taxRate => sellableItem.taxRate;
@@ -60,7 +74,9 @@ class CartItem {
       unitId: unitId,
       itemName: productName,
       unitName: unitName,
+      unitSize: unitSize,
       barcode: barcode,
+      useQtyFraction: useQtyFraction,
       quantity: quantity,
       unitPrice: unitPrice,
       taxRate: taxRate,
@@ -73,21 +89,7 @@ class CartItem {
   }
 
   Map<String, dynamic> toHeldOrderSnapshotJson() {
-    return {
-      'itemId': itemId,
-      'unitId': unitId,
-      'itemName': productName,
-      'unitName': unitName,
-      'barcode': barcode,
-      'quantity': quantity,
-      'unitPrice': unitPrice,
-      'taxRate': taxRate,
-      'discountType': discountType?.code,
-      'discountValue': discountValue,
-      'discountAmount': discountAmount,
-      'allowDiscount': allowDiscount,
-      'notes': notes,
-    };
+    return toSaleLineInput().toHeldOrderSnapshotJson();
   }
 
   static CartItem fromSnapshotJson(Map<String, dynamic> json) {
@@ -99,10 +101,12 @@ class CartItem {
         unitId: json['unitId'] as String,
         itemName: json['itemName'] as String,
         unitName: unitName,
+        unitSize: _nullableDouble(json['unitSize']),
         barcode: json['barcode'] as String?,
         unitPrice: _double(json['unitPrice']),
         taxRate: _double(json['taxRate']),
         allowDiscount: json['allowDiscount'] as bool? ?? false,
+        useQtyFraction: json['useQtyFraction'] as bool? ?? false,
       ),
       quantity: _double(json['quantity'], fallback: 1.0),
       discountType: _parseDiscountType(json['discountType']),
@@ -121,9 +125,10 @@ class Cart {
   bool get isEmpty => items.isEmpty;
   bool get isNotEmpty => items.isNotEmpty;
 
-  int get totalItemCount {
-    return items.length;
-  }
+  int get totalLinesCount => items.length;
+
+  /// Temporary alias for existing UI call-sites.
+  int get totalItemCount => totalLinesCount;
 
   CartItem? findLine(String itemId, String? unitId) {
     for (final item in items) {
@@ -140,6 +145,7 @@ class Cart {
     final existing = findLine(snapshot.itemId, snapshot.unitId);
 
     if (existing == null) {
+      _validateQuantityForSnapshot(snapshot, 1.0);
       return Cart(
         items: [
           ...items,
@@ -173,7 +179,19 @@ class Cart {
     final current = findLine(itemId, unitId);
     if (current == null) return this;
 
-    return replaceLine(current.copyWith(quantity: newQuantity));
+    _validateQuantityForSnapshot(current.sellableItem, newQuantity);
+
+    final discountAmount = _calculateDiscountAmount(
+      unitPrice: current.unitPrice,
+      quantity: newQuantity,
+      discountType: current.discountType,
+      discountValue: current.discountValue,
+      allowDiscount: current.allowDiscount,
+    );
+
+    return replaceLine(
+      current.copyWith(quantity: newQuantity, discountAmount: discountAmount),
+    );
   }
 
   Cart applyResolvedPrice({
@@ -184,7 +202,20 @@ class Cart {
     final current = findLine(itemId, unitId);
     if (current == null) return this;
 
-    return replaceLine(current.copyWith(sellableItem: pricedSnapshot));
+    final discountAmount = _calculateDiscountAmount(
+      unitPrice: pricedSnapshot.unitPrice,
+      quantity: current.quantity,
+      discountType: current.discountType,
+      discountValue: current.discountValue,
+      allowDiscount: pricedSnapshot.allowDiscount,
+    );
+
+    return replaceLine(
+      current.copyWith(
+        sellableItem: pricedSnapshot,
+        discountAmount: discountAmount,
+      ),
+    );
   }
 
   Cart applyLineDiscount(
@@ -192,18 +223,18 @@ class Cart {
     String? unitId, {
     required DiscountType type,
     required double value,
-    required double amount,
   }) {
     return Cart(
       items: items.map((item) {
         if (!_sameLine(item, itemId, unitId)) return item;
 
-        if (!item.allowDiscount && (amount > 0 || value > 0)) {
-          throw BusinessException(
-            'Discounts are not allowed for ${item.productName}.',
-            code: 'DISCOUNT_NOT_ALLOWED',
-          );
-        }
+        final amount = _calculateDiscountAmount(
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          discountType: type,
+          discountValue: value,
+          allowDiscount: item.allowDiscount,
+        );
 
         return item.copyWith(
           discountType: type,
@@ -274,6 +305,39 @@ class Cart {
   }
 }
 
+void _validateQuantityForSnapshot(
+  SellableItemSnapshot snapshot,
+  double quantity,
+) {
+  if (quantity <= 0) return;
+
+  if (!snapshot.useQtyFraction && !_isWholeQuantity(quantity)) {
+    throw BusinessException(
+      'Fraction quantity is not allowed for ${snapshot.itemName}.',
+      code: 'QUANTITY_FRACTION_NOT_ALLOWED',
+    );
+  }
+}
+
+bool _isWholeQuantity(double value) {
+  return (value - value.roundToDouble()).abs() < 0.000001;
+}
+
+double _calculateDiscountAmount({
+  required double unitPrice,
+  required double quantity,
+  required DiscountType? discountType,
+  required double? discountValue,
+  required bool allowDiscount,
+}) {
+  return const PricingEngine().calculateDiscountAmount(
+    grossAmount: PricingEngine.roundAmount(unitPrice * quantity),
+    discountType: discountType,
+    discountValue: discountValue,
+    allowDiscount: allowDiscount,
+  );
+}
+
 double _double(Object? value, {double fallback = 0.0}) {
   if (value == null) return fallback;
   if (value is num) return value.toDouble();
@@ -306,7 +370,8 @@ typedef CartPriceResolver =
 
 /// Riverpod state shell for Cart.
 ///
-/// Cart owns the business decisions and value transformations.
+/// Cart owns the line merge rule:
+/// same itemId + same unitId = one line; quantity increments.
 /// CartController only applies async price resolution and publishes state.
 class CartController extends StateNotifier<Cart> {
   final CartPriceResolver _priceResolver;
@@ -315,21 +380,25 @@ class CartController extends StateNotifier<Cart> {
     : _priceResolver = priceResolver,
       super(const Cart());
 
-  Future<double> addSellableItem(SellableItemSnapshot snapshot) async {
-    final existingQty = state.quantityFor(snapshot.itemId, snapshot.unitId);
-    final targetQty = existingQty + 1;
-
-    if (existingQty <= 0) {
-      state = state.addSellableItem(snapshot);
-      return 1;
-    }
-
-    await changeQuantityWithPricing(
-      snapshot.itemId,
-      snapshot.unitId,
-      targetQty,
+  Future<AddToCartResult> addSellableItem(SellableItemSnapshot snapshot) async {
+    final pricedSnapshot = await _resolveCurrentSnapshot(snapshot);
+    final existingQty = state.quantityFor(
+      pricedSnapshot.itemId,
+      pricedSnapshot.unitId,
     );
-    return targetQty;
+
+    state = state.addSellableItem(pricedSnapshot);
+
+    final quantity = state.quantityFor(
+      pricedSnapshot.itemId,
+      pricedSnapshot.unitId,
+    );
+
+    return AddToCartResult(
+      itemName: pricedSnapshot.itemName,
+      quantity: quantity,
+      wasIncremented: existingQty > 0,
+    );
   }
 
   Future<void> incrementItem(String itemId, String? unitId) async {
@@ -362,21 +431,14 @@ class CartController extends StateNotifier<Cart> {
     var next = state.changeQuantity(itemId, unitId, newQuantity);
 
     if (unitId != null && unitId.isNotEmpty) {
-      final price = await _resolvePrice(itemId, unitId);
+      final pricedSnapshot = await _resolveCurrentSnapshot(
+        current.sellableItem,
+      );
 
       next = next.applyResolvedPrice(
         itemId: itemId,
         unitId: unitId,
-        pricedSnapshot: SellableItemSnapshot(
-          itemId: current.itemId,
-          unitId: current.unitId,
-          itemName: current.productName,
-          unitName: current.unitName,
-          barcode: current.barcode,
-          unitPrice: price.unitPrice,
-          taxRate: price.taxRate,
-          allowDiscount: price.allowDiscount,
-        ),
+        pricedSnapshot: pricedSnapshot,
       );
     }
 
@@ -388,15 +450,8 @@ class CartController extends StateNotifier<Cart> {
     String? unitId, {
     required DiscountType type,
     required double value,
-    required double amount,
   }) {
-    state = state.applyLineDiscount(
-      itemId,
-      unitId,
-      type: type,
-      value: value,
-      amount: amount,
-    );
+    state = state.applyLineDiscount(itemId, unitId, type: type, value: value);
   }
 
   void removeItem(String itemId, String? unitId) {
@@ -409,6 +464,25 @@ class CartController extends StateNotifier<Cart> {
 
   void restoreFromHeldOrderJson(String snapshotJson) {
     state = Cart.fromHeldOrderSnapshotJson(snapshotJson);
+  }
+
+  Future<SellableItemSnapshot> _resolveCurrentSnapshot(
+    SellableItemSnapshot snapshot,
+  ) async {
+    final price = await _resolvePrice(snapshot.itemId, snapshot.unitId);
+
+    return SellableItemSnapshot(
+      itemId: snapshot.itemId,
+      unitId: price.unitId ?? snapshot.unitId,
+      itemName: snapshot.itemName,
+      unitName: price.unitName ?? snapshot.unitName,
+      unitSize: price.unitSize ?? snapshot.unitSize,
+      barcode: snapshot.barcode ?? price.barcode,
+      unitPrice: price.unitPrice,
+      taxRate: price.taxRate,
+      allowDiscount: price.allowDiscount,
+      useQtyFraction: price.useQtyFraction,
+    );
   }
 
   Future<ResolvedItemPrice> _resolvePrice(String itemId, String unitId) async {
