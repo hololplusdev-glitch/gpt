@@ -22,8 +22,6 @@ import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
 import 'package:uuid/uuid.dart';
 
-enum _CheckoutTenderKind { cash, network, credit, mixed }
-
 class PaymentDialog extends ConsumerStatefulWidget {
   final Cart cart;
 
@@ -34,37 +32,54 @@ class PaymentDialog extends ConsumerStatefulWidget {
 }
 
 class _PaymentDialogState extends ConsumerState<PaymentDialog> {
-  final _tenderedController = TextEditingController();
-  final _referenceController = TextEditingController();
-  final _mixedCashController = TextEditingController();
-  final _mixedNetworkController = TextEditingController();
-  final _mixedNetworkReferenceController = TextEditingController();
   final _customerSearchController = TextEditingController();
   Timer? _customerSearchDebounce;
 
   final String _checkoutAttemptId = 'CHK_${const Uuid().v4()}';
-
-  _CheckoutTenderKind _selectedKind = _CheckoutTenderKind.cash;
+  final List<_PaymentDraftLine> _paymentLines = [];
 
   String? _selectedCustomerId;
   String? _selectedCustomerName;
   String? _selectedCustomerTaxNumber;
 
   CheckoutQuote? _quote;
-  double _change = 0.0;
-
   PaymentMethodType _completedPaymentMethodType = PaymentMethodType.cash;
 
   bool _initialized = false;
   bool _isProcessing = false;
   bool _isComplete = false;
-  bool _mixedCreditRemainder = false;
 
   String? _errorMessage;
   String? _invoiceNo;
   String? _saleId;
 
   double get _totalAmount => _quote?.grandTotal ?? 0.0;
+
+  double get _paidAmount => PricingEngine.roundAmount(
+    _paymentLines.fold(0.0, (sum, line) => sum + line.amount),
+  );
+
+  double get _remainingAmount {
+    final remaining = PricingEngine.roundAmount(_totalAmount - _paidAmount);
+    return remaining > 0.01 ? remaining : 0.0;
+  }
+
+  double get _change => PricingEngine.roundAmount(
+    _paymentLines.fold(0.0, (sum, line) => sum + line.change),
+  );
+
+  bool get _hasCreditLine =>
+      _paymentLines.any((line) => line.kind == SaleTenderKind.credit);
+
+  bool get _canConfirm {
+    if (_quote == null || _paymentLines.isEmpty || _isProcessing) return false;
+    if (_remainingAmount > 0.01) return false;
+    if (_hasCreditLine &&
+        (_selectedCustomerId == null || _selectedCustomerId!.trim().isEmpty)) {
+      return false;
+    }
+    return true;
+  }
 
   @override
   void didChangeDependencies() {
@@ -82,18 +97,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
               ? l10n.unableToPrepareCheckoutTotal
               : ErrorMapper.userMessage(quoteState.error!)
         : null;
-
-    _tenderedController.text = _totalAmount.toStringAsFixed(2);
-    _recalculateChange();
   }
 
   @override
   void dispose() {
-    _tenderedController.dispose();
-    _referenceController.dispose();
-    _mixedCashController.dispose();
-    _mixedNetworkController.dispose();
-    _mixedNetworkReferenceController.dispose();
     _customerSearchDebounce?.cancel();
     _customerSearchController.dispose();
     super.dispose();
@@ -104,9 +111,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     if (normalized.isEmpty) return 0.0;
     return double.tryParse(normalized) ?? double.nan;
   }
-
-  double get _mixedCashAmount => _parseMoney(_mixedCashController.text);
-  double get _mixedNetworkAmount => _parseMoney(_mixedNetworkController.text);
 
   void _scheduleCustomerSearch(String value) {
     _customerSearchDebounce?.cancel();
@@ -126,125 +130,97 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     });
   }
 
-  double get _mixedPaidAmount {
-    final cash = _mixedCashAmount;
-    final network = _mixedNetworkAmount;
-    if (cash.isNaN || network.isNaN) return double.nan;
-    return PricingEngine.roundAmount(cash + network);
-  }
-
-  double get _mixedRemainingAmount {
-    final paid = _mixedPaidAmount;
-    if (paid.isNaN) return double.nan;
-    final remaining = PricingEngine.roundAmount(_totalAmount - paid);
-    return remaining > 0 ? remaining : 0.0;
-  }
-
-  bool get _mixedNeedsCustomer {
-    return _selectedKind == _CheckoutTenderKind.credit ||
-        (_selectedKind == _CheckoutTenderKind.mixed &&
-            _mixedCreditRemainder &&
-            _mixedRemainingAmount > 0.01);
-  }
-
-  void _recalculateChange() {
-    final tendered = _parseMoney(_tenderedController.text);
-    final change = tendered.isNaN
-        ? 0.0
-        : PricingEngine.roundAmount(tendered - _totalAmount);
-    _change = change > 0 ? change : 0.0;
-  }
-
-  void _selectKind(_CheckoutTenderKind kind) {
+  void _removeLine(String id) {
     setState(() {
-      _selectedKind = kind;
+      _paymentLines.removeWhere((line) => line.id == id);
       _errorMessage = null;
-      _referenceController.clear();
-      _mixedNetworkReferenceController.clear();
+    });
+  }
 
-      if (kind == _CheckoutTenderKind.cash) {
-        _tenderedController.text = _totalAmount.toStringAsFixed(2);
-        _recalculateChange();
-      }
+  Future<void> _addCashLine([_PaymentDraftLine? existing]) async {
+    final available = _availableFor(existing);
+    final line = await showDialog<_PaymentDraftLine>(
+      context: context,
+      builder: (context) => _CashLineDialog(
+        availableAmount: available,
+        existing: existing,
+        parseMoney: _parseMoney,
+      ),
+    );
 
-      if (kind != _CheckoutTenderKind.mixed) {
-        _mixedCashController.clear();
-        _mixedNetworkController.clear();
-        _mixedCreditRemainder = false;
+    if (line == null) return;
+    _upsertLine(line, existing);
+  }
+
+  Future<void> _addAmountLine(
+    SaleTenderKind kind, [
+    _PaymentDraftLine? existing,
+  ]) async {
+    final available = _availableFor(existing);
+    if (available <= 0) return;
+
+    if (existing == null &&
+        (kind == SaleTenderKind.network || kind == SaleTenderKind.credit)) {
+      _upsertLine(
+        _PaymentDraftLine(
+          id: const Uuid().v4(),
+          kind: kind,
+          amount: available,
+          tenderedAmount: available,
+        ),
+        existing,
+      );
+      return;
+    }
+
+    final line = await showDialog<_PaymentDraftLine>(
+      context: context,
+      builder: (context) => _AmountLineDialog(
+        kind: kind,
+        availableAmount: available,
+        existing: existing,
+        parseMoney: _parseMoney,
+      ),
+    );
+
+    if (line == null) return;
+    _upsertLine(line, existing);
+  }
+
+  double _availableFor(_PaymentDraftLine? existing) {
+    return PricingEngine.roundAmount(
+      _remainingAmount + (existing?.amount ?? 0),
+    );
+  }
+
+  void _upsertLine(_PaymentDraftLine line, _PaymentDraftLine? existing) {
+    setState(() {
+      if (existing == null) {
+        _paymentLines.add(line);
+      } else {
+        final index = _paymentLines.indexWhere(
+          (item) => item.id == existing.id,
+        );
+        if (index >= 0) {
+          _paymentLines[index] = line.copyWith(id: existing.id);
+        }
       }
+      _errorMessage = null;
     });
   }
 
   List<SalePaymentIntent> _buildPaymentIntents() {
-    switch (_selectedKind) {
-      case _CheckoutTenderKind.cash:
-        return [
-          SalePaymentIntent(
-            kind: SaleTenderKind.cash,
-            amount: _totalAmount,
-            tenderedAmount: _parseMoney(_tenderedController.text),
+    return _paymentLines
+        .map(
+          (line) => SalePaymentIntent(
+            kind: line.kind,
+            amount: line.amount,
+            tenderedAmount: line.kind == SaleTenderKind.cash
+                ? line.tenderedAmount
+                : line.amount,
           ),
-        ];
-
-      case _CheckoutTenderKind.network:
-        return [
-          SalePaymentIntent(
-            kind: SaleTenderKind.network,
-            amount: _totalAmount,
-            tenderedAmount: _totalAmount,
-            reference: _referenceController.text.trim(),
-          ),
-        ];
-
-      case _CheckoutTenderKind.credit:
-        return [
-          SalePaymentIntent(
-            kind: SaleTenderKind.credit,
-            amount: _totalAmount,
-            tenderedAmount: _totalAmount,
-          ),
-        ];
-
-      case _CheckoutTenderKind.mixed:
-        final intents = <SalePaymentIntent>[];
-
-        final cash = _mixedCashAmount;
-        final network = _mixedNetworkAmount;
-        final remaining = _mixedRemainingAmount;
-
-        if (!cash.isNaN && cash > 0) {
-          intents.add(
-            SalePaymentIntent(
-              kind: SaleTenderKind.cash,
-              amount: cash,
-              tenderedAmount: cash,
-            ),
-          );
-        }
-
-        if (!network.isNaN && network > 0) {
-          intents.add(
-            SalePaymentIntent(
-              kind: SaleTenderKind.network,
-              amount: network,
-              tenderedAmount: network,
-              reference: _mixedNetworkReferenceController.text.trim(),
-            ),
-          );
-        }
-
-        if (_mixedCreditRemainder && !remaining.isNaN && remaining > 0.01) {
-          intents.add(
-            SalePaymentIntent(
-              kind: SaleTenderKind.credit,
-              amount: remaining,
-              tenderedAmount: remaining,
-            ),
-          );
-        }
-
-        return intents;
-    }
+        )
+        .toList(growable: false);
   }
 
   String? _validatePaymentBeforeSubmit() {
@@ -252,38 +228,17 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       return AppLocalizations.of(context)!.unableToPrepareCheckoutTotal;
     }
 
-    if (_mixedNeedsCustomer &&
+    if (_paymentLines.isEmpty) {
+      return 'أدخل طريقة دفع واحدة على الأقل.';
+    }
+
+    if (_remainingAmount > 0.01) {
+      return 'المبلغ المتبقي غير مغطى.';
+    }
+
+    if (_hasCreditLine &&
         (_selectedCustomerId == null || _selectedCustomerId!.trim().isEmpty)) {
       return 'البيع الآجل يتطلب اختيار عميل.';
-    }
-
-    if (_selectedKind != _CheckoutTenderKind.mixed) {
-      return null;
-    }
-
-    final cash = _mixedCashAmount;
-    final network = _mixedNetworkAmount;
-    final paid = _mixedPaidAmount;
-    final remaining = _mixedRemainingAmount;
-
-    if (cash.isNaN || network.isNaN || paid.isNaN || remaining.isNaN) {
-      return 'أدخل مبالغ دفع صحيحة.';
-    }
-
-    if (cash < 0 || network < 0) {
-      return 'لا يمكن إدخال مبلغ دفع سالب.';
-    }
-
-    if (paid <= 0 && !_mixedCreditRemainder) {
-      return 'أدخل مبلغ كاش أو شبكة، أو فعّل خيار الآجل للباقي.';
-    }
-
-    if (paid - _totalAmount > 0.01) {
-      return 'مجموع الكاش والشبكة أكبر من إجمالي الفاتورة.';
-    }
-
-    if (remaining > 0.01 && !_mixedCreditRemainder) {
-      return 'المبلغ المدفوع أقل من إجمالي الفاتورة. فعّل الآجل للباقي أو أكمل المبلغ.';
     }
 
     return null;
@@ -295,13 +250,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
     if (validationMessage != null) {
       setState(() => _errorMessage = validationMessage);
-      return;
-    }
-
-    final paymentIntents = _buildPaymentIntents();
-
-    if (paymentIntents.isEmpty) {
-      setState(() => _errorMessage = 'أدخل طريقة دفع واحدة على الأقل.');
       return;
     }
 
@@ -317,7 +265,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             SaleCheckoutRequest(
               cart: widget.cart,
               checkoutAttemptId: _checkoutAttemptId,
-              paymentIntents: paymentIntents,
+              paymentIntents: _buildPaymentIntents(),
               customerId: _selectedCustomerId,
               customerName: _selectedCustomerName,
               customerTaxNumber: _selectedCustomerTaxNumber,
@@ -332,7 +280,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         _invoiceNo = result.invoiceNo;
         _saleId = result.saleId;
         _completedPaymentMethodType = result.selectedPaymentType;
-        _change = result.change;
         _isProcessing = false;
         _isComplete = true;
       });
@@ -445,33 +392,31 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                   AppInfoBanner.error(message: _errorMessage!),
                   const SizedBox(height: AppSpacing.lg),
                 ],
-                const Text(
-                  'إجمالي الفاتورة',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text.rich(
-                  PosFormatters.amountRich(
-                    _totalAmount,
-                    amountStyle: TextStyle(
-                      fontSize: MediaQuery.sizeOf(context).width < 600
-                          ? 32
-                          : 38,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
+                _buildPaymentSummary(),
+                const SizedBox(height: AppSpacing.lg),
+                _buildPaymentLines(),
+                const SizedBox(height: AppSpacing.lg),
+                _buildSmartActions(),
+                if (_hasCreditLine) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  customers.when(
+                    data: _buildCustomerSearch,
+                    loading: () => const Padding(
+                      padding: EdgeInsets.all(AppSpacing.lg),
+                      child: AppLoading(),
+                    ),
+                    error: (error, _) => AppInfoBanner.error(
+                      message: ErrorMapper.userMessage(error),
                     ),
                   ),
-                ),
+                ],
                 const SizedBox(height: AppSpacing.xl),
-                _TenderKindSelector(
-                  selectedKind: _selectedKind,
-                  onSelected: _selectKind,
+                _CompleteButton(
+                  isProcessing: _isProcessing,
+                  enabled: _canConfirm,
+                  label: 'إتمام الدفع',
+                  onPressed: _processPayment,
                 ),
-                const SizedBox(height: AppSpacing.xl),
-                _buildSelectedMethodBody(customers),
               ],
             ),
           ),
@@ -480,192 +425,84 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     );
   }
 
-  Widget _buildSelectedMethodBody(AsyncValue<List<Customer>> customers) {
-    return switch (_selectedKind) {
-      _CheckoutTenderKind.cash => _buildCashBody(),
-      _CheckoutTenderKind.network => _buildNetworkBody(),
-      _CheckoutTenderKind.credit => _buildCreditBody(customers),
-      _CheckoutTenderKind.mixed => _buildMixedBody(customers),
-    };
-  }
-
-  Widget _buildCashBody() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AppTextField(
-          controller: _tenderedController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-          ],
-          labelText: 'المبلغ المستلم',
-          prefixIcon: const Icon(Icons.payments_outlined),
-          onChanged: (_) {
-            setState(() {
-              _recalculateChange();
-            });
-          },
-        ),
-        if (_change > 0) ...[
-          const SizedBox(height: AppSpacing.lg),
-          AppInfoBanner(
-            message: 'الباقي: ${PosFormatters.amount(_change)}',
-            type: AppBannerType.info,
-          ),
-        ],
-        const SizedBox(height: AppSpacing.xl),
-        _CompleteButton(
-          isProcessing: _isProcessing,
-          label: 'إتمام الدفع النقدي',
-          onPressed: _processPayment,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNetworkBody() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const AppInfoBanner(
-          message:
-              'سيتم تسجيل عملية الشبكة يدويًا. ربط جهاز الدفع غير مفعل في هذا الإصدار.',
-          type: AppBannerType.info,
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        AppTextField(
-          controller: _referenceController,
-          textInputAction: TextInputAction.done,
-          labelText: 'رقم مرجع الشبكة اختياري',
-          prefixIcon: const Icon(Icons.confirmation_number_outlined),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        _CompleteButton(
-          isProcessing: _isProcessing,
-          label: 'تسجيل دفع شبكة',
-          onPressed: _processPayment,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCreditBody(AsyncValue<List<Customer>> customers) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const AppInfoBanner(
-          message:
-              'البيع الآجل يتطلب اختيار عميل. سيتم تسجيل كامل المبلغ كرصيد مستحق على العميل.',
-          type: AppBannerType.info,
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        customers.when(
-          data: _buildCustomerSearch,
-          loading: () => const Padding(
-            padding: EdgeInsets.all(AppSpacing.lg),
-            child: AppLoading(),
-          ),
-          error: (error, _) =>
-              AppInfoBanner.error(message: ErrorMapper.userMessage(error)),
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        _CompleteButton(
-          isProcessing: _isProcessing,
-          label: 'إتمام بيع آجل',
-          onPressed: _processPayment,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMixedBody(AsyncValue<List<Customer>> customers) {
-    final paid = _mixedPaidAmount;
-    final remaining = _mixedRemainingAmount;
-    final paidText = paid.isNaN ? '-' : PosFormatters.amount(paid);
-    final remainingText = remaining.isNaN
-        ? '-'
-        : PosFormatters.amount(remaining);
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const AppInfoBanner(
-          message:
-              'قسّم الفاتورة بين كاش وشبكة. إذا بقي مبلغ، يمكن تحويل الباقي إلى حساب العميل.',
-          type: AppBannerType.info,
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        Row(
+  Widget _buildPaymentSummary() {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: AppSpacing.borderRadiusMd,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
           children: [
-            Expanded(
-              child: AppTextField(
-                controller: _mixedCashController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-                ],
-                labelText: 'مبلغ الكاش',
-                prefixIcon: const Icon(Icons.payments_outlined),
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: AppTextField(
-                controller: _mixedNetworkController,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                inputFormatters: [
-                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-                ],
-                labelText: 'مبلغ الشبكة',
-                prefixIcon: const Icon(Icons.credit_card),
-                onChanged: (_) => setState(() {}),
-              ),
-            ),
+            _SummaryRow(label: 'إجمالي الفاتورة', value: _totalAmount),
+            const Divider(height: AppSpacing.lg),
+            _SummaryRow(label: 'المدفوع', value: _paidAmount),
+            const SizedBox(height: AppSpacing.sm),
+            _SummaryRow(label: 'المتبقي', value: _remainingAmount),
+            const SizedBox(height: AppSpacing.sm),
+            _SummaryRow(label: 'الراجع', value: _change),
           ],
         ),
-        const SizedBox(height: AppSpacing.md),
-        AppTextField(
-          controller: _mixedNetworkReferenceController,
-          textInputAction: TextInputAction.done,
-          labelText: 'رقم مرجع الشبكة اختياري',
-          prefixIcon: const Icon(Icons.confirmation_number_outlined),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        CheckboxListTile(
-          value: _mixedCreditRemainder,
-          onChanged: (value) {
-            setState(() {
-              _mixedCreditRemainder = value ?? false;
-            });
-          },
-          title: const Text('تحويل الباقي إلى حساب العميل'),
-          subtitle: Text('المدفوع: $paidText — الباقي: $remainingText'),
-          contentPadding: EdgeInsets.zero,
-          controlAffinity: ListTileControlAffinity.leading,
-        ),
-        if (_mixedCreditRemainder && remaining > 0.01) ...[
-          const SizedBox(height: AppSpacing.md),
-          customers.when(
-            data: _buildCustomerSearch,
-            loading: () => const Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              child: AppLoading(),
-            ),
-            error: (error, _) =>
-                AppInfoBanner.error(message: ErrorMapper.userMessage(error)),
+      ),
+    );
+  }
+
+  Widget _buildPaymentLines() {
+    if (_paymentLines.isEmpty) {
+      return const AppInfoBanner(
+        message: 'اختر طريقة دفع لإضافة سطر دفع.',
+        type: AppBannerType.info,
+      );
+    }
+
+    return Column(
+      children: [
+        for (final line in _paymentLines) ...[
+          _PaymentLineTile(
+            line: line,
+            onEdit: () => line.kind == SaleTenderKind.cash
+                ? _addCashLine(line)
+                : _addAmountLine(line.kind, line),
+            onDelete: () => _removeLine(line.id),
           ),
+          const SizedBox(height: AppSpacing.sm),
         ],
-        const SizedBox(height: AppSpacing.xl),
-        _CompleteButton(
-          isProcessing: _isProcessing,
-          label: 'إتمام الدفع المختلط',
-          onPressed: _processPayment,
+      ],
+    );
+  }
+
+  Widget _buildSmartActions() {
+    final remaining = _remainingAmount;
+    if (remaining <= 0.01) {
+      return const SizedBox.shrink();
+    }
+
+    final prefix = _paymentLines.isEmpty ? '' : 'أكمل ';
+
+    return Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      alignment: WrapAlignment.center,
+      children: [
+        AppButton.outlined(
+          onPressed: _isProcessing ? null : () => _addCashLine(),
+          icon: Icons.payments_outlined,
+          label: '${prefix}كاش',
+        ),
+        AppButton.outlined(
+          onPressed: _isProcessing
+              ? null
+              : () => _addAmountLine(SaleTenderKind.network),
+          icon: Icons.credit_card,
+          label: '${prefix}شبكة',
+        ),
+        AppButton.outlined(
+          onPressed: _isProcessing
+              ? null
+              : () => _addAmountLine(SaleTenderKind.credit),
+          icon: Icons.person_outline,
+          label: '${prefix}آجل',
         ),
       ],
     );
@@ -783,7 +620,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             ),
           ],
           const SizedBox(height: AppSpacing.lg),
-          if (_completedPaymentMethodType.isCash && _change > 0) ...[
+          if (_change > 0) ...[
             AppInfoBanner(
               message: '${l10n.change}: ${PosFormatters.amount(_change)}',
               type: AppBannerType.info,
@@ -849,137 +686,337 @@ class PaymentDialogResult {
   }) : this._(completed: true, saleId: saleId, openInvoice: openInvoice);
 }
 
-class _TenderKindSelector extends StatelessWidget {
-  final _CheckoutTenderKind selectedKind;
-  final ValueChanged<_CheckoutTenderKind> onSelected;
+class _PaymentDraftLine {
+  final String id;
+  final SaleTenderKind kind;
+  final double amount;
+  final double tenderedAmount;
 
-  const _TenderKindSelector({
-    required this.selectedKind,
-    required this.onSelected,
+  const _PaymentDraftLine({
+    required this.id,
+    required this.kind,
+    required this.amount,
+    required this.tenderedAmount,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    final isCompact = MediaQuery.sizeOf(context).width < 600;
+  double get change {
+    if (kind != SaleTenderKind.cash) return 0.0;
+    final value = PricingEngine.roundAmount(tenderedAmount - amount);
+    return value > 0 ? value : 0.0;
+  }
 
-    return Wrap(
-      spacing: isCompact ? AppSpacing.sm : AppSpacing.md,
-      runSpacing: AppSpacing.sm,
-      alignment: WrapAlignment.center,
-      children: [
-        _TenderKindButton(
-          icon: Icons.payments_outlined,
-          label: 'كاش',
-          subtitle: 'نقدي',
-          selected: selectedKind == _CheckoutTenderKind.cash,
-          onTap: () => onSelected(_CheckoutTenderKind.cash),
-        ),
-        _TenderKindButton(
-          icon: Icons.credit_card,
-          label: 'شبكة',
-          subtitle: 'جهاز دفع / يدوي',
-          selected: selectedKind == _CheckoutTenderKind.network,
-          onTap: () => onSelected(_CheckoutTenderKind.network),
-        ),
-        _TenderKindButton(
-          icon: Icons.person_outline,
-          label: 'آجل',
-          subtitle: 'على حساب عميل',
-          selected: selectedKind == _CheckoutTenderKind.credit,
-          onTap: () => onSelected(_CheckoutTenderKind.credit),
-        ),
-        _TenderKindButton(
-          icon: Icons.call_split,
-          label: 'مختلط',
-          subtitle: 'كاش + شبكة + آجل',
-          selected: selectedKind == _CheckoutTenderKind.mixed,
-          onTap: () => onSelected(_CheckoutTenderKind.mixed),
-        ),
-      ],
+  _PaymentDraftLine copyWith({
+    String? id,
+    SaleTenderKind? kind,
+    double? amount,
+    double? tenderedAmount,
+  }) {
+    return _PaymentDraftLine(
+      id: id ?? this.id,
+      kind: kind ?? this.kind,
+      amount: amount ?? this.amount,
+      tenderedAmount: tenderedAmount ?? this.tenderedAmount,
     );
   }
 }
 
-class _TenderKindButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String subtitle;
-  final bool selected;
-  final VoidCallback onTap;
+class _PaymentLineTile extends StatelessWidget {
+  final _PaymentDraftLine line;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
-  const _TenderKindButton({
-    required this.icon,
-    required this.label,
-    required this.subtitle,
-    required this.selected,
-    required this.onTap,
+  const _PaymentLineTile({
+    required this.line,
+    required this.onEdit,
+    required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: MediaQuery.sizeOf(context).width < 600
-          ? 104
-          : AppSpacing.jumbo * 3.3,
-      child: Material(
-        color: selected ? AppColors.primary : AppColors.surfaceVariant,
+    final (icon, title) = switch (line.kind) {
+      SaleTenderKind.cash => (Icons.payments_outlined, 'كاش'),
+      SaleTenderKind.network => (Icons.credit_card, 'شبكة'),
+      SaleTenderKind.credit => (Icons.person_outline, 'آجل'),
+    };
+
+    final subtitle = line.kind == SaleTenderKind.cash && line.change > 0
+        ? 'المستلم ${PosFormatters.amount(line.tenderedAmount)} - الراجع ${PosFormatters.amount(line.change)}'
+        : null;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
         borderRadius: AppSpacing.borderRadiusMd,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: AppSpacing.borderRadiusMd,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: MediaQuery.sizeOf(context).width < 600
-                  ? AppSpacing.md
-                  : AppSpacing.lg,
+      ),
+      child: ListTile(
+        leading: Icon(icon, color: AppColors.primary),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: subtitle == null ? null : Text(subtitle),
+        trailing: Wrap(
+          spacing: AppSpacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              PosFormatters.amount(line.amount),
+              style: const TextStyle(fontWeight: FontWeight.w800),
             ),
-            child: Column(
-              children: [
-                Icon(
-                  icon,
-                  color: selected ? AppColors.onPrimary : AppColors.textPrimary,
-                  size: AppSpacing.xxl,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: selected
-                        ? AppColors.onPrimary
-                        : AppColors.textPrimary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: selected
-                        ? AppColors.onPrimary.withValues(alpha: 0.8)
-                        : AppColors.textSecondary,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
+            IconButton(
+              tooltip: 'تعديل',
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: onEdit,
             ),
-          ),
+            IconButton(
+              tooltip: 'حذف',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: onDelete,
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
+class _CashLineDialog extends StatefulWidget {
+  final double availableAmount;
+  final _PaymentDraftLine? existing;
+  final double Function(String text) parseMoney;
+
+  const _CashLineDialog({
+    required this.availableAmount,
+    required this.existing,
+    required this.parseMoney,
+  });
+
+  @override
+  State<_CashLineDialog> createState() => _CashLineDialogState();
+}
+
+class _CashLineDialogState extends State<_CashLineDialog> {
+  late final TextEditingController _controller;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: (widget.existing?.tenderedAmount ?? widget.availableAmount)
+          .toStringAsFixed(2),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final tendered = PricingEngine.roundAmount(
+      widget.parseMoney(_controller.text),
+    );
+    if (tendered.isNaN || tendered <= 0) {
+      setState(() => _error = 'أدخل مبلغًا صحيحًا أكبر من صفر.');
+      return;
+    }
+
+    final amount = tendered > widget.availableAmount
+        ? widget.availableAmount
+        : tendered;
+
+    Navigator.of(context).pop(
+      _PaymentDraftLine(
+        id: widget.existing?.id ?? const Uuid().v4(),
+        kind: SaleTenderKind.cash,
+        amount: PricingEngine.roundAmount(amount),
+        tenderedAmount: tendered,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('دفع كاش'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppInfoBanner(
+            message: 'المتبقي: ${PosFormatters.amount(widget.availableAmount)}',
+            type: AppBannerType.info,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(
+            controller: _controller,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+            ],
+            labelText: 'المبلغ المستلم',
+            prefixIcon: const Icon(Icons.payments_outlined),
+            onSubmitted: (_) => _submit(),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            AppInfoBanner.error(message: _error!),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('إضافة')),
+      ],
+    );
+  }
+}
+
+class _AmountLineDialog extends StatefulWidget {
+  final SaleTenderKind kind;
+  final double availableAmount;
+  final _PaymentDraftLine? existing;
+  final double Function(String text) parseMoney;
+
+  const _AmountLineDialog({
+    required this.kind,
+    required this.availableAmount,
+    required this.existing,
+    required this.parseMoney,
+  });
+
+  @override
+  State<_AmountLineDialog> createState() => _AmountLineDialogState();
+}
+
+class _AmountLineDialogState extends State<_AmountLineDialog> {
+  late final TextEditingController _controller;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: (widget.existing?.amount ?? widget.availableAmount).toStringAsFixed(
+        2,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final amount = PricingEngine.roundAmount(
+      widget.parseMoney(_controller.text),
+    );
+    if (amount.isNaN || amount <= 0) {
+      setState(() => _error = 'أدخل مبلغًا صحيحًا أكبر من صفر.');
+      return;
+    }
+    if (amount - widget.availableAmount > 0.01) {
+      setState(() => _error = 'المبلغ لا يمكن أن يتجاوز المتبقي.');
+      return;
+    }
+
+    Navigator.of(context).pop(
+      _PaymentDraftLine(
+        id: widget.existing?.id ?? const Uuid().v4(),
+        kind: widget.kind,
+        amount: amount,
+        tenderedAmount: amount,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final title = widget.kind == SaleTenderKind.network
+        ? 'دفع شبكة'
+        : 'دفع آجل';
+    final icon = widget.kind == SaleTenderKind.network
+        ? Icons.credit_card
+        : Icons.person_outline;
+
+    return AlertDialog(
+      title: Text(title),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppInfoBanner(
+            message: 'المتبقي: ${PosFormatters.amount(widget.availableAmount)}',
+            type: AppBannerType.info,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(
+            controller: _controller,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+            ],
+            labelText: 'المبلغ',
+            prefixIcon: Icon(icon),
+            onSubmitted: (_) => _submit(),
+          ),
+          if (_error != null) ...[
+            const SizedBox(height: AppSpacing.md),
+            AppInfoBanner.error(message: _error!),
+          ],
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('إلغاء'),
+        ),
+        FilledButton(onPressed: _submit, child: const Text('حفظ')),
+      ],
+    );
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  final String label;
+  final double value;
+
+  const _SummaryRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          PosFormatters.amount(value),
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+        ),
+      ],
+    );
+  }
+}
+
 class _CompleteButton extends StatelessWidget {
   final bool isProcessing;
+  final bool enabled;
   final String label;
   final VoidCallback onPressed;
 
   const _CompleteButton({
     required this.isProcessing,
+    required this.enabled,
     required this.label,
     required this.onPressed,
   });
@@ -990,7 +1027,7 @@ class _CompleteButton extends StatelessWidget {
       width: double.infinity,
       height: AppSpacing.jumbo + AppSpacing.sm,
       child: AppButton.primary(
-        onPressed: isProcessing ? null : onPressed,
+        onPressed: !enabled || isProcessing ? null : onPressed,
         customColor: AppColors.payButton,
         isLoading: isProcessing,
         label: label,

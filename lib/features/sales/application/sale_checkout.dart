@@ -276,11 +276,8 @@ class SaleCheckout {
 
       if (profile == null || !profile.enabled) {
         effectiveType = PaymentMethodType.manualCard;
-        profileRequiresReference = resolved.requiresReference;
       } else {
         effectiveType = PaymentMethodType.manualCard;
-        profileRequiresReference =
-            profile.requireReference || resolved.requiresReference;
       }
     }
 
@@ -744,9 +741,10 @@ CheckoutPaymentRequirements checkoutPaymentRequirements(
   ResolvedPaymentMethod method, {
   bool paymentProfileRequiresReference = false,
 }) {
-  final requiresReference =
-      method.requiresReference ||
-      (method.needsPaymentProfile && paymentProfileRequiresReference);
+  final requiresReference = method.type.isManualCard
+      ? false
+      : method.requiresReference ||
+            (method.needsPaymentProfile && paymentProfileRequiresReference);
 
   return CheckoutPaymentRequirements(
     requiresReference: requiresReference,
@@ -831,8 +829,7 @@ class PaymentPolicy {
         );
       }
 
-      if (payment.requiresReference ||
-          (requireCardReference && type.isManualCard)) {
+      if (payment.requiresReference) {
         if (!payment.hasReference) {
           throw const SaleCheckoutException(
             'Card payment reference is required.',
