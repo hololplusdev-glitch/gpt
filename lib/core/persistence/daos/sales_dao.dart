@@ -196,41 +196,6 @@ class SalesDao {
         .get();
   }
 
-  /// Get sales filtered by history criteria.
-  Future<List<Sale>> getSalesFiltered(SalesHistoryFilter filter) async {
-    Set<String>? paymentSaleIds;
-    if (filter.paymentMethodCode?.trim().isNotEmpty == true) {
-      final code = filter.paymentMethodCode!.trim();
-      final payments = await (_db.select(
-        _db.salePayments,
-      )..where((p) => p.methodCodeSnapshot.equals(code))).get();
-      paymentSaleIds = payments.map((p) => p.saleId).toSet();
-      if (paymentSaleIds.isEmpty) return [];
-    }
-
-    final query = _db.select(_db.sales);
-    if (filter.startDate != null) {
-      query.where((t) => t.createdAt.isBiggerOrEqualValue(filter.startDate!));
-    }
-    if (filter.endDate != null) {
-      query.where((t) => t.createdAt.isSmallerThanValue(filter.endDate!));
-    }
-    if (filter.invoiceNo?.trim().isNotEmpty == true) {
-      query.where((t) => t.localSaleNo.contains(filter.invoiceNo!.trim()));
-    }
-    if (filter.cashierId?.trim().isNotEmpty == true) {
-      query.where((t) => t.cashierId.equals(filter.cashierId!.trim()));
-    }
-    if (paymentSaleIds != null) {
-      query.where((t) => t.id.isIn(paymentSaleIds!));
-    }
-
-    query
-      ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
-      ..limit(filter.limit);
-    return query.get();
-  }
-
   Future<List<SaleSummary>> searchSalesHistory({
     String? query,
     int limit = 100,
@@ -294,6 +259,7 @@ class SalesDao {
       return SaleSummary(
         id: sale.id,
         localSaleNo: sale.localSaleNo,
+        type: sale.type,
         status: sale.status,
         grandTotal: sale.grandTotal,
         createdAt: sale.createdAt,
@@ -311,39 +277,6 @@ class SalesDao {
     final visible = names.take(3).join(', ');
     final remaining = names.length - 3;
     return '$visible +$remaining';
-  }
-
-  Future<List<String>> getDistinctCashierIds() async {
-    final rows = await (_db.select(
-      _db.sales,
-    )..orderBy([(t) => OrderingTerm.asc(t.cashierId)])).get();
-    return rows
-        .map((t) => t.cashierId.trim())
-        .where((id) => id.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
-  }
-
-  Future<List<({String code, String label})>>
-  getDistinctPaymentMethodsForHistory() async {
-    final payments = await _db.select(_db.salePayments).get();
-    final methods = await _db.select(_db.paymentMethods).get();
-    final methodById = {for (final method in methods) method.id: method};
-    final byCode = <String, String>{};
-    for (final payment in payments) {
-      final code = payment.methodCodeSnapshot.trim();
-      if (code.isEmpty) continue;
-      byCode[code] =
-          _clean(payment.methodNameSnapshot) ??
-          methodById[payment.paymentMethodId]?.name ??
-          code;
-    }
-    final entries = byCode.entries
-        .map((e) => (code: e.key, label: e.value))
-        .toList();
-    entries.sort((a, b) => a.label.compareTo(b.label));
-    return entries;
   }
 
   Future<Map<String, String>> getPrimaryPaymentLabelsForSales(
@@ -383,6 +316,7 @@ class SalesDao {
     var cashSales = 0.0;
     var cardSales = 0.0;
     var otherSales = 0.0;
+    var cashReturns = 0.0;
     int saleCount = 0;
 
     for (final s in sales) {
@@ -414,7 +348,6 @@ class SalesDao {
             case PaymentMethodType.cash:
               cashSales += p.amount;
             case PaymentMethodType.manualCard:
-            case PaymentMethodType.integratedCard:
               cardSales += p.amount;
             default:
               otherSales += p.amount;
@@ -422,6 +355,16 @@ class SalesDao {
         }
       } else if (isReturn && isCompleted) {
         totalReturns += s.grandTotal;
+        final payments = await getSalePayments(s.id);
+        for (final p in payments) {
+          final methodType = PaymentMethodResolver.typeFromStored(
+            methodCode: p.methodCodeSnapshot,
+            storedTypeCode: p.methodTypeSnapshot,
+          );
+          if (methodType == PaymentMethodType.cash) {
+            cashReturns += p.amount;
+          }
+        }
       } else if (isVoid) {
         totalVoids += s.grandTotal;
       }
@@ -433,6 +376,7 @@ class SalesDao {
       cashSales: cashSales,
       cardSales: cardSales,
       otherSales: otherSales,
+      cashReturns: cashReturns,
       totalDiscounts: totalDiscounts,
       totalTaxes: totalTaxes,
       totalReturns: totalReturns,
@@ -460,15 +404,52 @@ class SalesDao {
     });
   }
 
+  Future<bool> hasCompletedReturnForSale(String originalSaleId) async {
+    final row =
+        await (_db.select(_db.sales)
+              ..where(
+                (sale) =>
+                    sale.originalSaleId.equals(originalSaleId) &
+                    sale.type.equals(SaleType.returnSale.code) &
+                    sale.status.equals(SaleStatus.completed.code),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    return row != null;
+  }
+
+  Future<void> createReturnSaleEnvelope({
+    required SalesCompanion header,
+    required List<SaleLinesCompanion> items,
+    required List<SalePaymentsCompanion> payments,
+    required List<SaleTaxSummaryCompanion> taxes,
+    required OutboxEventsCompanion outboxEntry,
+    required AuditLogCompanion auditLogEntry,
+  }) async {
+    await _db.transaction(() async {
+      await _db.into(_db.sales).insert(header);
+      for (final item in items) {
+        await _db.into(_db.saleLines).insert(item);
+      }
+      for (final payment in payments) {
+        await _db.into(_db.salePayments).insert(payment);
+      }
+      for (final tax in taxes) {
+        await _db.into(_db.saleTaxSummary).insert(tax);
+      }
+      await _db.into(_db.outboxEvents).insert(outboxEntry);
+      await _db.into(_db.auditLog).insert(auditLogEntry);
+    });
+  }
+
   /// Reserve next invoice sequence number.
   Future<int> reserveNextInvoiceSequence(
     DateTime now, {
     required String branchNo,
     required String machineNo,
-    required String userId,
     String sequenceType = 'sale',
   }) async {
-    final sequenceId = [branchNo, machineNo, userId, sequenceType].join(':');
+    final sequenceId = [branchNo, machineNo, sequenceType].join(':');
 
     return _db.transaction(() async {
       final row =
@@ -476,7 +457,6 @@ class SalesDao {
                 (s) =>
                     s.branchNo.equals(branchNo) &
                     s.machineNo.equals(machineNo) &
-                    s.userId.equals(userId) &
                     s.sequenceType.equals(sequenceType),
               ))
               .getSingleOrNull();
@@ -488,7 +468,6 @@ class SalesDao {
                 id: sequenceId,
                 branchNo: branchNo,
                 machineNo: machineNo,
-                userId: userId,
                 sequenceType: Value(sequenceType),
                 currentValue: const Value(1),
                 updatedAt: now,
@@ -541,8 +520,14 @@ class SalesDao {
   }
 
   Future<int> countActiveHeldOrders(String shiftId) async {
-    final orders = await getActiveHeldOrders(shiftId);
-    return orders.length;
+    final count = countAll();
+    final query = _db.selectOnly(_db.heldOrders)
+      ..addColumns([count])
+      ..where(
+        _db.heldOrders.shiftId.equals(shiftId) &
+            _db.heldOrders.status.equals(HeldOrderStatus.held.code),
+      );
+    return await query.map((row) => row.read(count) ?? 0).getSingle();
   }
 
   Future<bool> resumeHeldOrderEnvelope({
@@ -612,6 +597,7 @@ class ShiftSalesTotals {
   final double cashSales;
   final double cardSales;
   final double otherSales;
+  final double cashReturns;
   final double totalDiscounts;
   final double totalTaxes;
   final double totalReturns;
@@ -624,6 +610,7 @@ class ShiftSalesTotals {
     required this.cashSales,
     required this.cardSales,
     required this.otherSales,
+    required this.cashReturns,
     required this.totalDiscounts,
     required this.totalTaxes,
     required this.totalReturns,

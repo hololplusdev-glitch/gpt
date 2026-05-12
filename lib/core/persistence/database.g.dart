@@ -827,6 +827,33 @@ class $SyncProfileTableTable extends SyncProfileTable
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isValidatedMeta = const VerificationMeta(
+    'isValidated',
+  );
+  @override
+  late final GeneratedColumn<bool> isValidated = GeneratedColumn<bool>(
+    'is_validated',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_validated" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _lastValidatedAtMeta = const VerificationMeta(
+    'lastValidatedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastValidatedAt =
+      GeneratedColumn<DateTime>(
+        'last_validated_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
   static const VerificationMeta _setupCompletedMeta = const VerificationMeta(
     'setupCompleted',
   );
@@ -887,6 +914,8 @@ class $SyncProfileTableTable extends SyncProfileTable
     bootstrapUserId,
     pageLimit,
     timeoutSeconds,
+    isValidated,
+    lastValidatedAt,
     setupCompleted,
     initialSyncCompleted,
     lastFullSyncAt,
@@ -944,6 +973,24 @@ class $SyncProfileTableTable extends SyncProfileTable
         timeoutSeconds.isAcceptableOrUnknown(
           data['timeout_seconds']!,
           _timeoutSecondsMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_validated')) {
+      context.handle(
+        _isValidatedMeta,
+        isValidated.isAcceptableOrUnknown(
+          data['is_validated']!,
+          _isValidatedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_validated_at')) {
+      context.handle(
+        _lastValidatedAtMeta,
+        lastValidatedAt.isAcceptableOrUnknown(
+          data['last_validated_at']!,
+          _lastValidatedAtMeta,
         ),
       );
     }
@@ -1015,6 +1062,14 @@ class $SyncProfileTableTable extends SyncProfileTable
         DriftSqlType.int,
         data['${effectivePrefix}timeout_seconds'],
       ),
+      isValidated: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_validated'],
+      )!,
+      lastValidatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_validated_at'],
+      ),
       setupCompleted: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}setup_completed'],
@@ -1048,6 +1103,8 @@ class SyncProfileTableData extends DataClass
   final String bootstrapUserId;
   final int pageLimit;
   final int? timeoutSeconds;
+  final bool isValidated;
+  final DateTime? lastValidatedAt;
   final bool setupCompleted;
   final bool initialSyncCompleted;
   final DateTime? lastFullSyncAt;
@@ -1059,6 +1116,8 @@ class SyncProfileTableData extends DataClass
     required this.bootstrapUserId,
     required this.pageLimit,
     this.timeoutSeconds,
+    required this.isValidated,
+    this.lastValidatedAt,
     required this.setupCompleted,
     required this.initialSyncCompleted,
     this.lastFullSyncAt,
@@ -1074,6 +1133,10 @@ class SyncProfileTableData extends DataClass
     map['page_limit'] = Variable<int>(pageLimit);
     if (!nullToAbsent || timeoutSeconds != null) {
       map['timeout_seconds'] = Variable<int>(timeoutSeconds);
+    }
+    map['is_validated'] = Variable<bool>(isValidated);
+    if (!nullToAbsent || lastValidatedAt != null) {
+      map['last_validated_at'] = Variable<DateTime>(lastValidatedAt);
     }
     map['setup_completed'] = Variable<bool>(setupCompleted);
     map['initial_sync_completed'] = Variable<bool>(initialSyncCompleted);
@@ -1094,6 +1157,10 @@ class SyncProfileTableData extends DataClass
       timeoutSeconds: timeoutSeconds == null && nullToAbsent
           ? const Value.absent()
           : Value(timeoutSeconds),
+      isValidated: Value(isValidated),
+      lastValidatedAt: lastValidatedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastValidatedAt),
       setupCompleted: Value(setupCompleted),
       initialSyncCompleted: Value(initialSyncCompleted),
       lastFullSyncAt: lastFullSyncAt == null && nullToAbsent
@@ -1115,6 +1182,8 @@ class SyncProfileTableData extends DataClass
       bootstrapUserId: serializer.fromJson<String>(json['bootstrapUserId']),
       pageLimit: serializer.fromJson<int>(json['pageLimit']),
       timeoutSeconds: serializer.fromJson<int?>(json['timeoutSeconds']),
+      isValidated: serializer.fromJson<bool>(json['isValidated']),
+      lastValidatedAt: serializer.fromJson<DateTime?>(json['lastValidatedAt']),
       setupCompleted: serializer.fromJson<bool>(json['setupCompleted']),
       initialSyncCompleted: serializer.fromJson<bool>(
         json['initialSyncCompleted'],
@@ -1133,6 +1202,8 @@ class SyncProfileTableData extends DataClass
       'bootstrapUserId': serializer.toJson<String>(bootstrapUserId),
       'pageLimit': serializer.toJson<int>(pageLimit),
       'timeoutSeconds': serializer.toJson<int?>(timeoutSeconds),
+      'isValidated': serializer.toJson<bool>(isValidated),
+      'lastValidatedAt': serializer.toJson<DateTime?>(lastValidatedAt),
       'setupCompleted': serializer.toJson<bool>(setupCompleted),
       'initialSyncCompleted': serializer.toJson<bool>(initialSyncCompleted),
       'lastFullSyncAt': serializer.toJson<DateTime?>(lastFullSyncAt),
@@ -1147,6 +1218,8 @@ class SyncProfileTableData extends DataClass
     String? bootstrapUserId,
     int? pageLimit,
     Value<int?> timeoutSeconds = const Value.absent(),
+    bool? isValidated,
+    Value<DateTime?> lastValidatedAt = const Value.absent(),
     bool? setupCompleted,
     bool? initialSyncCompleted,
     Value<DateTime?> lastFullSyncAt = const Value.absent(),
@@ -1160,6 +1233,10 @@ class SyncProfileTableData extends DataClass
     timeoutSeconds: timeoutSeconds.present
         ? timeoutSeconds.value
         : this.timeoutSeconds,
+    isValidated: isValidated ?? this.isValidated,
+    lastValidatedAt: lastValidatedAt.present
+        ? lastValidatedAt.value
+        : this.lastValidatedAt,
     setupCompleted: setupCompleted ?? this.setupCompleted,
     initialSyncCompleted: initialSyncCompleted ?? this.initialSyncCompleted,
     lastFullSyncAt: lastFullSyncAt.present
@@ -1179,6 +1256,12 @@ class SyncProfileTableData extends DataClass
       timeoutSeconds: data.timeoutSeconds.present
           ? data.timeoutSeconds.value
           : this.timeoutSeconds,
+      isValidated: data.isValidated.present
+          ? data.isValidated.value
+          : this.isValidated,
+      lastValidatedAt: data.lastValidatedAt.present
+          ? data.lastValidatedAt.value
+          : this.lastValidatedAt,
       setupCompleted: data.setupCompleted.present
           ? data.setupCompleted.value
           : this.setupCompleted,
@@ -1201,6 +1284,8 @@ class SyncProfileTableData extends DataClass
           ..write('bootstrapUserId: $bootstrapUserId, ')
           ..write('pageLimit: $pageLimit, ')
           ..write('timeoutSeconds: $timeoutSeconds, ')
+          ..write('isValidated: $isValidated, ')
+          ..write('lastValidatedAt: $lastValidatedAt, ')
           ..write('setupCompleted: $setupCompleted, ')
           ..write('initialSyncCompleted: $initialSyncCompleted, ')
           ..write('lastFullSyncAt: $lastFullSyncAt, ')
@@ -1217,6 +1302,8 @@ class SyncProfileTableData extends DataClass
     bootstrapUserId,
     pageLimit,
     timeoutSeconds,
+    isValidated,
+    lastValidatedAt,
     setupCompleted,
     initialSyncCompleted,
     lastFullSyncAt,
@@ -1232,6 +1319,8 @@ class SyncProfileTableData extends DataClass
           other.bootstrapUserId == this.bootstrapUserId &&
           other.pageLimit == this.pageLimit &&
           other.timeoutSeconds == this.timeoutSeconds &&
+          other.isValidated == this.isValidated &&
+          other.lastValidatedAt == this.lastValidatedAt &&
           other.setupCompleted == this.setupCompleted &&
           other.initialSyncCompleted == this.initialSyncCompleted &&
           other.lastFullSyncAt == this.lastFullSyncAt &&
@@ -1245,6 +1334,8 @@ class SyncProfileTableCompanion extends UpdateCompanion<SyncProfileTableData> {
   final Value<String> bootstrapUserId;
   final Value<int> pageLimit;
   final Value<int?> timeoutSeconds;
+  final Value<bool> isValidated;
+  final Value<DateTime?> lastValidatedAt;
   final Value<bool> setupCompleted;
   final Value<bool> initialSyncCompleted;
   final Value<DateTime?> lastFullSyncAt;
@@ -1256,6 +1347,8 @@ class SyncProfileTableCompanion extends UpdateCompanion<SyncProfileTableData> {
     this.bootstrapUserId = const Value.absent(),
     this.pageLimit = const Value.absent(),
     this.timeoutSeconds = const Value.absent(),
+    this.isValidated = const Value.absent(),
+    this.lastValidatedAt = const Value.absent(),
     this.setupCompleted = const Value.absent(),
     this.initialSyncCompleted = const Value.absent(),
     this.lastFullSyncAt = const Value.absent(),
@@ -1268,6 +1361,8 @@ class SyncProfileTableCompanion extends UpdateCompanion<SyncProfileTableData> {
     this.bootstrapUserId = const Value.absent(),
     this.pageLimit = const Value.absent(),
     this.timeoutSeconds = const Value.absent(),
+    this.isValidated = const Value.absent(),
+    this.lastValidatedAt = const Value.absent(),
     this.setupCompleted = const Value.absent(),
     this.initialSyncCompleted = const Value.absent(),
     this.lastFullSyncAt = const Value.absent(),
@@ -1282,6 +1377,8 @@ class SyncProfileTableCompanion extends UpdateCompanion<SyncProfileTableData> {
     Expression<String>? bootstrapUserId,
     Expression<int>? pageLimit,
     Expression<int>? timeoutSeconds,
+    Expression<bool>? isValidated,
+    Expression<DateTime>? lastValidatedAt,
     Expression<bool>? setupCompleted,
     Expression<bool>? initialSyncCompleted,
     Expression<DateTime>? lastFullSyncAt,
@@ -1294,6 +1391,8 @@ class SyncProfileTableCompanion extends UpdateCompanion<SyncProfileTableData> {
       if (bootstrapUserId != null) 'bootstrap_user_id': bootstrapUserId,
       if (pageLimit != null) 'page_limit': pageLimit,
       if (timeoutSeconds != null) 'timeout_seconds': timeoutSeconds,
+      if (isValidated != null) 'is_validated': isValidated,
+      if (lastValidatedAt != null) 'last_validated_at': lastValidatedAt,
       if (setupCompleted != null) 'setup_completed': setupCompleted,
       if (initialSyncCompleted != null)
         'initial_sync_completed': initialSyncCompleted,
@@ -1309,6 +1408,8 @@ class SyncProfileTableCompanion extends UpdateCompanion<SyncProfileTableData> {
     Value<String>? bootstrapUserId,
     Value<int>? pageLimit,
     Value<int?>? timeoutSeconds,
+    Value<bool>? isValidated,
+    Value<DateTime?>? lastValidatedAt,
     Value<bool>? setupCompleted,
     Value<bool>? initialSyncCompleted,
     Value<DateTime?>? lastFullSyncAt,
@@ -1321,6 +1422,8 @@ class SyncProfileTableCompanion extends UpdateCompanion<SyncProfileTableData> {
       bootstrapUserId: bootstrapUserId ?? this.bootstrapUserId,
       pageLimit: pageLimit ?? this.pageLimit,
       timeoutSeconds: timeoutSeconds ?? this.timeoutSeconds,
+      isValidated: isValidated ?? this.isValidated,
+      lastValidatedAt: lastValidatedAt ?? this.lastValidatedAt,
       setupCompleted: setupCompleted ?? this.setupCompleted,
       initialSyncCompleted: initialSyncCompleted ?? this.initialSyncCompleted,
       lastFullSyncAt: lastFullSyncAt ?? this.lastFullSyncAt,
@@ -1349,6 +1452,12 @@ class SyncProfileTableCompanion extends UpdateCompanion<SyncProfileTableData> {
     if (timeoutSeconds.present) {
       map['timeout_seconds'] = Variable<int>(timeoutSeconds.value);
     }
+    if (isValidated.present) {
+      map['is_validated'] = Variable<bool>(isValidated.value);
+    }
+    if (lastValidatedAt.present) {
+      map['last_validated_at'] = Variable<DateTime>(lastValidatedAt.value);
+    }
     if (setupCompleted.present) {
       map['setup_completed'] = Variable<bool>(setupCompleted.value);
     }
@@ -1375,6 +1484,8 @@ class SyncProfileTableCompanion extends UpdateCompanion<SyncProfileTableData> {
           ..write('bootstrapUserId: $bootstrapUserId, ')
           ..write('pageLimit: $pageLimit, ')
           ..write('timeoutSeconds: $timeoutSeconds, ')
+          ..write('isValidated: $isValidated, ')
+          ..write('lastValidatedAt: $lastValidatedAt, ')
           ..write('setupCompleted: $setupCompleted, ')
           ..write('initialSyncCompleted: $initialSyncCompleted, ')
           ..write('lastFullSyncAt: $lastFullSyncAt, ')
@@ -4957,15 +5068,6 @@ class $InvoiceSequencesTable extends InvoiceSequences
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
-  @override
-  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
-    'user_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   static const VerificationMeta _sequenceTypeMeta = const VerificationMeta(
     'sequenceType',
   );
@@ -5006,7 +5108,6 @@ class $InvoiceSequencesTable extends InvoiceSequences
     id,
     branchNo,
     machineNo,
-    userId,
     sequenceType,
     currentValue,
     updatedAt,
@@ -5043,14 +5144,6 @@ class $InvoiceSequencesTable extends InvoiceSequences
       );
     } else if (isInserting) {
       context.missing(_machineNoMeta);
-    }
-    if (data.containsKey('user_id')) {
-      context.handle(
-        _userIdMeta,
-        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_userIdMeta);
     }
     if (data.containsKey('sequence_type')) {
       context.handle(
@@ -5099,10 +5192,6 @@ class $InvoiceSequencesTable extends InvoiceSequences
         DriftSqlType.string,
         data['${effectivePrefix}machine_no'],
       )!,
-      userId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}user_id'],
-      )!,
       sequenceType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}sequence_type'],
@@ -5128,7 +5217,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
   final String id;
   final String branchNo;
   final String machineNo;
-  final String userId;
   final String sequenceType;
   final int currentValue;
   final DateTime updatedAt;
@@ -5136,7 +5224,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
     required this.id,
     required this.branchNo,
     required this.machineNo,
-    required this.userId,
     required this.sequenceType,
     required this.currentValue,
     required this.updatedAt,
@@ -5147,7 +5234,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
     map['id'] = Variable<String>(id);
     map['branch_no'] = Variable<String>(branchNo);
     map['machine_no'] = Variable<String>(machineNo);
-    map['user_id'] = Variable<String>(userId);
     map['sequence_type'] = Variable<String>(sequenceType);
     map['current_value'] = Variable<int>(currentValue);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -5159,7 +5245,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
       id: Value(id),
       branchNo: Value(branchNo),
       machineNo: Value(machineNo),
-      userId: Value(userId),
       sequenceType: Value(sequenceType),
       currentValue: Value(currentValue),
       updatedAt: Value(updatedAt),
@@ -5175,7 +5260,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
       id: serializer.fromJson<String>(json['id']),
       branchNo: serializer.fromJson<String>(json['branchNo']),
       machineNo: serializer.fromJson<String>(json['machineNo']),
-      userId: serializer.fromJson<String>(json['userId']),
       sequenceType: serializer.fromJson<String>(json['sequenceType']),
       currentValue: serializer.fromJson<int>(json['currentValue']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
@@ -5188,7 +5272,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
       'id': serializer.toJson<String>(id),
       'branchNo': serializer.toJson<String>(branchNo),
       'machineNo': serializer.toJson<String>(machineNo),
-      'userId': serializer.toJson<String>(userId),
       'sequenceType': serializer.toJson<String>(sequenceType),
       'currentValue': serializer.toJson<int>(currentValue),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
@@ -5199,7 +5282,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
     String? id,
     String? branchNo,
     String? machineNo,
-    String? userId,
     String? sequenceType,
     int? currentValue,
     DateTime? updatedAt,
@@ -5207,7 +5289,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
     id: id ?? this.id,
     branchNo: branchNo ?? this.branchNo,
     machineNo: machineNo ?? this.machineNo,
-    userId: userId ?? this.userId,
     sequenceType: sequenceType ?? this.sequenceType,
     currentValue: currentValue ?? this.currentValue,
     updatedAt: updatedAt ?? this.updatedAt,
@@ -5217,7 +5298,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
       id: data.id.present ? data.id.value : this.id,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       machineNo: data.machineNo.present ? data.machineNo.value : this.machineNo,
-      userId: data.userId.present ? data.userId.value : this.userId,
       sequenceType: data.sequenceType.present
           ? data.sequenceType.value
           : this.sequenceType,
@@ -5234,7 +5314,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
           ..write('id: $id, ')
           ..write('branchNo: $branchNo, ')
           ..write('machineNo: $machineNo, ')
-          ..write('userId: $userId, ')
           ..write('sequenceType: $sequenceType, ')
           ..write('currentValue: $currentValue, ')
           ..write('updatedAt: $updatedAt')
@@ -5247,7 +5326,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
     id,
     branchNo,
     machineNo,
-    userId,
     sequenceType,
     currentValue,
     updatedAt,
@@ -5259,7 +5337,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
           other.id == this.id &&
           other.branchNo == this.branchNo &&
           other.machineNo == this.machineNo &&
-          other.userId == this.userId &&
           other.sequenceType == this.sequenceType &&
           other.currentValue == this.currentValue &&
           other.updatedAt == this.updatedAt);
@@ -5269,7 +5346,6 @@ class InvoiceSequencesCompanion extends UpdateCompanion<InvoiceSequence> {
   final Value<String> id;
   final Value<String> branchNo;
   final Value<String> machineNo;
-  final Value<String> userId;
   final Value<String> sequenceType;
   final Value<int> currentValue;
   final Value<DateTime> updatedAt;
@@ -5278,7 +5354,6 @@ class InvoiceSequencesCompanion extends UpdateCompanion<InvoiceSequence> {
     this.id = const Value.absent(),
     this.branchNo = const Value.absent(),
     this.machineNo = const Value.absent(),
-    this.userId = const Value.absent(),
     this.sequenceType = const Value.absent(),
     this.currentValue = const Value.absent(),
     this.updatedAt = const Value.absent(),
@@ -5288,7 +5363,6 @@ class InvoiceSequencesCompanion extends UpdateCompanion<InvoiceSequence> {
     required String id,
     required String branchNo,
     required String machineNo,
-    required String userId,
     this.sequenceType = const Value.absent(),
     this.currentValue = const Value.absent(),
     required DateTime updatedAt,
@@ -5296,13 +5370,11 @@ class InvoiceSequencesCompanion extends UpdateCompanion<InvoiceSequence> {
   }) : id = Value(id),
        branchNo = Value(branchNo),
        machineNo = Value(machineNo),
-       userId = Value(userId),
        updatedAt = Value(updatedAt);
   static Insertable<InvoiceSequence> custom({
     Expression<String>? id,
     Expression<String>? branchNo,
     Expression<String>? machineNo,
-    Expression<String>? userId,
     Expression<String>? sequenceType,
     Expression<int>? currentValue,
     Expression<DateTime>? updatedAt,
@@ -5312,7 +5384,6 @@ class InvoiceSequencesCompanion extends UpdateCompanion<InvoiceSequence> {
       if (id != null) 'id': id,
       if (branchNo != null) 'branch_no': branchNo,
       if (machineNo != null) 'machine_no': machineNo,
-      if (userId != null) 'user_id': userId,
       if (sequenceType != null) 'sequence_type': sequenceType,
       if (currentValue != null) 'current_value': currentValue,
       if (updatedAt != null) 'updated_at': updatedAt,
@@ -5324,7 +5395,6 @@ class InvoiceSequencesCompanion extends UpdateCompanion<InvoiceSequence> {
     Value<String>? id,
     Value<String>? branchNo,
     Value<String>? machineNo,
-    Value<String>? userId,
     Value<String>? sequenceType,
     Value<int>? currentValue,
     Value<DateTime>? updatedAt,
@@ -5334,7 +5404,6 @@ class InvoiceSequencesCompanion extends UpdateCompanion<InvoiceSequence> {
       id: id ?? this.id,
       branchNo: branchNo ?? this.branchNo,
       machineNo: machineNo ?? this.machineNo,
-      userId: userId ?? this.userId,
       sequenceType: sequenceType ?? this.sequenceType,
       currentValue: currentValue ?? this.currentValue,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -5353,9 +5422,6 @@ class InvoiceSequencesCompanion extends UpdateCompanion<InvoiceSequence> {
     }
     if (machineNo.present) {
       map['machine_no'] = Variable<String>(machineNo.value);
-    }
-    if (userId.present) {
-      map['user_id'] = Variable<String>(userId.value);
     }
     if (sequenceType.present) {
       map['sequence_type'] = Variable<String>(sequenceType.value);
@@ -5378,7 +5444,6 @@ class InvoiceSequencesCompanion extends UpdateCompanion<InvoiceSequence> {
           ..write('id: $id, ')
           ..write('branchNo: $branchNo, ')
           ..write('machineNo: $machineNo, ')
-          ..write('userId: $userId, ')
           ..write('sequenceType: $sequenceType, ')
           ..write('currentValue: $currentValue, ')
           ..write('updatedAt: $updatedAt, ')
@@ -26469,6 +26534,15 @@ class $PaymentDeviceProfilesTable extends PaymentDeviceProfiles
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
@@ -26654,6 +26728,7 @@ class $PaymentDeviceProfilesTable extends PaymentDeviceProfiles
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    userId,
     name,
     enabled,
     mode,
@@ -26687,6 +26762,14 @@ class $PaymentDeviceProfilesTable extends PaymentDeviceProfiles
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
       context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -26828,6 +26911,10 @@ class $PaymentDeviceProfilesTable extends PaymentDeviceProfiles
         DriftSqlType.string,
         data['${effectivePrefix}id'],
       )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
@@ -26904,6 +26991,7 @@ class $PaymentDeviceProfilesTable extends PaymentDeviceProfiles
 class PaymentDeviceProfile extends DataClass
     implements Insertable<PaymentDeviceProfile> {
   final String id;
+  final String userId;
   final String name;
   final bool enabled;
   final String mode;
@@ -26922,6 +27010,7 @@ class PaymentDeviceProfile extends DataClass
   final DateTime updatedAt;
   const PaymentDeviceProfile({
     required this.id,
+    required this.userId,
     required this.name,
     required this.enabled,
     required this.mode,
@@ -26943,6 +27032,7 @@ class PaymentDeviceProfile extends DataClass
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
     map['name'] = Variable<String>(name);
     map['enabled'] = Variable<bool>(enabled);
     map['mode'] = Variable<String>(mode);
@@ -26981,6 +27071,7 @@ class PaymentDeviceProfile extends DataClass
   PaymentDeviceProfilesCompanion toCompanion(bool nullToAbsent) {
     return PaymentDeviceProfilesCompanion(
       id: Value(id),
+      userId: Value(userId),
       name: Value(name),
       enabled: Value(enabled),
       mode: Value(mode),
@@ -27023,6 +27114,7 @@ class PaymentDeviceProfile extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PaymentDeviceProfile(
       id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
       name: serializer.fromJson<String>(json['name']),
       enabled: serializer.fromJson<bool>(json['enabled']),
       mode: serializer.fromJson<String>(json['mode']),
@@ -27048,6 +27140,7 @@ class PaymentDeviceProfile extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
       'name': serializer.toJson<String>(name),
       'enabled': serializer.toJson<bool>(enabled),
       'mode': serializer.toJson<String>(mode),
@@ -27069,6 +27162,7 @@ class PaymentDeviceProfile extends DataClass
 
   PaymentDeviceProfile copyWith({
     String? id,
+    String? userId,
     String? name,
     bool? enabled,
     String? mode,
@@ -27087,6 +27181,7 @@ class PaymentDeviceProfile extends DataClass
     DateTime? updatedAt,
   }) => PaymentDeviceProfile(
     id: id ?? this.id,
+    userId: userId ?? this.userId,
     name: name ?? this.name,
     enabled: enabled ?? this.enabled,
     mode: mode ?? this.mode,
@@ -27113,6 +27208,7 @@ class PaymentDeviceProfile extends DataClass
   PaymentDeviceProfile copyWithCompanion(PaymentDeviceProfilesCompanion data) {
     return PaymentDeviceProfile(
       id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
       name: data.name.present ? data.name.value : this.name,
       enabled: data.enabled.present ? data.enabled.value : this.enabled,
       mode: data.mode.present ? data.mode.value : this.mode,
@@ -27152,6 +27248,7 @@ class PaymentDeviceProfile extends DataClass
   String toString() {
     return (StringBuffer('PaymentDeviceProfile(')
           ..write('id: $id, ')
+          ..write('userId: $userId, ')
           ..write('name: $name, ')
           ..write('enabled: $enabled, ')
           ..write('mode: $mode, ')
@@ -27175,6 +27272,7 @@ class PaymentDeviceProfile extends DataClass
   @override
   int get hashCode => Object.hash(
     id,
+    userId,
     name,
     enabled,
     mode,
@@ -27197,6 +27295,7 @@ class PaymentDeviceProfile extends DataClass
       identical(this, other) ||
       (other is PaymentDeviceProfile &&
           other.id == this.id &&
+          other.userId == this.userId &&
           other.name == this.name &&
           other.enabled == this.enabled &&
           other.mode == this.mode &&
@@ -27218,6 +27317,7 @@ class PaymentDeviceProfile extends DataClass
 class PaymentDeviceProfilesCompanion
     extends UpdateCompanion<PaymentDeviceProfile> {
   final Value<String> id;
+  final Value<String> userId;
   final Value<String> name;
   final Value<bool> enabled;
   final Value<String> mode;
@@ -27237,6 +27337,7 @@ class PaymentDeviceProfilesCompanion
   final Value<int> rowid;
   const PaymentDeviceProfilesCompanion({
     this.id = const Value.absent(),
+    this.userId = const Value.absent(),
     this.name = const Value.absent(),
     this.enabled = const Value.absent(),
     this.mode = const Value.absent(),
@@ -27257,6 +27358,7 @@ class PaymentDeviceProfilesCompanion
   });
   PaymentDeviceProfilesCompanion.insert({
     required String id,
+    required String userId,
     this.name = const Value.absent(),
     this.enabled = const Value.absent(),
     required String mode,
@@ -27275,6 +27377,7 @@ class PaymentDeviceProfilesCompanion
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
+       userId = Value(userId),
        mode = Value(mode),
        provider = Value(provider),
        connectionType = Value(connectionType),
@@ -27282,6 +27385,7 @@ class PaymentDeviceProfilesCompanion
        updatedAt = Value(updatedAt);
   static Insertable<PaymentDeviceProfile> custom({
     Expression<String>? id,
+    Expression<String>? userId,
     Expression<String>? name,
     Expression<bool>? enabled,
     Expression<String>? mode,
@@ -27302,6 +27406,7 @@ class PaymentDeviceProfilesCompanion
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
       if (name != null) 'name': name,
       if (enabled != null) 'enabled': enabled,
       if (mode != null) 'mode': mode,
@@ -27324,6 +27429,7 @@ class PaymentDeviceProfilesCompanion
 
   PaymentDeviceProfilesCompanion copyWith({
     Value<String>? id,
+    Value<String>? userId,
     Value<String>? name,
     Value<bool>? enabled,
     Value<String>? mode,
@@ -27344,6 +27450,7 @@ class PaymentDeviceProfilesCompanion
   }) {
     return PaymentDeviceProfilesCompanion(
       id: id ?? this.id,
+      userId: userId ?? this.userId,
       name: name ?? this.name,
       enabled: enabled ?? this.enabled,
       mode: mode ?? this.mode,
@@ -27369,6 +27476,9 @@ class PaymentDeviceProfilesCompanion
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -27428,6 +27538,7 @@ class PaymentDeviceProfilesCompanion
   String toString() {
     return (StringBuffer('PaymentDeviceProfilesCompanion(')
           ..write('id: $id, ')
+          ..write('userId: $userId, ')
           ..write('name: $name, ')
           ..write('enabled: $enabled, ')
           ..write('mode: $mode, ')
@@ -31558,6 +31669,8 @@ typedef $$SyncProfileTableTableCreateCompanionBuilder =
       Value<String> bootstrapUserId,
       Value<int> pageLimit,
       Value<int?> timeoutSeconds,
+      Value<bool> isValidated,
+      Value<DateTime?> lastValidatedAt,
       Value<bool> setupCompleted,
       Value<bool> initialSyncCompleted,
       Value<DateTime?> lastFullSyncAt,
@@ -31571,6 +31684,8 @@ typedef $$SyncProfileTableTableUpdateCompanionBuilder =
       Value<String> bootstrapUserId,
       Value<int> pageLimit,
       Value<int?> timeoutSeconds,
+      Value<bool> isValidated,
+      Value<DateTime?> lastValidatedAt,
       Value<bool> setupCompleted,
       Value<bool> initialSyncCompleted,
       Value<DateTime?> lastFullSyncAt,
@@ -31613,6 +31728,16 @@ class $$SyncProfileTableTableFilterComposer
 
   ColumnFilters<int> get timeoutSeconds => $composableBuilder(
     column: $table.timeoutSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isValidated => $composableBuilder(
+    column: $table.isValidated,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastValidatedAt => $composableBuilder(
+    column: $table.lastValidatedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -31676,6 +31801,16 @@ class $$SyncProfileTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isValidated => $composableBuilder(
+    column: $table.isValidated,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastValidatedAt => $composableBuilder(
+    column: $table.lastValidatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get setupCompleted => $composableBuilder(
     column: $table.setupCompleted,
     builder: (column) => ColumnOrderings(column),
@@ -31725,6 +31860,16 @@ class $$SyncProfileTableTableAnnotationComposer
 
   GeneratedColumn<int> get timeoutSeconds => $composableBuilder(
     column: $table.timeoutSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isValidated => $composableBuilder(
+    column: $table.isValidated,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastValidatedAt => $composableBuilder(
+    column: $table.lastValidatedAt,
     builder: (column) => column,
   );
 
@@ -31790,6 +31935,8 @@ class $$SyncProfileTableTableTableManager
                 Value<String> bootstrapUserId = const Value.absent(),
                 Value<int> pageLimit = const Value.absent(),
                 Value<int?> timeoutSeconds = const Value.absent(),
+                Value<bool> isValidated = const Value.absent(),
+                Value<DateTime?> lastValidatedAt = const Value.absent(),
                 Value<bool> setupCompleted = const Value.absent(),
                 Value<bool> initialSyncCompleted = const Value.absent(),
                 Value<DateTime?> lastFullSyncAt = const Value.absent(),
@@ -31801,6 +31948,8 @@ class $$SyncProfileTableTableTableManager
                 bootstrapUserId: bootstrapUserId,
                 pageLimit: pageLimit,
                 timeoutSeconds: timeoutSeconds,
+                isValidated: isValidated,
+                lastValidatedAt: lastValidatedAt,
                 setupCompleted: setupCompleted,
                 initialSyncCompleted: initialSyncCompleted,
                 lastFullSyncAt: lastFullSyncAt,
@@ -31814,6 +31963,8 @@ class $$SyncProfileTableTableTableManager
                 Value<String> bootstrapUserId = const Value.absent(),
                 Value<int> pageLimit = const Value.absent(),
                 Value<int?> timeoutSeconds = const Value.absent(),
+                Value<bool> isValidated = const Value.absent(),
+                Value<DateTime?> lastValidatedAt = const Value.absent(),
                 Value<bool> setupCompleted = const Value.absent(),
                 Value<bool> initialSyncCompleted = const Value.absent(),
                 Value<DateTime?> lastFullSyncAt = const Value.absent(),
@@ -31825,6 +31976,8 @@ class $$SyncProfileTableTableTableManager
                 bootstrapUserId: bootstrapUserId,
                 pageLimit: pageLimit,
                 timeoutSeconds: timeoutSeconds,
+                isValidated: isValidated,
+                lastValidatedAt: lastValidatedAt,
                 setupCompleted: setupCompleted,
                 initialSyncCompleted: initialSyncCompleted,
                 lastFullSyncAt: lastFullSyncAt,
@@ -33554,7 +33707,6 @@ typedef $$InvoiceSequencesTableCreateCompanionBuilder =
       required String id,
       required String branchNo,
       required String machineNo,
-      required String userId,
       Value<String> sequenceType,
       Value<int> currentValue,
       required DateTime updatedAt,
@@ -33565,7 +33717,6 @@ typedef $$InvoiceSequencesTableUpdateCompanionBuilder =
       Value<String> id,
       Value<String> branchNo,
       Value<String> machineNo,
-      Value<String> userId,
       Value<String> sequenceType,
       Value<int> currentValue,
       Value<DateTime> updatedAt,
@@ -33593,11 +33744,6 @@ class $$InvoiceSequencesTableFilterComposer
 
   ColumnFilters<String> get machineNo => $composableBuilder(
     column: $table.machineNo,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get userId => $composableBuilder(
-    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -33641,11 +33787,6 @@ class $$InvoiceSequencesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get userId => $composableBuilder(
-    column: $table.userId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get sequenceType => $composableBuilder(
     column: $table.sequenceType,
     builder: (column) => ColumnOrderings(column),
@@ -33679,9 +33820,6 @@ class $$InvoiceSequencesTableAnnotationComposer
 
   GeneratedColumn<String> get machineNo =>
       $composableBuilder(column: $table.machineNo, builder: (column) => column);
-
-  GeneratedColumn<String> get userId =>
-      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<String> get sequenceType => $composableBuilder(
     column: $table.sequenceType,
@@ -33737,7 +33875,6 @@ class $$InvoiceSequencesTableTableManager
                 Value<String> id = const Value.absent(),
                 Value<String> branchNo = const Value.absent(),
                 Value<String> machineNo = const Value.absent(),
-                Value<String> userId = const Value.absent(),
                 Value<String> sequenceType = const Value.absent(),
                 Value<int> currentValue = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
@@ -33746,7 +33883,6 @@ class $$InvoiceSequencesTableTableManager
                 id: id,
                 branchNo: branchNo,
                 machineNo: machineNo,
-                userId: userId,
                 sequenceType: sequenceType,
                 currentValue: currentValue,
                 updatedAt: updatedAt,
@@ -33757,7 +33893,6 @@ class $$InvoiceSequencesTableTableManager
                 required String id,
                 required String branchNo,
                 required String machineNo,
-                required String userId,
                 Value<String> sequenceType = const Value.absent(),
                 Value<int> currentValue = const Value.absent(),
                 required DateTime updatedAt,
@@ -33766,7 +33901,6 @@ class $$InvoiceSequencesTableTableManager
                 id: id,
                 branchNo: branchNo,
                 machineNo: machineNo,
-                userId: userId,
                 sequenceType: sequenceType,
                 currentValue: currentValue,
                 updatedAt: updatedAt,
@@ -44907,6 +45041,7 @@ typedef $$ServerMappingsTableProcessedTableManager =
 typedef $$PaymentDeviceProfilesTableCreateCompanionBuilder =
     PaymentDeviceProfilesCompanion Function({
       required String id,
+      required String userId,
       Value<String> name,
       Value<bool> enabled,
       required String mode,
@@ -44928,6 +45063,7 @@ typedef $$PaymentDeviceProfilesTableCreateCompanionBuilder =
 typedef $$PaymentDeviceProfilesTableUpdateCompanionBuilder =
     PaymentDeviceProfilesCompanion Function({
       Value<String> id,
+      Value<String> userId,
       Value<String> name,
       Value<bool> enabled,
       Value<String> mode,
@@ -44958,6 +45094,11 @@ class $$PaymentDeviceProfilesTableFilterComposer
   });
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -45056,6 +45197,11 @@ class $$PaymentDeviceProfilesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get name => $composableBuilder(
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
@@ -45148,6 +45294,9 @@ class $$PaymentDeviceProfilesTableAnnotationComposer
   });
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -45261,6 +45410,7 @@ class $$PaymentDeviceProfilesTableTableManager
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<bool> enabled = const Value.absent(),
                 Value<String> mode = const Value.absent(),
@@ -45280,6 +45430,7 @@ class $$PaymentDeviceProfilesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PaymentDeviceProfilesCompanion(
                 id: id,
+                userId: userId,
                 name: name,
                 enabled: enabled,
                 mode: mode,
@@ -45301,6 +45452,7 @@ class $$PaymentDeviceProfilesTableTableManager
           createCompanionCallback:
               ({
                 required String id,
+                required String userId,
                 Value<String> name = const Value.absent(),
                 Value<bool> enabled = const Value.absent(),
                 required String mode,
@@ -45320,6 +45472,7 @@ class $$PaymentDeviceProfilesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PaymentDeviceProfilesCompanion.insert(
                 id: id,
+                userId: userId,
                 name: name,
                 enabled: enabled,
                 mode: mode,

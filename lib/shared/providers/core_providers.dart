@@ -213,11 +213,17 @@ final printerProfilesProvider = StreamProvider((ref) {
 });
 
 final activePaymentProfileProvider = StreamProvider((ref) {
-  return ref.watch(paymentProfileDaoProvider).watchActive();
+  final session = ref.watch(activePosSessionProvider).valueOrNull;
+  if (session == null) return const Stream<PaymentDeviceProfile?>.empty();
+  return ref.watch(paymentProfileDaoProvider).watchActive(session.activeUserId);
 });
 
 final manualPaymentProfileProvider = StreamProvider((ref) {
-  return ref.watch(paymentProfileDaoProvider).watchManualProfile();
+  final session = ref.watch(activePosSessionProvider).valueOrNull;
+  if (session == null) return const Stream<PaymentDeviceProfile?>.empty();
+  return ref
+      .watch(paymentProfileDaoProvider)
+      .watchManualProfile(session.activeUserId);
 });
 
 final retryablePrintJobsProvider = StreamProvider((ref) {
@@ -246,5 +252,5 @@ final catalogReadinessProvider = FutureProvider.autoDispose<CatalogReadiness>((
 final runtimeConfigRepositoryProvider = Provider<RuntimeConfigRepository>((
   ref,
 ) {
-  return RuntimeConfigRepository();
+  return RuntimeConfigRepository(ref.watch(databaseProvider));
 });

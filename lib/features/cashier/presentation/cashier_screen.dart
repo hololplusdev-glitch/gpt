@@ -42,6 +42,7 @@ class CashierScreen extends ConsumerStatefulWidget {
 class _CashierScreenState extends ConsumerState<CashierScreen> {
   final _searchController = TextEditingController();
   final _searchFocus = FocusNode();
+  Timer? _searchDebounce;
 
   final _scannerBuffer = StringBuffer();
   DateTime? _lastScannerKeyTime;
@@ -49,6 +50,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -79,7 +81,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
         if (!mounted) return;
 
         _searchController.clear();
-        ref.read(searchQueryProvider.notifier).state = '';
+        _applyProductSearch('');
 
         _playScanFeedback(success: true);
 
@@ -98,7 +100,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
           _playScanFeedback(success: false);
           AppSnackbar.showError(context, l10n.barcodeNotFoundCatalog);
         } else {
-          ref.read(searchQueryProvider.notifier).state = input;
+          _applyProductSearch(input);
         }
 
       case ScanNoPrice():
@@ -188,6 +190,19 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     _scannerBuffer.clear();
     _lastScannerKeyTime = null;
     _scannerBufferStartedAt = null;
+  }
+
+  void _scheduleProductSearch(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 275), () {
+      if (!mounted) return;
+      ref.read(searchQueryProvider.notifier).state = value.trim();
+    });
+  }
+
+  void _applyProductSearch(String value) {
+    _searchDebounce?.cancel();
+    ref.read(searchQueryProvider.notifier).state = value.trim();
   }
 
   void _playScanFeedback({required bool success}) {
@@ -527,10 +542,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                           controller: _searchController,
                           focusNode: _searchFocus,
                           hintText: l10n.searchProductsOrScanBarcode,
-                          onChanged: (value) {
-                            ref.read(searchQueryProvider.notifier).state =
-                                value;
-                          },
+                          onChanged: _scheduleProductSearch,
                           onSubmitted: (value) => _handleBarcodeSubmit(
                             value,
                             intent: _BarcodeSubmitIntent.manualSearch,
@@ -553,10 +565,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                             controller: _searchController,
                             focusNode: _searchFocus,
                             hintText: l10n.searchProductsOrScanBarcode,
-                            onChanged: (value) {
-                              ref.read(searchQueryProvider.notifier).state =
-                                  value;
-                            },
+                            onChanged: _scheduleProductSearch,
                             onSubmitted: (value) => _handleBarcodeSubmit(
                               value,
                               intent: _BarcodeSubmitIntent.manualSearch,

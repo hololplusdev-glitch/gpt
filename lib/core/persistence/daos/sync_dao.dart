@@ -221,48 +221,47 @@ class SyncDao {
 
   /// Get count of pending entries.
   Future<int> getPendingCount() async {
-    final rows = await (_db.select(
-      _db.outboxEvents,
-    )..where((s) => s.status.equals(OutboxStatus.pending.code))).get();
-    return rows.length;
+    return _countWhere(
+      _db.outboxEvents.status.equals(OutboxStatus.pending.code),
+    );
   }
 
   /// Get count of failed entries.
   Future<int> getFailedCount() async {
-    final rows =
-        await (_db.select(_db.outboxEvents)..where(
-              (s) =>
-                  s.status.equals(OutboxStatus.failed.code) |
-                  s.status.equals(OutboxStatus.blocked.code),
-            ))
-            .get();
-    return rows.length;
+    return _countWhere(
+      _db.outboxEvents.status.equals(OutboxStatus.failed.code) |
+          _db.outboxEvents.status.equals(OutboxStatus.blocked.code),
+    );
   }
 
   Future<int> getRetryableCount() async {
-    final rows =
-        await (_db.select(_db.outboxEvents)..where(
-              (s) =>
-                  s.status.equals(OutboxStatus.failed.code) &
-                  s.retryCount.isSmallerThan(s.maxRetries),
-            ))
-            .get();
-    return rows.length;
+    return _countWhere(
+      _db.outboxEvents.status.equals(OutboxStatus.failed.code) &
+          _db.outboxEvents.retryCount.isSmallerThan(
+            _db.outboxEvents.maxRetries,
+          ),
+    );
   }
 
   Future<int> getBlockedCount() async {
-    final rows = await (_db.select(
-      _db.outboxEvents,
-    )..where((s) => s.status.equals(OutboxStatus.blocked.code))).get();
-    return rows.length;
+    return _countWhere(
+      _db.outboxEvents.status.equals(OutboxStatus.blocked.code),
+    );
   }
 
   /// Get count of successfully synced entries.
   Future<int> getUploadedCount() async {
-    final rows = await (_db.select(
-      _db.outboxEvents,
-    )..where((s) => s.status.equals(OutboxStatus.uploaded.code))).get();
-    return rows.length;
+    return _countWhere(
+      _db.outboxEvents.status.equals(OutboxStatus.uploaded.code),
+    );
+  }
+
+  Future<int> _countWhere(Expression<bool> predicate) async {
+    final count = countAll();
+    final query = _db.selectOnly(_db.outboxEvents)
+      ..addColumns([count])
+      ..where(predicate);
+    return query.map((row) => row.read(count) ?? 0).getSingle();
   }
 
   int _compareBySyncPriority(OutboxEvent a, OutboxEvent b) {

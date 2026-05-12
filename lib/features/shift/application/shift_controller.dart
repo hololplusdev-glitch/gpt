@@ -10,6 +10,7 @@ import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/features/shift/application/shift_service.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 
 typedef ActiveSessionReader = ActivePosSession? Function();
@@ -60,7 +61,12 @@ class ShiftDashboard {
   });
 
   double get expectedCash =>
-      shift.openingCash + totals.cashSales + cashIn - cashOut - cashRefund;
+      shift.openingCash +
+      totals.cashSales -
+      totals.cashReturns +
+      cashIn -
+      cashOut -
+      cashRefund;
 }
 
 /// Lightweight open-shift projection.
@@ -223,8 +229,43 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
     }
   }
 
+  Future<ShiftCommandResult> addCashMovement({
+    required String shiftId,
+    required CashMovementType type,
+    required double amount,
+    String? note,
+  }) async {
+    final normalizedShiftId = shiftId.trim();
+    if (normalizedShiftId.isEmpty) {
+      return const ShiftCommandResult.failure('No open shift.');
+    }
+
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      await _shiftService.addCashMovement(
+        shiftId: normalizedShiftId,
+        type: type,
+        amount: amount,
+        reason: note,
+      );
+
+      await _refreshShiftState();
+      state = const ShiftCommandState();
+      return const ShiftCommandResult.success();
+    } catch (e) {
+      final message = _commandErrorMessage(e);
+      state = state.copyWith(isLoading: false, errorMessage: message);
+      return ShiftCommandResult.failure(message);
+    }
+  }
+
   void clearError() {
     state = state.copyWith(clearError: true);
+  }
+
+  void setError(String message) {
+    state = state.copyWith(isLoading: false, errorMessage: message);
   }
 
   String _commandErrorMessage(Object error) {

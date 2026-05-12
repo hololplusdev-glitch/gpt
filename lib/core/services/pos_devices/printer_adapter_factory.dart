@@ -30,10 +30,6 @@ class PrinterAdapterFactory {
 
   static const _bluetoothReason =
       'Bluetooth ESC/POS printing requires a Bluetooth Classic adapter with Android permissions. Not implemented in this build.';
-  static const _usbReason =
-      'USB ESC/POS raw printing requires an Android USB host adapter with permission flow. Not implemented in this build.';
-  static const _androidBuiltInReason =
-      'Android built-in printer support requires a vendor SDK which is not configured in this build.';
 
   /// Returns the correct adapter for the given profile's connection/driver.
   PrinterAdapter forProfile(PrinterProfile profile) {
@@ -55,18 +51,6 @@ class PrinterAdapterFactory {
     if (ct == PrinterConnectionType.bluetooth.code &&
         dt == PrinterDriverType.escpos.code) {
       return const UnsupportedPrinterAdapter(_bluetoothReason);
-    }
-
-    // USB ESC-POS — unsupported until a real USB adapter exists.
-    if (ct == PrinterConnectionType.usb.code &&
-        dt == PrinterDriverType.escpos.code) {
-      return const UnsupportedPrinterAdapter(_usbReason);
-    }
-
-    // Android Built-in — unsupported until a vendor SDK adapter exists.
-    if (ct == PrinterConnectionType.androidBuiltIn.code &&
-        dt == PrinterDriverType.androidBuiltIn.code) {
-      return const UnsupportedPrinterAdapter(_androidBuiltInReason);
     }
 
     return UnsupportedPrinterAdapter(
@@ -97,12 +81,6 @@ class PrinterAdapterFactory {
           label: 'System Printer',
         ),
         PrinterConnectionOption(
-          type: PrinterConnectionType.usb,
-          available: false,
-          label: 'USB ESC-POS',
-          reason: _usbReason,
-        ),
-        PrinterConnectionOption(
           type: PrinterConnectionType.bluetooth,
           available: false,
           label: 'Bluetooth ESC-POS',
@@ -116,18 +94,6 @@ class PrinterAdapterFactory {
           available: false,
           label: 'Bluetooth ESC-POS',
           reason: _bluetoothReason,
-        ),
-        PrinterConnectionOption(
-          type: PrinterConnectionType.usb,
-          available: false,
-          label: 'USB ESC-POS',
-          reason: _usbReason,
-        ),
-        PrinterConnectionOption(
-          type: PrinterConnectionType.androidBuiltIn,
-          available: false,
-          label: 'Android Built-in',
-          reason: _androidBuiltInReason,
         ),
       ]);
     }

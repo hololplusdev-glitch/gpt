@@ -16,19 +16,24 @@ class PaymentProfileService {
   }) : _dao = dao,
        _clock = clock;
 
-  Stream<PaymentDeviceProfile?> watchActive() => _dao.watchActive();
+  Stream<PaymentDeviceProfile?> watchActive(String userId) =>
+      _dao.watchActive(userId);
 
-  Future<PaymentDeviceProfile?> getActivePaymentProfile() => _dao.getActive();
+  Future<PaymentDeviceProfile?> getActivePaymentProfile(String userId) =>
+      _dao.getActive(userId);
 
   Future<void> saveManualConfiguration({
+    required String userId,
     required bool enabled,
     required bool requireReference,
   }) async {
     final now = _clock.now();
-    final existing = await _dao.getManualProfile();
+    final existing = await _dao.getManualProfile(userId);
     await _dao.upsert(
       PaymentDeviceProfilesCompanion(
-        id: const Value('manual-card'),
+        id: Value('manual-card-$userId'),
+        userId: Value(userId),
+        name: const Value('Manual card'),
         enabled: Value(enabled),
         mode: Value(PaymentProfileMode.manual.code),
         provider: Value(PaymentProvider.manual.code),
@@ -44,13 +49,13 @@ class PaymentProfileService {
     );
   }
 
-  Future<void> ensureManualProfile() async {
-    final existing = await _dao.getManualProfile();
+  Future<void> ensureManualProfile(String userId) async {
+    final existing = await _dao.getManualProfile(userId);
     if (existing != null) return;
-    await saveManualConfiguration(enabled: false, requireReference: true);
-  }
-
-  bool integratedAvailable(PaymentDeviceProfile profile) {
-    return false;
+    await saveManualConfiguration(
+      userId: userId,
+      enabled: false,
+      requireReference: true,
+    );
   }
 }

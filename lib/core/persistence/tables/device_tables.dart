@@ -12,6 +12,7 @@ import 'package:drift/drift.dart';
 /// connection_type: 'none','lan','usb','sdk'
 class PaymentDeviceProfiles extends Table {
   TextColumn get id => text()();
+  TextColumn get userId => text()();
   TextColumn get name => text().withDefault(const Constant(''))();
   BoolColumn get enabled => boolean().withDefault(const Constant(false))();
   TextColumn get mode => text()();

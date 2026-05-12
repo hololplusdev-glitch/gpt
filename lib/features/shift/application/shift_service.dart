@@ -49,6 +49,9 @@ class ShiftService {
     required double openingCash,
     String? shiftTypeId,
   }) async {
+    if (openingCash < 0 || openingCash.isNaN) {
+      throw const ShiftException('Opening cash cannot be negative.');
+    }
     // Check no open shift exists for this terminal
     final existing = await _shiftDao.getOpenShift(session.activeMachineNo);
     if (existing != null) {
@@ -123,6 +126,9 @@ class ShiftService {
     required double actualCash,
     String? closingNotes,
   }) async {
+    if (actualCash < 0 || actualCash.isNaN) {
+      throw const ShiftException('Actual cash cannot be negative.');
+    }
     // Check shift exists and is open
     final shift = await _shiftDao.getById(localId);
     if (shift == null) throw ShiftException('Shift not found: $localId');
@@ -152,7 +158,8 @@ class ShiftService {
     // Expected cash = opening + cash_sales + cash_in - cash_out - cash_refunds
     final expectedCash =
         shift.openingCash +
-        totals.cashSales +
+        totals.cashSales -
+        totals.cashReturns +
         movements.cashIn -
         movements.cashOut -
         movements.cashRefund;
@@ -172,6 +179,7 @@ class ShiftService {
       cashSales: totals.cashSales,
       cardSales: totals.cardSales,
       otherSales: totals.otherSales,
+      cashReturns: totals.cashReturns,
       totalDiscounts: totals.totalDiscounts,
       totalTaxes: totals.totalTaxes,
       totalReturns: totals.totalReturns,
@@ -208,6 +216,7 @@ class ShiftService {
       cashSales: totals.cashSales,
       cardSales: totals.cardSales,
       otherSales: totals.otherSales,
+      cashReturns: totals.cashReturns,
       totalDiscounts: totals.totalDiscounts,
       totalTaxes: totals.totalTaxes,
       totalReturns: totals.totalReturns,
@@ -276,6 +285,11 @@ class ShiftService {
     String? reason,
     String? approvedBy,
   }) async {
+    if (amount <= 0 || amount.isNaN) {
+      throw const ShiftException(
+        'Cash movement amount must be greater than zero.',
+      );
+    }
     await _shiftDao.addCashMovement(
       ShiftCashMovementsCompanion.insert(
         id: 'CM_${_uuid.v4()}',

@@ -15,8 +15,10 @@ import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/l10n/app_localizations.dart';
 import 'package:holol_POS/core/services/formatters/pos_formatters.dart';
 import 'package:holol_POS/features/sales/application/sales_history_service.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/models/sales_history.dart';
 import 'package:holol_POS/shared/presentation/presenters/sale_status_presenter.dart';
+import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_empty_state.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
@@ -215,6 +217,7 @@ class _SalesTable extends StatelessWidget {
               DataColumn(label: Text(l10n.total)),
               DataColumn(label: Text(l10n.date)),
               DataColumn(label: Text(l10n.status)),
+              const DataColumn(label: Text('')),
             ],
             rows: [
               for (final sale in sales)
@@ -228,6 +231,7 @@ class _SalesTable extends StatelessWidget {
                     DataCell(_AmountCell(sale: sale)),
                     DataCell(Text(PosFormatters.dateTime(sale.createdAt))),
                     DataCell(_StatusCell(sale: sale)),
+                    DataCell(_SaleActions(sale: sale)),
                   ],
                 ),
             ],
@@ -299,6 +303,7 @@ class _SaleCard extends StatelessWidget {
                     color: statusColor,
                     icon: SaleStatusPresenter.icon(sale.status),
                   ),
+                  _SaleActions(sale: sale),
                 ],
               ),
             ],
@@ -390,6 +395,91 @@ class _StatusCell extends StatelessWidget {
     );
   }
 }
+
+class _SaleActions extends ConsumerWidget {
+  final SaleSummary sale;
+
+  const _SaleActions({required this.sale});
+
+  bool get _canChange =>
+      sale.type == SaleType.sale.code &&
+      sale.status == SaleStatus.completed.code;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!_canChange) return const SizedBox.shrink();
+
+    return PopupMenuButton<_SaleHistoryAction>(
+      tooltip: 'إجراءات',
+      icon: const Icon(Icons.more_vert),
+      onSelected: (action) => _runAction(context, ref, action),
+      itemBuilder: (context) => const [
+        PopupMenuItem(
+          value: _SaleHistoryAction.voidSale,
+          child: ListTile(
+            dense: true,
+            leading: Icon(Icons.cancel_outlined),
+            title: Text('إلغاء البيع'),
+          ),
+        ),
+        PopupMenuItem(
+          value: _SaleHistoryAction.returnSale,
+          child: ListTile(
+            dense: true,
+            leading: Icon(Icons.keyboard_return),
+            title: Text('مرتجع كامل'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _runAction(
+    BuildContext context,
+    WidgetRef ref,
+    _SaleHistoryAction action,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          action == _SaleHistoryAction.voidSale ? 'إلغاء البيع' : 'مرتجع كامل',
+        ),
+        content: Text(_invoiceNo(sale)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('تأكيد'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      final service = ref.read(salesHistoryServiceProvider);
+      if (action == _SaleHistoryAction.voidSale) {
+        await service.voidSale(sale.id);
+      } else {
+        await service.returnSale(sale.id);
+      }
+      ref.invalidate(historySalesProvider);
+      if (context.mounted) {
+        AppSnackbar.showSuccess(context, 'تم تنفيذ العملية.');
+      }
+    } catch (error) {
+      if (context.mounted) {
+        AppSnackbar.showError(context, ErrorMapper.userMessage(error));
+      }
+    }
+  }
+}
+
+enum _SaleHistoryAction { voidSale, returnSale }
 
 String _invoiceNo(SaleSummary sale) {
   return sale.localSaleNo.isNotEmpty ? sale.localSaleNo : sale.id;

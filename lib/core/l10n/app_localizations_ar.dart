@@ -767,12 +767,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get bluetoothPrinter => 'طابعة بلوتوث';
 
   @override
-  String get usbPrinter => 'طابعة USB';
-
-  @override
-  String get androidBuiltIn => 'طابعة النظام المدمجة (Android)';
-
-  @override
   String get enableCardPayment => 'تفعيل الدفع بالبطاقة/الشبكة';
 
   @override
@@ -784,9 +778,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get referenceRequired => 'الرقم المرجعي مطلوب';
-
-  @override
-  String get integratedMode => 'الوضع المتكامل';
 
   @override
   String get savePaymentProfile => 'حفظ إعدادات الدفع';
@@ -850,9 +841,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get cardPaymentNotConfigured => 'الدفع بالبطاقة غير مهيأ.';
-
-  @override
-  String get integratedNotAvailable => 'الدفع المتكامل غير متاح.';
 
   @override
   String get searchNetworkPrinters => 'البحث عن طابعات الشبكة';

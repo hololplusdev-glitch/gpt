@@ -61,6 +61,8 @@ class SyncProfileTable extends Table {
   TextColumn get bootstrapUserId => text().withDefault(const Constant('1'))();
   IntColumn get pageLimit => integer().withDefault(const Constant(500))();
   IntColumn get timeoutSeconds => integer().nullable()();
+  BoolColumn get isValidated => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get lastValidatedAt => dateTime().nullable()();
   BoolColumn get setupCompleted =>
       boolean().withDefault(const Constant(false))();
   BoolColumn get initialSyncCompleted =>
@@ -144,7 +146,6 @@ class InvoiceSequences extends Table {
   TextColumn get id => text()();
   TextColumn get branchNo => text()();
   TextColumn get machineNo => text()();
-  TextColumn get userId => text()();
   TextColumn get sequenceType => text().withDefault(const Constant('sale'))();
   IntColumn get currentValue => integer().withDefault(const Constant(0))();
   DateTimeColumn get updatedAt => dateTime()();
@@ -154,6 +155,6 @@ class InvoiceSequences extends Table {
 
   @override
   List<String> get customConstraints => [
-    'UNIQUE (branch_no, machine_no, user_id, sequence_type)',
+    'UNIQUE (branch_no, machine_no, sequence_type)',
   ];
 }

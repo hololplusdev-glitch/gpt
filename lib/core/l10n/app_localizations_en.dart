@@ -769,12 +769,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bluetoothPrinter => 'Bluetooth ESC-POS';
 
   @override
-  String get usbPrinter => 'USB ESC-POS';
-
-  @override
-  String get androidBuiltIn => 'Android Built-in';
-
-  @override
   String get enableCardPayment => 'Enable card/network payment';
 
   @override
@@ -786,9 +780,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get referenceRequired => 'Reference required';
-
-  @override
-  String get integratedMode => 'Integrated mode';
 
   @override
   String get savePaymentProfile => 'Save Payment Profile';
@@ -851,9 +842,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cardPaymentNotConfigured => 'Card payment is not configured.';
-
-  @override
-  String get integratedNotAvailable => 'Integrated payment is unavailable.';
 
   @override
   String get searchNetworkPrinters => 'Search Network Printers';

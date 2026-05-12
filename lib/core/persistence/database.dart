@@ -67,7 +67,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -75,7 +75,7 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     onUpgrade: (Migrator m, int from, int to) async {
-      // Schema v6 is a cleanup schema. Existing dev DBs should be recreated.
+      // Schema v7 is a cleanup schema. Existing dev DBs should be recreated.
       // Keep migrations empty to avoid carrying removed columns forward.
     },
     beforeOpen: (details) async {

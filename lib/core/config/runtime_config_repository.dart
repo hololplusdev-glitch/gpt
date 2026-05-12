@@ -1,5 +1,7 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:drift/drift.dart';
 import 'package:holol_POS/core/network/network_models.dart';
+import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
 
 class RuntimeSetupConfig {
   final bool isSetupComplete;
@@ -14,63 +16,127 @@ class RuntimeSetupConfig {
 }
 
 class RuntimeConfigRepository {
-  static const _kSetupComplete = 'setup_complete';
-  static const _kHost = 'connection_host';
-  static const _kPort = 'connection_port';
-  static const _kBasePath = 'connection_base_path';
-  static const _kCustCode = 'sync_cust_code';
-  static const _kBootstrapUserId = 'sync_bootstrap_user_id';
-  static const _kPageLimit = 'sync_page_limit';
-  static const _kUseSsl = 'connection_use_ssl';
+  static const _syncProfileId = 1;
   static const _kLanguage = 'app_language';
 
+  final AppDatabase _db;
+  final Clock _clock;
+
+  RuntimeConfigRepository(this._db, {Clock clock = const SystemClock()})
+    : _clock = clock;
+
   Future<RuntimeSetupConfig> loadSetupConfig() async {
-    final prefs = await SharedPreferences.getInstance();
-    var isComplete = prefs.getBool(_kSetupComplete) ?? false;
-    final language = prefs.getString(_kLanguage) ?? 'en';
-
-    SyncProfile? syncProfile;
-    final host = prefs.getString(_kHost);
-    final custCode = prefs.getString(_kCustCode);
-
-    if (host != null &&
-        host.isNotEmpty &&
-        custCode != null &&
-        custCode.isNotEmpty) {
-      syncProfile = SyncProfile(
-        host: host,
-        port: prefs.getInt(_kPort),
-        basePath: prefs.getString(_kBasePath) ?? '/ords/erp/pos-api/v1',
-        custCode: custCode,
-        bootstrapUserId: prefs.getString(_kBootstrapUserId) ?? '1',
-        pageLimit: _normalizePageLimit(prefs.getInt(_kPageLimit)),
-        useSsl: prefs.getBool(_kUseSsl) ?? true,
-      );
-    } else if (isComplete) {
-      isComplete = false;
-      await prefs.setBool(_kSetupComplete, false);
-    }
+    final language = await _loadLanguage();
+    final row = await _loadRow();
+    final profile = row == null ? null : _profileFromRow(row);
 
     return RuntimeSetupConfig(
-      isSetupComplete: isComplete,
+      isSetupComplete: row?.setupCompleted == true && profile != null,
       language: language,
-      syncProfile: syncProfile,
+      syncProfile: profile,
     );
   }
 
   Future<void> saveSyncProfile(SyncProfile profile) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kHost, profile.host);
-    if (profile.port != null) {
-      await prefs.setInt(_kPort, profile.port!);
-    } else {
-      await prefs.remove(_kPort);
+    final now = _clock.now();
+    final existing = await _loadRow();
+
+    await _db
+        .into(_db.syncProfileTable)
+        .insertOnConflictUpdate(
+          SyncProfileTableCompanion(
+            id: const Value(_syncProfileId),
+            baseUrl: Value(profile.baseUrl),
+            custCode: Value(profile.custCode),
+            bootstrapUserId: Value(profile.bootstrapUserId),
+            pageLimit: Value(_normalizePageLimit(profile.pageLimit)),
+            timeoutSeconds: Value(profile.effectiveTimeoutSeconds),
+            isValidated: Value(profile.isValidated),
+            lastValidatedAt: Value(profile.lastValidatedAt),
+            setupCompleted: Value(
+              profile.setupCompleted || (existing?.setupCompleted ?? false),
+            ),
+            initialSyncCompleted: Value(
+              profile.initialSyncCompleted ||
+                  (existing?.initialSyncCompleted ?? false),
+            ),
+            lastFullSyncAt: Value(
+              profile.lastFullSyncAt ?? existing?.lastFullSyncAt,
+            ),
+            updatedAt: Value(now),
+          ),
+        );
+  }
+
+  Future<void> setSetupComplete(bool value) async {
+    await _updateRow(
+      SyncProfileTableCompanion(
+        setupCompleted: Value(value),
+        updatedAt: Value(_clock.now()),
+      ),
+    );
+  }
+
+  Future<void> setLanguage(String language) async {
+    await _db
+        .into(_db.terminalLocalSettings)
+        .insertOnConflictUpdate(
+          TerminalLocalSettingsCompanion(
+            key: const Value(_kLanguage),
+            value: Value(language),
+            updatedAt: Value(_clock.now()),
+          ),
+        );
+  }
+
+  Future<void> resetSetupStatus() async {
+    await setSetupComplete(false);
+  }
+
+  Future<void> clearSyncProfile() async {
+    await (_db.delete(
+      _db.syncProfileTable,
+    )..where((row) => row.id.equals(_syncProfileId))).go();
+  }
+
+  Future<String> _loadLanguage() async {
+    final row = await (_db.select(
+      _db.terminalLocalSettings,
+    )..where((settings) => settings.key.equals(_kLanguage))).getSingleOrNull();
+    final language = row?.value.trim();
+    return language == null || language.isEmpty ? 'en' : language;
+  }
+
+  Future<SyncProfileTableData?> _loadRow() {
+    return (_db.select(
+      _db.syncProfileTable,
+    )..where((row) => row.id.equals(_syncProfileId))).getSingleOrNull();
+  }
+
+  Future<void> _updateRow(SyncProfileTableCompanion companion) async {
+    await (_db.update(
+      _db.syncProfileTable,
+    )..where((row) => row.id.equals(_syncProfileId))).write(companion);
+  }
+
+  SyncProfile? _profileFromRow(SyncProfileTableData row) {
+    if (row.baseUrl.trim().isEmpty || row.custCode.trim().isEmpty) {
+      return null;
     }
-    await prefs.setString(_kBasePath, profile.basePath);
-    await prefs.setString(_kCustCode, profile.custCode);
-    await prefs.setString(_kBootstrapUserId, profile.bootstrapUserId);
-    await prefs.setInt(_kPageLimit, _normalizePageLimit(profile.pageLimit));
-    await prefs.setBool(_kUseSsl, profile.useSsl);
+
+    return SyncProfile.fromUrl(
+      row.baseUrl,
+      custCode: row.custCode,
+      bootstrapUserId: row.bootstrapUserId,
+      pageLimit: _normalizePageLimit(row.pageLimit),
+      timeoutSeconds: row.timeoutSeconds ?? 30,
+    ).copyWith(
+      isValidated: row.isValidated,
+      lastValidatedAt: row.lastValidatedAt,
+      setupCompleted: row.setupCompleted,
+      initialSyncCompleted: row.initialSyncCompleted,
+      lastFullSyncAt: row.lastFullSyncAt,
+    );
   }
 
   int _normalizePageLimit(int? value) {
@@ -78,31 +144,5 @@ class RuntimeConfigRepository {
     if (limit < 500) return 500;
     if (limit > 1000) return 1000;
     return limit;
-  }
-
-  Future<void> setSetupComplete(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kSetupComplete, value);
-  }
-
-  Future<void> setLanguage(String language) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kLanguage, language);
-  }
-
-  Future<void> resetSetupStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_kSetupComplete, false);
-  }
-
-  Future<void> clearSyncProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_kHost);
-    await prefs.remove(_kPort);
-    await prefs.remove(_kBasePath);
-    await prefs.remove(_kCustCode);
-    await prefs.remove(_kBootstrapUserId);
-    await prefs.remove(_kPageLimit);
-    await prefs.remove(_kUseSsl);
   }
 }

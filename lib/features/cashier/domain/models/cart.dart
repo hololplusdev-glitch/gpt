@@ -62,6 +62,14 @@ class CartItem {
     );
   }
 
+  CartItem withoutDiscount() {
+    return CartItem(
+      sellableItem: sellableItem,
+      quantity: quantity,
+      notes: notes,
+    );
+  }
+
   SaleLineInput toSaleLineInput() {
     return SaleLineInput(
       itemId: itemId,
@@ -187,6 +195,17 @@ class Cart {
 
         return item.copyWith(discountType: type, discountValue: value);
       }).toList(),
+    );
+  }
+
+  Cart clearLineDiscount(String itemId, String? unitId) {
+    return Cart(
+      items: items
+          .map(
+            (item) =>
+                _sameLine(item, itemId, unitId) ? item.withoutDiscount() : item,
+          )
+          .toList(),
     );
   }
 
@@ -372,6 +391,10 @@ class CartController extends StateNotifier<Cart> {
     required double value,
   }) {
     state = state.applyLineDiscount(itemId, unitId, type: type, value: value);
+  }
+
+  void clearLineDiscount(String itemId, String? unitId) {
+    state = state.clearLineDiscount(itemId, unitId);
   }
 
   void removeItem(String itemId, String? unitId) {

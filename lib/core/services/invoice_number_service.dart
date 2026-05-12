@@ -17,16 +17,14 @@ class InvoiceNumberService {
   Future<String> generateNext({
     required String branchNo,
     required String machineNo,
-    required String userId,
     String sequenceType = 'sale',
   }) async {
     final seq = await _salesDao.reserveNextInvoiceSequence(
       _clock.now(),
       branchNo: branchNo,
       machineNo: machineNo,
-      userId: userId,
       sequenceType: sequenceType,
     );
-    return '$branchNo-$machineNo-$userId-${seq.toString().padLeft(6, '0')}';
+    return '$branchNo-$machineNo-${seq.toString().padLeft(6, '0')}';
   }
 }

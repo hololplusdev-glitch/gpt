@@ -40,12 +40,17 @@ class PrintJobProcessor {
 
   Future<PrintBatchResult> processJobIds(List<String> jobIds) async {
     final jobs = await _printJobDao.getByIds(jobIds);
+    final jobById = {for (final job in jobs) job.id: job};
     var failed = 0;
-    for (final job in jobs) {
+    var processed = 0;
+    for (final id in jobIds) {
+      final job = jobById[id];
+      if (job == null) continue;
+      processed++;
       final result = await processJob(job);
       if (!result.success) failed++;
     }
-    return PrintBatchResult(total: jobs.length, failed: failed);
+    return PrintBatchResult(total: processed, failed: failed);
   }
 
   Future<PrintJobProcessResult> processJob(PrintJob job) async {
@@ -54,16 +59,22 @@ class PrintJobProcessor {
       return const PrintJobProcessResult.success();
     }
 
-    final attempts = job.attempts + 1;
-    await _printJobDao.markPrinting(job.id, attempts);
+    final claimed = await _printJobDao.claimForPrinting(job.id);
+    if (claimed == null) {
+      return const PrintJobProcessResult.success();
+    }
 
     try {
-      final payload = InvoiceDocument.fromJsonString(job.payloadSnapshotJson);
-      final printer = await _printerProfileDao.getById(job.printerProfileId);
+      final payload = InvoiceDocument.fromJsonString(
+        claimed.payloadSnapshotJson,
+      );
+      final printer = await _printerProfileDao.getById(
+        claimed.printerProfileId,
+      );
       if (printer == null || !printer.enabled) {
         const error = 'Printer profile is missing or disabled.';
-        await _printJobDao.markFailed(job.id, error);
-        await _recordHistory(job: job, document: payload, error: error);
+        await _printJobDao.markFailed(claimed.id, error);
+        await _recordHistory(job: claimed, document: payload, error: error);
         return const PrintJobProcessResult.failure(error);
       }
 
@@ -72,11 +83,11 @@ class PrintJobProcessor {
         final result = await adapter.print(printer, payload);
         if (!result.success) {
           await _printJobDao.markFailed(
-            job.id,
+            claimed.id,
             result.errorMessage ?? 'Print failed.',
           );
           await _recordHistory(
-            job: job,
+            job: claimed,
             document: payload,
             printer: printer,
             error: result.errorMessage ?? 'Print failed.',
@@ -87,13 +98,22 @@ class PrintJobProcessor {
         }
       }
 
-      await _printJobDao.markPrinted(job.id);
-      await _recordHistory(job: job, document: payload, printer: printer);
+      await _printJobDao.markPrinted(claimed.id);
+      await _recordHistory(job: claimed, document: payload, printer: printer);
       return const PrintJobProcessResult.success();
-    } catch (_) {
-      const error = 'Print job could not be processed.';
-      await _printJobDao.markFailed(job.id, error);
-      return const PrintJobProcessResult.failure(error);
+    } catch (error, stackTrace) {
+      final message =
+          "Print job could not be processed: $error\n${stackTrace.toString().split('\n').take(3).join('\n')}";
+      await _printJobDao.markFailed(claimed.id, message);
+      try {
+        final payload = InvoiceDocument.fromJsonString(
+          claimed.payloadSnapshotJson,
+        );
+        await _recordHistory(job: claimed, document: payload, error: message);
+      } catch (_) {
+        // Payload may be corrupt; the job error is still stored above.
+      }
+      return PrintJobProcessResult.failure(message);
     }
   }
 

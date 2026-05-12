@@ -202,6 +202,12 @@ void showPrinterDialog(
                       label: Text(l10n.systemPrinter),
                       icon: const Icon(Icons.print_outlined),
                     ),
+                    const ButtonSegment(
+                      value: PrinterConnectionType.bluetooth,
+                      label: Text('Bluetooth'),
+                      icon: Icon(Icons.bluetooth),
+                      enabled: false,
+                    ),
                   ],
                   selected: {connectionType},
                   onSelectionChanged: (value) => setState(() {
@@ -308,37 +314,6 @@ void showPrinterDialog(
                     },
                   ),
                 const SizedBox(height: AppSpacing.md),
-                if (connectionType == PrinterConnectionType.networkIp) ...[
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: AppSpacing.md,
-                    runSpacing: AppSpacing.sm,
-                    children: [
-                      const Text('Arabic'),
-                      SegmentedButton<ArabicPrintMode>(
-                        segments: const [
-                          ButtonSegment(
-                            value: ArabicPrintMode.text,
-                            label: Text('Text'),
-                            icon: Icon(Icons.text_fields),
-                          ),
-                          ButtonSegment(
-                            value: ArabicPrintMode.raster,
-                            label: Text('Raster'),
-                            icon: Icon(Icons.image_outlined),
-                          ),
-                        ],
-                        selected: {arabicMode},
-                        onSelectionChanged: (value) => setState(() {
-                          arabicMode = value.first;
-                          lastTestOk = false;
-                          testedAt = null;
-                        }),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                ],
                 Wrap(
                   crossAxisAlignment: WrapCrossAlignment.center,
                   spacing: AppSpacing.md,

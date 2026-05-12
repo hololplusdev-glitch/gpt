@@ -10,30 +10,30 @@ class PaymentProfileDao {
   PaymentProfileDao(this._db, {Clock clock = const SystemClock()})
     : _clock = clock;
 
-  Stream<PaymentDeviceProfile?> watchActive() {
+  Stream<PaymentDeviceProfile?> watchActive(String userId) {
     return (_db.select(_db.paymentDeviceProfiles)
-          ..where((p) => p.enabled.equals(true))
+          ..where((p) => p.enabled.equals(true) & p.userId.equals(userId))
           ..limit(1))
         .watchSingleOrNull();
   }
 
-  Stream<PaymentDeviceProfile?> watchManualProfile() {
-    return (_db.select(
-      _db.paymentDeviceProfiles,
-    )..where((p) => p.mode.equals('manual'))).watchSingleOrNull();
+  Stream<PaymentDeviceProfile?> watchManualProfile(String userId) {
+    return (_db.select(_db.paymentDeviceProfiles)
+          ..where((p) => p.mode.equals('manual') & p.userId.equals(userId)))
+        .watchSingleOrNull();
   }
 
-  Future<PaymentDeviceProfile?> getActive() {
+  Future<PaymentDeviceProfile?> getActive(String userId) {
     return (_db.select(_db.paymentDeviceProfiles)
-          ..where((p) => p.enabled.equals(true))
+          ..where((p) => p.enabled.equals(true) & p.userId.equals(userId))
           ..limit(1))
         .getSingleOrNull();
   }
 
-  Future<PaymentDeviceProfile?> getManualProfile() {
-    return (_db.select(
-      _db.paymentDeviceProfiles,
-    )..where((p) => p.mode.equals('manual'))).getSingleOrNull();
+  Future<PaymentDeviceProfile?> getManualProfile(String userId) {
+    return (_db.select(_db.paymentDeviceProfiles)
+          ..where((p) => p.mode.equals('manual') & p.userId.equals(userId)))
+        .getSingleOrNull();
   }
 
   Future<void> upsert(PaymentDeviceProfilesCompanion profile) {

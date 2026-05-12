@@ -130,7 +130,6 @@ class SaleCheckout {
     final localInvoiceNo = await _invoiceNumberService.generateNext(
       branchNo: session.activeBranchNo,
       machineNo: session.activeMachineNo,
-      userId: session.activeUserId,
       sequenceType: _saleSequenceType(session),
     );
 
@@ -270,22 +269,18 @@ class SaleCheckout {
     var profileRequiresReference = false;
 
     if (resolved.needsPaymentProfile) {
-      final profile = await _paymentProfileService.getActivePaymentProfile();
+      final session = _requireActiveSession();
+      final profile = await _paymentProfileService.getActivePaymentProfile(
+        session.activeUserId,
+      );
 
       if (profile == null || !profile.enabled) {
         effectiveType = PaymentMethodType.manualCard;
         profileRequiresReference = resolved.requiresReference;
       } else {
-        final mode = PaymentProfileMode.fromCode(profile.mode);
-
-        // Integrated terminals are not implemented in this build.
-        // Any configured profile is treated as manual card capture.
-        if (mode == PaymentProfileMode.integrated ||
-            mode == PaymentProfileMode.manual) {
-          effectiveType = PaymentMethodType.manualCard;
-          profileRequiresReference =
-              profile.requireReference || resolved.requiresReference;
-        }
+        effectiveType = PaymentMethodType.manualCard;
+        profileRequiresReference =
+            profile.requireReference || resolved.requiresReference;
       }
     }
 
@@ -371,6 +366,8 @@ class SaleCheckout {
       case SaleTenderKind.cash:
         final method = firstWhere((method) => typeOf(method)?.isCash ?? false);
 
+        if (method == null) return PaymentMethodResolver.builtInCash;
+        // ignore: unnecessary_null_comparison, dead_code
         if (method == null) {
           throw const SaleCheckoutException('لا توجد طريقة دفع كاش مفعلة.');
         }

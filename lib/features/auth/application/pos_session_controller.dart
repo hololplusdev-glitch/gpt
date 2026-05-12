@@ -5,6 +5,8 @@ import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
 import 'package:holol_POS/core/persistence/daos/auth_dao.dart';
 import 'package:holol_POS/core/persistence/daos/shift_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/features/cashier/application/product_providers.dart';
+import 'package:holol_POS/features/cashier/domain/models/cart.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
@@ -221,6 +223,7 @@ class PosSessionController extends StateNotifier<PosSessionState> {
         machine: machine,
       );
 
+      _clearCashierState();
       await _refreshActiveSession();
 
       final refreshedSession = await _sessionDao.getActive();
@@ -256,6 +259,7 @@ class PosSessionController extends StateNotifier<PosSessionState> {
     }
 
     await _sessionDao.clearActive();
+    _clearCashierState();
     await _refreshActiveSession();
 
     state = const PosSessionState();
@@ -269,7 +273,17 @@ class PosSessionController extends StateNotifier<PosSessionState> {
 
   Future<void> _refreshActiveSession() async {
     _ref.invalidate(activePosSessionProvider);
+    _ref.invalidate(activePaymentProfileProvider);
+    _ref.invalidate(manualPaymentProfileProvider);
     await _ref.read(activePosSessionProvider.future);
+  }
+
+  void _clearCashierState() {
+    _ref.read(cartProvider.notifier).clearCart();
+    _ref.read(searchQueryProvider.notifier).state = '';
+    _ref.read(selectedCategoryProvider.notifier).state = null;
+    _ref.invalidate(cashierProductCardsProvider);
+    _ref.invalidate(categoryListProvider);
   }
 }
 

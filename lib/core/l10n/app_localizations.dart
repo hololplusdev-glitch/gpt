@@ -1526,18 +1526,6 @@ abstract class AppLocalizations {
   /// **'Bluetooth ESC-POS'**
   String get bluetoothPrinter;
 
-  /// No description provided for @usbPrinter.
-  ///
-  /// In en, this message translates to:
-  /// **'USB ESC-POS'**
-  String get usbPrinter;
-
-  /// No description provided for @androidBuiltIn.
-  ///
-  /// In en, this message translates to:
-  /// **'Android Built-in'**
-  String get androidBuiltIn;
-
   /// No description provided for @enableCardPayment.
   ///
   /// In en, this message translates to:
@@ -1561,12 +1549,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reference required'**
   String get referenceRequired;
-
-  /// No description provided for @integratedMode.
-  ///
-  /// In en, this message translates to:
-  /// **'Integrated mode'**
-  String get integratedMode;
 
   /// No description provided for @savePaymentProfile.
   ///
@@ -1687,12 +1669,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Card payment is not configured.'**
   String get cardPaymentNotConfigured;
-
-  /// No description provided for @integratedNotAvailable.
-  ///
-  /// In en, this message translates to:
-  /// **'Integrated payment is unavailable.'**
-  String get integratedNotAvailable;
 
   /// No description provided for @searchNetworkPrinters.
   ///

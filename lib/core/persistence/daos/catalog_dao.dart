@@ -510,13 +510,26 @@ EXISTS (
         .get();
   }
 
-  /// Get active customers for checkout association.
-  Future<List<Customer>> getActiveCustomers() async {
+  Future<List<Customer>> searchActiveCustomers({
+    String? query,
+    int limit = 30,
+  }) async {
+    final cleanQuery = query?.trim();
+    final hasQuery = cleanQuery != null && cleanQuery.isNotEmpty;
+
     final rows =
         await (_db.select(_db.customers)
-              ..where((customer) => customer.inactive.equals(false))
+              ..where((customer) {
+                final active = customer.inactive.equals(false);
+                if (!hasQuery) return active;
+                return active &
+                    (customer.name.contains(cleanQuery) |
+                        customer.mobile.contains(cleanQuery) |
+                        customer.taxNumber.contains(cleanQuery) |
+                        customer.id.contains(cleanQuery));
+              })
               ..orderBy([(customer) => OrderingTerm.asc(customer.name)])
-              ..limit(200))
+              ..limit(limit))
             .get();
 
     return rows

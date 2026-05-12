@@ -45,6 +45,39 @@ class PrintJobDao {
     return (_db.select(_db.printJobs)..where((j) => j.id.isIn(ids))).get();
   }
 
+  Future<PrintJob?> claimForPrinting(String id) async {
+    return _db.transaction(() async {
+      final job = await getById(id);
+      if (job == null) return null;
+
+      final retryable =
+          (job.status == PrintJobStatus.pending.code ||
+              job.status == PrintJobStatus.failed.code) &&
+          job.attempts < job.maxAttempts;
+      if (!retryable) return null;
+
+      final attempts = job.attempts + 1;
+      final updated =
+          await (_db.update(_db.printJobs)..where(
+                (j) =>
+                    j.id.equals(id) &
+                    (j.status.equals(PrintJobStatus.pending.code) |
+                        j.status.equals(PrintJobStatus.failed.code)) &
+                    j.attempts.isSmallerThan(j.maxAttempts),
+              ))
+              .write(
+                PrintJobsCompanion(
+                  status: Value(PrintJobStatus.printing.code),
+                  attempts: Value(attempts),
+                  errorMessage: const Value<String?>(null),
+                ),
+              );
+
+      if (updated != 1) return null;
+      return getById(id);
+    });
+  }
+
   Future<List<PrintJob>> getForSale(String saleId) {
     return (_db.select(_db.printJobs)
           ..where((j) => j.saleId.equals(saleId))
@@ -93,16 +126,6 @@ class PrintJobDao {
     await _db.batch((batch) {
       batch.insertAll(_db.printJobs, jobs);
     });
-  }
-
-  Future<void> markPrinting(String id, int attempts) {
-    return (_db.update(_db.printJobs)..where((j) => j.id.equals(id))).write(
-      PrintJobsCompanion(
-        status: Value(PrintJobStatus.printing.code),
-        attempts: Value(attempts),
-        errorMessage: const Value<String?>(null),
-      ),
-    );
   }
 
   Future<void> markPrinted(String id) {

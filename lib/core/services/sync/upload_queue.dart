@@ -75,6 +75,42 @@ class UploadQueue {
     );
   }
 
+  OutboxEventsCompanion returnCreated({
+    required String saleId,
+    required String originalSaleId,
+    required String localInvoiceNo,
+    required String machineNo,
+    required String branchNo,
+    required String shiftId,
+    required String cashierId,
+    required double grandTotal,
+    required DateTime completedAt,
+    required String idempotencyKey,
+  }) {
+    return OutboxEventsCompanion(
+      id: Value('OBX_${_uuid.v4()}'),
+      eventType: Value(OutboxEventType.returnCreated.code),
+      entityType: Value(OutboxEntityType.returnSale.code),
+      entityId: Value(saleId),
+      payloadJson: Value(
+        jsonEncode({
+          'saleId': saleId,
+          'originalSaleId': originalSaleId,
+          'localSaleNo': localInvoiceNo,
+          'machineNo': machineNo,
+          'branchNo': branchNo,
+          'shiftId': shiftId,
+          'cashierId': cashierId,
+          'grandTotal': grandTotal,
+          'completedAt': completedAt.toIso8601String(),
+        }),
+      ),
+      status: Value(OutboxStatus.pending.code),
+      createdAt: Value(completedAt),
+      idempotencyKey: Value(idempotencyKey),
+    );
+  }
+
   OutboxEventsCompanion shiftOpened({
     required String localId,
     required String machineNo,
@@ -118,6 +154,7 @@ class UploadQueue {
     required double cashSales,
     required double cardSales,
     required double otherSales,
+    required double cashReturns,
     required double totalDiscounts,
     required double totalTaxes,
     required double totalReturns,
@@ -143,6 +180,7 @@ class UploadQueue {
         'cashSales': cashSales,
         'cardSales': cardSales,
         'otherSales': otherSales,
+        'cashReturns': cashReturns,
         'totalDiscounts': totalDiscounts,
         'totalTaxes': totalTaxes,
         'totalReturns': totalReturns,

@@ -149,9 +149,17 @@ final cashierProductCardsProvider = FutureProvider<CashierCatalogState>((
   return CashierCatalogState(products: cards, diagnostics: diagnostics);
 });
 
-final customersProvider = FutureProvider<List<Customer>>((ref) async {
-  return ref.watch(catalogDaoProvider).getActiveCustomers();
-});
+final customerSearchQueryProvider = StateProvider.autoDispose<String>(
+  (ref) => '',
+);
+
+final customerSearchResultsProvider =
+    FutureProvider.autoDispose<List<Customer>>((ref) async {
+      final query = ref.watch(customerSearchQueryProvider);
+      return ref
+          .watch(catalogDaoProvider)
+          .searchActiveCustomers(query: query, limit: 30);
+    });
 
 ProductListItem _productFromRow(Item item) {
   return ProductListItem(

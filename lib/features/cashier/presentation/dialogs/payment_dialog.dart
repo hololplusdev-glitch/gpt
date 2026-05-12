@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -38,6 +40,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   final _mixedCashController = TextEditingController();
   final _mixedNetworkController = TextEditingController();
   final _mixedNetworkReferenceController = TextEditingController();
+  final _customerSearchController = TextEditingController();
+  Timer? _customerSearchDebounce;
 
   final String _checkoutAttemptId = 'CHK_${const Uuid().v4()}';
 
@@ -91,6 +95,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     _mixedCashController.dispose();
     _mixedNetworkController.dispose();
     _mixedNetworkReferenceController.dispose();
+    _customerSearchDebounce?.cancel();
+    _customerSearchController.dispose();
     super.dispose();
   }
 
@@ -102,6 +108,24 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
   double get _mixedCashAmount => _parseMoney(_mixedCashController.text);
   double get _mixedNetworkAmount => _parseMoney(_mixedNetworkController.text);
+
+  void _scheduleCustomerSearch(String value) {
+    _customerSearchDebounce?.cancel();
+    _customerSearchDebounce = Timer(const Duration(milliseconds: 275), () {
+      if (!mounted) return;
+      ref.read(customerSearchQueryProvider.notifier).state = value.trim();
+    });
+  }
+
+  void _selectCustomer(Customer customer) {
+    setState(() {
+      _selectedCustomerId = customer.id;
+      _selectedCustomerName = customer.name;
+      _selectedCustomerTaxNumber = customer.taxNumber;
+      _customerSearchController.text = customer.name;
+      _errorMessage = null;
+    });
+  }
 
   double get _mixedPaidAmount {
     final cash = _mixedCashAmount;
@@ -376,7 +400,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
   Widget _buildPaymentView() {
     final l10n = AppLocalizations.of(context)!;
-    final customers = ref.watch(customersProvider);
+    final customers = ref.watch(customerSearchResultsProvider);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -539,7 +563,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         ),
         const SizedBox(height: AppSpacing.lg),
         customers.when(
-          data: _buildCustomerSelector,
+          data: _buildCustomerSearch,
           loading: () => const Padding(
             padding: EdgeInsets.all(AppSpacing.lg),
             child: AppLoading(),
@@ -630,7 +654,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         if (_mixedCreditRemainder && remaining > 0.01) ...[
           const SizedBox(height: AppSpacing.md),
           customers.when(
-            data: _buildCustomerSelector,
+            data: _buildCustomerSearch,
             loading: () => const Padding(
               padding: EdgeInsets.all(AppSpacing.lg),
               child: AppLoading(),
@@ -649,43 +673,76 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     );
   }
 
-  Widget _buildCustomerSelector(List<Customer> customers) {
-    if (customers.isEmpty) {
-      return AppInfoBanner.error(
-        message: 'لا يوجد عملاء محملون. لا يمكن إتمام بيع آجل بدون عميل.',
-      );
-    }
-
+  Widget _buildCustomerSearch(List<Customer> customers) {
     final l10n = AppLocalizations.of(context)!;
 
-    return AppDropdown<String>(
-      value: _selectedCustomerId ?? '',
-      labelText: '${l10n.customer} *',
-      prefixIcon: const Icon(Icons.person_outline),
-      items: [
-        const DropdownMenuItem(value: '', child: Text('اختر العميل')),
-        for (final customer in customers)
-          DropdownMenuItem(
-            value: customer.id,
-            child: Text(customer.name, overflow: TextOverflow.ellipsis),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppTextField(
+          controller: _customerSearchController,
+          labelText: '${l10n.customer} *',
+          prefixIcon: const Icon(Icons.search),
+          textInputAction: TextInputAction.search,
+          onChanged: _scheduleCustomerSearch,
+          onSubmitted: (value) {
+            _customerSearchDebounce?.cancel();
+            ref.read(customerSearchQueryProvider.notifier).state = value.trim();
+          },
+        ),
+        if (_selectedCustomerName != null) ...[
+          const SizedBox(height: AppSpacing.sm),
+          AppInfoBanner(
+            message:
+                '${_selectedCustomerName!}${_selectedCustomerTaxNumber == null ? '' : ' - ${_selectedCustomerTaxNumber!}'}',
+            type: AppBannerType.info,
+          ),
+        ],
+        const SizedBox(height: AppSpacing.sm),
+        if (customers.isEmpty)
+          AppInfoBanner(
+            message: _customerSearchController.text.trim().isEmpty
+                ? 'ابحث باسم العميل أو الجوال أو الرقم الضريبي.'
+                : 'لا توجد نتائج مطابقة.',
+            type: AppBannerType.info,
+          )
+        else
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 220),
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: customers.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final customer = customers[index];
+                final selected = customer.id == _selectedCustomerId;
+                final subtitleParts = [
+                  if (customer.phone?.trim().isNotEmpty == true)
+                    customer.phone!.trim(),
+                  if (customer.taxNumber?.trim().isNotEmpty == true)
+                    customer.taxNumber!.trim(),
+                ];
+
+                return ListTile(
+                  dense: true,
+                  leading: Icon(
+                    selected ? Icons.check_circle : Icons.person_outline,
+                    color: selected ? AppColors.success : null,
+                  ),
+                  title: Text(
+                    customer.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: subtitleParts.isEmpty
+                      ? null
+                      : Text(subtitleParts.join(' - ')),
+                  onTap: () => _selectCustomer(customer),
+                );
+              },
+            ),
           ),
       ],
-      onChanged: (value) {
-        Customer? selected;
-
-        for (final customer in customers) {
-          if (customer.id == value) {
-            selected = customer;
-            break;
-          }
-        }
-
-        setState(() {
-          _selectedCustomerId = selected?.id;
-          _selectedCustomerName = selected?.name;
-          _selectedCustomerTaxNumber = selected?.taxNumber;
-        });
-      },
     );
   }
 

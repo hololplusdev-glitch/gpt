@@ -138,7 +138,6 @@ enum PaymentStatus {
 enum PaymentMethodType {
   cash('cash'),
   manualCard('manual_card'),
-  integratedCard('integrated_card'),
   cheque('cheque'),
   bankTransfer('bank_transfer'),
   wallet('wallet'),
@@ -155,7 +154,7 @@ enum PaymentMethodType {
 abstract final class PaymentMethodCodes {
   static const cash = 'CASH';
   static const manualCard = 'MANUAL_CARD';
-  static const integratedCard = 'INTEGRATED_CARD';
+  static const customerCredit = 'CUSTOMER_CREDIT';
 
   // WHY: Composite codes encode the underlying bank/card type ID.
   static const cashAccountPrefix = 'CASH_';
@@ -166,8 +165,7 @@ abstract final class PaymentMethodCodes {
 extension PaymentMethodTypeRules on PaymentMethodType {
   bool get isCash => this == PaymentMethodType.cash;
   bool get isManualCard => this == PaymentMethodType.manualCard;
-  bool get isIntegratedCard => this == PaymentMethodType.integratedCard;
-  bool get isCard => isManualCard || isIntegratedCard;
+  bool get isCard => isManualCard;
   bool get allowsChange => isCash;
 }
 
@@ -328,10 +326,8 @@ enum PrinterRole {
 
 enum PrinterConnectionType {
   networkIp('network_ip'),
-  usb('usb'),
   bluetooth('bluetooth'),
-  systemPrinter('system_printer'),
-  androidBuiltIn('android_built_in');
+  systemPrinter('system_printer');
 
   final String code;
   const PrinterConnectionType(this.code);
@@ -342,8 +338,7 @@ enum PrinterConnectionType {
 
 enum PrinterDriverType {
   escpos('escpos'),
-  systemPrinter('system_printer'),
-  androidBuiltIn('android_built_in');
+  systemPrinter('system_printer');
 
   final String code;
   const PrinterDriverType(this.code);
@@ -353,7 +348,6 @@ enum PrinterDriverType {
 }
 
 enum ArabicPrintMode {
-  text('text'),
   raster('raster');
 
   final String code;
@@ -364,8 +358,7 @@ enum ArabicPrintMode {
 }
 
 enum PaymentProfileMode {
-  manual('manual'),
-  integrated('integrated');
+  manual('manual');
 
   final String code;
   const PaymentProfileMode(this.code);

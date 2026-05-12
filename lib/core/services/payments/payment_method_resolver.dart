@@ -27,6 +27,39 @@ class ResolvedPaymentMethod {
 }
 
 abstract final class PaymentMethodResolver {
+  static const builtInCash = ResolvedPaymentMethod(
+    methodId: PaymentMethodCodes.cash,
+    code: PaymentMethodCodes.cash,
+    displayName: 'كاش',
+    type: PaymentMethodType.cash,
+    requiresReference: false,
+    allowsChange: true,
+    isManual: false,
+    needsPaymentProfile: false,
+  );
+
+  static const builtInManualCard = ResolvedPaymentMethod(
+    methodId: PaymentMethodCodes.manualCard,
+    code: PaymentMethodCodes.manualCard,
+    displayName: 'شبكة',
+    type: PaymentMethodType.manualCard,
+    requiresReference: false,
+    allowsChange: false,
+    isManual: true,
+    needsPaymentProfile: true,
+  );
+
+  static const builtInCustomerCredit = ResolvedPaymentMethod(
+    methodId: PaymentMethodCodes.customerCredit,
+    code: PaymentMethodCodes.customerCredit,
+    displayName: 'آجل',
+    type: PaymentMethodType.customerCredit,
+    requiresReference: false,
+    allowsChange: false,
+    isManual: true,
+    needsPaymentProfile: false,
+  );
+
   static ResolvedPaymentMethod resolve({
     required String methodId,
     required String code,
@@ -87,7 +120,7 @@ abstract final class PaymentMethodResolver {
     return switch (normalized) {
       PaymentMethodCodes.cash => PaymentMethodType.cash,
       PaymentMethodCodes.manualCard => PaymentMethodType.manualCard,
-      PaymentMethodCodes.integratedCard => PaymentMethodType.integratedCard,
+      PaymentMethodCodes.customerCredit => PaymentMethodType.customerCredit,
       _ => null,
     };
   }
@@ -116,7 +149,7 @@ abstract final class PaymentMethodResolver {
     if (manualRecord && resolved == PaymentMethodType.bankTransfer) {
       return '$base - تسجيل يدوي';
     }
-    if (resolved == PaymentMethodType.integratedCard) {
+    if (resolved?.code == 'integrated_card') {
       return '$base - طرفية دفع';
     }
     return base;
@@ -125,7 +158,6 @@ abstract final class PaymentMethodResolver {
   static bool isManual(PaymentMethodType type) {
     return switch (type) {
       PaymentMethodType.cash => false,
-      PaymentMethodType.integratedCard => false,
       PaymentMethodType.manualCard => true,
       PaymentMethodType.bankTransfer => true,
       PaymentMethodType.wallet => true,

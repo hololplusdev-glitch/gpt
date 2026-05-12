@@ -263,22 +263,28 @@ class _PaymentSectionState extends ConsumerState<_PaymentSection> {
             title: l10n.requireReference,
             onChanged: (value) => setState(() => _requireReference = value),
           ),
-          ListTile(
-            leading: const Icon(Icons.lock_outline),
-            title: Text(l10n.integratedMode),
-            subtitle: Text(l10n.integratedNotAvailable),
-          ),
           Align(
             alignment: Alignment.centerRight,
             child: AppButton.primary(
               icon: Icons.save_outlined,
               label: l10n.savePaymentProfile,
-              onPressed: () => ref
-                  .read(paymentProfileServiceProvider)
-                  .saveManualConfiguration(
-                    enabled: _enabled,
-                    requireReference: _requireReference,
-                  ),
+              onPressed: () {
+                final userId = ref
+                    .read(activePosSessionProvider)
+                    .valueOrNull
+                    ?.activeUserId;
+                if (userId == null || userId.isEmpty) {
+                  AppSnackbar.showError(context, 'No active cashier.');
+                  return;
+                }
+                ref
+                    .read(paymentProfileServiceProvider)
+                    .saveManualConfiguration(
+                      userId: userId,
+                      enabled: _enabled,
+                      requireReference: _requireReference,
+                    );
+              },
             ),
           ),
         ],
