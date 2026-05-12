@@ -644,18 +644,6 @@ abstract class AppLocalizations {
   /// **'Discount Override'**
   String get discountOverride;
 
-  /// No description provided for @supervisorApproval.
-  ///
-  /// In en, this message translates to:
-  /// **'Supervisor Approval'**
-  String get supervisorApproval;
-
-  /// No description provided for @enterSupervisorPin.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter supervisor PIN'**
-  String get enterSupervisorPin;
-
   /// No description provided for @approved.
   ///
   /// In en, this message translates to:
@@ -1205,7 +1193,7 @@ abstract class AppLocalizations {
   /// No description provided for @arabicPrintNotice.
   ///
   /// In en, this message translates to:
-  /// **'Arabic ESC/POS text support depends on the printer code page.'**
+  /// **'Arabic text is printed as a raster image for reliable output.'**
   String get arabicPrintNotice;
 
   /// No description provided for @saleId.

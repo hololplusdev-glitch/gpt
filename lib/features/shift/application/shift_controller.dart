@@ -10,7 +10,6 @@ import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/features/shift/application/shift_service.dart';
-import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 
 typedef ActiveSessionReader = ActivePosSession? Function();
@@ -48,25 +47,11 @@ class ShiftCommandResult {
 class ShiftDashboard {
   final Shift shift;
   final ShiftSalesTotals totals;
-  final double cashIn;
-  final double cashOut;
-  final double cashRefund;
 
-  const ShiftDashboard({
-    required this.shift,
-    required this.totals,
-    required this.cashIn,
-    required this.cashOut,
-    required this.cashRefund,
-  });
+  const ShiftDashboard({required this.shift, required this.totals});
 
   double get expectedCash =>
-      shift.openingCash +
-      totals.cashSales -
-      totals.cashReturns +
-      cashIn -
-      cashOut -
-      cashRefund;
+      shift.openingCash + totals.cashSales - totals.cashReturns;
 }
 
 /// Lightweight open-shift projection.
@@ -96,19 +81,11 @@ final activeShiftDashboardProvider =
         return null;
       }
 
-      final shiftDao = ref.watch(shiftDaoProvider);
       final salesDao = ref.watch(salesDaoProvider);
 
       final totals = await salesDao.getShiftSalesTotals(shift.id);
-      final movements = await shiftDao.getCashMovementTotals(shift.id);
 
-      return ShiftDashboard(
-        shift: shift,
-        totals: totals,
-        cashIn: movements.cashIn,
-        cashOut: movements.cashOut,
-        cashRefund: movements.cashRefund,
-      );
+      return ShiftDashboard(shift: shift, totals: totals);
     });
 
 class ShiftController extends StateNotifier<ShiftCommandState> {
@@ -225,37 +202,6 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
 
       state = state.copyWith(isLoading: false, errorMessage: message);
 
-      return ShiftCommandResult.failure(message);
-    }
-  }
-
-  Future<ShiftCommandResult> addCashMovement({
-    required String shiftId,
-    required CashMovementType type,
-    required double amount,
-    String? note,
-  }) async {
-    final normalizedShiftId = shiftId.trim();
-    if (normalizedShiftId.isEmpty) {
-      return const ShiftCommandResult.failure('No open shift.');
-    }
-
-    state = state.copyWith(isLoading: true, clearError: true);
-
-    try {
-      await _shiftService.addCashMovement(
-        shiftId: normalizedShiftId,
-        type: type,
-        amount: amount,
-        reason: note,
-      );
-
-      await _refreshShiftState();
-      state = const ShiftCommandState();
-      return const ShiftCommandResult.success();
-    } catch (e) {
-      final message = _commandErrorMessage(e);
-      state = state.copyWith(isLoading: false, errorMessage: message);
       return ShiftCommandResult.failure(message);
     }
   }

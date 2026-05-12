@@ -35,7 +35,6 @@ part 'database.g.dart';
     PaymentMethods,
     // -- Shifts --
     Shifts,
-    ShiftCashMovements,
     // -- Sales --
     Sales,
     SaleLines,
@@ -67,7 +66,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(

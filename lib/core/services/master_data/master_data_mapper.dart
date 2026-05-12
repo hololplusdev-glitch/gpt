@@ -231,7 +231,7 @@ class MasterDataMapper {
           paymentMethods.add(
             PaymentMethodsCompanion(
               id: Value(methodId),
-              type: Value(PaymentMethodType.bankTransfer.code),
+              type: Value(PaymentMethodType.manualCard.code),
               code: Value(methodId),
               name: Value(data.text(['bank_name', 'name']) ?? bankId),
               nameAr: Value(

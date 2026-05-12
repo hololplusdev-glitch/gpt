@@ -153,17 +153,9 @@ class ShiftService {
     // Calculate shift totals from sales
     final totals = await _salesDao.getShiftSalesTotals(localId);
 
-    // Calculate cash movements
-    final movements = await _shiftDao.getCashMovementTotals(localId);
-
-    // Expected cash = opening + cash_sales + cash_in - cash_out - cash_refunds
+    // Expected cash = opening + cash sales - cash returns.
     final expectedCash =
-        shift.openingCash +
-        totals.cashSales -
-        totals.cashReturns +
-        movements.cashIn -
-        movements.cashOut -
-        movements.cashRefund;
+        shift.openingCash + totals.cashSales - totals.cashReturns;
     final difference = actualCash - expectedCash;
 
     final now = _clock.now();
@@ -272,45 +264,6 @@ class ShiftService {
     );
 
     return (await _shiftDao.getById(localId))!;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Cash Movements
-  // ---------------------------------------------------------------------------
-
-  /// Record a cash in/out movement during the shift.
-  Future<void> addCashMovement({
-    required String shiftId,
-    required CashMovementType type,
-    required double amount,
-    String? reason,
-    String? approvedBy,
-  }) async {
-    if (amount <= 0 || amount.isNaN) {
-      throw const ShiftException(
-        'Cash movement amount must be greater than zero.',
-      );
-    }
-
-    final shift = await _shiftDao.getById(shiftId);
-    if (shift == null) {
-      throw ShiftException('Shift not found: $shiftId');
-    }
-    if (shift.status != ShiftStatus.open.code) {
-      throw const ShiftException('Cash movements require an open shift.');
-    }
-
-    await _shiftDao.addCashMovement(
-      ShiftCashMovementsCompanion.insert(
-        id: 'CM_${_uuid.v4()}',
-        shiftId: shiftId,
-        type: type.code,
-        amount: amount,
-        reason: Value(reason),
-        approvedBy: Value(approvedBy),
-        createdAt: _clock.now(),
-      ),
-    );
   }
 
   // ---------------------------------------------------------------------------

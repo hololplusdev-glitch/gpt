@@ -138,9 +138,6 @@ enum PaymentStatus {
 enum PaymentMethodType {
   cash('cash'),
   manualCard('manual_card'),
-  cheque('cheque'),
-  bankTransfer('bank_transfer'),
-  wallet('wallet'),
   customerCredit('customer_credit');
 
   final String code;
@@ -214,7 +211,6 @@ enum AuditAction {
   returnCreated('return_created'),
   discountApplied('discount_applied'),
   priceOverride('price_override'),
-  supervisorOverride('supervisor_override'),
   receiptPrinted('receipt_printed'),
   receiptReprinted('receipt_reprinted'),
   orderHeld('order_held'),
@@ -229,58 +225,6 @@ enum AuditAction {
 
   static AuditAction? fromCode(String? code) =>
       AuditAction.values.where((e) => e.code == code).firstOrNull;
-}
-
-// =============================================================================
-// PERMISSION
-// =============================================================================
-
-/// Permission codes for role-based access control.
-/// Until Auth API exists, baseline permissions derive from
-/// user_terminal_access flags.
-enum PermissionCode {
-  saleCreate('sale_create'),
-  saleDiscount('sale_discount'),
-  saleVoid('sale_void'),
-  saleRefund('sale_refund'),
-  shiftOpen('shift_open'),
-  shiftClose('shift_close'),
-  shiftExtend('shift_extend'),
-  reprintReceipt('reprint_receipt'),
-  deviceSettingsAccess('device_settings_access'),
-  printerConfig('printer_config'),
-  paymentDeviceConfig('payment_device_config'),
-  settingsAccess('settings_access'),
-  viewShiftReport('view_shift_report'),
-  supervisorOverride('supervisor_override'),
-  holdOrder('hold_order'),
-  recallOrder('recall_order'),
-  cancelHeldOrder('cancel_held_order'),
-  priceOverride('price_override');
-
-  final String code;
-  const PermissionCode(this.code);
-
-  static PermissionCode? fromCode(String? code) =>
-      PermissionCode.values.where((e) => e.code == code).firstOrNull;
-}
-
-/// Protected actions requiring supervisor approval.
-enum ProtectedAction {
-  voidSale('void_sale'),
-  returnSale('return_sale'),
-  priceOverride('price_override'),
-  discountOverride('discount_override'),
-  settingsChange('settings_change'),
-  reprintReceipt('reprint_receipt'),
-  clearCart('clear_cart'),
-  cancelHeldOrder('cancel_held_order');
-
-  final String code;
-  const ProtectedAction(this.code);
-
-  static ProtectedAction? fromCode(String? code) =>
-      ProtectedAction.values.where((e) => e.code == code).firstOrNull;
 }
 
 // =============================================================================
@@ -418,19 +362,6 @@ enum AppPlatform {
 
   static AppPlatform? fromCode(String? code) =>
       AppPlatform.values.where((e) => e.code == code).firstOrNull;
-}
-
-/// Cash movement direction (cash in/out during shift).
-enum CashMovementType {
-  cashIn('cash_in'),
-  cashOut('cash_out'),
-  cashRefund('cash_refund');
-
-  final String code;
-  const CashMovementType(this.code);
-
-  static CashMovementType? fromCode(String? code) =>
-      CashMovementType.values.where((e) => e.code == code).firstOrNull;
 }
 
 /// Held order status.

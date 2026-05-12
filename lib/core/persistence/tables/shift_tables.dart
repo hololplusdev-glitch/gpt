@@ -33,18 +33,3 @@ class Shifts extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
-
-/// Cash movements during a shift.
-/// type: 'cash_in','cash_out','cash_refund'
-class ShiftCashMovements extends Table {
-  TextColumn get id => text()();
-  TextColumn get shiftId => text()();
-  TextColumn get type => text()(); // stable string code
-  RealColumn get amount => real()();
-  TextColumn get reason => text().nullable()();
-  TextColumn get approvedBy => text().nullable()();
-  DateTimeColumn get createdAt => dateTime()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}

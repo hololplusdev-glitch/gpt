@@ -31,7 +31,6 @@ class ActivePosSession {
   final String? costCenterId;
   final String? printerName;
   final bool priceIncludesTax;
-  final bool requiresShift;
   final bool autoPrint;
   final String? invoiceSeries;
   final String? returnInvoiceSeries;
@@ -55,7 +54,6 @@ class ActivePosSession {
     required this.costCenterId,
     required this.printerName,
     required this.priceIncludesTax,
-    required this.requiresShift,
     required this.autoPrint,
     required this.invoiceSeries,
     required this.returnInvoiceSeries,
@@ -315,7 +313,6 @@ class ActivePosSessionDao {
       costCenterId: user.costCenterId,
       printerName: machine.printerName,
       priceIncludesTax: machine.priceIncludesTax,
-      requiresShift: machine.requiresShift,
       autoPrint: machine.autoPrint,
       invoiceSeries: machine.invoiceSeries,
       returnInvoiceSeries: machine.returnInvoiceSeries,

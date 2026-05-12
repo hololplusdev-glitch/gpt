@@ -53,7 +53,6 @@ class UploadQueue {
     required String cashierId,
     required String cashierName,
     required DateTime voidedAt,
-    String? supervisorId,
   }) {
     return OutboxEventsCompanion(
       id: Value('OBX_${_uuid.v4()}'),
@@ -65,7 +64,6 @@ class UploadQueue {
           'saleId': saleId,
           'cashierId': cashierId,
           'cashierName': cashierName,
-          'supervisorId': supervisorId,
           'voidedAt': voidedAt.toIso8601String(),
         }),
       ),

@@ -137,8 +137,6 @@
   "notes": "Notes",
   "priceOverride": "Price Override",
   "discountOverride": "Discount Override",
-  "supervisorApproval": "Supervisor Approval",
-  "enterSupervisorPin": "Enter supervisor PIN",
   "approved": "Approved",
   "denied": "Denied",
   "connection": "Connection",
@@ -245,7 +243,7 @@
 "printStatusPrinted": "Printed",
 "printStatusFailed": "Print failed",
 "printStatusPending": "Waiting for print",
-"arabicPrintNotice": "Arabic ESC/POS text support depends on the printer code page.",
+"arabicPrintNotice": "Arabic text is printed as a raster image for reliable output.",
   "saleId": "Sale ID",
   "receiptNumber": "Receipt #",
   "date": "Date",
@@ -462,7 +460,7 @@
 "printStatusPrinted": "Printed",
 "printStatusFailed": "Print failed",
 "printStatusPending": "Waiting for print",
-"arabicPrintNotice": "Arabic ESC/POS text support depends on the printer code page.",
+"arabicPrintNotice": "Arabic text is printed as a raster image for reliable output.",
 "pdfInvoiceTitle": "Invoice {invoiceNo}",
 "@pdfInvoiceTitle": {
   "placeholders": {

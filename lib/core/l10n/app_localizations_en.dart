@@ -304,12 +304,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get discountOverride => 'Discount Override';
 
   @override
-  String get supervisorApproval => 'Supervisor Approval';
-
-  @override
-  String get enterSupervisorPin => 'Enter supervisor PIN';
-
-  @override
   String get approved => 'Approved';
 
   @override
@@ -595,7 +589,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get arabicPrintNotice =>
-      'Arabic ESC/POS text support depends on the printer code page.';
+      'Arabic text is printed as a raster image for reliable output.';
 
   @override
   String get saleId => 'Sale ID';

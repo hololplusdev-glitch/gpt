@@ -51,8 +51,7 @@ class InvoiceDocumentLabels {
       printStatusPrinted = 'تمت الطباعة',
       printStatusFailed = 'فشل الطباعة',
       printStatusPending = 'بانتظار الطباعة',
-      arabicPrintNotice =
-          'يعتمد دعم النص العربي في ESC/POS على صفحة الترميز في الطابعة.';
+      arabicPrintNotice = 'تتم طباعة العربية كصورة Raster لضمان وضوح النص.';
 }
 
 class InvoiceDocumentBuilder {
@@ -114,7 +113,11 @@ class InvoiceDocumentBuilder {
     final payments = await _loadPayments(saleId);
     final printStatus = await _printStatus(saleId, labels);
 
-    final syncStatusLabel = await _syncStatusLabel(sale.id);
+    final syncStatusLabel = await _syncStatusLabel(
+      sale.id,
+      saleType: sale.type,
+    );
+
     var document = InvoiceDocument(
       saleId: sale.id,
       localInvoiceNo: sale.localSaleNo,
@@ -293,6 +296,22 @@ class InvoiceDocumentBuilder {
       );
     }).toList();
 
+    final nonCreditPaid = payments.fold(
+      0.0,
+      (sum, p) =>
+          sum +
+          (p.paymentMethodType == PaymentMethodType.customerCredit
+              ? 0.0
+              : p.amount),
+    );
+    final remainingTotal = PricingEngine.roundAmount(
+      quote.grandTotal - nonCreditPaid,
+    );
+    final changeAmount = payments.fold(
+      0.0,
+      (sum, p) => sum + (p.changeGiven ?? 0.0),
+    );
+
     var document = InvoiceDocument(
       saleId: saleId,
       localInvoiceNo: localInvoiceNo,
@@ -327,48 +346,18 @@ class InvoiceDocumentBuilder {
         discountTotal: quote.discountTotal,
         taxTotal: quote.taxTotal,
         netTotal: quote.grandTotal,
-        paidTotal: payments.fold(
-          0.0,
-          (sum, p) =>
-              sum +
-              (p.paymentMethodType == PaymentMethodType.customerCredit
-                  ? 0.0
-                  : p.amount),
-        ),
-        remainingTotal:
-            payments.any(
-              (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
-            )
-            ? quote.grandTotal
-            : 0.0,
-        changeAmount: payments.fold(
-          0.0,
-          (sum, p) => sum + (p.changeGiven ?? 0.0),
-        ),
+        paidTotal: nonCreditPaid,
+        remainingTotal: remainingTotal > 0 ? remainingTotal : 0,
+        changeAmount: changeAmount,
         displaySubtotal: PosFormatters.amount(quote.subtotal),
         displayDiscountTotal: PosFormatters.amount(quote.discountTotal),
         displayTaxTotal: PosFormatters.amount(quote.taxTotal),
         displayNetTotal: PosFormatters.amount(quote.grandTotal),
-        displayPaidTotal: PosFormatters.amount(
-          payments.fold(
-            0.0,
-            (sum, p) =>
-                sum +
-                (p.paymentMethodType == PaymentMethodType.customerCredit
-                    ? 0.0
-                    : p.amount),
-          ),
-        ),
+        displayPaidTotal: PosFormatters.amount(nonCreditPaid),
         displayRemainingTotal: PosFormatters.amount(
-          payments.any(
-                (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
-              )
-              ? quote.grandTotal
-              : 0.0,
+          remainingTotal > 0 ? remainingTotal : 0,
         ),
-        displayChangeAmount: PosFormatters.amount(
-          payments.fold(0.0, (sum, p) => sum + (p.changeGiven ?? 0.0)),
-        ),
+        displayChangeAmount: PosFormatters.amount(changeAmount),
       ),
       copyInfo: const InvoiceCopyInfo.original(),
       printStatusLabel: labels.printStatusPending,
@@ -396,10 +385,14 @@ class InvoiceDocumentBuilder {
     );
   }
 
-  Future<String> _syncStatusLabel(String saleId) async {
+  Future<String> _syncStatusLabel(String saleId, {String? saleType}) async {
+    final type = saleType ?? (await _salesDao.getById(saleId))?.type;
+    final entityType = type == SaleType.returnSale.code
+        ? OutboxEntityType.returnSale.code
+        : OutboxEntityType.sale.code;
     final status =
         await _salesDao.getEntityOutboxStatus(
-          entityType: OutboxEntityType.sale.code,
+          entityType: entityType,
           entityId: saleId,
         ) ??
         OutboxStatus.pending.code;

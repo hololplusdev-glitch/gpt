@@ -15,7 +15,6 @@ import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:holol_POS/core/services/formatters/pos_formatters.dart';
 import 'package:holol_POS/features/auth/application/pos_session_controller.dart';
 import 'package:holol_POS/features/shift/application/shift_controller.dart';
-import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
@@ -261,52 +260,11 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
         _SectionTitle('الصندوق'),
         _MoneyRow(label: l10n.openingCash, value: shift.openingCash),
         _MoneyRow(label: 'مبيعات الكاش', value: totals.cashSales),
-        _MoneyRow(label: 'إيداعات الصندوق', value: dashboard.cashIn),
-        _MoneyRow(label: 'مصروفات الصندوق', value: dashboard.cashOut),
-        _MoneyRow(label: 'مردودات كاش', value: dashboard.cashRefund),
         const Divider(height: AppSpacing.xl),
         _MoneyRow(
           label: 'المتوقع في الصندوق',
           value: dashboard.expectedCash,
           isStrong: true,
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Wrap(
-          spacing: AppSpacing.sm,
-          runSpacing: AppSpacing.sm,
-          alignment: WrapAlignment.center,
-          children: [
-            AppButton.outlined(
-              onPressed: actionState.isLoading
-                  ? null
-                  : () => _showCashMovementDialog(
-                      shift.id,
-                      CashMovementType.cashIn,
-                    ),
-              icon: Icons.add,
-              label: 'إيداع نقدي',
-            ),
-            AppButton.outlined(
-              onPressed: actionState.isLoading
-                  ? null
-                  : () => _showCashMovementDialog(
-                      shift.id,
-                      CashMovementType.cashOut,
-                    ),
-              icon: Icons.remove,
-              label: 'سحب نقدي',
-            ),
-            AppButton.outlined(
-              onPressed: actionState.isLoading
-                  ? null
-                  : () => _showCashMovementDialog(
-                      shift.id,
-                      CashMovementType.cashRefund,
-                    ),
-              icon: Icons.keyboard_return,
-              label: 'استرداد نقدي',
-            ),
-          ],
         ),
         const SizedBox(height: AppSpacing.lg),
         _SectionTitle('المبيعات'),
@@ -412,152 +370,6 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
       ref.invalidate(activeShiftDashboardProvider);
       context.go(AppRoutes.shift);
     }
-  }
-
-  Future<void> _showCashMovementDialog(
-    String shiftId,
-    CashMovementType initialType,
-  ) async {
-    final result = await showDialog<_CashMovementInput>(
-      context: context,
-      builder: (context) => _CashMovementDialog(initialType: initialType),
-    );
-    if (result == null) return;
-
-    final commandResult = await ref
-        .read(shiftControllerProvider.notifier)
-        .addCashMovement(
-          shiftId: shiftId,
-          type: result.type,
-          amount: result.amount,
-          note: result.note,
-        );
-
-    if (!mounted) return;
-    if (commandResult.success) {
-      ref.invalidate(activeShiftDashboardProvider);
-    }
-  }
-}
-
-class _CashMovementInput {
-  final CashMovementType type;
-  final double amount;
-  final String? note;
-
-  const _CashMovementInput({
-    required this.type,
-    required this.amount,
-    this.note,
-  });
-}
-
-class _CashMovementDialog extends StatefulWidget {
-  final CashMovementType initialType;
-
-  const _CashMovementDialog({required this.initialType});
-
-  @override
-  State<_CashMovementDialog> createState() => _CashMovementDialogState();
-}
-
-class _CashMovementDialogState extends State<_CashMovementDialog> {
-  final _amountController = TextEditingController();
-  final _noteController = TextEditingController();
-  late CashMovementType _type;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _type = widget.initialType;
-  }
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('حركة نقدية'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SegmentedButton<CashMovementType>(
-            segments: const [
-              ButtonSegment(
-                value: CashMovementType.cashIn,
-                label: Text('إيداع'),
-                icon: Icon(Icons.add),
-              ),
-              ButtonSegment(
-                value: CashMovementType.cashOut,
-                label: Text('سحب'),
-                icon: Icon(Icons.remove),
-              ),
-              ButtonSegment(
-                value: CashMovementType.cashRefund,
-                label: Text('استرداد'),
-                icon: Icon(Icons.keyboard_return),
-              ),
-            ],
-            selected: {_type},
-            onSelectionChanged: (value) => setState(() {
-              _type = value.first;
-              _error = null;
-            }),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppTextField(
-            controller: _amountController,
-            labelText: 'المبلغ',
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-            ],
-            prefixIcon: const Icon(Icons.payments_outlined),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppTextField(
-            controller: _noteController,
-            labelText: 'ملاحظة اختيارية',
-            prefixIcon: const Icon(Icons.notes_outlined),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            AppInfoBanner.error(message: _error!),
-          ],
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('إلغاء'),
-        ),
-        FilledButton(onPressed: _submit, child: const Text('حفظ')),
-      ],
-    );
-  }
-
-  void _submit() {
-    final amount = double.tryParse(_amountController.text.trim());
-    if (amount == null || amount <= 0) {
-      setState(() => _error = 'أدخل مبلغًا أكبر من صفر.');
-      return;
-    }
-
-    final note = _noteController.text.trim();
-    Navigator.of(context).pop(
-      _CashMovementInput(
-        type: _type,
-        amount: amount,
-        note: note.isEmpty ? null : note,
-      ),
-    );
   }
 }
 

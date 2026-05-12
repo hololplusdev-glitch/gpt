@@ -112,7 +112,7 @@ abstract final class PaymentMethodResolver {
       return PaymentMethodType.cash;
     }
     if (normalized.startsWith(PaymentMethodCodes.bankAccountPrefix)) {
-      return PaymentMethodType.bankTransfer;
+      return PaymentMethodType.manualCard;
     }
     if (normalized.startsWith(PaymentMethodCodes.cardTypePrefix)) {
       return PaymentMethodType.manualCard;
@@ -146,9 +146,6 @@ abstract final class PaymentMethodResolver {
     if (manualRecord && resolved == PaymentMethodType.manualCard) {
       return '$base - تسجيل يدوي';
     }
-    if (manualRecord && resolved == PaymentMethodType.bankTransfer) {
-      return '$base - تسجيل يدوي';
-    }
     return base;
   }
 
@@ -156,9 +153,6 @@ abstract final class PaymentMethodResolver {
     return switch (type) {
       PaymentMethodType.cash => false,
       PaymentMethodType.manualCard => true,
-      PaymentMethodType.bankTransfer => true,
-      PaymentMethodType.wallet => true,
-      PaymentMethodType.cheque => true,
       PaymentMethodType.customerCredit => true,
     };
   }

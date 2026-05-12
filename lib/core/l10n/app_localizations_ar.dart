@@ -304,12 +304,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get discountOverride => 'تعديل الخصم';
 
   @override
-  String get supervisorApproval => 'موافقة المشرف';
-
-  @override
-  String get enterSupervisorPin => 'أدخل رقم المشرف السري';
-
-  @override
   String get approved => 'تمت الموافقة';
 
   @override
@@ -593,7 +587,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get arabicPrintNotice =>
-      'يعتمد دعم النص العربي في ESC/POS على صفحة الترميز في الطابعة.';
+      'تتم طباعة العربية كصورة Raster لضمان وضوح النص.';
 
   @override
   String get saleId => 'رقم المبيعات';
