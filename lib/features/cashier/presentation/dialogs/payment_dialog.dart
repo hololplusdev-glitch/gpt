@@ -33,10 +33,14 @@ class PaymentDialog extends ConsumerStatefulWidget {
 
 class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   final _customerSearchController = TextEditingController();
+  final _lineAmountController = TextEditingController();
   Timer? _customerSearchDebounce;
 
   final String _checkoutAttemptId = 'CHK_${const Uuid().v4()}';
   final List<_PaymentDraftLine> _paymentLines = [];
+  SaleTenderKind? _activeLineKind;
+  String? _editingLineId;
+  String? _lineInputError;
 
   String? _selectedCustomerId;
   String? _selectedCustomerName;
@@ -55,12 +59,23 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
   double get _totalAmount => _quote?.grandTotal ?? 0.0;
 
-  double get _paidAmount => PricingEngine.roundAmount(
-    _paymentLines.fold(0.0, (sum, line) => sum + line.amount),
+  double get _actualPaidAmount => PricingEngine.roundAmount(
+    _paymentLines
+        .where((line) => line.kind != SaleTenderKind.credit)
+        .fold(0.0, (sum, line) => sum + line.amount),
   );
 
+  double get _creditAmount => PricingEngine.roundAmount(
+    _paymentLines
+        .where((line) => line.kind == SaleTenderKind.credit)
+        .fold(0.0, (sum, line) => sum + line.amount),
+  );
+
+  double get _arrangedAmount =>
+      PricingEngine.roundAmount(_actualPaidAmount + _creditAmount);
+
   double get _remainingAmount {
-    final remaining = PricingEngine.roundAmount(_totalAmount - _paidAmount);
+    final remaining = PricingEngine.roundAmount(_totalAmount - _arrangedAmount);
     return remaining > 0.01 ? remaining : 0.0;
   }
 
@@ -103,6 +118,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   void dispose() {
     _customerSearchDebounce?.cancel();
     _customerSearchController.dispose();
+    _lineAmountController.dispose();
     super.dispose();
   }
 
@@ -133,58 +149,34 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   void _removeLine(String id) {
     setState(() {
       _paymentLines.removeWhere((line) => line.id == id);
+      if (_editingLineId == id) {
+        _activeLineKind = null;
+        _editingLineId = null;
+        _lineAmountController.clear();
+        _lineInputError = null;
+      }
       _errorMessage = null;
     });
   }
 
-  Future<void> _addCashLine([_PaymentDraftLine? existing]) async {
-    final available = _availableFor(existing);
-    final line = await showDialog<_PaymentDraftLine>(
-      context: context,
-      builder: (context) => _CashLineDialog(
-        availableAmount: available,
-        existing: existing,
-        parseMoney: _parseMoney,
-      ),
-    );
-
-    if (line == null) return;
-    _upsertLine(line, existing);
-  }
-
-  Future<void> _addAmountLine(
-    SaleTenderKind kind, [
-    _PaymentDraftLine? existing,
-  ]) async {
+  void _selectLineKind(SaleTenderKind kind, [_PaymentDraftLine? existing]) {
     final available = _availableFor(existing);
     if (available <= 0) return;
 
-    if (existing == null &&
-        (kind == SaleTenderKind.network || kind == SaleTenderKind.credit)) {
-      _upsertLine(
-        _PaymentDraftLine(
-          id: const Uuid().v4(),
-          kind: kind,
-          amount: available,
-          tenderedAmount: available,
-        ),
-        existing,
-      );
-      return;
+    setState(() {
+      _activeLineKind = kind;
+      _editingLineId = existing?.id;
+      _lineInputError = null;
+      _lineAmountController.text =
+          (kind == SaleTenderKind.cash
+                  ? existing?.tenderedAmount ?? available
+                  : existing?.amount ?? available)
+              .toStringAsFixed(2);
+    });
+
+    if (existing == null && kind != SaleTenderKind.cash) {
+      _submitInlineLine();
     }
-
-    final line = await showDialog<_PaymentDraftLine>(
-      context: context,
-      builder: (context) => _AmountLineDialog(
-        kind: kind,
-        availableAmount: available,
-        existing: existing,
-        parseMoney: _parseMoney,
-      ),
-    );
-
-    if (line == null) return;
-    _upsertLine(line, existing);
   }
 
   double _availableFor(_PaymentDraftLine? existing) {
@@ -209,6 +201,53 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     });
   }
 
+  void _submitInlineLine() {
+    final kind = _activeLineKind;
+    if (kind == null) return;
+
+    final existing = _editingLineId == null
+        ? null
+        : _paymentLines.where((line) => line.id == _editingLineId).firstOrNull;
+    final available = _availableFor(existing);
+    final input = PricingEngine.roundAmount(
+      _parseMoney(_lineAmountController.text),
+    );
+
+    if (input.isNaN || input <= 0) {
+      setState(
+        () => _lineInputError =
+            'ط£ط¯ط®ظ„ ظ…ط¨ظ„ط؛ظ‹ط§ طµط­ظٹط­ظ‹ط§ ط£ظƒط¨ط± ظ…ظ† طµظپط±.',
+      );
+      return;
+    }
+
+    if (kind != SaleTenderKind.cash && input - available > 0.01) {
+      setState(
+        () => _lineInputError =
+            'ط§ظ„ظ…ط¨ظ„ط؛ ظ„ط§ ظٹظ…ظƒظ† ط£ظ† ظٹطھط¬ط§ظˆط² ط§ظ„ظ…طھط¨ظ‚ظٹ.',
+      );
+      return;
+    }
+
+    final amount = kind == SaleTenderKind.cash && input > available
+        ? available
+        : input;
+    final line = _PaymentDraftLine(
+      id: existing?.id ?? const Uuid().v4(),
+      kind: kind,
+      amount: PricingEngine.roundAmount(amount),
+      tenderedAmount: kind == SaleTenderKind.cash ? input : amount,
+    );
+
+    _upsertLine(line, existing);
+    setState(() {
+      _activeLineKind = kind;
+      _editingLineId = line.id;
+      _lineInputError = null;
+      _lineAmountController.text = line.tenderedAmount.toStringAsFixed(2);
+    });
+  }
+
   List<SalePaymentIntent> _buildPaymentIntents() {
     return _paymentLines
         .map(
@@ -229,16 +268,16 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     }
 
     if (_paymentLines.isEmpty) {
-      return 'أدخل طريقة دفع واحدة على الأقل.';
+      return 'ط£ط¯ط®ظ„ ط·ط±ظٹظ‚ط© ط¯ظپط¹ ظˆط§ط­ط¯ط© ط¹ظ„ظ‰ ط§ظ„ط£ظ‚ظ„.';
     }
 
     if (_remainingAmount > 0.01) {
-      return 'المبلغ المتبقي غير مغطى.';
+      return 'ط§ظ„ظ…ط¨ظ„ط؛ ط§ظ„ظ…طھط¨ظ‚ظٹ ط؛ظٹط± ظ…ط؛ط·ظ‰.';
     }
 
     if (_hasCreditLine &&
         (_selectedCustomerId == null || _selectedCustomerId!.trim().isEmpty)) {
-      return 'البيع الآجل يتطلب اختيار عميل.';
+      return 'ط§ظ„ط¨ظٹط¹ ط§ظ„ط¢ط¬ظ„ ظٹطھط·ظ„ط¨ ط§ط®طھظٹط§ط± ط¹ظ…ظٹظ„.';
     }
 
     return null;
@@ -397,6 +436,10 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                 _buildPaymentLines(),
                 const SizedBox(height: AppSpacing.lg),
                 _buildSmartActions(),
+                if (_activeLineKind != null) ...[
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildInlineLineEditor(),
+                ],
                 if (_hasCreditLine) ...[
                   const SizedBox(height: AppSpacing.lg),
                   customers.when(
@@ -414,7 +457,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                 _CompleteButton(
                   isProcessing: _isProcessing,
                   enabled: _canConfirm,
-                  label: 'إتمام الدفع',
+                  label: 'ط¥طھظ…ط§ظ… ط§ظ„ط¯ظپط¹',
                   onPressed: _processPayment,
                 ),
               ],
@@ -435,13 +478,21 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
-            _SummaryRow(label: 'إجمالي الفاتورة', value: _totalAmount),
+            _SummaryRow(
+              label: 'ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظپط§طھظˆط±ط©',
+              value: _totalAmount,
+            ),
             const Divider(height: AppSpacing.lg),
-            _SummaryRow(label: 'المدفوع', value: _paidAmount),
+            _SummaryRow(
+              label: 'ط§ظ„ظ…ط¯ظپظˆط¹ ظپط¹ظ„ظٹظ‹ط§',
+              value: _actualPaidAmount,
+            ),
             const SizedBox(height: AppSpacing.sm),
-            _SummaryRow(label: 'المتبقي', value: _remainingAmount),
+            _SummaryRow(label: 'ط§ظ„ط¢ط¬ظ„', value: _creditAmount),
             const SizedBox(height: AppSpacing.sm),
-            _SummaryRow(label: 'الراجع', value: _change),
+            _SummaryRow(label: 'ط§ظ„ظ…طھط¨ظ‚ظٹ', value: _remainingAmount),
+            const SizedBox(height: AppSpacing.sm),
+            _SummaryRow(label: 'ط§ظ„ط±ط§ط¬ط¹', value: _change),
           ],
         ),
       ),
@@ -451,7 +502,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   Widget _buildPaymentLines() {
     if (_paymentLines.isEmpty) {
       return const AppInfoBanner(
-        message: 'اختر طريقة دفع لإضافة سطر دفع.',
+        message: 'ط§ط®طھط± ط·ط±ظٹظ‚ط© ط¯ظپط¹ ظ„ط¥ط¶ط§ظپط© ط³ط·ط± ط¯ظپط¹.',
         type: AppBannerType.info,
       );
     }
@@ -461,9 +512,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         for (final line in _paymentLines) ...[
           _PaymentLineTile(
             line: line,
-            onEdit: () => line.kind == SaleTenderKind.cash
-                ? _addCashLine(line)
-                : _addAmountLine(line.kind, line),
+            onEdit: () => _selectLineKind(line.kind, line),
             onDelete: () => _removeLine(line.id),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -478,7 +527,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       return const SizedBox.shrink();
     }
 
-    final prefix = _paymentLines.isEmpty ? '' : 'أكمل ';
+    final prefix = _paymentLines.isEmpty ? '' : 'ط£ظƒظ…ظ„ ';
 
     return Wrap(
       spacing: AppSpacing.sm,
@@ -486,25 +535,125 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       alignment: WrapAlignment.center,
       children: [
         AppButton.outlined(
-          onPressed: _isProcessing ? null : () => _addCashLine(),
+          onPressed: _isProcessing
+              ? null
+              : () => _selectLineKind(SaleTenderKind.cash),
           icon: Icons.payments_outlined,
-          label: '${prefix}كاش',
+          label: '${prefix}ظƒط§ط´ ${PosFormatters.amount(remaining)}',
         ),
         AppButton.outlined(
           onPressed: _isProcessing
               ? null
-              : () => _addAmountLine(SaleTenderKind.network),
+              : () => _selectLineKind(SaleTenderKind.network),
           icon: Icons.credit_card,
-          label: '${prefix}شبكة',
+          label: '${prefix}ط´ط¨ظƒط© ${PosFormatters.amount(remaining)}',
         ),
         AppButton.outlined(
           onPressed: _isProcessing
               ? null
-              : () => _addAmountLine(SaleTenderKind.credit),
+              : () => _selectLineKind(SaleTenderKind.credit),
           icon: Icons.person_outline,
-          label: '${prefix}آجل',
+          label: '${prefix}ط¢ط¬ظ„ ${PosFormatters.amount(remaining)}',
         ),
       ],
+    );
+  }
+
+  Widget _buildInlineLineEditor() {
+    final kind = _activeLineKind!;
+    final existing = _editingLineId == null
+        ? null
+        : _paymentLines.where((line) => line.id == _editingLineId).firstOrNull;
+    final available = _availableFor(existing);
+    final (icon, title, label) = switch (kind) {
+      SaleTenderKind.cash => (
+        Icons.payments_outlined,
+        'ط¯ظپط¹ ظƒط§ط´',
+        'ط§ظ„ظ…ط¨ظ„ط؛ ط§ظ„ظ…ط³طھظ„ظ…',
+      ),
+      SaleTenderKind.network => (
+        Icons.credit_card,
+        'ط¯ظپط¹ ط´ط¨ظƒط©',
+        'ط§ظ„ظ…ط¨ظ„ط؛',
+      ),
+      SaleTenderKind.credit => (
+        Icons.person_outline,
+        'ط¯ظپط¹ ط¢ط¬ظ„',
+        'ط§ظ„ظ…ط¨ظ„ط؛',
+      ),
+    };
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: AppSpacing.borderRadiusMd,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: AppColors.primary),
+                const SizedBox(width: AppSpacing.sm),
+                Text(title, style: Theme.of(context).textTheme.titleMedium),
+                const Spacer(),
+                Text.rich(
+                  PosFormatters.amountRich(
+                    available,
+                    amountStyle: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            AppTextField(
+              controller: _lineAmountController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+              ],
+              labelText: label,
+              prefixIcon: Icon(icon),
+              onSubmitted: (_) => _submitInlineLine(),
+            ),
+            if (_lineInputError != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              AppInfoBanner.error(message: _lineInputError!),
+            ],
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: [
+                Expanded(
+                  child: AppButton.outlined(
+                    onPressed: _isProcessing
+                        ? null
+                        : () {
+                            setState(() {
+                              _activeLineKind = null;
+                              _editingLineId = null;
+                              _lineAmountController.clear();
+                              _lineInputError = null;
+                            });
+                          },
+                    label: 'ط¥ط؛ظ„ط§ظ‚',
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: AppButton.primary(
+                    onPressed: _isProcessing ? null : _submitInlineLine,
+                    label: existing == null ? 'ط¥ط¶ط§ظپط©' : 'طھط­ط¯ظٹط«',
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -537,8 +686,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         if (customers.isEmpty)
           AppInfoBanner(
             message: _customerSearchController.text.trim().isEmpty
-                ? 'ابحث باسم العميل أو الجوال أو الرقم الضريبي.'
-                : 'لا توجد نتائج مطابقة.',
+                ? 'ط§ط¨ط­ط« ط¨ط§ط³ظ… ط§ظ„ط¹ظ…ظٹظ„ ط£ظˆ ط§ظ„ط¬ظˆط§ظ„ ط£ظˆ ط§ظ„ط±ظ‚ظ… ط§ظ„ط¶ط±ظٹط¨ظٹ.'
+                : 'ظ„ط§ طھظˆط¬ط¯ ظ†طھط§ط¦ط¬ ظ…ط·ط§ط¨ظ‚ط©.',
             type: AppBannerType.info,
           )
         else
@@ -586,7 +735,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
     final title =
         _completedPaymentMethodType == PaymentMethodType.customerCredit
-        ? 'تم تسجيل البيع الآجل'
+        ? 'طھظ… طھط³ط¬ظٹظ„ ط§ظ„ط¨ظٹط¹ ط§ظ„ط¢ط¬ظ„'
         : l10n.paymentSuccessful;
 
     return SingleChildScrollView(
@@ -734,13 +883,13 @@ class _PaymentLineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, title) = switch (line.kind) {
-      SaleTenderKind.cash => (Icons.payments_outlined, 'كاش'),
-      SaleTenderKind.network => (Icons.credit_card, 'شبكة'),
-      SaleTenderKind.credit => (Icons.person_outline, 'آجل'),
+      SaleTenderKind.cash => (Icons.payments_outlined, 'ظƒط§ط´'),
+      SaleTenderKind.network => (Icons.credit_card, 'ط´ط¨ظƒط©'),
+      SaleTenderKind.credit => (Icons.person_outline, 'ط¢ط¬ظ„'),
     };
 
     final subtitle = line.kind == SaleTenderKind.cash && line.change > 0
-        ? 'المستلم ${PosFormatters.amount(line.tenderedAmount)} - الراجع ${PosFormatters.amount(line.change)}'
+        ? 'ط§ظ„ظ…ط³طھظ„ظ… ${PosFormatters.amount(line.tenderedAmount)} - ط§ظ„ط±ط§ط¬ط¹ ${PosFormatters.amount(line.change)}'
         : null;
 
     return DecoratedBox(
@@ -756,227 +905,27 @@ class _PaymentLineTile extends StatelessWidget {
           spacing: AppSpacing.xs,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text(
-              PosFormatters.amount(line.amount),
-              style: const TextStyle(fontWeight: FontWeight.w800),
+            Text.rich(
+              PosFormatters.amountRich(
+                line.amount,
+                amountStyle: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
             ),
             IconButton(
-              tooltip: 'تعديل',
+              tooltip: 'طھط¹ط¯ظٹظ„',
               icon: const Icon(Icons.edit_outlined),
               onPressed: onEdit,
             ),
             IconButton(
-              tooltip: 'حذف',
+              tooltip: 'ط­ط°ظپ',
               icon: const Icon(Icons.delete_outline),
               onPressed: onDelete,
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _CashLineDialog extends StatefulWidget {
-  final double availableAmount;
-  final _PaymentDraftLine? existing;
-  final double Function(String text) parseMoney;
-
-  const _CashLineDialog({
-    required this.availableAmount,
-    required this.existing,
-    required this.parseMoney,
-  });
-
-  @override
-  State<_CashLineDialog> createState() => _CashLineDialogState();
-}
-
-class _CashLineDialogState extends State<_CashLineDialog> {
-  late final TextEditingController _controller;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(
-      text: (widget.existing?.tenderedAmount ?? widget.availableAmount)
-          .toStringAsFixed(2),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final tendered = PricingEngine.roundAmount(
-      widget.parseMoney(_controller.text),
-    );
-    if (tendered.isNaN || tendered <= 0) {
-      setState(() => _error = 'أدخل مبلغًا صحيحًا أكبر من صفر.');
-      return;
-    }
-
-    final amount = tendered > widget.availableAmount
-        ? widget.availableAmount
-        : tendered;
-
-    Navigator.of(context).pop(
-      _PaymentDraftLine(
-        id: widget.existing?.id ?? const Uuid().v4(),
-        kind: SaleTenderKind.cash,
-        amount: PricingEngine.roundAmount(amount),
-        tenderedAmount: tendered,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('دفع كاش'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppInfoBanner(
-            message: 'المتبقي: ${PosFormatters.amount(widget.availableAmount)}',
-            type: AppBannerType.info,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppTextField(
-            controller: _controller,
-            autofocus: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-            ],
-            labelText: 'المبلغ المستلم',
-            prefixIcon: const Icon(Icons.payments_outlined),
-            onSubmitted: (_) => _submit(),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            AppInfoBanner.error(message: _error!),
-          ],
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('إلغاء'),
-        ),
-        FilledButton(onPressed: _submit, child: const Text('إضافة')),
-      ],
-    );
-  }
-}
-
-class _AmountLineDialog extends StatefulWidget {
-  final SaleTenderKind kind;
-  final double availableAmount;
-  final _PaymentDraftLine? existing;
-  final double Function(String text) parseMoney;
-
-  const _AmountLineDialog({
-    required this.kind,
-    required this.availableAmount,
-    required this.existing,
-    required this.parseMoney,
-  });
-
-  @override
-  State<_AmountLineDialog> createState() => _AmountLineDialogState();
-}
-
-class _AmountLineDialogState extends State<_AmountLineDialog> {
-  late final TextEditingController _controller;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(
-      text: (widget.existing?.amount ?? widget.availableAmount).toStringAsFixed(
-        2,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final amount = PricingEngine.roundAmount(
-      widget.parseMoney(_controller.text),
-    );
-    if (amount.isNaN || amount <= 0) {
-      setState(() => _error = 'أدخل مبلغًا صحيحًا أكبر من صفر.');
-      return;
-    }
-    if (amount - widget.availableAmount > 0.01) {
-      setState(() => _error = 'المبلغ لا يمكن أن يتجاوز المتبقي.');
-      return;
-    }
-
-    Navigator.of(context).pop(
-      _PaymentDraftLine(
-        id: widget.existing?.id ?? const Uuid().v4(),
-        kind: widget.kind,
-        amount: amount,
-        tenderedAmount: amount,
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final title = widget.kind == SaleTenderKind.network
-        ? 'دفع شبكة'
-        : 'دفع آجل';
-    final icon = widget.kind == SaleTenderKind.network
-        ? Icons.credit_card
-        : Icons.person_outline;
-
-    return AlertDialog(
-      title: Text(title),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          AppInfoBanner(
-            message: 'المتبقي: ${PosFormatters.amount(widget.availableAmount)}',
-            type: AppBannerType.info,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppTextField(
-            controller: _controller,
-            autofocus: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-            ],
-            labelText: 'المبلغ',
-            prefixIcon: Icon(icon),
-            onSubmitted: (_) => _submit(),
-          ),
-          if (_error != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            AppInfoBanner.error(message: _error!),
-          ],
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('إلغاء'),
-        ),
-        FilledButton(onPressed: _submit, child: const Text('حفظ')),
-      ],
     );
   }
 }
@@ -999,9 +948,13 @@ class _SummaryRow extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        Text(
-          PosFormatters.amount(value),
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+        Text.rich(
+          PosFormatters.amountRich(
+            value,
+            amountStyle: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
         ),
       ],
     );

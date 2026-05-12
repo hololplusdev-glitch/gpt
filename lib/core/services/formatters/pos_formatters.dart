@@ -12,7 +12,7 @@ class PosFormatters {
   static final DateFormat _dateOnly = DateFormat('yyyy-MM-dd');
   static final DateFormat _timeOnly = DateFormat('HH:mm');
 
-  /// Plain text fallback. Use amountRich() in UI when possible.
+  /// Uses the Saudi Riyal font. Theme fallback must include [saudiRiyalFontFamily].
   static String amount(num value) =>
       '${value.toStringAsFixed(2)} $saudiRiyalSymbol';
 

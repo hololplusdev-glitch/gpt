@@ -2,6 +2,7 @@
 // Cart panel displaying items, totals, and action buttons.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:holol_POS/app/router.dart';
@@ -17,8 +18,6 @@ import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_empty_state.dart';
-import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
-import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
 import 'package:holol_POS/shared/presentation/widgets/key_value_row.dart';
 
 class CartPanel extends ConsumerStatefulWidget {
@@ -46,21 +45,21 @@ class _CartPanelState extends ConsumerState<CartPanel> {
       requestFocus: false,
       builder: (context) {
         return AlertDialog(
-          title: const Text('مسح السلة'),
+          title: const Text('ظ…ط³ط­ ط§ظ„ط³ظ„ط©'),
           content: Text(
             cart.items.length == 1
-                ? 'سيتم حذف الصنف الموجود في السلة.'
-                : 'سيتم حذف جميع الأصناف الموجودة في السلة.',
+                ? 'ط³ظٹطھظ… ط­ط°ظپ ط§ظ„طµظ†ظپ ط§ظ„ظ…ظˆط¬ظˆط¯ ظپظٹ ط§ظ„ط³ظ„ط©.'
+                : 'ط³ظٹطھظ… ط­ط°ظپ ط¬ظ…ظٹط¹ ط§ظ„ط£طµظ†ط§ظپ ط§ظ„ظ…ظˆط¬ظˆط¯ط© ظپظٹ ط§ظ„ط³ظ„ط©.',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('إلغاء'),
+              child: const Text('ط¥ظ„ط؛ط§ط،'),
             ),
             FilledButton.icon(
               onPressed: () => Navigator.of(context).pop(true),
               icon: const Icon(Icons.delete_outline),
-              label: const Text('مسح السلة'),
+              label: const Text('ظ…ط³ط­ ط§ظ„ط³ظ„ط©'),
             ),
           ],
         );
@@ -174,7 +173,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
   }
 }
 
-class _CartItemTile extends ConsumerWidget {
+class _CartItemTile extends ConsumerStatefulWidget {
   final CartItem item;
   final double? officialLineTotal;
   final double? officialDiscountAmount;
@@ -186,53 +185,118 @@ class _CartItemTile extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CartItemTile> createState() => _CartItemTileState();
+}
+
+class _CartItemTileState extends ConsumerState<_CartItemTile> {
+  late final TextEditingController _discountController;
+  DiscountType _discountType = DiscountType.percentage;
+  String? _discountError;
+
+  CartItem get item => widget.item;
+
+  @override
+  void initState() {
+    super.initState();
+    _discountController = TextEditingController();
+    _syncDiscountFromItem();
+  }
+
+  @override
+  void didUpdateWidget(covariant _CartItemTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.discountType != widget.item.discountType ||
+        oldWidget.item.discountValue != widget.item.discountValue ||
+        oldWidget.item.lineKey != widget.item.lineKey) {
+      _syncDiscountFromItem();
+    }
+  }
+
+  @override
+  void dispose() {
+    _discountController.dispose();
+    super.dispose();
+  }
+
+  void _syncDiscountFromItem() {
+    _discountType = widget.item.discountType ?? DiscountType.percentage;
+    _discountController.text = widget.item.discountValue == null
+        ? ''
+        : widget.item.discountValue!.toStringAsFixed(2);
+    _discountError = null;
+  }
+
+  Future<void> _changeQuantity(double quantity) async {
+    try {
+      await ref
+          .read(cartProvider.notifier)
+          .changeQuantityWithPricing(item.itemId, item.unitId, quantity);
+    } catch (error) {
+      if (!mounted) return;
+      AppSnackbar.showError(context, ErrorMapper.userMessage(error));
+    }
+  }
+
+  void _removeItem() {
+    ref.read(cartProvider.notifier).removeItem(item.itemId, item.unitId);
+  }
+
+  void _clearDiscount() {
+    try {
+      ref
+          .read(cartProvider.notifier)
+          .clearLineDiscount(item.itemId, item.unitId);
+      _discountController.clear();
+      setState(() => _discountError = null);
+    } catch (error) {
+      AppSnackbar.showError(context, ErrorMapper.userMessage(error));
+    }
+  }
+
+  void _applyDiscount() {
+    if (!item.allowDiscount) return;
+
+    final raw = _discountController.text.trim();
+    if (raw.isEmpty) {
+      _clearDiscount();
+      return;
+    }
+
+    final value = double.tryParse(raw.replaceAll(',', '.'));
+    final gross = item.unitPrice * item.quantity;
+    if (value == null || value < 0) {
+      setState(() => _discountError = 'أدخل خصمًا صحيحًا.');
+      return;
+    }
+    if (_discountType == DiscountType.percentage && value > 100) {
+      setState(() => _discountError = 'النسبة لا تتجاوز 100%.');
+      return;
+    }
+    if (_discountType == DiscountType.fixed && value > gross) {
+      setState(() => _discountError = 'الخصم لا يتجاوز إجمالي السطر.');
+      return;
+    }
+
+    try {
+      ref
+          .read(cartProvider.notifier)
+          .applyLineDiscount(
+            item.itemId,
+            item.unitId,
+            type: _discountType,
+            value: value,
+          );
+      setState(() => _discountError = null);
+    } catch (error) {
+      AppSnackbar.showError(context, ErrorMapper.userMessage(error));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-
-    Future<void> changeQuantity(double quantity) async {
-      try {
-        await ref
-            .read(cartProvider.notifier)
-            .changeQuantityWithPricing(item.itemId, item.unitId, quantity);
-      } catch (error) {
-        if (!context.mounted) return;
-        AppSnackbar.showError(context, ErrorMapper.userMessage(error));
-      }
-    }
-
-    void removeItem() {
-      ref.read(cartProvider.notifier).removeItem(item.itemId, item.unitId);
-    }
-
-    Future<void> editDiscount() async {
-      final input = await showDialog<_LineDiscountInput>(
-        context: context,
-        builder: (context) => _LineDiscountDialog(item: item),
-      );
-      if (input == null) return;
-
-      try {
-        if (input.clear) {
-          ref
-              .read(cartProvider.notifier)
-              .clearLineDiscount(item.itemId, item.unitId);
-        } else {
-          ref
-              .read(cartProvider.notifier)
-              .applyLineDiscount(
-                item.itemId,
-                item.unitId,
-                type: input.type!,
-                value: input.value!,
-              );
-        }
-      } catch (error) {
-        if (!context.mounted) return;
-        AppSnackbar.showError(context, ErrorMapper.userMessage(error));
-      }
-    }
-
-    final lineTotal = officialLineTotal ?? item.unitPrice * item.quantity;
+    final lineTotal =
+        widget.officialLineTotal ?? item.unitPrice * item.quantity;
 
     return TweenAnimationBuilder<Color?>(
       tween: ColorTween(
@@ -253,92 +317,121 @@ class _CartItemTile extends ConsumerWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isCompact = constraints.maxWidth < 420;
+          final details = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.productName,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                maxLines: isCompact ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xs,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  _InlineAmountChip(
+                    label: 'السعر',
+                    value: item.unitPrice,
+                    enabled: false,
+                  ),
+                  Text(
+                    'x ${PosFormatters.quantity(item.quantity)}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  if ((widget.officialDiscountAmount ?? 0) > 0)
+                    Text(
+                      l10n.discountAmountLabel(
+                        PosFormatters.amount(
+                          widget.officialDiscountAmount ?? 0,
+                        ),
+                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppColors.success),
+                    ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              _InlineDiscountEditor(
+                controller: _discountController,
+                type: _discountType,
+                enabled: item.allowDiscount,
+                error: _discountError,
+                onTypeChanged: (type) {
+                  setState(() {
+                    _discountType = type;
+                    _discountError = null;
+                  });
+                  if (_discountController.text.trim().isNotEmpty) {
+                    _applyDiscount();
+                  }
+                },
+                onSubmitted: _applyDiscount,
+                onClear: _clearDiscount,
+              ),
+            ],
+          );
+
+          final quantityControls = Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _QtyButton(
+                icon: Icons.remove,
+                onTap: () => _changeQuantity(item.quantity - 1),
+              ),
+              Container(
+                width: 42,
+                alignment: Alignment.center,
+                child: Text(
+                  PosFormatters.quantity(item.quantity),
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ),
+              _QtyButton(
+                icon: Icons.add,
+                onTap: () => _changeQuantity(item.quantity + 1),
+              ),
+            ],
+          );
+
+          final totalAndDelete = Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text.rich(
+                PosFormatters.amountRich(
+                  lineTotal,
+                  amountStyle: Theme.of(context).textTheme.titleMedium
+                      ?.copyWith(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                textAlign: TextAlign.end,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              IconButton.filledTonal(
+                tooltip: 'حذف',
+                onPressed: _removeItem,
+                icon: const Icon(Icons.delete_outline, color: AppColors.error),
+              ),
+            ],
+          );
 
           if (isCompact) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item.productName,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  '${PosFormatters.amount(item.unitPrice)} x ${PosFormatters.quantity(item.quantity)}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                if ((officialDiscountAmount ?? 0) > 0)
-                  Text(
-                    l10n.discountAmountLabel(
-                      PosFormatters.amount(officialDiscountAmount ?? 0),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: AppColors.success,
-                    ),
-                  ),
-                const SizedBox(height: AppSpacing.sm),
+                details,
+                const SizedBox(height: AppSpacing.md),
                 Row(
-                  children: [
-                    _QtyButton(
-                      icon: Icons.remove,
-                      onTap: () => changeQuantity(item.quantity - 1),
-                    ),
-                    Container(
-                      width: 44,
-                      alignment: Alignment.center,
-                      child: Text(
-                        PosFormatters.quantity(item.quantity),
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    _QtyButton(
-                      icon: Icons.add,
-                      onTap: () => changeQuantity(item.quantity + 1),
-                    ),
-                    const Spacer(),
-                    Text.rich(
-                      PosFormatters.amountRich(
-                        lineTotal,
-                        amountStyle: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      textAlign: TextAlign.end,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    IconButton(
-                      tooltip: 'خصم',
-                      onPressed: item.allowDiscount ? editDiscount : null,
-                      icon: Icon(
-                        Icons.percent,
-                        color: item.allowDiscount
-                            ? AppColors.primary
-                            : AppColors.textHint,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'حذف',
-                      onPressed: removeItem,
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        color: AppColors.error,
-                      ),
-                    ),
-                  ],
+                  children: [quantityControls, const Spacer(), totalAndDelete],
                 ),
               ],
             );
@@ -347,112 +440,157 @@ class _CartItemTile extends ConsumerWidget {
           return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.productName,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: AppSpacing.xxs),
-                    Text(
-                      '${PosFormatters.amount(item.unitPrice)} x ${PosFormatters.quantity(item.quantity)}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    if ((officialDiscountAmount ?? 0) > 0)
-                      Text(
-                        l10n.discountAmountLabel(
-                          PosFormatters.amount(officialDiscountAmount ?? 0),
-                        ),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.success,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _QtyButton(
-                    icon: Icons.remove,
-                    onTap: () => changeQuantity(item.quantity - 1),
-                  ),
-                  Container(
-                    width: 36,
-                    alignment: Alignment.center,
-                    child: Text(
-                      PosFormatters.quantity(item.quantity),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  _QtyButton(
-                    icon: Icons.add,
-                    onTap: () => changeQuantity(item.quantity + 1),
-                  ),
-                ],
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text.rich(
-                    PosFormatters.amountRich(
-                      lineTotal,
-                      amountStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    textAlign: TextAlign.end,
-                  ),
-                  const SizedBox(height: 8),
-                  InkWell(
-                    onTap: item.allowDiscount ? editDiscount : null,
-                    borderRadius: BorderRadius.circular(4),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Icon(
-                        Icons.percent,
-                        color: item.allowDiscount
-                            ? AppColors.primary
-                            : AppColors.textHint,
-                        size: 22,
-                      ),
-                    ),
-                  ),
-                  InkWell(
-                    onTap: removeItem,
-                    borderRadius: BorderRadius.circular(4),
-                    child: const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Icon(
-                        Icons.delete_outline,
-                        color: AppColors.error,
-                        size: 24,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              Expanded(child: details),
+              const SizedBox(width: AppSpacing.md),
+              quantityControls,
+              const SizedBox(width: AppSpacing.md),
+              totalAndDelete,
             ],
           );
         },
       ),
+    );
+  }
+}
+
+class _InlineAmountChip extends StatelessWidget {
+  final String label;
+  final double value;
+  final bool enabled;
+
+  const _InlineAmountChip({
+    required this.label,
+    required this.value,
+    required this.enabled,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: enabled ? AppColors.surface : AppColors.surfaceVariant,
+        borderRadius: AppSpacing.borderRadiusSm,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '$label ',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            ),
+            Text.rich(
+              PosFormatters.amountRich(
+                value,
+                amountStyle: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InlineDiscountEditor extends StatelessWidget {
+  final TextEditingController controller;
+  final DiscountType type;
+  final bool enabled;
+  final String? error;
+  final ValueChanged<DiscountType> onTypeChanged;
+  final VoidCallback onSubmitted;
+  final VoidCallback onClear;
+
+  const _InlineDiscountEditor({
+    required this.controller,
+    required this.type,
+    required this.enabled,
+    required this.error,
+    required this.onTypeChanged,
+    required this.onSubmitted,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            SizedBox(
+              width: 112,
+              height: 40,
+              child: TextField(
+                controller: controller,
+                enabled: enabled,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                ],
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => onSubmitted(),
+                decoration: InputDecoration(
+                  labelText: enabled ? 'الخصم' : 'الخصم معطل',
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.xs,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            SegmentedButton<DiscountType>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(value: DiscountType.percentage, label: Text('%')),
+                ButtonSegment(value: DiscountType.fixed, label: Text('مبلغ')),
+              ],
+              selected: {type},
+              onSelectionChanged: enabled
+                  ? (value) => onTypeChanged(value.first)
+                  : null,
+            ),
+            IconButton(
+              tooltip: 'مسح الخصم',
+              onPressed: enabled ? onClear : null,
+              icon: const Icon(Icons.backspace_outlined),
+            ),
+          ],
+        ),
+        if (!enabled)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.xs),
+            child: Text(
+              'هذا الصنف لا يسمح بالخصم',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textHint),
+            ),
+          ),
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.xs),
+            child: Text(
+              error!,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.error),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -478,141 +616,6 @@ class _QtyButton extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-class _LineDiscountInput {
-  final DiscountType? type;
-  final double? value;
-  final bool clear;
-
-  const _LineDiscountInput.apply({required this.type, required this.value})
-    : clear = false;
-
-  const _LineDiscountInput.clear() : type = null, value = null, clear = true;
-}
-
-class _LineDiscountDialog extends StatefulWidget {
-  final CartItem item;
-
-  const _LineDiscountDialog({required this.item});
-
-  @override
-  State<_LineDiscountDialog> createState() => _LineDiscountDialogState();
-}
-
-class _LineDiscountDialogState extends State<_LineDiscountDialog> {
-  final _valueController = TextEditingController();
-  DiscountType _type = DiscountType.percentage;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _type = widget.item.discountType ?? DiscountType.percentage;
-    _valueController.text = widget.item.discountValue == null
-        ? ''
-        : widget.item.discountValue!.toStringAsFixed(2);
-  }
-
-  @override
-  void dispose() {
-    _valueController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('خصم الصنف'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            widget.item.productName,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: AppSpacing.md),
-          SegmentedButton<DiscountType>(
-            segments: const [
-              ButtonSegment(
-                value: DiscountType.percentage,
-                label: Text('نسبة'),
-                icon: Icon(Icons.percent),
-              ),
-              ButtonSegment(
-                value: DiscountType.fixed,
-                label: Text('مبلغ'),
-                icon: Icon(Icons.payments_outlined),
-              ),
-            ],
-            selected: {_type},
-            onSelectionChanged: (value) => setState(() {
-              _type = value.first;
-              _error = null;
-            }),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          AppTextField(
-            controller: _valueController,
-            labelText: _type == DiscountType.percentage ? 'النسبة' : 'المبلغ',
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            prefixIcon: Icon(
-              _type == DiscountType.percentage
-                  ? Icons.percent
-                  : Icons.payments_outlined,
-            ),
-          ),
-          if (!widget.item.allowDiscount) ...[
-            const SizedBox(height: AppSpacing.md),
-            AppInfoBanner.error(message: 'هذا الصنف لا يسمح بالخصم.'),
-          ],
-          if (_error != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            AppInfoBanner.error(message: _error!),
-          ],
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('إلغاء'),
-        ),
-        TextButton(
-          onPressed: () =>
-              Navigator.of(context).pop(const _LineDiscountInput.clear()),
-          child: const Text('مسح الخصم'),
-        ),
-        FilledButton(onPressed: _submit, child: const Text('تطبيق')),
-      ],
-    );
-  }
-
-  void _submit() {
-    if (!widget.item.allowDiscount) {
-      setState(() => _error = 'هذا الصنف لا يسمح بالخصم.');
-      return;
-    }
-
-    final value = double.tryParse(_valueController.text.trim());
-    final gross = widget.item.unitPrice * widget.item.quantity;
-    if (value == null || value < 0) {
-      setState(() => _error = 'أدخل قيمة خصم صحيحة.');
-      return;
-    }
-    if (_type == DiscountType.percentage && value > 100) {
-      setState(() => _error = 'النسبة يجب ألا تتجاوز 100%.');
-      return;
-    }
-    if (_type == DiscountType.fixed && value > gross) {
-      setState(() => _error = 'الخصم لا يمكن أن يتجاوز إجمالي السطر.');
-      return;
-    }
-
-    Navigator.of(
-      context,
-    ).pop(_LineDiscountInput.apply(type: _type, value: value));
   }
 }
 

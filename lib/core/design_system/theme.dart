@@ -11,7 +11,7 @@ import 'package:holol_POS/core/design_system/spacing.dart';
 abstract final class AppTheme {
   static ThemeData get light {
     final baseTheme = ThemeData(
-      fontFamilyFallback: const ['SaudiRiyal'],
+      fontFamilyFallback: const ['saudi-riyal'],
       useMaterial3: true,
       brightness: Brightness.light,
       colorScheme: const ColorScheme.light(
