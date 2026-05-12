@@ -133,6 +133,50 @@ class Items extends Table {
 
 /// Item units (each, kg, box, etc.) from backend ITEM_UNIT p_type.
 /// Barcode is NOT source of truth here — item_barcodes owns that.
+@TableIndex(name: 'idx_item_units_item_id', columns: {#itemId})
+class ItemUnits extends Table {
+  TextColumn get id => text()();
+  TextColumn get itemId => text()();
+  TextColumn get sourceUnitId => text().nullable()();
+  TextColumn get name => text()();
+  TextColumn get nameAr => text().nullable()();
+  RealColumn get conversionFactor => real().withDefault(const Constant(1.0))();
+  RealColumn get unitSize => real().nullable()();
+  BoolColumn get inactive => boolean().withDefault(const Constant(false))();
+  BoolColumn get noSale => boolean().withDefault(const Constant(false))();
+  BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
+  TextColumn get sourceUpdatedAt => text().nullable()();
+  DateTimeColumn get cachedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// =============================================================================
+// ITEM BARCODES — single source of truth for barcodes
+// =============================================================================
+
+/// Item barcodes — authoritative source for barcode lookups.
+/// Multiple barcodes per item/unit supported.
+@TableIndex(name: 'idx_item_barcodes_barcode', columns: {#barcode})
+class ItemBarcodes extends Table {
+  TextColumn get id => text()();
+  TextColumn get itemId => text()();
+  TextColumn get unitId => text().nullable()();
+  TextColumn get barcode => text()();
+  BoolColumn get isPrimary => boolean().withDefault(const Constant(false))();
+  DateTimeColumn get cachedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+// =============================================================================
+// ITEM PRICES
+// =============================================================================
+
+/// Item prices per price level and store.
+/// From backend ITEM_PRICE p_type.
 class ItemPrices extends Table {
   TextColumn get id => text()();
   TextColumn get itemId => text()();

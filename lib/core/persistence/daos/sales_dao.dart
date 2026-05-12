@@ -468,12 +468,7 @@ class SalesDao {
     required String userId,
     String sequenceType = 'sale',
   }) async {
-    final sequenceId = [
-      branchNo,
-      machineNo,
-      userId,
-      sequenceType,
-    ].join(':');
+    final sequenceId = [branchNo, machineNo, userId, sequenceType].join(':');
 
     return _db.transaction(() async {
       final row =

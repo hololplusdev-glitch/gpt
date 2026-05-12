@@ -408,12 +408,7 @@ class MasterDataMapper {
           ], 'ITEM_PRICE.itm_id');
           final storeId = data.text(['st_id']) ?? '';
           final unitId = data.requiredText(['unit_id'], 'ITEM_PRICE.unit_id');
-          final id = [
-            priceLevelId,
-            itemId,
-            storeId,
-            unitId ?? '',
-          ].join(':');
+          final id = [priceLevelId, itemId, storeId, unitId ?? ''].join(':');
           final price = data.decimal(['itm_price', 'price']);
           if (price == null) {
             throw const SyncException(

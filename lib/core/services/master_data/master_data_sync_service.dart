@@ -934,10 +934,7 @@ class MasterDataSyncService {
     required _MasterDataPage right,
     required int requestedLimit,
   }) {
-    final mergedItems = <Map<String, dynamic>>[
-      ...left.items,
-      ...right.items,
-    ];
+    final mergedItems = <Map<String, dynamic>>[...left.items, ...right.items];
 
     final serverTime = left.serverTime ?? right.serverTime;
     final total = right.total > 0 ? right.total : left.total;
@@ -977,7 +974,6 @@ class MasterDataSyncService {
 
     return error.toString();
   }
-
 
   Future<Response<dynamic>> _getPageResponseWithRetry({
     required Map<String, dynamic> queryParams,

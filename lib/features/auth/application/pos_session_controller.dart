@@ -176,15 +176,10 @@ class PosSessionController extends StateNotifier<PosSessionState> {
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
-      final hasPin = await _authDao.hasLocalPin(
-        userId: user.id,
-      );
+      final hasPin = await _authDao.hasLocalPin(userId: user.id);
 
       if (hasPin) {
-        final ok = await _authDao.verifyLocalPin(
-          userId: user.id,
-          pin: pin,
-        );
+        final ok = await _authDao.verifyLocalPin(userId: user.id, pin: pin);
 
         if (!ok) {
           state = state.copyWith(
@@ -194,15 +189,10 @@ class PosSessionController extends StateNotifier<PosSessionState> {
           return false;
         }
       } else {
-        await _authDao.setLocalPin(
-          userId: user.id,
-          pin: pin,
-        );
+        await _authDao.setLocalPin(userId: user.id, pin: pin);
       }
 
-      final machine = await _sessionDao.getMachine(
-        machineNo: machineNo,
-      );
+      final machine = await _sessionDao.getMachine(machineNo: machineNo);
 
       if (machine == null) {
         state = state.copyWith(

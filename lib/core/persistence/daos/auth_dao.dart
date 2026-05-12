@@ -51,14 +51,10 @@ class AuthDao {
 
   static const _pinPrefix = 'local-pin-v1';
 
-  Future<bool> hasLocalPin({
-    required String userId,
-  }) async {
-    final row =
-        await (_db.select(_db.localUserPins)..where(
-              (pin) => pin.userId.equals(userId),
-            ))
-            .getSingleOrNull();
+  Future<bool> hasLocalPin({required String userId}) async {
+    final row = await (_db.select(
+      _db.localUserPins,
+    )..where((pin) => pin.userId.equals(userId))).getSingleOrNull();
 
     return row != null && row.pinHash.trim().isNotEmpty;
   }
@@ -70,11 +66,9 @@ class AuthDao {
     _validatePin(pin);
 
     final now = _clock.now();
-    final existing =
-        await (_db.select(_db.localUserPins)..where(
-              (row) => row.userId.equals(userId),
-            ))
-            .getSingleOrNull();
+    final existing = await (_db.select(
+      _db.localUserPins,
+    )..where((row) => row.userId.equals(userId))).getSingleOrNull();
 
     final salt = existing?.pinSalt ?? _newSalt();
 
@@ -97,11 +91,9 @@ class AuthDao {
   }) async {
     _validatePin(pin);
 
-    final row =
-        await (_db.select(_db.localUserPins)..where(
-              (pinRow) => pinRow.userId.equals(userId),
-            ))
-            .getSingleOrNull();
+    final row = await (_db.select(
+      _db.localUserPins,
+    )..where((pinRow) => pinRow.userId.equals(userId))).getSingleOrNull();
 
     if (row == null) return false;
     return row.pinHash == _hashPin(pin, salt: row.pinSalt);

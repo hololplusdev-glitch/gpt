@@ -327,10 +327,7 @@ class ThermalReceiptPdfRenderer {
   pw.Widget _payments(InvoiceDocument document, InvoicePdfFontSet fonts) {
     return pw.Table(
       border: pw.TableBorder.all(width: 0.7),
-      columnWidths: const {
-        0: pw.FlexColumnWidth(2),
-        1: pw.FlexColumnWidth(1),
-      },
+      columnWidths: const {0: pw.FlexColumnWidth(2), 1: pw.FlexColumnWidth(1)},
       children: [
         pw.TableRow(
           decoration: const pw.BoxDecoration(color: PdfColors.grey300),

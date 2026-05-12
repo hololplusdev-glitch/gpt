@@ -100,7 +100,9 @@ class _ReceiptPainter {
     final lineCount = document.lines.length.clamp(1, 80);
     final notesExtra = _visible(document.notes) ? 42 : 0;
     final noticeExtra = _visible(document.arabicPrintNotice) ? 42 : 0;
-    final paymentExtra = document.payments.isEmpty ? 0 : (document.payments.length + 1) * 28;
+    final paymentExtra = document.payments.isEmpty
+        ? 0
+        : (document.payments.length + 1) * 28;
 
     final height =
         170 +
@@ -513,7 +515,12 @@ class _ReceiptPainter {
     text.draw(
       canvas,
       labels.paymentMethod,
-      Rect.fromLTWH(headerRow.left + 5, headerRow.top + 3, labelW - 10, rowH - 6),
+      Rect.fromLTWH(
+        headerRow.left + 5,
+        headerRow.top + 3,
+        labelW - 10,
+        rowH - 6,
+      ),
       size: small + 1,
       bold: true,
       align: TextAlign.center,
@@ -523,7 +530,12 @@ class _ReceiptPainter {
     text.draw(
       canvas,
       labels.amount,
-      Rect.fromLTWH(headerRow.left + labelW + 5, headerRow.top + 3, valueW - 10, rowH - 6),
+      Rect.fromLTWH(
+        headerRow.left + labelW + 5,
+        headerRow.top + 3,
+        valueW - 10,
+        rowH - 6,
+      ),
       size: small + 1,
       bold: true,
       align: TextAlign.center,
@@ -558,7 +570,12 @@ class _ReceiptPainter {
       text.draw(
         canvas,
         payment.displayAmount,
-        Rect.fromLTWH(row.left + labelW + 5, row.top + 3, valueW - 10, rowH - 6),
+        Rect.fromLTWH(
+          row.left + labelW + 5,
+          row.top + 3,
+          valueW - 10,
+          rowH - 6,
+        ),
         size: font + 1,
         bold: true,
         align: TextAlign.center,

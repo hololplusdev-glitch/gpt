@@ -2,7 +2,6 @@
 // WHY: Local invoice numbers are generated with a configurable pattern.
 // The official Backend invoice number is only assigned after sync.
 
-
 import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
 

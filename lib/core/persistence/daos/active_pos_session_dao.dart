@@ -141,21 +141,16 @@ class ActivePosSessionDao {
   }) {
     return (_db.select(_db.posUserMachineAccess)
           ..where(
-            (row) =>
-                row.userId.equals(userId) &
-                row.canUseMachine.equals(true),
+            (row) => row.userId.equals(userId) & row.canUseMachine.equals(true),
           )
           ..orderBy([(row) => OrderingTerm.asc(row.machineNo)]))
         .get();
   }
 
-  Future<PosMachine?> getMachine({
-    required String machineNo,
-  }) {
-    return (_db.select(_db.posMachines)..where(
-          (row) => row.machineNo.equals(machineNo),
-        ))
-        .getSingleOrNull();
+  Future<PosMachine?> getMachine({required String machineNo}) {
+    return (_db.select(
+      _db.posMachines,
+    )..where((row) => row.machineNo.equals(machineNo))).getSingleOrNull();
   }
 
   Future<PosUserMachineAccessData?> _runtimeMachinePrivilege({
@@ -176,9 +171,7 @@ class ActivePosSessionDao {
   }) async {
     _validateUser(user);
 
-    final privileges = await listAllowedMachinesForUser(
-      userId: user.id,
-    );
+    final privileges = await listAllowedMachinesForUser(userId: user.id);
 
     final choices = <RuntimeMachineChoice>[];
     final seenMachineNos = <String>{};
@@ -188,9 +181,7 @@ class ActivePosSessionDao {
         continue;
       }
 
-      final machine = await getMachine(
-          machineNo: privilege.machineNo,
-      );
+      final machine = await getMachine(machineNo: privilege.machineNo);
 
       if (machine == null || !machine.isActive) {
         continue;
@@ -226,7 +217,7 @@ class ActivePosSessionDao {
           ActivePosSessionsCompanion(
             id: const Value(1),
             sessionId: Value('SESS_${_uuid.v4()}'),
-                  activeUserId: Value(user.id),
+            activeUserId: Value(user.id),
             activeMachineNo: Value(machine.machineNo),
             loginAt: Value(now),
             updatedAt: Value(now),
@@ -246,11 +237,11 @@ class ActivePosSessionDao {
   }
 
   Future<ActivePosSession> _derive(ActivePosSessionRow row) async {
-    final user = await (_db.select(_db.posUsers)..where((u) => u.id.equals(row.activeUserId))).getSingleOrNull();
+    final user = await (_db.select(
+      _db.posUsers,
+    )..where((u) => u.id.equals(row.activeUserId))).getSingleOrNull();
 
-    final machine = await getMachine(
-      machineNo: row.activeMachineNo,
-    );
+    final machine = await getMachine(machineNo: row.activeMachineNo);
 
     if (user == null) {
       throw StateError('Active POS session user no longer exists.');
