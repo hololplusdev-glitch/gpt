@@ -83,6 +83,7 @@ class SaleCheckout {
     }
 
     final draftLines = request.cart.toSaleLineInputs();
+
     final officialLines = await _resolveOfficialPrices(
       session: session,
       draftLines: draftLines,
@@ -102,90 +103,28 @@ class SaleCheckout {
     PaymentMethodType? primaryType;
 
     for (final intent in requestedPaymentIntents) {
-Future<SalePaymentInput> _buildPaymentInput({
-  required SalePaymentIntent intent,
-}) async {
-  final resolved = await _resolvePaymentIntent(intent);
-  final amount = PricingEngine.roundAmount(intent.amount);
+      final payment = await _buildPaymentInput(intent: intent);
 
-  if (amount <= 0 || amount.isNaN) {
-    throw const SaleCheckoutException(
-      'Payment amount must be greater than zero.',
+      payments.add(payment);
+
+      primaryType ??= payment.paymentMethodType;
+      change += payment.changeGiven ?? 0.0;
+    }
+
+    final hasCustomerCredit = payments.any(
+      (payment) =>
+          payment.paymentMethodType == PaymentMethodType.customerCredit,
     );
-  }
 
-  var tendered = amount;
-  var change = 0.0;
-
-  if (resolved.allowsChange) {
-    tendered = PricingEngine.roundAmount(intent.tenderedAmount ?? amount);
-
-    if (tendered.isNaN) {
-      throw const SaleCheckoutException('Enter a valid tendered amount.');
+    if (hasCustomerCredit &&
+        (request.customerId == null || request.customerId!.trim().isEmpty)) {
+      throw const SaleCheckoutException(
+        'Customer is required for credit sale.',
+      );
     }
-
-    if (tendered < amount) {
-      throw const SaleCheckoutException('Insufficient amount tendered.');
-    }
-
-    change = PricingEngine.roundAmount(tendered - amount);
-  }
-
-  var effectiveType = resolved.type;
-  var profileRequiresReference = false;
-
-  if (resolved.needsPaymentProfile) {
-    final profile = await _paymentProfileService.getActivePaymentProfile();
-
-    if (profile == null || !profile.enabled) {
-      effectiveType = PaymentMethodType.manualCard;
-      profileRequiresReference = resolved.requiresReference;
-    } else {
-      final mode = PaymentProfileMode.fromCode(profile.mode);
-
-      if (mode == PaymentProfileMode.integrated) {
-        // Integrated terminals are not implemented in this product build.
-        // Fallback to manual card so the UI never exposes a fake integration.
-        effectiveType = PaymentMethodType.manualCard;
-        profileRequiresReference =
-            profile.requireReference || resolved.requiresReference;
-      } else {
-        effectiveType = PaymentMethodType.manualCard;
-        profileRequiresReference =
-            profile.requireReference || resolved.requiresReference;
-      }
-    }
-  }
-
-  final requirements = checkoutPaymentRequirements(
-    resolved,
-    paymentProfileRequiresReference: profileRequiresReference,
-  );
-
-  final reference = intent.reference.trim();
-
-  if (requirements.requiresReference && reference.isEmpty) {
-    throw const SaleCheckoutException('Payment reference is required.');
-  }
-
-  return SalePaymentInput(
-    paymentMethodId: resolved.methodId,
-    paymentMethodCode: resolved.code,
-    paymentMethodName: resolved.displayName,
-    paymentMethodType: effectiveType,
-    requiresReference: requirements.requiresReference,
-    amount: amount,
-    cashTendered: resolved.allowsChange ? tendered : null,
-    changeGiven: resolved.allowsChange ? change : null,
-    referenceNo: reference.isEmpty ? null : reference,
-    bankId: resolved.bankId,
-    cardTypeId: resolved.cardTypeId,
-  );
-}
-
 
     final paymentResult = PaymentPolicy(
-      requireCardReference: false,
+      requireCardReference: _config.requireCardReference,
     ).validate(quote: quote, payments: payments);
 
     final localInvoiceNo = await _invoiceNumberService.generateNext(
@@ -300,18 +239,25 @@ Future<SalePaymentInput> _buildPaymentInput({
 
   Future<SalePaymentInput> _buildPaymentInput({
     required SalePaymentIntent intent,
-    required CheckoutQuote quote,
   }) async {
     final resolved = await _resolvePaymentIntent(intent);
+    final amount = PricingEngine.roundAmount(intent.amount);
 
-
+    if (amount <= 0 || amount.isNaN) {
+      throw const SaleCheckoutException(
+        'Payment amount must be greater than zero.',
+      );
+    }
 
     var tendered = amount;
     var change = 0.0;
 
     if (resolved.allowsChange) {
+      tendered = PricingEngine.roundAmount(intent.tenderedAmount ?? amount);
 
-
+      if (tendered.isNaN) {
+        throw const SaleCheckoutException('Enter a valid tendered amount.');
+      }
 
       if (tendered < amount) {
         throw const SaleCheckoutException('Insufficient amount tendered.');
@@ -332,16 +278,10 @@ Future<SalePaymentInput> _buildPaymentInput({
       } else {
         final mode = PaymentProfileMode.fromCode(profile.mode);
 
-        if (mode == PaymentProfileMode.integrated &&
-            !_paymentProfileService.integratedAvailable(profile)) {
-          effectiveType = PaymentMethodType.manualCard;
-          profileRequiresReference =
-              profile.requireReference || resolved.requiresReference;
-        } else if (mode == PaymentProfileMode.integrated) {
-          throw const SaleCheckoutException(
-            'Integrated payment flow is not implemented yet.',
-          );
-        } else {
+        // Integrated terminals are not implemented in this build.
+        // Any configured profile is treated as manual card capture.
+        if (mode == PaymentProfileMode.integrated ||
+            mode == PaymentProfileMode.manual) {
           effectiveType = PaymentMethodType.manualCard;
           profileRequiresReference =
               profile.requireReference || resolved.requiresReference;
@@ -351,9 +291,7 @@ Future<SalePaymentInput> _buildPaymentInput({
 
     final requirements = checkoutPaymentRequirements(
       resolved,
-      paymentProfileRequiresReference: intent.kind == SaleTenderKind.network
-          ? false
-          : profileRequiresReference,
+      paymentProfileRequiresReference: profileRequiresReference,
     );
 
     final reference = intent.reference.trim();
@@ -377,16 +315,6 @@ Future<SalePaymentInput> _buildPaymentInput({
     );
   }
 
-
-
-
-
-) {
-    final normalized = text.trim().replaceAll(',', '.');
-    if (normalized.isEmpty) return fallback;
-    return double.tryParse(normalized) ?? fallback;
-  }
-
   Future<ResolvedPaymentMethod> _resolvePaymentIntent(
     SalePaymentIntent intent,
   ) async {
@@ -398,8 +326,10 @@ Future<SalePaymentInput> _buildPaymentInput({
           methodCode: method.code,
           storedTypeCode: method.type,
         );
+
         if (type != null && test(method)) return method;
       }
+
       return null;
     }
 
@@ -440,18 +370,22 @@ Future<SalePaymentInput> _buildPaymentInput({
     switch (intent.kind) {
       case SaleTenderKind.cash:
         final method = firstWhere((method) => typeOf(method)?.isCash ?? false);
+
         if (method == null) {
           throw const SaleCheckoutException('لا توجد طريقة دفع كاش مفعلة.');
         }
+
         return fromRow(method);
 
       case SaleTenderKind.network:
         final manual = firstWhere(
           (method) => typeOf(method) == PaymentMethodType.manualCard,
         );
+
         if (manual != null) return withoutReference(fromRow(manual));
 
         final card = firstWhere((method) => typeOf(method)?.isCard ?? false);
+
         if (card != null) return withoutReference(fromRow(card));
 
         return const ResolvedPaymentMethod(
@@ -469,6 +403,7 @@ Future<SalePaymentInput> _buildPaymentInput({
         final method = firstWhere(
           (method) => typeOf(method) == PaymentMethodType.customerCredit,
         );
+
         if (method != null) return fromRow(method);
 
         return const ResolvedPaymentMethod(
@@ -701,6 +636,7 @@ Future<SalePaymentInput> _buildPaymentInput({
       if (p.taxAmount <= 0 && p.input.taxRate <= 0) continue;
 
       final existing = taxGroups[p.input.taxRate];
+
       taxGroups[p.input.taxRate] = (
         taxableAmount: (existing?.taxableAmount ?? 0) + p.taxableAmount,
         taxAmount: (existing?.taxAmount ?? 0) + p.taxAmount,
@@ -784,6 +720,7 @@ Future<SalePaymentInput> _buildPaymentInput({
 
   String _saleSequenceType(ActivePosSession session) {
     final series = session.invoiceSeries?.trim();
+
     return series == null || series.isEmpty ? 'sale' : series;
   }
 

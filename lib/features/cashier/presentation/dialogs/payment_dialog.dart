@@ -19,7 +19,6 @@ import 'package:holol_POS/shared/presentation/widgets/app_dropdown.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
-import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 
 enum _CheckoutTenderKind { cash, network, credit, mixed }
@@ -222,8 +221,6 @@ List<SalePaymentIntent> _buildPaymentIntents() {
       return intents;
   }
 }
-
-
 
   String? _validatePaymentBeforeSubmit() {
     if (_quote == null) {
@@ -493,7 +490,6 @@ List<SalePaymentIntent> _buildPaymentIntents() {
       ],
     );
   }
-
   Widget _buildCreditBody(AsyncValue<List<Customer>> customers) {
     return Column(
       mainAxisSize: MainAxisSize.min,
