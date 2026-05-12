@@ -73,11 +73,7 @@ extension SaleLineInputListPricingMapper on Iterable<SaleLineInput> {
   }
 }
 
-enum SaleTenderKind {
-  cash,
-  network,
-  credit,
-}
+enum SaleTenderKind { cash, network, credit }
 
 class SalePaymentIntent {
   final SaleTenderKind kind;

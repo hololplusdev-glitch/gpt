@@ -18,10 +18,7 @@ class ShiftCommandState {
   final bool isLoading;
   final String? errorMessage;
 
-  const ShiftCommandState({
-    this.isLoading = false,
-    this.errorMessage,
-  });
+  const ShiftCommandState({this.isLoading = false, this.errorMessage});
 
   ShiftCommandState copyWith({
     bool? isLoading,
@@ -39,18 +36,12 @@ class ShiftCommandResult {
   final bool success;
   final String? errorMessage;
 
-  const ShiftCommandResult._({
-    required this.success,
-    this.errorMessage,
-  });
+  const ShiftCommandResult._({required this.success, this.errorMessage});
 
   const ShiftCommandResult.success() : this._(success: true);
 
   const ShiftCommandResult.failure(String message)
-      : this._(
-          success: false,
-          errorMessage: message,
-        );
+    : this._(success: false, errorMessage: message);
 }
 
 class ShiftDashboard {
@@ -93,26 +84,26 @@ final activeShiftProvider = FutureProvider.autoDispose<Shift?>((ref) async {
 /// Use this only for the shift screen.
 final activeShiftDashboardProvider =
     FutureProvider.autoDispose<ShiftDashboard?>((ref) async {
-  final shift = await ref.watch(activeShiftProvider.future);
+      final shift = await ref.watch(activeShiftProvider.future);
 
-  if (shift == null) {
-    return null;
-  }
+      if (shift == null) {
+        return null;
+      }
 
-  final shiftDao = ref.watch(shiftDaoProvider);
-  final salesDao = ref.watch(salesDaoProvider);
+      final shiftDao = ref.watch(shiftDaoProvider);
+      final salesDao = ref.watch(salesDaoProvider);
 
-  final totals = await salesDao.getShiftSalesTotals(shift.id);
-  final movements = await shiftDao.getCashMovementTotals(shift.id);
+      final totals = await salesDao.getShiftSalesTotals(shift.id);
+      final movements = await shiftDao.getCashMovementTotals(shift.id);
 
-  return ShiftDashboard(
-    shift: shift,
-    totals: totals,
-    cashIn: movements.cashIn,
-    cashOut: movements.cashOut,
-    cashRefund: movements.cashRefund,
-  );
-});
+      return ShiftDashboard(
+        shift: shift,
+        totals: totals,
+        cashIn: movements.cashIn,
+        cashOut: movements.cashOut,
+        cashRefund: movements.cashRefund,
+      );
+    });
 
 class ShiftController extends StateNotifier<ShiftCommandState> {
   final ShiftService _shiftService;
@@ -268,12 +259,12 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
 
 final shiftControllerProvider =
     StateNotifierProvider<ShiftController, ShiftCommandState>((ref) {
-  return ShiftController(
-    ref.watch(shiftServiceProvider),
-    () => ref.read(activePosSessionProvider).valueOrNull,
-    () async {
-      ref.invalidate(activeShiftProvider);
-      ref.invalidate(activeShiftDashboardProvider);
-    },
-  );
-});
+      return ShiftController(
+        ref.watch(shiftServiceProvider),
+        () => ref.read(activePosSessionProvider).valueOrNull,
+        () async {
+          ref.invalidate(activeShiftProvider);
+          ref.invalidate(activeShiftDashboardProvider);
+        },
+      );
+    });

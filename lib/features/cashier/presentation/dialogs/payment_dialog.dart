@@ -101,9 +101,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     return double.tryParse(normalized) ?? double.nan;
   }
 
-
-
-
   double get _mixedCashAmount => _parseMoney(_mixedCashController.text);
   double get _mixedNetworkAmount => _parseMoney(_mixedNetworkController.text);
 
@@ -154,8 +151,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         _mixedCreditRemainder = false;
       }
     });
-  }
-
 List<SalePaymentIntent> _buildPaymentIntents() {
   switch (_selectedKind) {
     case _CheckoutTenderKind.cash:
@@ -227,6 +222,7 @@ List<SalePaymentIntent> _buildPaymentIntents() {
       return intents;
   }
 }
+
 
 
   String? _validatePaymentBeforeSubmit() {
@@ -466,52 +462,21 @@ List<SalePaymentIntent> _buildPaymentIntents() {
   Widget _buildSelectedMethodBody(AsyncValue<List<Customer>> customers) {
     return switch (_selectedKind) {
       _CheckoutTenderKind.cash => _buildCashBody(),
-Widget _buildNetworkBody() {
-  return Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      const AppInfoBanner(
-        message:
-            'سيتم تسجيل عملية الشبكة يدويًا. ربط جهاز الدفع غير مفعل في هذا الإصدار.',
-        type: AppBannerType.info,
-      ),
-      const SizedBox(height: AppSpacing.lg),
-      AppTextField(
-        controller: _referenceController,
-        textInputAction: TextInputAction.done,
-        labelText: 'رقم مرجع الشبكة اختياري',
-        prefixIcon: const Icon(Icons.confirmation_number_outlined),
-      ),
-      const SizedBox(height: AppSpacing.xl),
-      _CompleteButton(
-        isProcessing: _isProcessing,
-        label: 'تسجيل دفع شبكة',
-        onPressed: _processPayment,
-      ),
-    ],
-  );
-}
-
+      _CheckoutTenderKind.network => _buildNetworkBody(),
+      _CheckoutTenderKind.credit => _buildCreditBody(customers),
+      _CheckoutTenderKind.mixed => _buildMixedBody(customers),
+    };
+  }
 
   Widget _buildNetworkBody() {
-    final profile = ref.watch(activePaymentProfileProvider).valueOrNull;
-    final profileMode = PaymentProfileMode.fromCode(profile?.mode);
-    final integratedConfigured =
-        profile != null &&
-        profile.enabled &&
-        profileMode == PaymentProfileMode.integrated;
-    final integratedReady = profile == null
-        ? false
-        : ref.read(paymentProfileServiceProvider).integratedAvailable(profile);
-
-    final warning = integratedConfigured && !integratedReady
-        ? 'جهاز الدفع غير متصل. سيتم تسجيل عملية شبكة يدويًا مع حفظها كدفعة شبكة.'
-        : 'لم يتم تفعيل ربط جهاز الدفع بعد. سيتم تسجيل عملية شبكة يدويًا مع حفظها كدفعة شبكة.';
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AppInfoBanner(message: warning, type: AppBannerType.warning),
+        const AppInfoBanner(
+          message:
+              'سيتم تسجيل عملية الشبكة يدويًا. ربط جهاز الدفع غير مفعل في هذا الإصدار.',
+          type: AppBannerType.info,
+        ),
         const SizedBox(height: AppSpacing.lg),
         AppTextField(
           controller: _referenceController,

@@ -102,23 +102,87 @@ class SaleCheckout {
     PaymentMethodType? primaryType;
 
     for (final intent in requestedPaymentIntents) {
-      final payment = await _buildPaymentInput(intent: intent);
-      payments.add(payment);
-      primaryType ??= payment.paymentMethodType;
-      change += payment.changeGiven ?? 0.0;
-    }
+Future<SalePaymentInput> _buildPaymentInput({
+  required SalePaymentIntent intent,
+}) async {
+  final resolved = await _resolvePaymentIntent(intent);
+  final amount = PricingEngine.roundAmount(intent.amount);
 
-    final hasCustomerCredit = payments.any(
-      (payment) =>
-          payment.paymentMethodType == PaymentMethodType.customerCredit,
+  if (amount <= 0 || amount.isNaN) {
+    throw const SaleCheckoutException(
+      'Payment amount must be greater than zero.',
     );
+  }
 
-    if (hasCustomerCredit &&
-        (request.customerId == null || request.customerId!.trim().isEmpty)) {
-      throw const SaleCheckoutException(
-        'Customer is required for credit sale.',
-      );
+  var tendered = amount;
+  var change = 0.0;
+
+  if (resolved.allowsChange) {
+    tendered = PricingEngine.roundAmount(intent.tenderedAmount ?? amount);
+
+    if (tendered.isNaN) {
+      throw const SaleCheckoutException('Enter a valid tendered amount.');
     }
+
+    if (tendered < amount) {
+      throw const SaleCheckoutException('Insufficient amount tendered.');
+    }
+
+    change = PricingEngine.roundAmount(tendered - amount);
+  }
+
+  var effectiveType = resolved.type;
+  var profileRequiresReference = false;
+
+  if (resolved.needsPaymentProfile) {
+    final profile = await _paymentProfileService.getActivePaymentProfile();
+
+    if (profile == null || !profile.enabled) {
+      effectiveType = PaymentMethodType.manualCard;
+      profileRequiresReference = resolved.requiresReference;
+    } else {
+      final mode = PaymentProfileMode.fromCode(profile.mode);
+
+      if (mode == PaymentProfileMode.integrated) {
+        // Integrated terminals are not implemented in this product build.
+        // Fallback to manual card so the UI never exposes a fake integration.
+        effectiveType = PaymentMethodType.manualCard;
+        profileRequiresReference =
+            profile.requireReference || resolved.requiresReference;
+      } else {
+        effectiveType = PaymentMethodType.manualCard;
+        profileRequiresReference =
+            profile.requireReference || resolved.requiresReference;
+      }
+    }
+  }
+
+  final requirements = checkoutPaymentRequirements(
+    resolved,
+    paymentProfileRequiresReference: profileRequiresReference,
+  );
+
+  final reference = intent.reference.trim();
+
+  if (requirements.requiresReference && reference.isEmpty) {
+    throw const SaleCheckoutException('Payment reference is required.');
+  }
+
+  return SalePaymentInput(
+    paymentMethodId: resolved.methodId,
+    paymentMethodCode: resolved.code,
+    paymentMethodName: resolved.displayName,
+    paymentMethodType: effectiveType,
+    requiresReference: requirements.requiresReference,
+    amount: amount,
+    cashTendered: resolved.allowsChange ? tendered : null,
+    changeGiven: resolved.allowsChange ? change : null,
+    referenceNo: reference.isEmpty ? null : reference,
+    bankId: resolved.bankId,
+    cardTypeId: resolved.cardTypeId,
+  );
+}
+
 
     final paymentResult = PaymentPolicy(
       requireCardReference: false,
@@ -313,13 +377,11 @@ class SaleCheckout {
     );
   }
 
-  double _paymentAmount(SalePaymentIntent intent, CheckoutQuote quote) {
-    final text = intent.amountText.trim();
-    if (text.isEmpty) return quote.grandTotal;
-    return _parseAmount(text, fallback: double.nan);
-  }
 
-  double _parseAmount(String text, {required double fallback}) {
+
+
+
+) {
     final normalized = text.trim().replaceAll(',', '.');
     if (normalized.isEmpty) return fallback;
     return double.tryParse(normalized) ?? fallback;
@@ -866,12 +928,6 @@ class PaymentPolicy {
             'Card payment reference is required.',
           );
         }
-      }
-
-      if (type.isIntegratedCard && !payment.hasTerminalApproval) {
-        throw const SaleCheckoutException(
-          'Integrated card payment requires terminal approval.',
-        );
       }
 
       if (type == PaymentMethodType.customerCredit) {

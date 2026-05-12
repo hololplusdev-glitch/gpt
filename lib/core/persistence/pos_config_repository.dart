@@ -115,37 +115,25 @@ class PosConfigRepository {
   // Typed convenience getters
   // ---------------------------------------------------------------------------
 
-  int get shiftDefaultDurationMinutes => getInt(
-    PosConfigKeys.shiftDefaultDurationMinutes,
-    fallback: 480,
-  );
+  int get shiftDefaultDurationMinutes =>
+      getInt(PosConfigKeys.shiftDefaultDurationMinutes, fallback: 480);
 
-  int get shiftExtendMinutes => getInt(
-    PosConfigKeys.shiftExtendMinutes,
-    fallback: 30,
-  );
+  int get shiftExtendMinutes =>
+      getInt(PosConfigKeys.shiftExtendMinutes, fallback: 30);
 
-  bool get useHeldInvoices => getBool(
-    PosConfigKeys.useHeldInvoices,
-    fallback: true,
-  );
+  bool get useHeldInvoices =>
+      getBool(PosConfigKeys.useHeldInvoices, fallback: true);
 
-  int get maxHeldInvoices => getInt(
-    PosConfigKeys.maxHeldInvoices,
-    fallback: 20,
-  );
+  int get maxHeldInvoices =>
+      getInt(PosConfigKeys.maxHeldInvoices, fallback: 20);
 
-  bool get blockShiftCloseWithHeldInvoices => getBool(
-    PosConfigKeys.blockShiftCloseWithHeldInvoices,
-    fallback: true,
-  );
+  bool get blockShiftCloseWithHeldInvoices =>
+      getBool(PosConfigKeys.blockShiftCloseWithHeldInvoices, fallback: true);
 
   bool get priceIncludesTax => getBool(PosConfigKeys.priceIncludesTax);
 
   bool get requireCardReference => getBool(PosConfigKeys.requireCardReference);
 
-  bool get autoPrintAfterSale => getBool(
-    PosConfigKeys.autoPrintAfterSale,
-    fallback: true,
-  );
+  bool get autoPrintAfterSale =>
+      getBool(PosConfigKeys.autoPrintAfterSale, fallback: true);
 }
