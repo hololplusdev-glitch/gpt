@@ -232,11 +232,10 @@ class _UploadAccepted {
   final String? serverMappingId;
   final String? responseSummary;
 
-  const _UploadAccepted({
-    this.serverId,
-    this.serverMappingId,
-    this.responseSummary,
-  });
+  const _UploadAccepted()
+    : serverId = null,
+      serverMappingId = null,
+      responseSummary = null;
 }
 
 class UploadApiUnavailableException extends SyncTransportException {

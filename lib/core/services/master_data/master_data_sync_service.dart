@@ -160,19 +160,6 @@ class MasterDataSyncService {
     return Map<String, dynamic>.from(body);
   }
 
-  Map<String, dynamic> _responseMap(
-    dynamic body, {
-    required String invalidMessage,
-  }) {
-    final data = _responseMapOrNull(body);
-    if (data == null) {
-      throw SyncException(
-        invalidMessage,
-        code: 'MASTER_DATA_INVALID_RESPONSE',
-      );
-    }
-    return data;
-  }
 
   String _responseStatus(Map<String, dynamic> data) {
     return _cleanResponseText(data['status']).toUpperCase();
@@ -186,13 +173,6 @@ class MasterDataSyncService {
     return status == 'ERROR';
   }
 
-  String _responseErrorCode(
-    Map<String, dynamic> data, {
-    required String fallback,
-  }) {
-    final code = _cleanResponseText(data['code']);
-    return code.isEmpty ? fallback : code;
-  }
 
   String _responseErrorMessage(
     Map<String, dynamic> data, {
