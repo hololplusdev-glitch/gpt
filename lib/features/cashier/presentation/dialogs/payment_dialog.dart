@@ -101,9 +101,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     return double.tryParse(normalized) ?? double.nan;
   }
 
-  String _amountText(double value) {
-    return PricingEngine.roundAmount(value).toStringAsFixed(2);
-  }
+
+
 
   double get _mixedCashAmount => _parseMoney(_mixedCashController.text);
   double get _mixedNetworkAmount => _parseMoney(_mixedNetworkController.text);
@@ -157,80 +156,78 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     });
   }
 
-  List<SalePaymentIntent> _buildPaymentIntents() {
-    switch (_selectedKind) {
-      case _CheckoutTenderKind.cash:
-        return [
+List<SalePaymentIntent> _buildPaymentIntents() {
+  switch (_selectedKind) {
+    case _CheckoutTenderKind.cash:
+      return [
+        SalePaymentIntent(
+          kind: SaleTenderKind.cash,
+          amount: _totalAmount,
+          tenderedAmount: _parseMoney(_tenderedController.text),
+        ),
+      ];
+
+    case _CheckoutTenderKind.network:
+      return [
+        SalePaymentIntent(
+          kind: SaleTenderKind.network,
+          amount: _totalAmount,
+          tenderedAmount: _totalAmount,
+          reference: _referenceController.text.trim(),
+        ),
+      ];
+
+    case _CheckoutTenderKind.credit:
+      return [
+        SalePaymentIntent(
+          kind: SaleTenderKind.credit,
+          amount: _totalAmount,
+          tenderedAmount: _totalAmount,
+        ),
+      ];
+
+    case _CheckoutTenderKind.mixed:
+      final intents = <SalePaymentIntent>[];
+
+      final cash = _mixedCashAmount;
+      final network = _mixedNetworkAmount;
+      final remaining = _mixedRemainingAmount;
+
+      if (!cash.isNaN && cash > 0) {
+        intents.add(
           SalePaymentIntent(
             kind: SaleTenderKind.cash,
-            amountText: _amountText(_totalAmount),
-            tenderedText: _tenderedController.text,
-            reference: '',
+            amount: cash,
+            tenderedAmount: cash,
           ),
-        ];
+        );
+      }
 
-      case _CheckoutTenderKind.network:
-        return [
+      if (!network.isNaN && network > 0) {
+        intents.add(
           SalePaymentIntent(
             kind: SaleTenderKind.network,
-            amountText: _amountText(_totalAmount),
-            tenderedText: _amountText(_totalAmount),
-            reference: _referenceController.text,
+            amount: network,
+            tenderedAmount: network,
+            reference: _mixedNetworkReferenceController.text.trim(),
           ),
-        ];
+        );
+      }
 
-      case _CheckoutTenderKind.credit:
-        return [
+      if (_mixedCreditRemainder && !remaining.isNaN && remaining > 0.01) {
+        intents.add(
           SalePaymentIntent(
             kind: SaleTenderKind.credit,
-            amountText: _amountText(_totalAmount),
-            tenderedText: _amountText(_totalAmount),
-            reference: '',
+            amount: remaining,
+            tenderedAmount: remaining,
           ),
-        ];
+        );
+      }
 
-      case _CheckoutTenderKind.mixed:
-        final intents = <SalePaymentIntent>[];
-        final cash = _mixedCashAmount;
-        final network = _mixedNetworkAmount;
-        final remaining = _mixedRemainingAmount;
-
-        if (!cash.isNaN && cash > 0) {
-          intents.add(
-            SalePaymentIntent(
-              kind: SaleTenderKind.cash,
-              amountText: _amountText(cash),
-              tenderedText: _amountText(cash),
-              reference: '',
-            ),
-          );
-        }
-
-        if (!network.isNaN && network > 0) {
-          intents.add(
-            SalePaymentIntent(
-              kind: SaleTenderKind.network,
-              amountText: _amountText(network),
-              tenderedText: _amountText(network),
-              reference: _mixedNetworkReferenceController.text,
-            ),
-          );
-        }
-
-        if (_mixedCreditRemainder && !remaining.isNaN && remaining > 0.01) {
-          intents.add(
-            SalePaymentIntent(
-              kind: SaleTenderKind.credit,
-              amountText: _amountText(remaining),
-              tenderedText: _amountText(remaining),
-              reference: '',
-            ),
-          );
-        }
-
-        return intents;
-    }
+      return intents;
   }
+}
+
 
   String? _validatePaymentBeforeSubmit() {
     if (_quote == null) {
@@ -469,46 +466,32 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   Widget _buildSelectedMethodBody(AsyncValue<List<Customer>> customers) {
     return switch (_selectedKind) {
       _CheckoutTenderKind.cash => _buildCashBody(),
-      _CheckoutTenderKind.network => _buildNetworkBody(),
-      _CheckoutTenderKind.credit => _buildCreditBody(customers),
-      _CheckoutTenderKind.mixed => _buildMixedBody(customers),
-    };
-  }
+Widget _buildNetworkBody() {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      const AppInfoBanner(
+        message:
+            'سيتم تسجيل عملية الشبكة يدويًا. ربط جهاز الدفع غير مفعل في هذا الإصدار.',
+        type: AppBannerType.info,
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      AppTextField(
+        controller: _referenceController,
+        textInputAction: TextInputAction.done,
+        labelText: 'رقم مرجع الشبكة اختياري',
+        prefixIcon: const Icon(Icons.confirmation_number_outlined),
+      ),
+      const SizedBox(height: AppSpacing.xl),
+      _CompleteButton(
+        isProcessing: _isProcessing,
+        label: 'تسجيل دفع شبكة',
+        onPressed: _processPayment,
+      ),
+    ],
+  );
+}
 
-  Widget _buildCashBody() {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AppTextField(
-          controller: _tenderedController,
-          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-          inputFormatters: [
-            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-          ],
-          labelText: l10n.amountTenderedSar,
-          prefixText: '${l10n.currency} ',
-          autofocus: false,
-          onChanged: (_) => setState(_recalculateChange),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        if (_change > 0)
-          AppInfoBanner(
-            message: '${l10n.change}: ${PosFormatters.amount(_change)}',
-            type: AppBannerType.info,
-          ),
-        const SizedBox(height: AppSpacing.xl),
-        _CompleteButton(
-          isProcessing: _isProcessing,
-          label: l10n.completePayment,
-          onPressed: _processPayment,
-        ),
-      ],
-    );
-  }
 
   Widget _buildNetworkBody() {
     final profile = ref.watch(activePaymentProfileProvider).valueOrNull;

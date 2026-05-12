@@ -1,5 +1,5 @@
 // app/router.dart
-// WHY: GoRouter with setup guard → auth guard → shift guard.
+// WHY: GoRouter with setup guard → auth guard → mandatory shift guard.
 // Enforces: first-run setup → login → open shift → cashier.
 
 import 'package:flutter/material.dart';
@@ -53,10 +53,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     ..listen(setupProvider, (_, __) => refreshNotifier.refresh())
     ..listen(posConfigRevisionProvider, (_, __) => refreshNotifier.refresh())
     ..listen(activePosSessionProvider, (_, __) => refreshNotifier.refresh())
-    ..listen(
-      activeShiftDashboardProvider,
-      (_, __) => refreshNotifier.refresh(),
-    );
+    ..listen(activeShiftProvider, (_, __) => refreshNotifier.refresh());
 
   return GoRouter(
     initialLocation: AppRoutes.boot,
@@ -67,7 +64,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final activeSession = ref.read(activePosSessionProvider).valueOrNull;
       final isAuthenticated = activeSession != null;
       final shiftRequired = isAuthenticated;
-      final activeShift = ref.read(activeShiftDashboardProvider).valueOrNull;
+      final activeShift = ref.read(activeShiftProvider).valueOrNull;
       final hasOpenShift = activeShift != null;
 
       final isBootRoute = state.matchedLocation == AppRoutes.boot;

@@ -102,7 +102,7 @@ class SaleCheckout {
     PaymentMethodType? primaryType;
 
     for (final intent in requestedPaymentIntents) {
-      final payment = await _buildPaymentInput(intent: intent, quote: quote);
+      final payment = await _buildPaymentInput(intent: intent);
       payments.add(payment);
       primaryType ??= payment.paymentMethodType;
       change += payment.changeGiven ?? 0.0;
@@ -239,28 +239,15 @@ class SaleCheckout {
     required CheckoutQuote quote,
   }) async {
     final resolved = await _resolvePaymentIntent(intent);
-    final amount = _paymentAmount(intent, quote);
 
-    if (amount <= 0 || amount.isNaN) {
-      throw const SaleCheckoutException(
-        'Payment amount must be greater than zero.',
-      );
-    }
+
 
     var tendered = amount;
     var change = 0.0;
 
     if (resolved.allowsChange) {
-      tendered = _parseAmount(
-        intent.tenderedText.trim().isEmpty
-            ? intent.amountText
-            : intent.tenderedText,
-        fallback: amount,
-      );
 
-      if (tendered.isNaN) {
-        throw const SaleCheckoutException('Enter a valid tendered amount.');
-      }
+
 
       if (tendered < amount) {
         throw const SaleCheckoutException('Insufficient amount tendered.');

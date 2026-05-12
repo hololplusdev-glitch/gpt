@@ -7,7 +7,6 @@ import 'package:drift/drift.dart';
 import 'package:holol_POS/core/constants/pos_config_keys.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
-import 'package:holol_POS/shared/models/enums.dart';
 
 /// Reads and writes POS config from `terminal_local_settings` table.
 class PosConfigRepository {
@@ -28,7 +27,12 @@ class PosConfigRepository {
   /// Load all config into memory before reading cached values.
   Future<void> initialize() async {
     final rows = await _db.select(_db.terminalLocalSettings).get();
-    _cache = {for (final r in rows) r.key: r.value};
+
+    _cache = {
+      for (final r in rows)
+        if (!PosConfigKeys.deprecatedKeys.contains(r.key)) r.key: r.value,
+    };
+
     _onChanged?.call();
   }
 
@@ -41,17 +45,25 @@ class PosConfigRepository {
   }
 
   bool getBool(String key, {bool fallback = false}) {
-    final v = _cache[key] ?? PosConfigDefaults.all[key];
-    return v == 'true' || v == '1';
+    final value = _cache[key] ?? PosConfigDefaults.all[key];
+
+    if (value == null) return fallback;
+
+    return value == 'true' || value == '1';
   }
 
   int getInt(String key, {int fallback = 0}) {
-    final v = _cache[key] ?? PosConfigDefaults.all[key];
-    return int.tryParse(v ?? '') ?? fallback;
+    final value = _cache[key] ?? PosConfigDefaults.all[key];
+
+    return int.tryParse(value ?? '') ?? fallback;
   }
 
   /// Write a config value.
   Future<void> set(String key, String value) async {
+    if (PosConfigKeys.deprecatedKeys.contains(key)) {
+      return;
+    }
+
     await _db
         .into(_db.terminalLocalSettings)
         .insertOnConflictUpdate(
@@ -61,13 +73,17 @@ class PosConfigRepository {
             updatedAt: Value(_clock.now()),
           ),
         );
+
     _cache[key] = value;
     _onChanged?.call();
   }
 
-  /// Seed defaults (only writes keys that don't exist yet).
+  /// Seed defaults and remove legacy config keys that no longer affect runtime.
   Future<void> seedDefaults() async {
+    await _purgeDeprecatedKeys();
+
     final now = _clock.now();
+
     for (final entry in PosConfigDefaults.all.entries) {
       if (!_cache.containsKey(entry.key)) {
         await _db
@@ -81,34 +97,55 @@ class PosConfigRepository {
             );
       }
     }
-    await initialize(); // Refresh cache
+
+    await initialize();
+  }
+
+  Future<void> _purgeDeprecatedKeys() async {
+    for (final key in PosConfigKeys.deprecatedKeys) {
+      await (_db.delete(
+        _db.terminalLocalSettings,
+      )..where((row) => row.key.equals(key))).go();
+
+      _cache.remove(key);
+    }
   }
 
   // ---------------------------------------------------------------------------
   // Typed convenience getters
   // ---------------------------------------------------------------------------
 
-  bool get useShift => getBool(PosConfigKeys.useShift, fallback: true);
-  bool get useHeldInvoices =>
-      getBool(PosConfigKeys.useHeldInvoices, fallback: true);
-  int get maxHeldInvoices =>
-      getInt(PosConfigKeys.maxHeldInvoices, fallback: 20);
-  bool get blockShiftCloseWithHeldInvoices =>
-      getBool(PosConfigKeys.blockShiftCloseWithHeldInvoices, fallback: true);
-  bool get allowDuplicateItems =>
-      getBool(PosConfigKeys.allowDuplicateItemsInCart);
-  bool get priceIncludesTax => getBool(PosConfigKeys.priceIncludesTax);
-  bool get requireCardReference => getBool(PosConfigKeys.requireCardReference);
-  bool get autoPrintAfterSale =>
-      getBool(PosConfigKeys.autoPrintAfterSale, fallback: true);
-  String get localInvoiceNumberPattern => getString(
-    PosConfigKeys.localInvoiceNumberPattern,
-    fallback: '{STATION}-{YYYYMMDD}-{SEQ}',
+  int get shiftDefaultDurationMinutes => getInt(
+    PosConfigKeys.shiftDefaultDurationMinutes,
+    fallback: 480,
   );
-  int get offlineLoginExpiryDays =>
-      getInt(PosConfigKeys.offlineLoginExpiryDays, fallback: 30);
-  bool get allowOfflineReturns => getBool(PosConfigKeys.allowOfflineReturns);
-  SyncMode get syncMode => SyncMode.fromCode(getString(PosConfigKeys.syncMode));
-  int get shiftExtendMinutes =>
-      getInt(PosConfigKeys.shiftExtendMinutes, fallback: 30);
+
+  int get shiftExtendMinutes => getInt(
+    PosConfigKeys.shiftExtendMinutes,
+    fallback: 30,
+  );
+
+  bool get useHeldInvoices => getBool(
+    PosConfigKeys.useHeldInvoices,
+    fallback: true,
+  );
+
+  int get maxHeldInvoices => getInt(
+    PosConfigKeys.maxHeldInvoices,
+    fallback: 20,
+  );
+
+  bool get blockShiftCloseWithHeldInvoices => getBool(
+    PosConfigKeys.blockShiftCloseWithHeldInvoices,
+    fallback: true,
+  );
+
+  bool get priceIncludesTax => getBool(PosConfigKeys.priceIncludesTax);
+
+  bool get requireCardReference => getBool(PosConfigKeys.requireCardReference);
+
+  bool get autoPrintAfterSale => getBool(
+    PosConfigKeys.autoPrintAfterSale,
+    fallback: true,
+  );
 }

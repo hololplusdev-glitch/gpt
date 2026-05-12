@@ -3,11 +3,11 @@
 // PosConfig stores local application settings only. Runtime POS context comes
 // from ActivePosSession.
 
-/// All POS configuration keys stored in `pos_config_cache` table.
-/// Values stored as strings and parsed at read-time.
+/// All POS configuration keys stored in `terminal_local_settings`.
+/// Values are stored as strings and parsed at read-time.
 abstract final class PosConfigKeys {
   // -- Shift --
-  static const useShift = 'use_shift';
+  // Shift is mandatory in this product. These values control shift timing only.
   static const shiftDefaultDurationMinutes = 'shift_default_duration_minutes';
   static const shiftExtendMinutes = 'shift_extend_minutes';
 
@@ -16,9 +16,6 @@ abstract final class PosConfigKeys {
   static const maxHeldInvoices = 'max_held_invoices';
   static const blockShiftCloseWithHeldInvoices =
       'block_shift_close_with_held_invoices';
-
-  // -- Cart behavior --
-  static const allowDuplicateItemsInCart = 'allow_duplicate_items_in_cart';
 
   // -- Tax formatting --
   static const priceIncludesTax = 'price_includes_tax';
@@ -29,35 +26,29 @@ abstract final class PosConfigKeys {
   // -- Print --
   static const autoPrintAfterSale = 'auto_print_after_sale';
 
-  // -- Invoice numbering --
-  static const localInvoiceNumberPattern = 'local_invoice_number_pattern';
-
-  // -- Auth --
-  static const offlineLoginExpiryDays = 'offline_login_expiry_days';
-
-  // -- Returns --
-  static const allowOfflineReturns = 'allow_offline_returns';
-
-  // -- Sync --
-  static const syncMode = 'sync_mode';
+  /// Legacy keys removed from runtime behavior.
+  /// They may still exist in old local databases, so PosConfigRepository purges
+  /// them during seeding.
+  static const deprecatedKeys = <String>{
+    'use_shift',
+    'allow_duplicate_items_in_cart',
+    'local_invoice_number_pattern',
+    'offline_login_expiry_days',
+    'allow_offline_returns',
+    'sync_mode',
+  };
 }
 
 /// Default config values for initial seed.
 abstract final class PosConfigDefaults {
   static const Map<String, String> all = {
-    PosConfigKeys.useShift: 'true',
-    PosConfigKeys.shiftDefaultDurationMinutes: '480', // 8 hours
+    PosConfigKeys.shiftDefaultDurationMinutes: '480',
     PosConfigKeys.shiftExtendMinutes: '30',
     PosConfigKeys.useHeldInvoices: 'true',
     PosConfigKeys.maxHeldInvoices: '20',
     PosConfigKeys.blockShiftCloseWithHeldInvoices: 'true',
-    PosConfigKeys.allowDuplicateItemsInCart: 'false',
     PosConfigKeys.priceIncludesTax: 'false',
     PosConfigKeys.requireCardReference: 'false',
     PosConfigKeys.autoPrintAfterSale: 'true',
-    PosConfigKeys.localInvoiceNumberPattern: '{STATION}-{YYYYMMDD}-{SEQ}',
-    PosConfigKeys.offlineLoginExpiryDays: '30',
-    PosConfigKeys.allowOfflineReturns: 'false',
-    PosConfigKeys.syncMode: 'manualOnly',
   };
 }

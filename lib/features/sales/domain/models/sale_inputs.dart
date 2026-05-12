@@ -73,28 +73,29 @@ extension SaleLineInputListPricingMapper on Iterable<SaleLineInput> {
   }
 }
 
-enum SaleTenderKind { cash, network, credit }
+enum SaleTenderKind {
+  cash,
+  network,
+  credit,
+}
 
 class SalePaymentIntent {
   final SaleTenderKind kind;
 
-  /// Applied amount for this payment line.
-  ///
-  /// Empty means "use full invoice total" for backward-compatible single-tender
-  /// checkout. Mixed checkout must always pass explicit amountText.
-  final String amountText;
+  /// Amount assigned to this payment line.
+  final double amount;
 
   /// Cash tendered amount. Only cash uses this for change calculation.
-  final String tenderedText;
+  final double? tenderedAmount;
 
-  /// Optional manual/reference number. Network reference is optional.
+  /// Optional manual/reference number.
   final String reference;
 
   const SalePaymentIntent({
     required this.kind,
-    this.amountText = '',
-    required this.tenderedText,
-    required this.reference,
+    required this.amount,
+    this.tenderedAmount,
+    this.reference = '',
   });
 }
 
