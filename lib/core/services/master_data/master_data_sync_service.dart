@@ -981,6 +981,7 @@ class MasterDataSyncService {
     return error.toString();
   }
 
+
   Future<Response<dynamic>> _getPageResponseWithRetry({
     required Map<String, dynamic> queryParams,
     MasterDataSyncCancelHandle? cancelHandle,
@@ -1005,49 +1006,12 @@ class MasterDataSyncService {
       } catch (error) {
         lastError = error;
 
-        // Invalid JSON is deterministic for this exact payload size/range.
-        // Retrying the same request wastes time. Let _fetchPageAdaptive split
+        // Invalid JSON is deterministic for this exact payload/range.
+        // Do not retry the same broken response. Let _fetchPageAdaptive split
         // the broken range immediately.
         if (_isInvalidJsonPageError(error)) {
           rethrow;
         }
-
-        if (!_isRetryablePageFetchError(error) || attempt == maxAttempts) {
-          rethrow;
-        }
-
-        await Future<void>.delayed(
-          Duration(milliseconds: 350 * attempt * attempt),
-        );
-      }
-    }
-
-    throw lastError ??
-        const SyncException(
-          'Master data page request failed.',
-          code: 'MASTER_DATA_PAGE_REQUEST_FAILED',
-        );
-  }
-) async {
-    const maxAttempts = 3;
-    Object? lastError;
-
-    for (var attempt = 1; attempt <= maxAttempts; attempt++) {
-      if (cancelHandle?.isCancelled ?? false) {
-        throw const SyncException(
-          'Sync was cancelled by user.',
-          code: 'CANCELLED',
-        );
-      }
-
-      try {
-        return await _apiClient.get<dynamic>(
-          ApiPaths.data,
-          queryParameters: queryParams,
-          cancelToken: cancelHandle?._token,
-        );
-      } catch (error) {
-        lastError = error;
 
         if (!_isRetryablePageFetchError(error) || attempt == maxAttempts) {
           rethrow;
