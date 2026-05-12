@@ -87,7 +87,8 @@ class ProductGrid extends ConsumerWidget {
         // -- Product grid --
         Expanded(
           child: productsAsync.when(
-            data: (products) {
+            data: (catalogState) {
+              final products = catalogState.products;
               if (products.isEmpty) {
                 final search = ref.read(searchQueryProvider);
                 final cat = ref.read(selectedCategoryProvider);
@@ -106,7 +107,8 @@ class ProductGrid extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          l10n.noPricedProductsForDeviceStore,
+                          catalogState.emptyMessage ??
+                              l10n.noPricedProductsForDeviceStore,
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -115,10 +117,14 @@ class ProductGrid extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         SelectableText(
-                          l10n.storeAndPriceLevelDetails(
-                            session?.activeStoreId ?? '',
-                            session?.activePriceLevelId ?? '',
-                          ),
+                          [
+                            l10n.storeAndPriceLevelDetails(
+                              session?.activeStoreId ?? '',
+                              session?.activePriceLevelId ?? '',
+                            ),
+                            if (catalogState.hasDiagnostics)
+                              catalogState.diagnostics.take(5).join('\n'),
+                          ].join('\n\n'),
                           style: const TextStyle(
                             color: AppColors.textSecondary,
                           ),

@@ -84,9 +84,6 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
   int _sessionScanCount = 0;
   int _lifecycleToken = 0;
 
-  String? _lastResolvedCode;
-  DateTime? _lastResolvedAt;
-
   bool _isStartingCamera = false;
   bool _cameraStarted = false;
   bool _cameraVisible = true;
@@ -94,8 +91,6 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
   bool _controllerDisposed = false;
   bool _allowPop = false;
   bool _permissionDenied = false;
-
-  static const _sameVisibleCodeCooldown = Duration(milliseconds: 1400);
 
   @override
   void initState() {
@@ -242,9 +237,6 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
     _feedbackTimer = null;
 
     _processingCodes.clear();
-    _lastResolvedCode = null;
-    _lastResolvedAt = null;
-
     _scannerService.resetDebounce();
 
     // Remove MobileScanner from the tree first, then pop the sheet.
@@ -282,10 +274,6 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
 
       final code = rawValue.trim();
 
-      if (_shouldIgnoreVisibleDuplicate(code)) {
-        continue;
-      }
-
       if (!_processingCodes.add(code)) {
         continue;
       }
@@ -293,22 +281,6 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
       unawaited(_processCode(code, _lifecycleToken));
       break;
     }
-  }
-
-  bool _shouldIgnoreVisibleDuplicate(String code) {
-    final lastCode = _lastResolvedCode;
-    final lastAt = _lastResolvedAt;
-
-    if (lastCode != code || lastAt == null) {
-      return false;
-    }
-
-    return DateTime.now().difference(lastAt) < _sameVisibleCodeCooldown;
-  }
-
-  void _markResolved(String code) {
-    _lastResolvedCode = code;
-    _lastResolvedAt = DateTime.now();
   }
 
   Future<void> _processCode(String code, int token) async {
@@ -330,7 +302,6 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
 
           final l10n = AppLocalizations.of(context)!;
 
-          _markResolved(code);
           _sessionScanCount++;
 
           _playFeedback(success: true);
@@ -344,7 +315,6 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
           );
 
         case ScanNotFound():
-          _markResolved(code);
           _playFeedback(success: false);
           _showFeedback(
             _ScanFeedback(
@@ -354,7 +324,6 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
           );
 
         case ScanNoPrice():
-          _markResolved(code);
           _playFeedback(success: false);
           _showFeedback(
             _ScanFeedback(
@@ -364,12 +333,10 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
           );
 
         case ScanError():
-          _markResolved(code);
           _playFeedback(success: false);
           _showFeedback(_ScanFeedback(message: result.message, isError: true));
 
         case ScanDuplicate():
-          _markResolved(code);
           break;
       }
     } finally {
@@ -429,9 +396,6 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
     _feedbackTimer = null;
 
     _processingCodes.clear();
-    _lastResolvedCode = null;
-    _lastResolvedAt = null;
-
     _scannerService.resetDebounce();
 
     unawaited(_disposeCameraController().whenComplete(widget.onCameraReleased));

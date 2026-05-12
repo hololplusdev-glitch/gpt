@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
+import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
 import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
 import 'package:holol_POS/core/persistence/daos/shift_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart';
@@ -23,6 +24,7 @@ class HeldOrdersService {
   final SalesDao _salesDao;
   final ShiftDao _shiftDao;
   final AuditDao _auditDao;
+  final CatalogDao _catalogDao;
   final PosConfigRepository _config;
   final ActivePosSession? _activeSession;
   final PricingEngine _pricingEngine;
@@ -32,6 +34,7 @@ class HeldOrdersService {
     required SalesDao salesDao,
     required ShiftDao shiftDao,
     required AuditDao auditDao,
+    required CatalogDao catalogDao,
     required PosConfigRepository config,
     required ActivePosSession? activeSession,
     PricingEngine pricingEngine = const PricingEngine(),
@@ -39,6 +42,7 @@ class HeldOrdersService {
   }) : _salesDao = salesDao,
        _shiftDao = shiftDao,
        _auditDao = auditDao,
+       _catalogDao = catalogDao,
        _config = config,
        _activeSession = activeSession,
        _pricingEngine = pricingEngine,
@@ -136,7 +140,9 @@ class HeldOrdersService {
     return id;
   }
 
-  Future<String> resumeHeldOrder({required String orderId}) async {
+  Future<HeldOrderResumeResult> resumeHeldOrder({
+    required String orderId,
+  }) async {
     final session = _requireActiveSession();
     final shift = await _requireOpenShift(session);
     final shiftId = shift.id;
@@ -147,6 +153,8 @@ class HeldOrdersService {
     if (order == null) {
       throw const SaleException('Held order not found or already resumed.');
     }
+
+    final resumeResult = await _rehydrateHeldOrder(order, session);
 
     final now = _clock.now();
     final auditLogEntry = AuditLogCompanion.insert(
@@ -170,7 +178,7 @@ class HeldOrdersService {
       throw const SaleException('Held order was already changed.');
     }
 
-    return order.snapshotJson;
+    return resumeResult;
   }
 
   Future<void> cancelHeldOrder({required String orderId}) async {
@@ -208,6 +216,121 @@ class HeldOrdersService {
 
   Future<List<HeldOrder>> getHeldOrders(String shiftId) {
     return _salesDao.getActiveHeldOrders(shiftId);
+  }
+
+  Future<HeldOrderResumeResult> _rehydrateHeldOrder(
+    HeldOrder order,
+    ActivePosSession session,
+  ) async {
+    final snapshotItems = _snapshotItemsFromJson(order.snapshotJson);
+    if (snapshotItems.isEmpty) {
+      throw const SaleException('Held order snapshot is empty.');
+    }
+
+    final lines = <SaleLineInput>[];
+    final warnings = <String>[];
+
+    for (final snapshot in snapshotItems) {
+      final itemId = _requiredText(snapshot['itemId'], 'itemId');
+      final unitId = _requiredText(snapshot['unitId'], 'unitId');
+      final quantity = _double(snapshot['quantity'], fallback: 1.0);
+      final oldUnitPrice = _nullableDouble(snapshot['unitPrice']);
+      final oldTaxRate = _nullableDouble(snapshot['taxRate']);
+      final oldUnitName = _text(snapshot['unitName']);
+      final itemName = _text(snapshot['itemName']) ?? itemId;
+
+      final item = await _catalogDao.getItemById(itemId);
+      if (item == null || item.inactive || item.noSale) {
+        throw SaleException('الصنف $itemName لم يعد قابلًا للبيع.');
+      }
+
+      final price = await _catalogDao.resolveItemPrice(
+        itemId: itemId,
+        unitId: unitId,
+        priceLevelId: session.activePriceLevelId,
+        storeId: session.activeStoreId,
+      );
+
+      if (price == null) {
+        throw SaleException('لا يوجد سعر حالي للصنف $itemName.');
+      }
+
+      final sellable = _catalogDao.toSellableItemSnapshot(
+        item: item,
+        price: price,
+        fallbackUnitId: unitId,
+        fallbackUnitName: oldUnitName,
+        barcode: _text(snapshot['barcode']),
+      );
+
+      final discountType = DiscountType.fromCode(
+        _text(snapshot['discountType']),
+      );
+      final discountValue = _nullableDouble(snapshot['discountValue']);
+      final discountAmount = _pricingEngine.calculateDiscountAmount(
+        grossAmount: PricingEngine.roundAmount(sellable.unitPrice * quantity),
+        discountType: discountType,
+        discountValue: discountValue,
+        allowDiscount: sellable.allowDiscount,
+      );
+
+      if (oldUnitPrice != null && oldUnitPrice != sellable.unitPrice) {
+        warnings.add(
+          'تغير سعر $itemName من $oldUnitPrice إلى ${sellable.unitPrice}.',
+        );
+      }
+
+      if (oldTaxRate != null && oldTaxRate != sellable.taxRate) {
+        warnings.add(
+          'تغيرت ضريبة $itemName من $oldTaxRate إلى ${sellable.taxRate}.',
+        );
+      }
+
+      if (oldUnitName != null && oldUnitName != sellable.unitName) {
+        warnings.add(
+          'تغير اسم وحدة $itemName من $oldUnitName إلى ${sellable.unitName}.',
+        );
+      }
+
+      lines.add(
+        SaleLineInput(
+          itemId: sellable.itemId,
+          unitId: sellable.unitId,
+          itemName: sellable.itemName,
+          unitName: sellable.unitName,
+          unitSize: sellable.unitSize,
+          barcode: sellable.barcode,
+          useQtyFraction: sellable.useQtyFraction,
+          quantity: quantity,
+          unitPrice: sellable.unitPrice,
+          taxRate: sellable.taxRate,
+          discountType: discountType,
+          discountValue: discountValue,
+          discountAmount: discountAmount,
+          allowDiscount: sellable.allowDiscount,
+          notes: _text(snapshot['notes']),
+        ),
+      );
+    }
+
+    return HeldOrderResumeResult(lines: lines, warnings: warnings);
+  }
+
+  List<Map<String, dynamic>> _snapshotItemsFromJson(String snapshotJson) {
+    final decoded = jsonDecode(snapshotJson);
+
+    if (decoded is List) {
+      return decoded.cast<Map<String, dynamic>>();
+    }
+
+    if (decoded is Map<String, dynamic>) {
+      final items = decoded['items'];
+      if (items is List) {
+        return items.cast<Map<String, dynamic>>();
+      }
+    }
+
+    throw const SaleException('Invalid held order snapshot.');
   }
 
   void _validatePreviewInputs({required List<SaleLineInput> lineItems}) {
@@ -261,6 +384,41 @@ class HeldOrdersService {
   }
 }
 
+class HeldOrderResumeResult {
+  final List<SaleLineInput> lines;
+  final List<String> warnings;
+
+  const HeldOrderResumeResult({required this.lines, this.warnings = const []});
+}
+
+String _requiredText(Object? value, String fieldName) {
+  final text = _text(value);
+  if (text == null || text.isEmpty) {
+    throw SaleException('Held order snapshot is missing $fieldName.');
+  }
+  return text;
+}
+
+String? _text(Object? value) {
+  final text = value?.toString().trim();
+  if (text == null || text.isEmpty || text.toLowerCase() == 'null') {
+    return null;
+  }
+  return text;
+}
+
+double _double(Object? value, {double fallback = 0.0}) {
+  if (value == null) return fallback;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString()) ?? fallback;
+}
+
+double? _nullableDouble(Object? value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString());
+}
+
 class SaleException extends BusinessException {
   const SaleException(super.message) : super(code: 'sale_error');
 }
@@ -270,6 +428,7 @@ final heldOrdersServiceProvider = Provider<HeldOrdersService>((ref) {
     salesDao: ref.watch(salesDaoProvider),
     shiftDao: ref.watch(shiftDaoProvider),
     auditDao: ref.watch(auditDaoProvider),
+    catalogDao: ref.watch(catalogDaoProvider),
     config: ref.watch(posConfigProvider),
     activeSession: ref.watch(activePosSessionProvider).valueOrNull,
     clock: ref.watch(clockProvider),

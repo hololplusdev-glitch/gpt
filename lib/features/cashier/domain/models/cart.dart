@@ -127,9 +127,6 @@ class Cart {
 
   int get totalLinesCount => items.length;
 
-  /// Temporary alias for existing UI call-sites.
-  int get totalItemCount => totalLinesCount;
-
   CartItem? findLine(String itemId, String? unitId) {
     for (final item in items) {
       if (_sameLine(item, itemId, unitId)) return item;
@@ -270,6 +267,49 @@ class Cart {
       useTax: useTax,
       priceIncludesTax: priceIncludesTax,
     );
+  }
+
+  static Cart fromSaleLineInputs(List<SaleLineInput> lines) {
+    final items = <CartItem>[];
+
+    for (final line in lines) {
+      final snapshot = SellableItemSnapshot(
+        itemId: line.itemId,
+        unitId: line.unitId,
+        itemName: line.itemName,
+        unitName: line.unitName,
+        unitSize: line.unitSize,
+        barcode: line.barcode,
+        unitPrice: line.unitPrice,
+        taxRate: line.taxRate,
+        allowDiscount: line.allowDiscount,
+        useQtyFraction: line.useQtyFraction,
+      );
+
+      final existingIndex = items.indexWhere(
+        (item) => item.itemId == line.itemId && item.unitId == line.unitId,
+      );
+
+      final nextItem = CartItem(
+        sellableItem: snapshot,
+        quantity: line.quantity,
+        discountType: line.discountType,
+        discountValue: line.discountValue,
+        discountAmount: line.discountAmount,
+        notes: line.notes,
+      );
+
+      if (existingIndex < 0) {
+        items.add(nextItem);
+      } else {
+        final existing = items[existingIndex];
+        items[existingIndex] = existing.copyWith(
+          quantity: existing.quantity + line.quantity,
+        );
+      }
+    }
+
+    return Cart(items: items);
   }
 
   static Cart fromHeldOrderSnapshotJson(String snapshotJson) {
@@ -460,6 +500,10 @@ class CartController extends StateNotifier<Cart> {
 
   void clearCart() {
     state = const Cart();
+  }
+
+  void restoreFromSaleLineInputs(List<SaleLineInput> lines) {
+    state = Cart.fromSaleLineInputs(lines);
   }
 
   void restoreFromHeldOrderJson(String snapshotJson) {

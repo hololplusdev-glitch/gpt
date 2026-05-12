@@ -276,13 +276,13 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                                   icon: const Icon(Icons.restore),
                                   onPressed: () async {
                                     try {
-                                      final snapshotJson = await service
+                                      final resumeResult = await service
                                           .resumeHeldOrder(orderId: order.id);
 
                                       ref
                                           .read(cartProvider.notifier)
-                                          .restoreFromHeldOrderJson(
-                                            snapshotJson,
+                                          .restoreFromSaleLineInputs(
+                                            resumeResult.lines,
                                           );
 
                                       if (sheetContext.mounted) {
@@ -290,9 +290,13 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                                       }
 
                                       if (context.mounted) {
+                                        final warningText =
+                                            resumeResult.warnings.isEmpty
+                                            ? ''
+                                            : '\n${resumeResult.warnings.take(3).join('\n')}';
                                         AppSnackbar.showSuccess(
                                           context,
-                                          'تم استرجاع الطلب المعلق.',
+                                          'تم استرجاع الطلب المعلق.$warningText',
                                         );
                                       }
                                     } catch (e) {

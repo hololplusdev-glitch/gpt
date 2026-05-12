@@ -2,6 +2,7 @@
 // WHY: DB-backed product/category/payment providers for the cashier UI.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart' hide Customer;
 import 'package:holol_POS/features/cashier/domain/models/product.dart';
@@ -27,18 +28,55 @@ final categoryListProvider = FutureProvider<List<ProductCategory>>((ref) async {
       .toList();
 });
 
-final cashierProductCardsProvider = FutureProvider<List<ProductCardViewModel>>((
+class CashierCatalogState {
+  final List<ProductCardViewModel> products;
+  final List<String> diagnostics;
+  final String? emptyReason;
+  final String? emptyMessage;
+
+  const CashierCatalogState({
+    required this.products,
+    this.diagnostics = const [],
+    this.emptyReason,
+    this.emptyMessage,
+  });
+
+  bool get hasDiagnostics => diagnostics.isNotEmpty;
+}
+
+final cashierProductCardsProvider = FutureProvider<CashierCatalogState>((
   ref,
 ) async {
   final catalogDao = ref.watch(catalogDaoProvider);
   final search = ref.watch(searchQueryProvider);
   final selectedCategory = ref.watch(selectedCategoryProvider);
   final session = ref.watch(activePosSessionProvider).valueOrNull;
-  final storeId = session?.activeStoreId ?? '';
-  final priceLevelId = session?.activePriceLevelId ?? '';
 
-  if (storeId.isEmpty || priceLevelId.isEmpty) {
-    return [];
+  if (session == null) {
+    return const CashierCatalogState(
+      products: [],
+      emptyReason: 'NO_ACTIVE_POS_SESSION',
+      emptyMessage: 'لا توجد جلسة كاشير نشطة.',
+    );
+  }
+
+  final storeId = session.activeStoreId;
+  final priceLevelId = session.activePriceLevelId;
+
+  if (storeId.isEmpty) {
+    return const CashierCatalogState(
+      products: [],
+      emptyReason: 'NO_ACTIVE_STORE',
+      emptyMessage: 'لا يوجد مخزن نشط للجهاز الحالي.',
+    );
+  }
+
+  if (priceLevelId.isEmpty) {
+    return const CashierCatalogState(
+      products: [],
+      emptyReason: 'NO_ACTIVE_PRICE_LEVEL',
+      emptyMessage: 'لا يوجد مستوى سعر نشط للجهاز الحالي.',
+    );
   }
 
   final items = switch ((search.isNotEmpty, selectedCategory)) {
@@ -51,27 +89,64 @@ final cashierProductCardsProvider = FutureProvider<List<ProductCardViewModel>>((
     _ => await catalogDao.getActiveItems(storeId, priceLevelId),
   };
 
+  if (items.isEmpty) {
+    return CashierCatalogState(
+      products: const [],
+      emptyReason: search.isNotEmpty || selectedCategory != null
+          ? 'NO_MATCHING_PRODUCTS'
+          : 'NO_SELLABLE_ITEMS',
+      emptyMessage: search.isNotEmpty || selectedCategory != null
+          ? 'لا توجد منتجات مطابقة.'
+          : 'لا توجد منتجات قابلة للبيع.',
+    );
+  }
+
   final unitsByItem = await catalogDao.getSellableUnitsForItems(
     items.map((item) => item.id).toSet(),
   );
+  final allUnits = unitsByItem.values.expand((units) => units).toList();
+
   final pricesByItemUnit = await catalogDao.resolveItemPricesForUnits(
-    unitsByItem.values.expand((units) => units),
+    allUnits,
     storeId: storeId,
     priceLevelId: priceLevelId,
   );
 
-  return items.map((item) {
+  final diagnostics = <String>[];
+  final cards = <ProductCardViewModel>[];
+
+  for (final item in items) {
     final itemUnits = unitsByItem[item.id] ?? const <SellableItemUnit>[];
-    return ProductCardViewModel(
-      item: _productFromRow(item),
-      units: _pricedUnitsForItem(
-        catalogDao: catalogDao,
-        item: item,
-        units: itemUnits,
-        pricesByItemUnit: pricesByItemUnit,
-      ),
+
+    if (itemUnits.isEmpty) {
+      diagnostics.add('UNIT_NOT_CONFIGURED:itemId=${item.id}');
+    }
+
+    final units = _pricedUnitsForItem(
+      catalogDao: catalogDao,
+      item: item,
+      units: itemUnits,
+      pricesByItemUnit: pricesByItemUnit,
+      diagnostics: diagnostics,
     );
-  }).toList();
+
+    if (units.isEmpty) {
+      diagnostics.add('PRICE_NOT_CONFIGURED:itemId=${item.id}');
+    }
+
+    cards.add(ProductCardViewModel(item: _productFromRow(item), units: units));
+  }
+
+  if (cards.every((card) => card.units.isEmpty)) {
+    return CashierCatalogState(
+      products: cards,
+      diagnostics: diagnostics,
+      emptyReason: 'NO_PRICED_PRODUCTS',
+      emptyMessage: 'لا توجد أسعار صالحة لهذا المخزن ومستوى السعر.',
+    );
+  }
+
+  return CashierCatalogState(products: cards, diagnostics: diagnostics);
 });
 
 final customersProvider = FutureProvider<List<Customer>>((ref) async {
@@ -95,29 +170,44 @@ List<ProductUnitOption> _pricedUnitsForItem({
   required Item item,
   required List<SellableItemUnit> units,
   required Map<ItemUnitPriceKey, ResolvedItemPrice> pricesByItemUnit,
+  required List<String> diagnostics,
 }) {
   final pricedUnits = <ProductUnitOption>[];
 
   for (final unit in units) {
+    final price =
+        pricesByItemUnit[ItemUnitPriceKey(item.id, unit.sourceUnitId)];
+
+    if (price == null) {
+      diagnostics.add(
+        'PRICE_NOT_CONFIGURED:itemId=${item.id},unitId=${unit.sourceUnitId}',
+      );
+      continue;
+    }
+
     try {
-      final price =
-          pricesByItemUnit[ItemUnitPriceKey(item.id, unit.sourceUnitId)];
-      if (price != null) {
-        final sellableItem = catalogDao.toSellableItemSnapshot(
-          item: item,
-          price: price,
-          fallbackUnitId: unit.sourceUnitId,
-          fallbackUnitName: unit.unitName,
-          barcode: unit.barcode,
-        );
-        pricedUnits.add(
-          ProductUnitOption(
-            isDefault: unit.isDefault,
-            sellableItem: sellableItem,
-          ),
-        );
-      }
-    } catch (_) {}
+      final sellableItem = catalogDao.toSellableItemSnapshot(
+        item: item,
+        price: price,
+        fallbackUnitId: unit.sourceUnitId,
+        fallbackUnitName: unit.unitName,
+        barcode: unit.barcode,
+      );
+
+      pricedUnits.add(
+        ProductUnitOption(
+          isDefault: unit.isDefault,
+          sellableItem: sellableItem,
+        ),
+      );
+    } on AppException {
+      rethrow;
+    } catch (error) {
+      throw BusinessException(
+        'تعذر تجهيز المنتج ${item.name} للبيع.',
+        code: 'PRODUCT_CARD_BUILD_FAILED',
+      );
+    }
   }
 
   return pricedUnits;
