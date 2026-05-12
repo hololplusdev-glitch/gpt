@@ -16,6 +16,7 @@ import 'package:holol_POS/features/pos_devices/presentation/pos_devices_screen.d
 import 'package:holol_POS/features/settings/presentation/settings_screen.dart';
 import 'package:holol_POS/features/setup/application/setup_notifier.dart';
 import 'package:holol_POS/features/setup/presentation/setup_screen.dart';
+import 'package:holol_POS/features/shift/application/shift_controller.dart';
 import 'package:holol_POS/features/shift/presentation/shift_screen.dart';
 import 'package:holol_POS/features/sync/presentation/sync_monitor_screen.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
@@ -50,7 +51,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     ..onDispose(refreshNotifier.dispose)
     ..listen(setupProvider, (_, __) => refreshNotifier.refresh())
     ..listen(posConfigRevisionProvider, (_, __) => refreshNotifier.refresh())
-    ..listen(activePosSessionProvider, (_, __) => refreshNotifier.refresh());
+    ..listen(activePosSessionProvider, (_, __) => refreshNotifier.refresh())
+    ..listen(activeShiftDashboardProvider, (_, __) => refreshNotifier.refresh());
 
   return GoRouter(
     initialLocation: AppRoutes.boot,
@@ -61,8 +63,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       final activeSession = ref.read(activePosSessionProvider).valueOrNull;
       final isAuthenticated = activeSession != null;
       final shiftRequired = isAuthenticated;
+      final activeShift = ref.read(activeShiftDashboardProvider).valueOrNull;
+      final hasOpenShift = activeShift != null;
       final hasOpenShift =
-          activeSession?.openShiftId?.trim().isNotEmpty == true;
       final isBootRoute = state.matchedLocation == AppRoutes.boot;
       final isLoginRoute = state.matchedLocation == AppRoutes.login;
       final isSetupRoute = state.matchedLocation == AppRoutes.setup;

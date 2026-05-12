@@ -1,7 +1,6 @@
 // features/shift/presentation/shift_screen.dart
 // WHY: Shift gate + shift dashboard.
-// Runtime SSOT: ActivePosSession.openShiftId.
-// This screen never decides current shift from ShiftState.
+// Runtime SSOT: Shifts table via activeShiftDashboardProvider.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -49,8 +48,8 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     final dashboardAsync = ref.watch(activeShiftDashboardProvider);
     final l10n = AppLocalizations.of(context)!;
 
-    final openShiftId = activeSession?.openShiftId?.trim();
-    final hasOpenShift = openShiftId != null && openShiftId.isNotEmpty;
+    final dashboard = dashboardAsync.valueOrNull;
+    final hasOpenShift = dashboard != null;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -80,11 +79,14 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
                   padding: const EdgeInsets.all(AppSpacing.xxxl),
                   child: activeSession == null
                       ? _buildNoSessionView(l10n)
-                      : hasOpenShift
-                      ? dashboardAsync.when(
+                      : dashboardAsync.when(
                           data: (dashboard) {
                             if (dashboard == null) {
-                              return _buildMissingShiftView(actionState, l10n);
+                              return _buildOpenShiftView(
+                                actionState,
+                                activeSession,
+                                l10n,
+                              );
                             }
 
                             return _buildShiftDashboardView(
@@ -96,8 +98,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
                           },
                           loading: _buildLoadingView,
                           error: (error, _) => _buildLoadErrorView(error),
-                        )
-                      : _buildOpenShiftView(actionState, activeSession, l10n),
+                        ),
                 ),
               ),
             ),

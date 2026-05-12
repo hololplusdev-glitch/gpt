@@ -12,9 +12,10 @@ import 'package:uuid/uuid.dart';
 /// Command controller for POS runtime session.
 ///
 /// SSOT rules:
-/// - activePosSessionProvider is the read model for the current runtime session.
-/// - PosSessionController owns login/logout commands only.
-/// - LoginScreen must not read AuthDao/ActivePosSessionDao/ShiftDao directly.
+/// - ActivePosSession stores runtime user + machine only.
+/// - Shifts table is the only source of open-shift state.
+/// - AuthDao owns PIN/user lookup only.
+/// - AuditDao owns login/logout audit.
 class PosSessionState {
   final bool isLoading;
   final bool isResolvingUser;
@@ -232,21 +233,12 @@ class PosSessionController extends StateNotifier<PosSessionState> {
       final session = await _sessionDao.startSession(
         user: user,
         machine: machine,
-        openShiftId: existingMachineShift?.id,
       );
 
       await _refreshActiveSession();
 
       final refreshedSession = await _sessionDao.getActive();
       final effectiveSession = refreshedSession ?? session;
-      final sessionId = effectiveSession.sessionId ?? 'SESS_${_uuid.v4()}';
-
-      await _authDao.writeSessionLog(
-        id: sessionId,
-        userId: effectiveSession.activeUserId,
-        username: effectiveSession.activeUserName,
-        terminalId: effectiveSession.activeMachineNo,
-      );
 
       await _auditDao.log(
         id: 'AUD_${_uuid.v4()}',
@@ -267,8 +259,14 @@ class PosSessionController extends StateNotifier<PosSessionState> {
   Future<void> logout() async {
     final session = await _sessionDao.getActive();
 
-    if (session?.sessionId != null) {
-      await _authDao.updateSessionLogout(session!.sessionId!);
+    if (session != null) {
+      await _auditDao.log(
+        id: 'AUD_${_uuid.v4()}',
+        action: AuditAction.logout,
+        actorId: session.activeUserId,
+        actorName: session.activeUserName,
+        terminalId: session.activeMachineNo,
+      );
     }
 
     await _sessionDao.clearActive();

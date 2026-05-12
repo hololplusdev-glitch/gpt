@@ -365,8 +365,6 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     }
 
     final activeSession = ref.read(activePosSessionProvider).valueOrNull;
-    final openShiftId = activeSession?.openShiftId?.trim();
-    if (activeSession == null || openShiftId == null || openShiftId.isEmpty) {
       return;
     }
 
