@@ -289,9 +289,7 @@ class MasterDataSyncService {
 
         results.addAll(devicePrivilegeResults);
 
-        final totalPrivileges = await _masterDataDao.countDevicePrivileges(
-          context.custCode,
-        );
+        final totalPrivileges = await _masterDataDao.countDevicePrivileges();
 
         if (totalPrivileges == 0) {
           results.add(
@@ -546,7 +544,6 @@ class MasterDataSyncService {
         if (type == MasterDataType.devicePrivilege &&
             mode == MasterDataSyncMode.forceFull) {
           await _masterDataDao.deleteDevicePrivilegesForUser(
-            custCode: context.custCode,
             userId: context.syncUserId,
           );
         }
@@ -659,7 +656,7 @@ class MasterDataSyncService {
   ) async {
     switch (type) {
       case MasterDataType.customer:
-        return await _masterDataDao.countCustomers(context.custCode) > 0;
+        return await _masterDataDao.countCustomers() > 0;
       default:
         return true;
     }
@@ -675,7 +672,7 @@ class MasterDataSyncService {
     required int totalSectionsWithoutDevicePriv,
     void Function(int totalSections)? onTotalSectionsResolved,
   }) async {
-    final users = await _masterDataDao.listDownloadedPosUsers(context.custCode);
+    final users = await _masterDataDao.listDownloadedPosUsers();
     final results = <MasterDataTypeResult>[];
 
     if (users.isEmpty) {
@@ -1382,7 +1379,6 @@ class MasterDataSyncService {
     await _masterDataDao.insertRun(
       runId: runId,
       modeCode: mode.code,
-      custCode: context.custCode,
       userId: context.syncUserId,
       branchNo: '',
       terminalNo: '',

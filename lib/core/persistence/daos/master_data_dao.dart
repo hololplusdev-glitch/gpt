@@ -71,21 +71,13 @@ class MasterDataDao {
     String typeCode, {
     required MasterDataSyncContext context,
   }) async {
-    final syncKey = _syncKey(typeCode, context);
-    final row = await (_db.select(
-      _db.scopedSyncState,
-    )..where((state) => state.syncKey.equals(syncKey))).getSingleOrNull();
-    return row?.lastServerTime;
+  String _syncKey(String typeCode, MasterDataSyncContext context) {
+    return <String>[
+      typeCode,
+      'usr=${context.syncUserId.trim()}',
+    ].join('|');
   }
-
-  Future<void> saveSyncState(
-    String typeCode, {
-    required MasterDataSyncContext context,
-    required String status,
-    required DateTime now,
-    String? serverTime,
-    String? error,
-  }) async {
+) async {
     final syncKey = _syncKey(typeCode, context);
     final existing = await (_db.select(
       _db.scopedSyncState,
@@ -101,23 +93,13 @@ class MasterDataDao {
           ScopedSyncStateCompanion(
             syncKey: Value(syncKey),
             type: Value(typeCode),
-            scopeJson: Value(_scopeJson(context)),
-            lastSuccessTime: Value(
-              isSuccessful ? now.toIso8601String() : existing?.lastSuccessTime,
-            ),
-            lastServerTime: Value(serverTime ?? existing?.lastServerTime),
-            lastStatus: Value(status),
-            lastError: Value(error),
-          ),
-        );
+  String _scopeJson(MasterDataSyncContext context) {
+    return jsonEncode({
+      'userId': context.syncUserId,
+      'downloadScope': 'single_setup_customer',
+    });
   }
 
-  String _syncKey(String typeCode, MasterDataSyncContext context) {
-    return <String>[
-      typeCode,
-      'usr=${context.syncUserId.trim()}',
-    ].join('|');
-  }
 
   String _scopeJson(MasterDataSyncContext context) {
     return jsonEncode({
@@ -134,6 +116,21 @@ class MasterDataDao {
     required String terminalNo,
     required DateTime at,
   }) async {
+    await _db
+        .into(_db.masterSyncRuns)
+        .insert(
+          MasterSyncRunsCompanion(
+            id: Value(runId),
+            mode: Value(modeCode),
+            status: Value(MasterDataRunStatus.running.code),
+            sourceUserId: Value(userId),
+            branchNo: Value(branchNo),
+            machineNo: Value(terminalNo),
+            startedAt: Value(at),
+          ),
+        );
+  }
+) async {
     await _db
         .into(_db.masterSyncRuns)
         .insert(
@@ -273,9 +270,45 @@ class MasterDataDao {
         .get();
   }
 
+
   Future<bool> hasMinimumSetupSeed({
     required String bootstrapUserId,
   }) async {
+    final normalizedBootstrapUserId = bootstrapUserId.trim();
+
+    if (normalizedBootstrapUserId.isEmpty) {
+      return false;
+    }
+
+    final setupUser =
+        await (_db.select(_db.posUsers)..where(
+              (user) =>
+                  user.isActive.equals(true) &
+                  (user.id.equals(normalizedBootstrapUserId) |
+                      user.sourceUserId.equals(normalizedBootstrapUserId)),
+            ))
+            .getSingleOrNull();
+
+    if (setupUser == null) {
+      return false;
+    }
+
+    final machine =
+        await (_db.select(_db.posMachines)..limit(1)).getSingleOrNull();
+
+    if (machine == null) {
+      return false;
+    }
+
+    final devicePrivilege =
+        await (_db.select(_db.posUserMachineAccess)
+              ..where((row) => row.canUseMachine.equals(true))
+              ..limit(1))
+            .getSingleOrNull();
+
+    return devicePrivilege != null;
+  }
+) async {
     final normalizedCustCode = custCode.trim();
     final normalizedBootstrapUserId = bootstrapUserId.trim();
 
@@ -326,6 +359,7 @@ class MasterDataDao {
     return rows.length;
   }
 
+
   Future<int> countDevicePrivileges() async {
     final rows =
         await (_db.select(_db.posUserMachineAccess)..where(
@@ -336,9 +370,16 @@ class MasterDataDao {
     return rows.length;
   }
 
+
   Future<void> deleteDevicePrivilegesForUser({
     required String userId,
   }) async {
+    await (_db.delete(_db.posUserMachineAccess)..where(
+          (row) => row.userId.equals(userId),
+        ))
+        .go();
+  }
+) async {
     await (_db.delete(_db.posUserMachineAccess)..where(
           (row) =>row.userId.equals(userId),
         ))

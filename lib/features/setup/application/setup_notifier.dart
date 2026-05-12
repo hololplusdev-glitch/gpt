@@ -81,7 +81,6 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
         final hasSeed = await ref
             .read(masterDataDaoProvider)
             .hasMinimumSetupSeed(
-              custCode: config.syncProfile!.custCode,
               bootstrapUserId: config.syncProfile!.bootstrapUserId,
             );
 
