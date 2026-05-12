@@ -542,7 +542,6 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
           }
           profile = SyncProfile.fromUrl(
             url,
-            custCode: _custCodeController.text.trim(),
           );
         } else {
           final portText = _portController.text.trim();
@@ -550,7 +549,6 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
             host: _hostController.text.trim(),
             port: portText.isNotEmpty ? int.tryParse(portText) : null,
             basePath: _basePathController.text.trim(),
-            custCode: _custCodeController.text.trim(),
             useSsl: _useSsl,
           );
         }

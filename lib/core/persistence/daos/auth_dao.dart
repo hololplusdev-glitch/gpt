@@ -52,13 +52,11 @@ class AuthDao {
   static const _pinPrefix = 'local-pin-v1';
 
   Future<bool> hasLocalPin({
-    required String custCode,
     required String userId,
   }) async {
     final row =
         await (_db.select(_db.localUserPins)..where(
-              (pin) =>
-                  pin.custCode.equals(custCode) & pin.userId.equals(userId),
+              (pin) => pin.userId.equals(userId),
             ))
             .getSingleOrNull();
 
@@ -66,7 +64,6 @@ class AuthDao {
   }
 
   Future<void> setLocalPin({
-    required String custCode,
     required String userId,
     required String pin,
   }) async {
@@ -75,8 +72,7 @@ class AuthDao {
     final now = _clock.now();
     final existing =
         await (_db.select(_db.localUserPins)..where(
-              (row) =>
-                  row.custCode.equals(custCode) & row.userId.equals(userId),
+              (row) => row.userId.equals(userId),
             ))
             .getSingleOrNull();
 
@@ -86,7 +82,6 @@ class AuthDao {
         .into(_db.localUserPins)
         .insertOnConflictUpdate(
           LocalUserPinsCompanion(
-            custCode: Value(custCode),
             userId: Value(userId),
             pinHash: Value(_hashPin(pin, salt: salt)),
             pinSalt: Value(salt),
@@ -97,7 +92,6 @@ class AuthDao {
   }
 
   Future<bool> verifyLocalPin({
-    required String custCode,
     required String userId,
     required String pin,
   }) async {
@@ -105,9 +99,7 @@ class AuthDao {
 
     final row =
         await (_db.select(_db.localUserPins)..where(
-              (pinRow) =>
-                  pinRow.custCode.equals(custCode) &
-                  pinRow.userId.equals(userId),
+              (pinRow) => pinRow.userId.equals(userId),
             ))
             .getSingleOrNull();
 

@@ -77,7 +77,6 @@ class MasterDataMapper {
             'mchn_nbr',
             'machine_id',
           ], 'POS_MACHINE.mchn_nbr');
-          final custCode = data.text(['cust_code']) ?? context.custCode;
           final branchNo = data.requiredText([
             'bra_nbr',
           ], 'POS_MACHINE.bra_nbr');
@@ -92,7 +91,6 @@ class MasterDataMapper {
           posMachines.add(
             PosMachinesCompanion(
               id: Value(mchnNbr),
-              custCode: Value(custCode),
               machineNo: Value(mchnNbr),
               invoiceSeries: Value(data.text(['invo_ser'])),
               returnInvoiceSeries: Value(data.text(['rt_invo_ser'])),
@@ -131,7 +129,6 @@ class MasterDataMapper {
           userMachineAccesses.add(
             PosUserMachineAccessCompanion(
               id: Value('UTA_${usrId}_$mchnNbr'),
-              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               userId: Value(usrId),
               sourceUserId: Value(usrId),
               machineNo: Value(mchnNbr),
@@ -156,11 +153,9 @@ class MasterDataMapper {
             'branch_id',
             'id',
           ], 'BRANCH.bra_nbr');
-          final custCode = data.text(['cust_code']) ?? context.custCode;
           branchProfiles.add(
             BranchProfileCompanion(
               id: Value(branchId),
-              custCode: Value(custCode),
               branchNo: Value(branchId),
               branchYear: Value(data.text(['bra_year'])),
               branchCode: Value(branchId),
@@ -191,7 +186,6 @@ class MasterDataMapper {
           stores.add(
             StoresCompanion(
               id: Value(stId),
-              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               branchNo: Value(data.text(['bra_nbr'])),
               name: Value(data.text(['st_name', 'name']) ?? stId),
               nameAr: Value(data.text(['st_fname', 'st_f_name', 'name_ar'])),
@@ -214,7 +208,6 @@ class MasterDataMapper {
           paymentMethods.add(
             PaymentMethodsCompanion(
               id: Value(methodId),
-              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               type: Value(PaymentMethodType.cash.code),
               code: Value(methodId),
               name: Value(data.text(['cash_name', 'name']) ?? cashId),
@@ -238,7 +231,6 @@ class MasterDataMapper {
           paymentMethods.add(
             PaymentMethodsCompanion(
               id: Value(methodId),
-              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               type: Value(PaymentMethodType.bankTransfer.code),
               code: Value(methodId),
               name: Value(data.text(['bank_name', 'name']) ?? bankId),
@@ -270,7 +262,6 @@ class MasterDataMapper {
           paymentMethods.add(
             PaymentMethodsCompanion(
               id: Value(methodCode),
-              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               type: Value(PaymentMethodType.manualCard.code),
               code: Value(methodCode),
               name: Value(name),
@@ -304,7 +295,6 @@ class MasterDataMapper {
           priceLevels.add(
             PriceLevelsCompanion(
               id: Value(id),
-              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               name: Value(data.text(['price_lvl_name', 'name']) ?? id),
               nameAr: Value(
                 data.text(['price_lvl_fname', 'price_lvl_f_name', 'name_ar']),
@@ -331,7 +321,6 @@ class MasterDataMapper {
           items.add(
             ItemsCompanion(
               id: Value(itemId),
-              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               code: Value(data.text(['itm_code', 'code']) ?? itemId),
               name: Value(data.text(['itm_name', 'name']) ?? itemId),
               nameAr: Value(data.text(['itm_fname', 'itm_f_name', 'name_ar'])),
@@ -373,7 +362,6 @@ class MasterDataMapper {
           itemUnits.add(
             ItemUnitsCompanion(
               id: Value(rowId),
-              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               itemId: Value(itemId),
               sourceUnitId: Value(unitId),
               name: Value(data.text(['unit_name', 'name']) ?? unitId),
@@ -393,7 +381,6 @@ class MasterDataMapper {
             itemBarcodes.add(
               ItemBarcodesCompanion(
                 id: Value('ORA_BARCODE_${itemId}_$unitId'),
-                custCode: Value(data.text(['cust_code']) ?? context.custCode),
                 itemId: Value(itemId),
                 unitId: Value(rowId),
                 barcode: Value(barcode),
@@ -419,11 +406,9 @@ class MasterDataMapper {
             'itm_id',
             'item_id',
           ], 'ITEM_PRICE.itm_id');
-          final custCode = data.text(['cust_code']) ?? context.custCode;
           final storeId = data.text(['st_id']) ?? '';
-          final unitId = data.text(['unit_id']);
+          final unitId = data.requiredText(['unit_id'], 'ITEM_PRICE.unit_id');
           final id = [
-            custCode,
             priceLevelId,
             itemId,
             storeId,
@@ -440,7 +425,6 @@ class MasterDataMapper {
           itemPrices.add(
             ItemPricesCompanion(
               id: Value(id),
-              custCode: Value(custCode),
               itemId: Value(itemId),
               unitId: Value(unitId),
               priceLevelId: Value(priceLevelId),
@@ -462,7 +446,6 @@ class MasterDataMapper {
           customers.add(
             CustomersCompanion(
               id: Value(clntId),
-              custCode: Value(data.text(['cust_code']) ?? context.custCode),
               name: Value(data.text(['clnt_name', 'name']) ?? clntId),
               accountId: Value(data.text(['clnt_acc_id'])),
               taxNumber: Value(data.text(['clnt_tax_id'])),
@@ -505,7 +488,6 @@ class MasterDataMapper {
     users.add(
       PosUsersCompanion(
         id: Value(usrId),
-        custCode: Value(data.text(['cust_code']) ?? context.custCode),
         sourceUserId: Value(usrId),
         username: Value(loginName),
         loginName: Value(loginName),

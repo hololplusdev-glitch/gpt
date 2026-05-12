@@ -159,7 +159,7 @@ class PosSessionController extends StateNotifier<PosSessionState> {
       return false;
     }
 
-    return _authDao.hasLocalPin(custCode: user.custCode, userId: user.id);
+    return _authDao.hasLocalPin(userId: user.id);
   }
 
   Future<bool> loginWithPin(String pin) async {
@@ -177,13 +177,11 @@ class PosSessionController extends StateNotifier<PosSessionState> {
 
     try {
       final hasPin = await _authDao.hasLocalPin(
-        custCode: user.custCode,
         userId: user.id,
       );
 
       if (hasPin) {
         final ok = await _authDao.verifyLocalPin(
-          custCode: user.custCode,
           userId: user.id,
           pin: pin,
         );
@@ -197,14 +195,12 @@ class PosSessionController extends StateNotifier<PosSessionState> {
         }
       } else {
         await _authDao.setLocalPin(
-          custCode: user.custCode,
           userId: user.id,
           pin: pin,
         );
       }
 
       final machine = await _sessionDao.getMachine(
-        custCode: user.custCode,
         machineNo: machineNo,
       );
 

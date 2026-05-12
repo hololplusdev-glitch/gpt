@@ -1088,7 +1088,6 @@ class SyncProfileTableData extends DataClass
     return SyncProfileTableCompanion(
       id: Value(id),
       baseUrl: Value(baseUrl),
-      custCode: Value(custCode),
       bootstrapUserId: Value(bootstrapUserId),
       pageLimit: Value(pageLimit),
       timeoutSeconds: timeoutSeconds == null && nullToAbsent
@@ -1111,7 +1110,6 @@ class SyncProfileTableData extends DataClass
     return SyncProfileTableData(
       id: serializer.fromJson<int>(json['id']),
       baseUrl: serializer.fromJson<String>(json['baseUrl']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       bootstrapUserId: serializer.fromJson<String>(json['bootstrapUserId']),
       pageLimit: serializer.fromJson<int>(json['pageLimit']),
       timeoutSeconds: serializer.fromJson<int?>(json['timeoutSeconds']),
@@ -1154,7 +1152,6 @@ class SyncProfileTableData extends DataClass
   }) => SyncProfileTableData(
     id: id ?? this.id,
     baseUrl: baseUrl ?? this.baseUrl,
-    custCode: custCode ?? this.custCode,
     bootstrapUserId: bootstrapUserId ?? this.bootstrapUserId,
     pageLimit: pageLimit ?? this.pageLimit,
     timeoutSeconds: timeoutSeconds.present
@@ -1171,7 +1168,6 @@ class SyncProfileTableData extends DataClass
     return SyncProfileTableData(
       id: data.id.present ? data.id.value : this.id,
       baseUrl: data.baseUrl.present ? data.baseUrl.value : this.baseUrl,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       bootstrapUserId: data.bootstrapUserId.present
           ? data.bootstrapUserId.value
           : this.bootstrapUserId,
@@ -1317,7 +1313,6 @@ class SyncProfileTableCompanion extends UpdateCompanion<SyncProfileTableData> {
     return SyncProfileTableCompanion(
       id: id ?? this.id,
       baseUrl: baseUrl ?? this.baseUrl,
-      custCode: custCode ?? this.custCode,
       bootstrapUserId: bootstrapUserId ?? this.bootstrapUserId,
       pageLimit: pageLimit ?? this.pageLimit,
       timeoutSeconds: timeoutSeconds ?? this.timeoutSeconds,
@@ -1594,7 +1589,6 @@ class LocalUserPin extends DataClass implements Insertable<LocalUserPin> {
 
   LocalUserPinsCompanion toCompanion(bool nullToAbsent) {
     return LocalUserPinsCompanion(
-      custCode: Value(custCode),
       userId: Value(userId),
       pinHash: Value(pinHash),
       pinSalt: Value(pinSalt),
@@ -1609,7 +1603,6 @@ class LocalUserPin extends DataClass implements Insertable<LocalUserPin> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return LocalUserPin(
-      custCode: serializer.fromJson<String>(json['custCode']),
       userId: serializer.fromJson<String>(json['userId']),
       pinHash: serializer.fromJson<String>(json['pinHash']),
       pinSalt: serializer.fromJson<String>(json['pinSalt']),
@@ -1638,7 +1631,6 @@ class LocalUserPin extends DataClass implements Insertable<LocalUserPin> {
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => LocalUserPin(
-    custCode: custCode ?? this.custCode,
     userId: userId ?? this.userId,
     pinHash: pinHash ?? this.pinHash,
     pinSalt: pinSalt ?? this.pinSalt,
@@ -1647,7 +1639,6 @@ class LocalUserPin extends DataClass implements Insertable<LocalUserPin> {
   );
   LocalUserPin copyWithCompanion(LocalUserPinsCompanion data) {
     return LocalUserPin(
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       userId: data.userId.present ? data.userId.value : this.userId,
       pinHash: data.pinHash.present ? data.pinHash.value : this.pinHash,
       pinSalt: data.pinSalt.present ? data.pinSalt.value : this.pinSalt,
@@ -1745,7 +1736,6 @@ class LocalUserPinsCompanion extends UpdateCompanion<LocalUserPin> {
     Value<int>? rowid,
   }) {
     return LocalUserPinsCompanion(
-      custCode: custCode ?? this.custCode,
       userId: userId ?? this.userId,
       pinHash: pinHash ?? this.pinHash,
       pinSalt: pinSalt ?? this.pinSalt,
@@ -2399,7 +2389,6 @@ class BranchProfileData extends DataClass
   BranchProfileCompanion toCompanion(bool nullToAbsent) {
     return BranchProfileCompanion(
       id: Value(id),
-      custCode: Value(custCode),
       branchNo: Value(branchNo),
       branchYear: branchYear == null && nullToAbsent
           ? const Value.absent()
@@ -2456,7 +2445,6 @@ class BranchProfileData extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return BranchProfileData(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       branchNo: serializer.fromJson<String>(json['branchNo']),
       branchYear: serializer.fromJson<String?>(json['branchYear']),
       branchCode: serializer.fromJson<String?>(json['branchCode']),
@@ -2531,7 +2519,6 @@ class BranchProfileData extends DataClass
     DateTime? cachedAt,
   }) => BranchProfileData(
     id: id ?? this.id,
-    custCode: custCode ?? this.custCode,
     branchNo: branchNo ?? this.branchNo,
     branchYear: branchYear.present ? branchYear.value : this.branchYear,
     branchCode: branchCode.present ? branchCode.value : this.branchCode,
@@ -2562,7 +2549,6 @@ class BranchProfileData extends DataClass
   BranchProfileData copyWithCompanion(BranchProfileCompanion data) {
     return BranchProfileData(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       branchYear: data.branchYear.present
           ? data.branchYear.value
@@ -2826,7 +2812,6 @@ class BranchProfileCompanion extends UpdateCompanion<BranchProfileData> {
   }) {
     return BranchProfileCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       branchNo: branchNo ?? this.branchNo,
       branchYear: branchYear ?? this.branchYear,
       branchCode: branchCode ?? this.branchCode,
@@ -3688,7 +3673,6 @@ class PosMachine extends DataClass implements Insertable<PosMachine> {
     return PosMachinesCompanion(
       id: Value(id),
       name: name == null && nullToAbsent ? const Value.absent() : Value(name),
-      custCode: Value(custCode),
       machineNo: Value(machineNo),
       branchNo: branchNo == null && nullToAbsent
           ? const Value.absent()
@@ -3747,7 +3731,6 @@ class PosMachine extends DataClass implements Insertable<PosMachine> {
     return PosMachine(
       id: serializer.fromJson<String>(json['id']),
       name: serializer.fromJson<String?>(json['name']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       machineNo: serializer.fromJson<String>(json['machineNo']),
       branchNo: serializer.fromJson<String?>(json['branchNo']),
       branchYear: serializer.fromJson<String?>(json['branchYear']),
@@ -3836,7 +3819,6 @@ class PosMachine extends DataClass implements Insertable<PosMachine> {
   }) => PosMachine(
     id: id ?? this.id,
     name: name.present ? name.value : this.name,
-    custCode: custCode ?? this.custCode,
     machineNo: machineNo ?? this.machineNo,
     branchNo: branchNo.present ? branchNo.value : this.branchNo,
     branchYear: branchYear.present ? branchYear.value : this.branchYear,
@@ -3877,7 +3859,6 @@ class PosMachine extends DataClass implements Insertable<PosMachine> {
     return PosMachine(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       machineNo: data.machineNo.present ? data.machineNo.value : this.machineNo,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       branchYear: data.branchYear.present
@@ -4187,7 +4168,6 @@ class PosMachinesCompanion extends UpdateCompanion<PosMachine> {
     return PosMachinesCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
-      custCode: custCode ?? this.custCode,
       machineNo: machineNo ?? this.machineNo,
       branchNo: branchNo ?? this.branchNo,
       branchYear: branchYear ?? this.branchYear,
@@ -4573,7 +4553,6 @@ class ActivePosSessionRow extends DataClass
       sessionId: sessionId == null && nullToAbsent
           ? const Value.absent()
           : Value(sessionId),
-      custCode: Value(custCode),
       activeUserId: Value(activeUserId),
       activeMachineNo: Value(activeMachineNo),
       loginAt: Value(loginAt),
@@ -4589,7 +4568,6 @@ class ActivePosSessionRow extends DataClass
     return ActivePosSessionRow(
       id: serializer.fromJson<int>(json['id']),
       sessionId: serializer.fromJson<String?>(json['sessionId']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       activeUserId: serializer.fromJson<String>(json['activeUserId']),
       activeMachineNo: serializer.fromJson<String>(json['activeMachineNo']),
       loginAt: serializer.fromJson<DateTime>(json['loginAt']),
@@ -4621,7 +4599,6 @@ class ActivePosSessionRow extends DataClass
   }) => ActivePosSessionRow(
     id: id ?? this.id,
     sessionId: sessionId.present ? sessionId.value : this.sessionId,
-    custCode: custCode ?? this.custCode,
     activeUserId: activeUserId ?? this.activeUserId,
     activeMachineNo: activeMachineNo ?? this.activeMachineNo,
     loginAt: loginAt ?? this.loginAt,
@@ -4631,7 +4608,6 @@ class ActivePosSessionRow extends DataClass
     return ActivePosSessionRow(
       id: data.id.present ? data.id.value : this.id,
       sessionId: data.sessionId.present ? data.sessionId.value : this.sessionId,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       activeUserId: data.activeUserId.present
           ? data.activeUserId.value
           : this.activeUserId,
@@ -4742,7 +4718,6 @@ class ActivePosSessionsCompanion extends UpdateCompanion<ActivePosSessionRow> {
     return ActivePosSessionsCompanion(
       id: id ?? this.id,
       sessionId: sessionId ?? this.sessionId,
-      custCode: custCode ?? this.custCode,
       activeUserId: activeUserId ?? this.activeUserId,
       activeMachineNo: activeMachineNo ?? this.activeMachineNo,
       loginAt: loginAt ?? this.loginAt,
@@ -5375,7 +5350,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
   InvoiceSequencesCompanion toCompanion(bool nullToAbsent) {
     return InvoiceSequencesCompanion(
       id: Value(id),
-      custCode: Value(custCode),
       branchNo: Value(branchNo),
       machineNo: Value(machineNo),
       userId: Value(userId),
@@ -5392,7 +5366,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return InvoiceSequence(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       branchNo: serializer.fromJson<String>(json['branchNo']),
       machineNo: serializer.fromJson<String>(json['machineNo']),
       userId: serializer.fromJson<String>(json['userId']),
@@ -5427,7 +5400,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
     DateTime? updatedAt,
   }) => InvoiceSequence(
     id: id ?? this.id,
-    custCode: custCode ?? this.custCode,
     branchNo: branchNo ?? this.branchNo,
     machineNo: machineNo ?? this.machineNo,
     userId: userId ?? this.userId,
@@ -5438,7 +5410,6 @@ class InvoiceSequence extends DataClass implements Insertable<InvoiceSequence> {
   InvoiceSequence copyWithCompanion(InvoiceSequencesCompanion data) {
     return InvoiceSequence(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       machineNo: data.machineNo.present ? data.machineNo.value : this.machineNo,
       userId: data.userId.present ? data.userId.value : this.userId,
@@ -5566,7 +5537,6 @@ class InvoiceSequencesCompanion extends UpdateCompanion<InvoiceSequence> {
   }) {
     return InvoiceSequencesCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       branchNo: branchNo ?? this.branchNo,
       machineNo: machineNo ?? this.machineNo,
       userId: userId ?? this.userId,
@@ -6237,7 +6207,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
   PosUsersCompanion toCompanion(bool nullToAbsent) {
     return PosUsersCompanion(
       id: Value(id),
-      custCode: Value(custCode),
       sourceUserId: sourceUserId == null && nullToAbsent
           ? const Value.absent()
           : Value(sourceUserId),
@@ -6290,7 +6259,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PosUser(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       sourceUserId: serializer.fromJson<String?>(json['sourceUserId']),
       username: serializer.fromJson<String>(json['username']),
       loginName: serializer.fromJson<String?>(json['loginName']),
@@ -6361,7 +6329,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
     DateTime? cachedAt,
   }) => PosUser(
     id: id ?? this.id,
-    custCode: custCode ?? this.custCode,
     sourceUserId: sourceUserId.present ? sourceUserId.value : this.sourceUserId,
     username: username ?? this.username,
     loginName: loginName.present ? loginName.value : this.loginName,
@@ -6392,7 +6359,6 @@ class PosUser extends DataClass implements Insertable<PosUser> {
   PosUser copyWithCompanion(PosUsersCompanion data) {
     return PosUser(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       sourceUserId: data.sourceUserId.present
           ? data.sourceUserId.value
           : this.sourceUserId,
@@ -6653,7 +6619,6 @@ class PosUsersCompanion extends UpdateCompanion<PosUser> {
   }) {
     return PosUsersCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       sourceUserId: sourceUserId ?? this.sourceUserId,
       username: username ?? this.username,
       loginName: loginName ?? this.loginName,
@@ -7248,7 +7213,6 @@ class PosUserMachineAccessData extends DataClass
   PosUserMachineAccessCompanion toCompanion(bool nullToAbsent) {
     return PosUserMachineAccessCompanion(
       id: Value(id),
-      custCode: Value(custCode),
       userId: Value(userId),
       sourceUserId: sourceUserId == null && nullToAbsent
           ? const Value.absent()
@@ -7290,7 +7254,6 @@ class PosUserMachineAccessData extends DataClass
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PosUserMachineAccessData(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       userId: serializer.fromJson<String>(json['userId']),
       sourceUserId: serializer.fromJson<String?>(json['sourceUserId']),
       machineNo: serializer.fromJson<String>(json['machineNo']),
@@ -7346,7 +7309,6 @@ class PosUserMachineAccessData extends DataClass
     DateTime? cachedAt,
   }) => PosUserMachineAccessData(
     id: id ?? this.id,
-    custCode: custCode ?? this.custCode,
     userId: userId ?? this.userId,
     sourceUserId: sourceUserId.present ? sourceUserId.value : this.sourceUserId,
     machineNo: machineNo ?? this.machineNo,
@@ -7370,7 +7332,6 @@ class PosUserMachineAccessData extends DataClass
   ) {
     return PosUserMachineAccessData(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       userId: data.userId.present ? data.userId.value : this.userId,
       sourceUserId: data.sourceUserId.present
           ? data.sourceUserId.value
@@ -7578,7 +7539,6 @@ class PosUserMachineAccessCompanion
   }) {
     return PosUserMachineAccessCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       userId: userId ?? this.userId,
       sourceUserId: sourceUserId ?? this.sourceUserId,
       machineNo: machineNo ?? this.machineNo,
@@ -7936,7 +7896,6 @@ class Store extends DataClass implements Insertable<Store> {
   StoresCompanion toCompanion(bool nullToAbsent) {
     return StoresCompanion(
       id: Value(id),
-      custCode: Value(custCode),
       branchNo: branchNo == null && nullToAbsent
           ? const Value.absent()
           : Value(branchNo),
@@ -7959,7 +7918,6 @@ class Store extends DataClass implements Insertable<Store> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Store(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       branchNo: serializer.fromJson<String?>(json['branchNo']),
       name: serializer.fromJson<String>(json['name']),
       nameAr: serializer.fromJson<String?>(json['nameAr']),
@@ -7994,7 +7952,6 @@ class Store extends DataClass implements Insertable<Store> {
     DateTime? cachedAt,
   }) => Store(
     id: id ?? this.id,
-    custCode: custCode ?? this.custCode,
     branchNo: branchNo.present ? branchNo.value : this.branchNo,
     name: name ?? this.name,
     nameAr: nameAr.present ? nameAr.value : this.nameAr,
@@ -8007,7 +7964,6 @@ class Store extends DataClass implements Insertable<Store> {
   Store copyWithCompanion(StoresCompanion data) {
     return Store(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       name: data.name.present ? data.name.value : this.name,
       nameAr: data.nameAr.present ? data.nameAr.value : this.nameAr,
@@ -8131,7 +8087,6 @@ class StoresCompanion extends UpdateCompanion<Store> {
   }) {
     return StoresCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       branchNo: branchNo ?? this.branchNo,
       name: name ?? this.name,
       nameAr: nameAr ?? this.nameAr,
@@ -8428,7 +8383,6 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
   PriceLevelsCompanion toCompanion(bool nullToAbsent) {
     return PriceLevelsCompanion(
       id: Value(id),
-      custCode: Value(custCode),
       name: Value(name),
       nameAr: nameAr == null && nullToAbsent
           ? const Value.absent()
@@ -8448,7 +8402,6 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PriceLevel(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       name: serializer.fromJson<String>(json['name']),
       nameAr: serializer.fromJson<String?>(json['nameAr']),
       isDefault: serializer.fromJson<bool>(json['isDefault']),
@@ -8480,7 +8433,6 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
     DateTime? cachedAt,
   }) => PriceLevel(
     id: id ?? this.id,
-    custCode: custCode ?? this.custCode,
     name: name ?? this.name,
     nameAr: nameAr.present ? nameAr.value : this.nameAr,
     isDefault: isDefault ?? this.isDefault,
@@ -8492,7 +8444,6 @@ class PriceLevel extends DataClass implements Insertable<PriceLevel> {
   PriceLevel copyWithCompanion(PriceLevelsCompanion data) {
     return PriceLevel(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       name: data.name.present ? data.name.value : this.name,
       nameAr: data.nameAr.present ? data.nameAr.value : this.nameAr,
       isDefault: data.isDefault.present ? data.isDefault.value : this.isDefault,
@@ -8606,7 +8557,6 @@ class PriceLevelsCompanion extends UpdateCompanion<PriceLevel> {
   }) {
     return PriceLevelsCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       name: name ?? this.name,
       nameAr: nameAr ?? this.nameAr,
       isDefault: isDefault ?? this.isDefault,
@@ -9207,7 +9157,6 @@ class Item extends DataClass implements Insertable<Item> {
   ItemsCompanion toCompanion(bool nullToAbsent) {
     return ItemsCompanion(
       id: Value(id),
-      custCode: Value(custCode),
       code: code == null && nullToAbsent ? const Value.absent() : Value(code),
       name: Value(name),
       nameAr: nameAr == null && nullToAbsent
@@ -9244,7 +9193,6 @@ class Item extends DataClass implements Insertable<Item> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Item(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       code: serializer.fromJson<String?>(json['code']),
       name: serializer.fromJson<String>(json['name']),
       nameAr: serializer.fromJson<String?>(json['nameAr']),
@@ -9309,7 +9257,6 @@ class Item extends DataClass implements Insertable<Item> {
     DateTime? cachedAt,
   }) => Item(
     id: id ?? this.id,
-    custCode: custCode ?? this.custCode,
     code: code.present ? code.value : this.code,
     name: name ?? this.name,
     nameAr: nameAr.present ? nameAr.value : this.nameAr,
@@ -9334,7 +9281,6 @@ class Item extends DataClass implements Insertable<Item> {
   Item copyWithCompanion(ItemsCompanion data) {
     return Item(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       code: data.code.present ? data.code.value : this.code,
       name: data.name.present ? data.name.value : this.name,
       nameAr: data.nameAr.present ? data.nameAr.value : this.nameAr,
@@ -9564,7 +9510,6 @@ class ItemsCompanion extends UpdateCompanion<Item> {
   }) {
     return ItemsCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       code: code ?? this.code,
       name: name ?? this.name,
       nameAr: nameAr ?? this.nameAr,
@@ -10078,7 +10023,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
   ItemUnitsCompanion toCompanion(bool nullToAbsent) {
     return ItemUnitsCompanion(
       id: Value(id),
-      custCode: Value(custCode),
       itemId: Value(itemId),
       sourceUnitId: sourceUnitId == null && nullToAbsent
           ? const Value.absent()
@@ -10108,7 +10052,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ItemUnit(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       itemId: serializer.fromJson<String>(json['itemId']),
       sourceUnitId: serializer.fromJson<String?>(json['sourceUnitId']),
       name: serializer.fromJson<String>(json['name']),
@@ -10158,7 +10101,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
     DateTime? cachedAt,
   }) => ItemUnit(
     id: id ?? this.id,
-    custCode: custCode ?? this.custCode,
     itemId: itemId ?? this.itemId,
     sourceUnitId: sourceUnitId.present ? sourceUnitId.value : this.sourceUnitId,
     name: name ?? this.name,
@@ -10176,7 +10118,6 @@ class ItemUnit extends DataClass implements Insertable<ItemUnit> {
   ItemUnit copyWithCompanion(ItemUnitsCompanion data) {
     return ItemUnit(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       itemId: data.itemId.present ? data.itemId.value : this.itemId,
       sourceUnitId: data.sourceUnitId.present
           ? data.sourceUnitId.value
@@ -10355,7 +10296,6 @@ class ItemUnitsCompanion extends UpdateCompanion<ItemUnit> {
   }) {
     return ItemUnitsCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       itemId: itemId ?? this.itemId,
       sourceUnitId: sourceUnitId ?? this.sourceUnitId,
       name: name ?? this.name,
@@ -10674,7 +10614,6 @@ class ItemBarcode extends DataClass implements Insertable<ItemBarcode> {
   ItemBarcodesCompanion toCompanion(bool nullToAbsent) {
     return ItemBarcodesCompanion(
       id: Value(id),
-      custCode: Value(custCode),
       itemId: Value(itemId),
       unitId: unitId == null && nullToAbsent
           ? const Value.absent()
@@ -10692,7 +10631,6 @@ class ItemBarcode extends DataClass implements Insertable<ItemBarcode> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ItemBarcode(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       itemId: serializer.fromJson<String>(json['itemId']),
       unitId: serializer.fromJson<String?>(json['unitId']),
       barcode: serializer.fromJson<String>(json['barcode']),
@@ -10724,7 +10662,6 @@ class ItemBarcode extends DataClass implements Insertable<ItemBarcode> {
     DateTime? cachedAt,
   }) => ItemBarcode(
     id: id ?? this.id,
-    custCode: custCode ?? this.custCode,
     itemId: itemId ?? this.itemId,
     unitId: unitId.present ? unitId.value : this.unitId,
     barcode: barcode ?? this.barcode,
@@ -10734,7 +10671,6 @@ class ItemBarcode extends DataClass implements Insertable<ItemBarcode> {
   ItemBarcode copyWithCompanion(ItemBarcodesCompanion data) {
     return ItemBarcode(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       itemId: data.itemId.present ? data.itemId.value : this.itemId,
       unitId: data.unitId.present ? data.unitId.value : this.unitId,
       barcode: data.barcode.present ? data.barcode.value : this.barcode,
@@ -10840,7 +10776,6 @@ class ItemBarcodesCompanion extends UpdateCompanion<ItemBarcode> {
   }) {
     return ItemBarcodesCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       itemId: itemId ?? this.itemId,
       unitId: unitId ?? this.unitId,
       barcode: barcode ?? this.barcode,
@@ -11275,7 +11210,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
   ItemPricesCompanion toCompanion(bool nullToAbsent) {
     return ItemPricesCompanion(
       id: Value(id),
-      custCode: Value(custCode),
       itemId: Value(itemId),
       unitId: unitId == null && nullToAbsent
           ? const Value.absent()
@@ -11310,7 +11244,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ItemPrice(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       itemId: serializer.fromJson<String>(json['itemId']),
       unitId: serializer.fromJson<String?>(json['unitId']),
       storeId: serializer.fromJson<String?>(json['storeId']),
@@ -11357,7 +11290,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
     DateTime? cachedAt,
   }) => ItemPrice(
     id: id ?? this.id,
-    custCode: custCode ?? this.custCode,
     itemId: itemId ?? this.itemId,
     unitId: unitId.present ? unitId.value : this.unitId,
     storeId: storeId.present ? storeId.value : this.storeId,
@@ -11376,7 +11308,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
   ItemPrice copyWithCompanion(ItemPricesCompanion data) {
     return ItemPrice(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       itemId: data.itemId.present ? data.itemId.value : this.itemId,
       unitId: data.unitId.present ? data.unitId.value : this.unitId,
       storeId: data.storeId.present ? data.storeId.value : this.storeId,
@@ -11547,7 +11478,6 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
   }) {
     return ItemPricesCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       itemId: itemId ?? this.itemId,
       unitId: unitId ?? this.unitId,
       storeId: storeId ?? this.storeId,
@@ -11914,7 +11844,6 @@ class ItemGroup extends DataClass implements Insertable<ItemGroup> {
   ItemGroupsCompanion toCompanion(bool nullToAbsent) {
     return ItemGroupsCompanion(
       id: Value(id),
-      custCode: Value(custCode),
       parentId: parentId == null && nullToAbsent
           ? const Value.absent()
           : Value(parentId),
@@ -11938,7 +11867,6 @@ class ItemGroup extends DataClass implements Insertable<ItemGroup> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ItemGroup(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       parentId: serializer.fromJson<String?>(json['parentId']),
       name: serializer.fromJson<String>(json['name']),
       nameAr: serializer.fromJson<String?>(json['nameAr']),
@@ -11976,7 +11904,6 @@ class ItemGroup extends DataClass implements Insertable<ItemGroup> {
     DateTime? cachedAt,
   }) => ItemGroup(
     id: id ?? this.id,
-    custCode: custCode ?? this.custCode,
     parentId: parentId.present ? parentId.value : this.parentId,
     name: name ?? this.name,
     nameAr: nameAr.present ? nameAr.value : this.nameAr,
@@ -11988,7 +11915,6 @@ class ItemGroup extends DataClass implements Insertable<ItemGroup> {
   ItemGroup copyWithCompanion(ItemGroupsCompanion data) {
     return ItemGroup(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       parentId: data.parentId.present ? data.parentId.value : this.parentId,
       name: data.name.present ? data.name.value : this.name,
       nameAr: data.nameAr.present ? data.nameAr.value : this.nameAr,
@@ -12120,7 +12046,6 @@ class ItemGroupsCompanion extends UpdateCompanion<ItemGroup> {
   }) {
     return ItemGroupsCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       parentId: parentId ?? this.parentId,
       name: name ?? this.name,
       nameAr: nameAr ?? this.nameAr,
@@ -12505,7 +12430,6 @@ class Customer extends DataClass implements Insertable<Customer> {
   CustomersCompanion toCompanion(bool nullToAbsent) {
     return CustomersCompanion(
       id: Value(id),
-      custCode: Value(custCode),
       name: Value(name),
       accountId: accountId == null && nullToAbsent
           ? const Value.absent()
@@ -12532,7 +12456,6 @@ class Customer extends DataClass implements Insertable<Customer> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Customer(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       name: serializer.fromJson<String>(json['name']),
       accountId: serializer.fromJson<String?>(json['accountId']),
       taxNumber: serializer.fromJson<String?>(json['taxNumber']),
@@ -12573,7 +12496,6 @@ class Customer extends DataClass implements Insertable<Customer> {
     DateTime? cachedAt,
   }) => Customer(
     id: id ?? this.id,
-    custCode: custCode ?? this.custCode,
     name: name ?? this.name,
     accountId: accountId.present ? accountId.value : this.accountId,
     taxNumber: taxNumber.present ? taxNumber.value : this.taxNumber,
@@ -12588,7 +12510,6 @@ class Customer extends DataClass implements Insertable<Customer> {
   Customer copyWithCompanion(CustomersCompanion data) {
     return Customer(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       name: data.name.present ? data.name.value : this.name,
       accountId: data.accountId.present ? data.accountId.value : this.accountId,
       taxNumber: data.taxNumber.present ? data.taxNumber.value : this.taxNumber,
@@ -12734,7 +12655,6 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
   }) {
     return CustomersCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       name: name ?? this.name,
       accountId: accountId ?? this.accountId,
       taxNumber: taxNumber ?? this.taxNumber,
@@ -13485,7 +13405,6 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
   PaymentMethodsCompanion toCompanion(bool nullToAbsent) {
     return PaymentMethodsCompanion(
       id: Value(id),
-      custCode: Value(custCode),
       type: Value(type),
       code: Value(code),
       name: Value(name),
@@ -13541,7 +13460,6 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return PaymentMethod(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String>(json['custCode']),
       type: serializer.fromJson<String>(json['type']),
       code: serializer.fromJson<String>(json['code']),
       name: serializer.fromJson<String>(json['name']),
@@ -13623,7 +13541,6 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
     DateTime? cachedAt,
   }) => PaymentMethod(
     id: id ?? this.id,
-    custCode: custCode ?? this.custCode,
     type: type ?? this.type,
     code: code ?? this.code,
     name: name ?? this.name,
@@ -13657,7 +13574,6 @@ class PaymentMethod extends DataClass implements Insertable<PaymentMethod> {
   PaymentMethod copyWithCompanion(PaymentMethodsCompanion data) {
     return PaymentMethod(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       type: data.type.present ? data.type.value : this.type,
       code: data.code.present ? data.code.value : this.code,
       name: data.name.present ? data.name.value : this.name,
@@ -13952,7 +13868,6 @@ class PaymentMethodsCompanion extends UpdateCompanion<PaymentMethod> {
   }) {
     return PaymentMethodsCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       type: type ?? this.type,
       code: code ?? this.code,
       name: name ?? this.name,
@@ -14773,7 +14688,6 @@ class Shift extends DataClass implements Insertable<Shift> {
     return Shift(
       id: serializer.fromJson<String>(json['id']),
       serverId: serializer.fromJson<String?>(json['serverId']),
-      custCode: serializer.fromJson<String?>(json['custCode']),
       branchNo: serializer.fromJson<String?>(json['branchNo']),
       branchYear: serializer.fromJson<String?>(json['branchYear']),
       machineNo: serializer.fromJson<String?>(json['machineNo']),
@@ -14847,7 +14761,6 @@ class Shift extends DataClass implements Insertable<Shift> {
   }) => Shift(
     id: id ?? this.id,
     serverId: serverId.present ? serverId.value : this.serverId,
-    custCode: custCode.present ? custCode.value : this.custCode,
     branchNo: branchNo.present ? branchNo.value : this.branchNo,
     branchYear: branchYear.present ? branchYear.value : this.branchYear,
     machineNo: machineNo.present ? machineNo.value : this.machineNo,
@@ -14873,7 +14786,6 @@ class Shift extends DataClass implements Insertable<Shift> {
     return Shift(
       id: data.id.present ? data.id.value : this.id,
       serverId: data.serverId.present ? data.serverId.value : this.serverId,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       branchYear: data.branchYear.present
           ? data.branchYear.value
@@ -15147,7 +15059,6 @@ class ShiftsCompanion extends UpdateCompanion<Shift> {
     return ShiftsCompanion(
       id: id ?? this.id,
       serverId: serverId ?? this.serverId,
-      custCode: custCode ?? this.custCode,
       branchNo: branchNo ?? this.branchNo,
       branchYear: branchYear ?? this.branchYear,
       machineNo: machineNo ?? this.machineNo,
@@ -16844,7 +16755,6 @@ class Sale extends DataClass implements Insertable<Sale> {
       idempotencyKey: serializer.fromJson<String>(json['idempotencyKey']),
       type: serializer.fromJson<String>(json['type']),
       status: serializer.fromJson<String>(json['status']),
-      custCode: serializer.fromJson<String?>(json['custCode']),
       branchNo: serializer.fromJson<String?>(json['branchNo']),
       branchYear: serializer.fromJson<String?>(json['branchYear']),
       terminalId: serializer.fromJson<String>(json['terminalId']),
@@ -16970,7 +16880,6 @@ class Sale extends DataClass implements Insertable<Sale> {
     idempotencyKey: idempotencyKey ?? this.idempotencyKey,
     type: type ?? this.type,
     status: status ?? this.status,
-    custCode: custCode.present ? custCode.value : this.custCode,
     branchNo: branchNo.present ? branchNo.value : this.branchNo,
     branchYear: branchYear.present ? branchYear.value : this.branchYear,
     terminalId: terminalId ?? this.terminalId,
@@ -17024,7 +16933,6 @@ class Sale extends DataClass implements Insertable<Sale> {
           : this.idempotencyKey,
       type: data.type.present ? data.type.value : this.type,
       status: data.status.present ? data.status.value : this.status,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       branchYear: data.branchYear.present
           ? data.branchYear.value
@@ -17456,7 +17364,6 @@ class SalesCompanion extends UpdateCompanion<Sale> {
       idempotencyKey: idempotencyKey ?? this.idempotencyKey,
       type: type ?? this.type,
       status: status ?? this.status,
-      custCode: custCode ?? this.custCode,
       branchNo: branchNo ?? this.branchNo,
       branchYear: branchYear ?? this.branchYear,
       terminalId: terminalId ?? this.terminalId,
@@ -21688,7 +21595,6 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return HeldOrder(
       id: serializer.fromJson<String>(json['id']),
-      custCode: serializer.fromJson<String?>(json['custCode']),
       branchNo: serializer.fromJson<String?>(json['branchNo']),
       branchYear: serializer.fromJson<String?>(json['branchYear']),
       machineNo: serializer.fromJson<String?>(json['machineNo']),
@@ -21770,7 +21676,6 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
     Value<DateTime?> resumedAt = const Value.absent(),
   }) => HeldOrder(
     id: id ?? this.id,
-    custCode: custCode.present ? custCode.value : this.custCode,
     branchNo: branchNo.present ? branchNo.value : this.branchNo,
     branchYear: branchYear.present ? branchYear.value : this.branchYear,
     machineNo: machineNo.present ? machineNo.value : this.machineNo,
@@ -21800,7 +21705,6 @@ class HeldOrder extends DataClass implements Insertable<HeldOrder> {
   HeldOrder copyWithCompanion(HeldOrdersCompanion data) {
     return HeldOrder(
       id: data.id.present ? data.id.value : this.id,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       branchNo: data.branchNo.present ? data.branchNo.value : this.branchNo,
       branchYear: data.branchYear.present
           ? data.branchYear.value
@@ -22091,7 +21995,6 @@ class HeldOrdersCompanion extends UpdateCompanion<HeldOrder> {
   }) {
     return HeldOrdersCompanion(
       id: id ?? this.id,
-      custCode: custCode ?? this.custCode,
       branchNo: branchNo ?? this.branchNo,
       branchYear: branchYear ?? this.branchYear,
       machineNo: machineNo ?? this.machineNo,
@@ -23627,7 +23530,6 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
       id: serializer.fromJson<String>(json['id']),
       mode: serializer.fromJson<String>(json['mode']),
       status: serializer.fromJson<String>(json['status']),
-      custCode: serializer.fromJson<String?>(json['custCode']),
       sourceUserId: serializer.fromJson<String?>(json['sourceUserId']),
       branchNo: serializer.fromJson<String?>(json['branchNo']),
       machineNo: serializer.fromJson<String?>(json['machineNo']),
@@ -23680,7 +23582,6 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
     id: id ?? this.id,
     mode: mode ?? this.mode,
     status: status ?? this.status,
-    custCode: custCode.present ? custCode.value : this.custCode,
     sourceUserId: sourceUserId.present ? sourceUserId.value : this.sourceUserId,
     branchNo: branchNo.present ? branchNo.value : this.branchNo,
     machineNo: machineNo.present ? machineNo.value : this.machineNo,
@@ -23697,7 +23598,6 @@ class MasterSyncRun extends DataClass implements Insertable<MasterSyncRun> {
       id: data.id.present ? data.id.value : this.id,
       mode: data.mode.present ? data.mode.value : this.mode,
       status: data.status.present ? data.status.value : this.status,
-      custCode: data.custCode.present ? data.custCode.value : this.custCode,
       sourceUserId: data.sourceUserId.present
           ? data.sourceUserId.value
           : this.sourceUserId,
@@ -23893,7 +23793,6 @@ class MasterSyncRunsCompanion extends UpdateCompanion<MasterSyncRun> {
       id: id ?? this.id,
       mode: mode ?? this.mode,
       status: status ?? this.status,
-      custCode: custCode ?? this.custCode,
       sourceUserId: sourceUserId ?? this.sourceUserId,
       branchNo: branchNo ?? this.branchNo,
       machineNo: machineNo ?? this.machineNo,
@@ -32922,7 +32821,6 @@ class $$SyncProfileTableTableTableManager
               }) => SyncProfileTableCompanion(
                 id: id,
                 baseUrl: baseUrl,
-                custCode: custCode,
                 bootstrapUserId: bootstrapUserId,
                 pageLimit: pageLimit,
                 timeoutSeconds: timeoutSeconds,
@@ -32946,7 +32844,6 @@ class $$SyncProfileTableTableTableManager
               }) => SyncProfileTableCompanion.insert(
                 id: id,
                 baseUrl: baseUrl,
-                custCode: custCode,
                 bootstrapUserId: bootstrapUserId,
                 pageLimit: pageLimit,
                 timeoutSeconds: timeoutSeconds,
@@ -33152,7 +33049,6 @@ class $$LocalUserPinsTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => LocalUserPinsCompanion(
-                custCode: custCode,
                 userId: userId,
                 pinHash: pinHash,
                 pinSalt: pinSalt,
@@ -33170,7 +33066,6 @@ class $$LocalUserPinsTableTableManager
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => LocalUserPinsCompanion.insert(
-                custCode: custCode,
                 userId: userId,
                 pinHash: pinHash,
                 pinSalt: pinSalt,
@@ -33620,7 +33515,6 @@ class $$BranchProfileTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => BranchProfileCompanion(
                 id: id,
-                custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 branchCode: branchCode,
@@ -33666,7 +33560,6 @@ class $$BranchProfileTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => BranchProfileCompanion.insert(
                 id: id,
-                custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 branchCode: branchCode,
@@ -34196,7 +34089,6 @@ class $$PosMachinesTableTableManager
               }) => PosMachinesCompanion(
                 id: id,
                 name: name,
-                custCode: custCode,
                 machineNo: machineNo,
                 branchNo: branchNo,
                 branchYear: branchYear,
@@ -34250,7 +34142,6 @@ class $$PosMachinesTableTableManager
               }) => PosMachinesCompanion.insert(
                 id: id,
                 name: name,
-                custCode: custCode,
                 machineNo: machineNo,
                 branchNo: branchNo,
                 branchYear: branchYear,
@@ -34495,7 +34386,6 @@ class $$ActivePosSessionsTableTableManager
               }) => ActivePosSessionsCompanion(
                 id: id,
                 sessionId: sessionId,
-                custCode: custCode,
                 activeUserId: activeUserId,
                 activeMachineNo: activeMachineNo,
                 loginAt: loginAt,
@@ -34513,7 +34403,6 @@ class $$ActivePosSessionsTableTableManager
               }) => ActivePosSessionsCompanion.insert(
                 id: id,
                 sessionId: sessionId,
-                custCode: custCode,
                 activeUserId: activeUserId,
                 activeMachineNo: activeMachineNo,
                 loginAt: loginAt,
@@ -34961,7 +34850,6 @@ class $$InvoiceSequencesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => InvoiceSequencesCompanion(
                 id: id,
-                custCode: custCode,
                 branchNo: branchNo,
                 machineNo: machineNo,
                 userId: userId,
@@ -34983,7 +34871,6 @@ class $$InvoiceSequencesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => InvoiceSequencesCompanion.insert(
                 id: id,
-                custCode: custCode,
                 branchNo: branchNo,
                 machineNo: machineNo,
                 userId: userId,
@@ -35425,7 +35312,6 @@ class $$PosUsersTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PosUsersCompanion(
                 id: id,
-                custCode: custCode,
                 sourceUserId: sourceUserId,
                 username: username,
                 loginName: loginName,
@@ -35471,7 +35357,6 @@ class $$PosUsersTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PosUsersCompanion.insert(
                 id: id,
-                custCode: custCode,
                 sourceUserId: sourceUserId,
                 username: username,
                 loginName: loginName,
@@ -35853,7 +35738,6 @@ class $$PosUserMachineAccessTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PosUserMachineAccessCompanion(
                 id: id,
-                custCode: custCode,
                 userId: userId,
                 sourceUserId: sourceUserId,
                 machineNo: machineNo,
@@ -35889,7 +35773,6 @@ class $$PosUserMachineAccessTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PosUserMachineAccessCompanion.insert(
                 id: id,
-                custCode: custCode,
                 userId: userId,
                 sourceUserId: sourceUserId,
                 machineNo: machineNo,
@@ -36134,7 +36017,6 @@ class $$StoresTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => StoresCompanion(
                 id: id,
-                custCode: custCode,
                 branchNo: branchNo,
                 name: name,
                 nameAr: nameAr,
@@ -36156,7 +36038,6 @@ class $$StoresTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => StoresCompanion.insert(
                 id: id,
-                custCode: custCode,
                 branchNo: branchNo,
                 name: name,
                 nameAr: nameAr,
@@ -36374,7 +36255,6 @@ class $$PriceLevelsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PriceLevelsCompanion(
                 id: id,
-                custCode: custCode,
                 name: name,
                 nameAr: nameAr,
                 isDefault: isDefault,
@@ -36394,7 +36274,6 @@ class $$PriceLevelsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PriceLevelsCompanion.insert(
                 id: id,
-                custCode: custCode,
                 name: name,
                 nameAr: nameAr,
                 isDefault: isDefault,
@@ -36792,7 +36671,6 @@ class $$ItemsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemsCompanion(
                 id: id,
-                custCode: custCode,
                 code: code,
                 name: name,
                 nameAr: nameAr,
@@ -36834,7 +36712,6 @@ class $$ItemsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemsCompanion.insert(
                 id: id,
-                custCode: custCode,
                 code: code,
                 name: name,
                 nameAr: nameAr,
@@ -37159,7 +37036,6 @@ class $$ItemUnitsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemUnitsCompanion(
                 id: id,
-                custCode: custCode,
                 itemId: itemId,
                 sourceUnitId: sourceUnitId,
                 name: name,
@@ -37191,7 +37067,6 @@ class $$ItemUnitsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemUnitsCompanion.insert(
                 id: id,
-                custCode: custCode,
                 itemId: itemId,
                 sourceUnitId: sourceUnitId,
                 name: name,
@@ -37412,7 +37287,6 @@ class $$ItemBarcodesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemBarcodesCompanion(
                 id: id,
-                custCode: custCode,
                 itemId: itemId,
                 unitId: unitId,
                 barcode: barcode,
@@ -37432,7 +37306,6 @@ class $$ItemBarcodesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemBarcodesCompanion.insert(
                 id: id,
-                custCode: custCode,
                 itemId: itemId,
                 unitId: unitId,
                 barcode: barcode,
@@ -37738,7 +37611,6 @@ class $$ItemPricesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemPricesCompanion(
                 id: id,
-                custCode: custCode,
                 itemId: itemId,
                 unitId: unitId,
                 storeId: storeId,
@@ -37768,7 +37640,6 @@ class $$ItemPricesTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemPricesCompanion.insert(
                 id: id,
-                custCode: custCode,
                 itemId: itemId,
                 unitId: unitId,
                 storeId: storeId,
@@ -38020,7 +37891,6 @@ class $$ItemGroupsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemGroupsCompanion(
                 id: id,
-                custCode: custCode,
                 parentId: parentId,
                 name: name,
                 nameAr: nameAr,
@@ -38044,7 +37914,6 @@ class $$ItemGroupsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => ItemGroupsCompanion.insert(
                 id: id,
-                custCode: custCode,
                 parentId: parentId,
                 name: name,
                 nameAr: nameAr,
@@ -38310,7 +38179,6 @@ class $$CustomersTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => CustomersCompanion(
                 id: id,
-                custCode: custCode,
                 name: name,
                 accountId: accountId,
                 taxNumber: taxNumber,
@@ -38336,7 +38204,6 @@ class $$CustomersTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => CustomersCompanion.insert(
                 id: id,
-                custCode: custCode,
                 name: name,
                 accountId: accountId,
                 taxNumber: taxNumber,
@@ -38832,7 +38699,6 @@ class $$PaymentMethodsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PaymentMethodsCompanion(
                 id: id,
-                custCode: custCode,
                 type: type,
                 code: code,
                 name: name,
@@ -38884,7 +38750,6 @@ class $$PaymentMethodsTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => PaymentMethodsCompanion.insert(
                 id: id,
-                custCode: custCode,
                 type: type,
                 code: code,
                 name: name,
@@ -39360,7 +39225,6 @@ class $$ShiftsTableTableManager
               }) => ShiftsCompanion(
                 id: id,
                 serverId: serverId,
-                custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 machineNo: machineNo,
@@ -39408,7 +39272,6 @@ class $$ShiftsTableTableManager
               }) => ShiftsCompanion.insert(
                 id: id,
                 serverId: serverId,
-                custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 machineNo: machineNo,
@@ -40797,7 +40660,6 @@ class $$SalesTableTableManager
                 idempotencyKey: idempotencyKey,
                 type: type,
                 status: status,
-                custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 terminalId: terminalId,
@@ -40873,7 +40735,6 @@ class $$SalesTableTableManager
                 idempotencyKey: idempotencyKey,
                 type: type,
                 status: status,
-                custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 terminalId: terminalId,
@@ -43541,7 +43402,6 @@ class $$HeldOrdersTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => HeldOrdersCompanion(
                 id: id,
-                custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 machineNo: machineNo,
@@ -43593,7 +43453,6 @@ class $$HeldOrdersTableTableManager
                 Value<int> rowid = const Value.absent(),
               }) => HeldOrdersCompanion.insert(
                 id: id,
-                custCode: custCode,
                 branchNo: branchNo,
                 branchYear: branchYear,
                 machineNo: machineNo,
@@ -44443,7 +44302,6 @@ class $$MasterSyncRunsTableTableManager
                 id: id,
                 mode: mode,
                 status: status,
-                custCode: custCode,
                 sourceUserId: sourceUserId,
                 branchNo: branchNo,
                 machineNo: machineNo,
@@ -44477,7 +44335,6 @@ class $$MasterSyncRunsTableTableManager
                 id: id,
                 mode: mode,
                 status: status,
-                custCode: custCode,
                 sourceUserId: sourceUserId,
                 branchNo: branchNo,
                 machineNo: machineNo,

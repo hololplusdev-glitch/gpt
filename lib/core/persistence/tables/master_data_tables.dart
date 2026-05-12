@@ -13,7 +13,6 @@ import 'package:drift/drift.dart';
 /// Auth API not yet implemented — fields kept compatible.
 class PosUsers extends Table {
   TextColumn get id => text()();
-  TextColumn get custCode => text()();
   TextColumn get sourceUserId => text().nullable()();
   TextColumn get username => text()();
   TextColumn get loginName => text().nullable()();
@@ -34,7 +33,7 @@ class PosUsers extends Table {
   DateTimeColumn get cachedAt => dateTime()();
 
   @override
-  Set<Column> get primaryKey => {custCode, id};
+  Set<Column> get primaryKey => {id};
 }
 
 // =============================================================================
@@ -43,10 +42,8 @@ class PosUsers extends Table {
 
 /// User-to-POS-machine privileges from backend DEVICE_PRIV p_type.
 /// DEVICE_PRIV is the authoritative runtime permission source: usr_id + mchn_nbr.
-@TableIndex(name: 'idx_device_priv_cust_user', columns: {#custCode, #userId})
 class PosUserMachineAccess extends Table {
   TextColumn get id => text()();
-  TextColumn get custCode => text()();
   TextColumn get userId => text()();
   TextColumn get sourceUserId => text().nullable()();
   TextColumn get machineNo => text()();
@@ -63,7 +60,7 @@ class PosUserMachineAccess extends Table {
   DateTimeColumn get cachedAt => dateTime()();
 
   @override
-  Set<Column> get primaryKey => {custCode, userId, machineNo};
+  Set<Column> get primaryKey => {userId, machineNo};
 }
 
 // =============================================================================
@@ -71,10 +68,8 @@ class PosUserMachineAccess extends Table {
 // =============================================================================
 
 /// Cached store/warehouse records from backend STORE p_type.
-@TableIndex(name: 'idx_stores_cust_id', columns: {#custCode, #id})
 class Stores extends Table {
   TextColumn get id => text()();
-  TextColumn get custCode => text()();
   TextColumn get branchNo => text().nullable()();
   TextColumn get name => text()();
   TextColumn get nameAr => text().nullable()();
@@ -91,10 +86,8 @@ class Stores extends Table {
 // =============================================================================
 
 /// Cached price level definitions from backend PRICE_LEVEL p_type.
-@TableIndex(name: 'idx_price_levels_cust_id', columns: {#custCode, #id})
 class PriceLevels extends Table {
   TextColumn get id => text()();
-  TextColumn get custCode => text()();
   TextColumn get name => text()();
   TextColumn get nameAr => text().nullable()();
   BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
@@ -110,10 +103,8 @@ class PriceLevels extends Table {
 // =============================================================================
 
 /// Cached item/product catalog from backend ITEM p_type.
-@TableIndex(name: 'idx_items_cust_id', columns: {#custCode, #id})
 class Items extends Table {
   TextColumn get id => text()();
-  TextColumn get custCode => text()();
   TextColumn get code => text().nullable()();
   TextColumn get name => text()();
   TextColumn get nameAr => text().nullable()();
@@ -143,77 +134,24 @@ class Items extends Table {
 
 /// Item units (each, kg, box, etc.) from backend ITEM_UNIT p_type.
 /// Barcode is NOT source of truth here — item_barcodes owns that.
-@TableIndex(name: 'idx_item_units_cust_item', columns: {#custCode, #itemId})
-@TableIndex(name: 'idx_item_units_item_id', columns: {#itemId})
-class ItemUnits extends Table {
-  TextColumn get id => text()();
-  TextColumn get custCode => text()();
-  TextColumn get itemId => text()();
-  TextColumn get sourceUnitId => text().nullable()();
-  TextColumn get name => text()();
-  TextColumn get nameAr => text().nullable()();
-  RealColumn get conversionFactor => real().withDefault(const Constant(1.0))();
-  RealColumn get unitSize => real().nullable()();
-  BoolColumn get inactive => boolean().withDefault(const Constant(false))();
-  BoolColumn get noSale => boolean().withDefault(const Constant(false))();
-  BoolColumn get isDefault => boolean().withDefault(const Constant(false))();
-  TextColumn get sourceUpdatedAt => text().nullable()();
-  DateTimeColumn get cachedAt => dateTime()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// =============================================================================
-// ITEM BARCODES — single source of truth for barcodes
-// =============================================================================
-
-/// Item barcodes — authoritative source for barcode lookups.
-/// Multiple barcodes per item/unit supported.
-@TableIndex(
-  name: 'idx_item_barcodes_cust_barcode',
-  columns: {#custCode, #barcode},
-)
-@TableIndex(name: 'idx_item_barcodes_barcode', columns: {#barcode})
-class ItemBarcodes extends Table {
-  TextColumn get id => text()();
-  TextColumn get custCode => text()();
-  TextColumn get itemId => text()();
-  TextColumn get unitId => text().nullable()();
-  TextColumn get barcode => text()();
-  BoolColumn get isPrimary => boolean().withDefault(const Constant(false))();
-  DateTimeColumn get cachedAt => dateTime()();
-
-  @override
-  Set<Column> get primaryKey => {id};
-}
-
-// =============================================================================
-// ITEM PRICES
-// =============================================================================
-
-/// Item prices per price level and store.
-/// From backend ITEM_PRICE p_type.
-@TableIndex(
-  name: 'idx_item_prices_lookup',
-  columns: {#custCode, #itemId, #unitId, #storeId, #priceLevelId},
-)
 class ItemPrices extends Table {
   TextColumn get id => text()();
-  TextColumn get custCode => text()();
   TextColumn get itemId => text()();
-  TextColumn get unitId => text().nullable()();
+  TextColumn get unitId => text()();
   TextColumn get storeId => text().nullable()();
   TextColumn get priceLevelId => text().nullable()();
   RealColumn get unitPrice => real()();
   RealColumn get costPrice => real().nullable()();
-  DateTimeColumn get effectiveFrom => dateTime().nullable()();
-  DateTimeColumn get effectiveTo => dateTime().nullable()();
   TextColumn get sourceUpdatedAt => text().nullable()();
   DateTimeColumn get cachedAt => dateTime()();
 
   @override
   Set<Column> get primaryKey => {id};
+
+  @override
+  List<String> get customConstraints => [
+    'UNIQUE (item_id, unit_id, store_id, price_level_id)',
+  ];
 }
 
 // =============================================================================
@@ -223,7 +161,6 @@ class ItemPrices extends Table {
 /// Item groups / categories. Hierarchical via parent_id.
 class ItemGroups extends Table {
   TextColumn get id => text()();
-  TextColumn get custCode => text()();
   TextColumn get parentId => text().nullable()();
   TextColumn get name => text()();
   TextColumn get nameAr => text().nullable()();
@@ -242,10 +179,8 @@ class ItemGroups extends Table {
 
 /// Cached customer records from backend CUSTOMER p_type.
 /// Replaces BackendCustomersCache — clean internal schema.
-@TableIndex(name: 'idx_customers_cust_id', columns: {#custCode, #id})
 class Customers extends Table {
   TextColumn get id => text()();
-  TextColumn get custCode => text()();
   TextColumn get name => text()();
   TextColumn get accountId => text().nullable()();
   TextColumn get taxNumber => text().nullable()();

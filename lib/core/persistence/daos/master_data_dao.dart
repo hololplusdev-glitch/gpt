@@ -144,7 +144,6 @@ class MasterDataDao {
             id: Value(runId),
             mode: Value(modeCode),
             status: Value(MasterDataRunStatus.running.code),
-            custCode: Value(custCode),
             sourceUserId: Value(userId),
             branchNo: Value(branchNo),
             machineNo: Value(terminalNo),

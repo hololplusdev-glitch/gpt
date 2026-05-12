@@ -9,13 +9,12 @@ import 'package:uuid/uuid.dart';
 ///
 /// Runtime Access Policy SSOT:
 /// - DEVICE_PRIV is the authoritative user-to-machine permission source.
-/// - Permission key is: custCode + userId + machineNo.
+/// - Permission key is: userId + machineNo.
 /// - USER.admin/userLevel does not grant all machines inside the app.
 /// - USER.defaultStoreId is not a machine permission.
 /// - DEVICE_PRIV.def_st/price_lvl/use_tax are runtime settings after permission.
 class ActivePosSession {
   final String? sessionId;
-  final String custCode;
   final String activeUserId;
   final String activeUserName;
   final String activeMachineNo;
@@ -40,7 +39,6 @@ class ActivePosSession {
 
   const ActivePosSession({
     required this.sessionId,
-    required this.custCode,
     required this.activeUserId,
     required this.activeUserName,
     required this.activeMachineNo,
@@ -139,13 +137,11 @@ class ActivePosSessionDao {
   }
 
   Future<List<PosUserMachineAccessData>> listAllowedMachinesForUser({
-    required String custCode,
     required String userId,
   }) {
     return (_db.select(_db.posUserMachineAccess)
           ..where(
             (row) =>
-                row.custCode.equals(custCode) &
                 row.userId.equals(userId) &
                 row.canUseMachine.equals(true),
           )
@@ -154,24 +150,20 @@ class ActivePosSessionDao {
   }
 
   Future<PosMachine?> getMachine({
-    required String custCode,
     required String machineNo,
   }) {
     return (_db.select(_db.posMachines)..where(
-          (row) =>
-              row.custCode.equals(custCode) & row.machineNo.equals(machineNo),
+          (row) => row.machineNo.equals(machineNo),
         ))
         .getSingleOrNull();
   }
 
   Future<PosUserMachineAccessData?> _runtimeMachinePrivilege({
-    required String custCode,
     required String userId,
     required String machineNo,
   }) {
     return (_db.select(_db.posUserMachineAccess)..where(
           (row) =>
-              row.custCode.equals(custCode) &
               row.userId.equals(userId) &
               row.machineNo.equals(machineNo) &
               row.canUseMachine.equals(true),
@@ -185,7 +177,6 @@ class ActivePosSessionDao {
     _validateUser(user);
 
     final privileges = await listAllowedMachinesForUser(
-      custCode: user.custCode,
       userId: user.id,
     );
 
@@ -198,8 +189,7 @@ class ActivePosSessionDao {
       }
 
       final machine = await getMachine(
-        custCode: user.custCode,
-        machineNo: privilege.machineNo,
+          machineNo: privilege.machineNo,
       );
 
       if (machine == null || !machine.isActive) {
@@ -219,14 +209,7 @@ class ActivePosSessionDao {
     _validateUser(user);
     _validateMachine(machine);
 
-    if (user.custCode != machine.custCode) {
-      throw StateError(
-        'Selected user and POS machine belong to different tenants.',
-      );
-    }
-
     final privilege = await _runtimeMachinePrivilege(
-      custCode: user.custCode,
       userId: user.id,
       machineNo: machine.machineNo,
     );
@@ -243,8 +226,7 @@ class ActivePosSessionDao {
           ActivePosSessionsCompanion(
             id: const Value(1),
             sessionId: Value('SESS_${_uuid.v4()}'),
-            custCode: Value(user.custCode),
-            activeUserId: Value(user.id),
+                  activeUserId: Value(user.id),
             activeMachineNo: Value(machine.machineNo),
             loginAt: Value(now),
             updatedAt: Value(now),
@@ -264,16 +246,9 @@ class ActivePosSessionDao {
   }
 
   Future<ActivePosSession> _derive(ActivePosSessionRow row) async {
-    final user =
-        await (_db.select(_db.posUsers)..where(
-              (u) =>
-                  u.custCode.equals(row.custCode) &
-                  u.id.equals(row.activeUserId),
-            ))
-            .getSingleOrNull();
+    final user = await (_db.select(_db.posUsers)..where((u) => u.id.equals(row.activeUserId))).getSingleOrNull();
 
     final machine = await getMachine(
-      custCode: row.custCode,
       machineNo: row.activeMachineNo,
     );
 
@@ -288,7 +263,6 @@ class ActivePosSessionDao {
     _validateMachine(machine);
 
     final privilege = await _runtimeMachinePrivilege(
-      custCode: row.custCode,
       userId: row.activeUserId,
       machineNo: row.activeMachineNo,
     );
@@ -333,7 +307,6 @@ class ActivePosSessionDao {
 
     return ActivePosSession(
       sessionId: row.sessionId,
-      custCode: row.custCode,
       activeUserId: user.id,
       activeUserName: user.displayName,
       activeMachineNo: machine.machineNo,

@@ -11,7 +11,6 @@ import 'package:drift/drift.dart';
 class Shifts extends Table {
   TextColumn get id => text()();
   TextColumn get serverId => text().nullable()();
-  TextColumn get custCode => text().nullable()();
   TextColumn get branchNo => text().nullable()();
   TextColumn get branchYear => text().nullable()();
   TextColumn get machineNo => text().nullable()();

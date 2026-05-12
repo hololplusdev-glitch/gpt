@@ -68,7 +68,6 @@ class ShiftService {
 
     final shiftEntry = ShiftsCompanion.insert(
       id: localId,
-      custCode: Value(session.custCode),
       branchNo: Value(session.activeBranchNo),
       branchYear: Value(session.activeBranchYear),
       machineNo: Value(session.activeMachineNo),

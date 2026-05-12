@@ -125,7 +125,6 @@ class SaleCheckout {
     ).validate(quote: quote, payments: payments);
 
     final localInvoiceNo = await _invoiceNumberService.generateNext(
-      custCode: session.custCode,
       branchNo: session.activeBranchNo,
       machineNo: session.activeMachineNo,
       userId: session.activeUserId,
@@ -555,7 +554,6 @@ class SaleCheckout {
       shiftId: Value(shiftId),
       cashierId: Value(session.activeUserId),
       branchNo: Value(session.activeBranchNo),
-      custCode: Value(session.custCode),
       branchYear: Value(session.activeBranchYear),
       machineNo: Value(session.activeMachineNo),
       storeId: Value(session.activeStoreId),

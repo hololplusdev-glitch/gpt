@@ -611,7 +611,6 @@ EXISTS (
   ItemBarcode _barcodeWithUnitId(ItemBarcode barcode, String? unitId) {
     return ItemBarcode(
       id: barcode.id,
-      custCode: barcode.custCode,
       itemId: barcode.itemId,
       unitId: unitId,
       barcode: barcode.barcode,

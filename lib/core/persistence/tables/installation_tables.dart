@@ -31,7 +31,6 @@ class AppInstallation extends Table {
 
 class BranchProfile extends Table {
   TextColumn get id => text()();
-  TextColumn get custCode => text()();
   TextColumn get branchNo => text()();
   TextColumn get branchYear => text().nullable()();
   TextColumn get branchCode => text().nullable()();
@@ -77,7 +76,6 @@ class SyncProfileTable extends Table {
 /// Not synced from backend. Not cleared by master-data refresh.
 /// SSOT for offline PIN authentication.
 class LocalUserPins extends Table {
-  TextColumn get custCode => text()();
   TextColumn get userId => text()();
   TextColumn get pinHash => text()();
   TextColumn get pinSalt => text()();
@@ -85,17 +83,12 @@ class LocalUserPins extends Table {
   DateTimeColumn get updatedAt => dateTime()();
 
   @override
-  Set<Column> get primaryKey => {custCode, userId};
+  Set<Column> get primaryKey => {userId};
 }
 
-@TableIndex(
-  name: 'idx_pos_machines_cust_machine',
-  columns: {#custCode, #machineNo},
-)
 class PosMachines extends Table {
   TextColumn get id => text()();
   TextColumn get name => text().nullable()();
-  TextColumn get custCode => text()();
   TextColumn get machineNo => text()();
   TextColumn get branchNo => text().nullable()();
   TextColumn get branchYear => text().nullable()();
@@ -128,7 +121,6 @@ class PosMachines extends Table {
 class ActivePosSessions extends Table {
   IntColumn get id => integer().withDefault(const Constant(1))();
   TextColumn get sessionId => text().nullable()();
-  TextColumn get custCode => text()();
   TextColumn get activeUserId => text()();
   TextColumn get activeMachineNo => text()();
   DateTimeColumn get loginAt => dateTime()();
@@ -150,7 +142,6 @@ class TerminalLocalSettings extends Table {
 
 class InvoiceSequences extends Table {
   TextColumn get id => text()();
-  TextColumn get custCode => text()();
   TextColumn get branchNo => text()();
   TextColumn get machineNo => text()();
   TextColumn get userId => text()();
@@ -163,6 +154,6 @@ class InvoiceSequences extends Table {
 
   @override
   List<String> get customConstraints => [
-    'UNIQUE (cust_code, branch_no, machine_no, user_id, sequence_type)',
+    'UNIQUE (branch_no, machine_no, user_id, sequence_type)',
   ];
 }

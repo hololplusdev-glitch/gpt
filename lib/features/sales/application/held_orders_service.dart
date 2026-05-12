@@ -102,7 +102,6 @@ class HeldOrdersService {
     await _salesDao.holdOrder(
       HeldOrdersCompanion(
         id: Value(id),
-        custCode: Value(session.custCode),
         branchNo: Value(session.activeBranchNo),
         branchYear: Value(session.activeBranchYear),
         machineNo: Value(session.activeMachineNo),

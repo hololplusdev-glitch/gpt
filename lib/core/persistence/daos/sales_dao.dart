@@ -463,14 +463,12 @@ class SalesDao {
   /// Reserve next invoice sequence number.
   Future<int> reserveNextInvoiceSequence(
     DateTime now, {
-    required String custCode,
     required String branchNo,
     required String machineNo,
     required String userId,
     String sequenceType = 'sale',
   }) async {
     final sequenceId = [
-      custCode,
       branchNo,
       machineNo,
       userId,
@@ -481,7 +479,6 @@ class SalesDao {
       final row =
           await (_db.select(_db.invoiceSequences)..where(
                 (s) =>
-                    s.custCode.equals(custCode) &
                     s.branchNo.equals(branchNo) &
                     s.machineNo.equals(machineNo) &
                     s.userId.equals(userId) &
@@ -494,7 +491,6 @@ class SalesDao {
             .insert(
               InvoiceSequencesCompanion.insert(
                 id: sequenceId,
-                custCode: custCode,
                 branchNo: branchNo,
                 machineNo: machineNo,
                 userId: userId,

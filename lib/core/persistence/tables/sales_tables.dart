@@ -23,7 +23,6 @@ class Sales extends Table {
   TextColumn get idempotencyKey => text()();
   TextColumn get type => text()(); // stable string code
   TextColumn get status => text()(); // stable string code
-  TextColumn get custCode => text().nullable()();
   TextColumn get branchNo => text().nullable()();
   TextColumn get branchYear => text().nullable()();
   TextColumn get terminalId => text()();
@@ -158,7 +157,6 @@ class InvoiceDocuments extends Table {
 /// status: 'held','resumed','cancelled','expired'
 class HeldOrders extends Table {
   TextColumn get id => text()();
-  TextColumn get custCode => text().nullable()();
   TextColumn get branchNo => text().nullable()();
   TextColumn get branchYear => text().nullable()();
   TextColumn get machineNo => text().nullable()();
