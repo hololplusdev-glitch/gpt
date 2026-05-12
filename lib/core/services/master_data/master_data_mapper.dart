@@ -573,4 +573,3 @@ class _BackendRow {
     return BackendValueReader.parseDecimal(raw(keys));
   }
 }
-

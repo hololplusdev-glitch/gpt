@@ -214,7 +214,6 @@ class Cart {
     );
   }
 
-
   Cart removeItem(String itemId, String? unitId) {
     return Cart(
       items: items.where((item) => !_sameLine(item, itemId, unitId)).toList(),
@@ -400,7 +399,6 @@ class CartController extends StateNotifier<Cart> {
       amount: amount,
     );
   }
-
 
   void removeItem(String itemId, String? unitId) {
     state = state.removeItem(itemId, unitId);

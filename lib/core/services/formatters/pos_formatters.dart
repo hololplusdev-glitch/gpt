@@ -23,8 +23,10 @@ class PosFormatters {
     bool symbolFirst = false,
   }) {
     final amountText = value.toStringAsFixed(2);
-    final effectiveSymbolStyle = (symbolStyle ?? amountStyle ?? const TextStyle())
-        .copyWith(fontFamily: saudiRiyalFontFamily);
+    final effectiveSymbolStyle =
+        (symbolStyle ?? amountStyle ?? const TextStyle()).copyWith(
+          fontFamily: saudiRiyalFontFamily,
+        );
 
     if (symbolFirst) {
       return TextSpan(

@@ -11016,26 +11016,6 @@ class $ItemPricesTable extends ItemPrices
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _fromQtyMeta = const VerificationMeta(
-    'fromQty',
-  );
-  @override
-  late final GeneratedColumn<double> fromQty = GeneratedColumn<double>(
-    'from_qty',
-    aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _toQtyMeta = const VerificationMeta('toQty');
-  @override
-  late final GeneratedColumn<double> toQty = GeneratedColumn<double>(
-    'to_qty',
-    aliasedName,
-    true,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _unitPriceMeta = const VerificationMeta(
     'unitPrice',
   );
@@ -11111,8 +11091,6 @@ class $ItemPricesTable extends ItemPrices
     unitId,
     storeId,
     priceLevelId,
-    fromQty,
-    toQty,
     unitPrice,
     costPrice,
     effectiveFrom,
@@ -11172,18 +11150,6 @@ class $ItemPricesTable extends ItemPrices
           data['price_level_id']!,
           _priceLevelIdMeta,
         ),
-      );
-    }
-    if (data.containsKey('from_qty')) {
-      context.handle(
-        _fromQtyMeta,
-        fromQty.isAcceptableOrUnknown(data['from_qty']!, _fromQtyMeta),
-      );
-    }
-    if (data.containsKey('to_qty')) {
-      context.handle(
-        _toQtyMeta,
-        toQty.isAcceptableOrUnknown(data['to_qty']!, _toQtyMeta),
       );
     }
     if (data.containsKey('unit_price')) {
@@ -11268,14 +11234,6 @@ class $ItemPricesTable extends ItemPrices
         DriftSqlType.string,
         data['${effectivePrefix}price_level_id'],
       ),
-      fromQty: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}from_qty'],
-      ),
-      toQty: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}to_qty'],
-      ),
       unitPrice: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}unit_price'],
@@ -11316,8 +11274,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
   final String? unitId;
   final String? storeId;
   final String? priceLevelId;
-  final double? fromQty;
-  final double? toQty;
   final double unitPrice;
   final double? costPrice;
   final DateTime? effectiveFrom;
@@ -11331,8 +11287,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
     this.unitId,
     this.storeId,
     this.priceLevelId,
-    this.fromQty,
-    this.toQty,
     required this.unitPrice,
     this.costPrice,
     this.effectiveFrom,
@@ -11354,12 +11308,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
     }
     if (!nullToAbsent || priceLevelId != null) {
       map['price_level_id'] = Variable<String>(priceLevelId);
-    }
-    if (!nullToAbsent || fromQty != null) {
-      map['from_qty'] = Variable<double>(fromQty);
-    }
-    if (!nullToAbsent || toQty != null) {
-      map['to_qty'] = Variable<double>(toQty);
     }
     map['unit_price'] = Variable<double>(unitPrice);
     if (!nullToAbsent || costPrice != null) {
@@ -11392,12 +11340,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
       priceLevelId: priceLevelId == null && nullToAbsent
           ? const Value.absent()
           : Value(priceLevelId),
-      fromQty: fromQty == null && nullToAbsent
-          ? const Value.absent()
-          : Value(fromQty),
-      toQty: toQty == null && nullToAbsent
-          ? const Value.absent()
-          : Value(toQty),
       unitPrice: Value(unitPrice),
       costPrice: costPrice == null && nullToAbsent
           ? const Value.absent()
@@ -11427,8 +11369,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
       unitId: serializer.fromJson<String?>(json['unitId']),
       storeId: serializer.fromJson<String?>(json['storeId']),
       priceLevelId: serializer.fromJson<String?>(json['priceLevelId']),
-      fromQty: serializer.fromJson<double?>(json['fromQty']),
-      toQty: serializer.fromJson<double?>(json['toQty']),
       unitPrice: serializer.fromJson<double>(json['unitPrice']),
       costPrice: serializer.fromJson<double?>(json['costPrice']),
       effectiveFrom: serializer.fromJson<DateTime?>(json['effectiveFrom']),
@@ -11447,8 +11387,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
       'unitId': serializer.toJson<String?>(unitId),
       'storeId': serializer.toJson<String?>(storeId),
       'priceLevelId': serializer.toJson<String?>(priceLevelId),
-      'fromQty': serializer.toJson<double?>(fromQty),
-      'toQty': serializer.toJson<double?>(toQty),
       'unitPrice': serializer.toJson<double>(unitPrice),
       'costPrice': serializer.toJson<double?>(costPrice),
       'effectiveFrom': serializer.toJson<DateTime?>(effectiveFrom),
@@ -11465,8 +11403,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
     Value<String?> unitId = const Value.absent(),
     Value<String?> storeId = const Value.absent(),
     Value<String?> priceLevelId = const Value.absent(),
-    Value<double?> fromQty = const Value.absent(),
-    Value<double?> toQty = const Value.absent(),
     double? unitPrice,
     Value<double?> costPrice = const Value.absent(),
     Value<DateTime?> effectiveFrom = const Value.absent(),
@@ -11480,8 +11416,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
     unitId: unitId.present ? unitId.value : this.unitId,
     storeId: storeId.present ? storeId.value : this.storeId,
     priceLevelId: priceLevelId.present ? priceLevelId.value : this.priceLevelId,
-    fromQty: fromQty.present ? fromQty.value : this.fromQty,
-    toQty: toQty.present ? toQty.value : this.toQty,
     unitPrice: unitPrice ?? this.unitPrice,
     costPrice: costPrice.present ? costPrice.value : this.costPrice,
     effectiveFrom: effectiveFrom.present
@@ -11503,8 +11437,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
       priceLevelId: data.priceLevelId.present
           ? data.priceLevelId.value
           : this.priceLevelId,
-      fromQty: data.fromQty.present ? data.fromQty.value : this.fromQty,
-      toQty: data.toQty.present ? data.toQty.value : this.toQty,
       unitPrice: data.unitPrice.present ? data.unitPrice.value : this.unitPrice,
       costPrice: data.costPrice.present ? data.costPrice.value : this.costPrice,
       effectiveFrom: data.effectiveFrom.present
@@ -11529,8 +11461,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
           ..write('unitId: $unitId, ')
           ..write('storeId: $storeId, ')
           ..write('priceLevelId: $priceLevelId, ')
-          ..write('fromQty: $fromQty, ')
-          ..write('toQty: $toQty, ')
           ..write('unitPrice: $unitPrice, ')
           ..write('costPrice: $costPrice, ')
           ..write('effectiveFrom: $effectiveFrom, ')
@@ -11549,8 +11479,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
     unitId,
     storeId,
     priceLevelId,
-    fromQty,
-    toQty,
     unitPrice,
     costPrice,
     effectiveFrom,
@@ -11568,8 +11496,6 @@ class ItemPrice extends DataClass implements Insertable<ItemPrice> {
           other.unitId == this.unitId &&
           other.storeId == this.storeId &&
           other.priceLevelId == this.priceLevelId &&
-          other.fromQty == this.fromQty &&
-          other.toQty == this.toQty &&
           other.unitPrice == this.unitPrice &&
           other.costPrice == this.costPrice &&
           other.effectiveFrom == this.effectiveFrom &&
@@ -11585,8 +11511,6 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
   final Value<String?> unitId;
   final Value<String?> storeId;
   final Value<String?> priceLevelId;
-  final Value<double?> fromQty;
-  final Value<double?> toQty;
   final Value<double> unitPrice;
   final Value<double?> costPrice;
   final Value<DateTime?> effectiveFrom;
@@ -11601,8 +11525,6 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
     this.unitId = const Value.absent(),
     this.storeId = const Value.absent(),
     this.priceLevelId = const Value.absent(),
-    this.fromQty = const Value.absent(),
-    this.toQty = const Value.absent(),
     this.unitPrice = const Value.absent(),
     this.costPrice = const Value.absent(),
     this.effectiveFrom = const Value.absent(),
@@ -11618,8 +11540,6 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
     this.unitId = const Value.absent(),
     this.storeId = const Value.absent(),
     this.priceLevelId = const Value.absent(),
-    this.fromQty = const Value.absent(),
-    this.toQty = const Value.absent(),
     required double unitPrice,
     this.costPrice = const Value.absent(),
     this.effectiveFrom = const Value.absent(),
@@ -11639,8 +11559,6 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
     Expression<String>? unitId,
     Expression<String>? storeId,
     Expression<String>? priceLevelId,
-    Expression<double>? fromQty,
-    Expression<double>? toQty,
     Expression<double>? unitPrice,
     Expression<double>? costPrice,
     Expression<DateTime>? effectiveFrom,
@@ -11656,8 +11574,6 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
       if (unitId != null) 'unit_id': unitId,
       if (storeId != null) 'store_id': storeId,
       if (priceLevelId != null) 'price_level_id': priceLevelId,
-      if (fromQty != null) 'from_qty': fromQty,
-      if (toQty != null) 'to_qty': toQty,
       if (unitPrice != null) 'unit_price': unitPrice,
       if (costPrice != null) 'cost_price': costPrice,
       if (effectiveFrom != null) 'effective_from': effectiveFrom,
@@ -11675,8 +11591,6 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
     Value<String?>? unitId,
     Value<String?>? storeId,
     Value<String?>? priceLevelId,
-    Value<double?>? fromQty,
-    Value<double?>? toQty,
     Value<double>? unitPrice,
     Value<double?>? costPrice,
     Value<DateTime?>? effectiveFrom,
@@ -11692,8 +11606,6 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
       unitId: unitId ?? this.unitId,
       storeId: storeId ?? this.storeId,
       priceLevelId: priceLevelId ?? this.priceLevelId,
-      fromQty: fromQty ?? this.fromQty,
-      toQty: toQty ?? this.toQty,
       unitPrice: unitPrice ?? this.unitPrice,
       costPrice: costPrice ?? this.costPrice,
       effectiveFrom: effectiveFrom ?? this.effectiveFrom,
@@ -11724,12 +11636,6 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
     }
     if (priceLevelId.present) {
       map['price_level_id'] = Variable<String>(priceLevelId.value);
-    }
-    if (fromQty.present) {
-      map['from_qty'] = Variable<double>(fromQty.value);
-    }
-    if (toQty.present) {
-      map['to_qty'] = Variable<double>(toQty.value);
     }
     if (unitPrice.present) {
       map['unit_price'] = Variable<double>(unitPrice.value);
@@ -11764,8 +11670,6 @@ class ItemPricesCompanion extends UpdateCompanion<ItemPrice> {
           ..write('unitId: $unitId, ')
           ..write('storeId: $storeId, ')
           ..write('priceLevelId: $priceLevelId, ')
-          ..write('fromQty: $fromQty, ')
-          ..write('toQty: $toQty, ')
           ..write('unitPrice: $unitPrice, ')
           ..write('costPrice: $costPrice, ')
           ..write('effectiveFrom: $effectiveFrom, ')
@@ -18062,18 +17966,6 @@ class $SaleLinesTable extends SaleLines
         requiredDuringInsert: false,
         defaultValue: const Constant(0.0),
       );
-  static const VerificationMeta _invoiceDiscountShareMeta =
-      const VerificationMeta('invoiceDiscountShare');
-  @override
-  late final GeneratedColumn<double> invoiceDiscountShare =
-      GeneratedColumn<double>(
-        'invoice_discount_share',
-        aliasedName,
-        false,
-        type: DriftSqlType.double,
-        requiredDuringInsert: false,
-        defaultValue: const Constant(0.0),
-      );
   static const VerificationMeta _taxableAmountMeta = const VerificationMeta(
     'taxableAmount',
   );
@@ -18135,17 +18027,6 @@ class $SaleLinesTable extends SaleLines
           'CHECK ("allow_discount_snapshot" IN (0, 1))',
         ),
       );
-  static const VerificationMeta _priceSourceMeta = const VerificationMeta(
-    'priceSource',
-  );
-  @override
-  late final GeneratedColumn<String> priceSource = GeneratedColumn<String>(
-    'price_source',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _unitSizeMeta = const VerificationMeta(
     'unitSize',
   );
@@ -18179,28 +18060,6 @@ class $SaleLinesTable extends SaleLines
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _overrideReasonMeta = const VerificationMeta(
-    'overrideReason',
-  );
-  @override
-  late final GeneratedColumn<String> overrideReason = GeneratedColumn<String>(
-    'override_reason',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _approvedByMeta = const VerificationMeta(
-    'approvedBy',
-  );
-  @override
-  late final GeneratedColumn<String> approvedBy = GeneratedColumn<String>(
-    'approved_by',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(
@@ -18226,18 +18085,14 @@ class $SaleLinesTable extends SaleLines
     lineDiscountType,
     lineDiscountValue,
     lineDiscountAmount,
-    invoiceDiscountShare,
     taxableAmount,
     taxRate,
     taxAmount,
     lineTotal,
     allowDiscountSnapshot,
-    priceSource,
     unitSize,
     storeId,
     priceLevelId,
-    overrideReason,
-    approvedBy,
     notes,
   ];
   @override
@@ -18363,15 +18218,6 @@ class $SaleLinesTable extends SaleLines
         ),
       );
     }
-    if (data.containsKey('invoice_discount_share')) {
-      context.handle(
-        _invoiceDiscountShareMeta,
-        invoiceDiscountShare.isAcceptableOrUnknown(
-          data['invoice_discount_share']!,
-          _invoiceDiscountShareMeta,
-        ),
-      );
-    }
     if (data.containsKey('taxable_amount')) {
       context.handle(
         _taxableAmountMeta,
@@ -18410,15 +18256,6 @@ class $SaleLinesTable extends SaleLines
         ),
       );
     }
-    if (data.containsKey('price_source')) {
-      context.handle(
-        _priceSourceMeta,
-        priceSource.isAcceptableOrUnknown(
-          data['price_source']!,
-          _priceSourceMeta,
-        ),
-      );
-    }
     if (data.containsKey('unit_size')) {
       context.handle(
         _unitSizeMeta,
@@ -18438,21 +18275,6 @@ class $SaleLinesTable extends SaleLines
           data['price_level_id']!,
           _priceLevelIdMeta,
         ),
-      );
-    }
-    if (data.containsKey('override_reason')) {
-      context.handle(
-        _overrideReasonMeta,
-        overrideReason.isAcceptableOrUnknown(
-          data['override_reason']!,
-          _overrideReasonMeta,
-        ),
-      );
-    }
-    if (data.containsKey('approved_by')) {
-      context.handle(
-        _approvedByMeta,
-        approvedBy.isAcceptableOrUnknown(data['approved_by']!, _approvedByMeta),
       );
     }
     if (data.containsKey('notes')) {
@@ -18526,10 +18348,6 @@ class $SaleLinesTable extends SaleLines
         DriftSqlType.double,
         data['${effectivePrefix}line_discount_amount'],
       )!,
-      invoiceDiscountShare: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}invoice_discount_share'],
-      )!,
       taxableAmount: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}taxable_amount'],
@@ -18550,10 +18368,6 @@ class $SaleLinesTable extends SaleLines
         DriftSqlType.bool,
         data['${effectivePrefix}allow_discount_snapshot'],
       ),
-      priceSource: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}price_source'],
-      ),
       unitSize: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
         data['${effectivePrefix}unit_size'],
@@ -18565,14 +18379,6 @@ class $SaleLinesTable extends SaleLines
       priceLevelId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}price_level_id'],
-      ),
-      overrideReason: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}override_reason'],
-      ),
-      approvedBy: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}approved_by'],
       ),
       notes: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -18602,18 +18408,14 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
   final String? lineDiscountType;
   final double? lineDiscountValue;
   final double lineDiscountAmount;
-  final double invoiceDiscountShare;
   final double taxableAmount;
   final double taxRate;
   final double taxAmount;
   final double lineTotal;
   final bool? allowDiscountSnapshot;
-  final String? priceSource;
   final double? unitSize;
   final String? storeId;
   final String? priceLevelId;
-  final String? overrideReason;
-  final String? approvedBy;
   final String? notes;
   const SaleLine({
     required this.id,
@@ -18630,18 +18432,14 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
     this.lineDiscountType,
     this.lineDiscountValue,
     required this.lineDiscountAmount,
-    required this.invoiceDiscountShare,
     required this.taxableAmount,
     required this.taxRate,
     required this.taxAmount,
     required this.lineTotal,
     this.allowDiscountSnapshot,
-    this.priceSource,
     this.unitSize,
     this.storeId,
     this.priceLevelId,
-    this.overrideReason,
-    this.approvedBy,
     this.notes,
   });
   @override
@@ -18671,16 +18469,12 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
       map['line_discount_value'] = Variable<double>(lineDiscountValue);
     }
     map['line_discount_amount'] = Variable<double>(lineDiscountAmount);
-    map['invoice_discount_share'] = Variable<double>(invoiceDiscountShare);
     map['taxable_amount'] = Variable<double>(taxableAmount);
     map['tax_rate'] = Variable<double>(taxRate);
     map['tax_amount'] = Variable<double>(taxAmount);
     map['line_total'] = Variable<double>(lineTotal);
     if (!nullToAbsent || allowDiscountSnapshot != null) {
       map['allow_discount_snapshot'] = Variable<bool>(allowDiscountSnapshot);
-    }
-    if (!nullToAbsent || priceSource != null) {
-      map['price_source'] = Variable<String>(priceSource);
     }
     if (!nullToAbsent || unitSize != null) {
       map['unit_size'] = Variable<double>(unitSize);
@@ -18690,12 +18484,6 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
     }
     if (!nullToAbsent || priceLevelId != null) {
       map['price_level_id'] = Variable<String>(priceLevelId);
-    }
-    if (!nullToAbsent || overrideReason != null) {
-      map['override_reason'] = Variable<String>(overrideReason);
-    }
-    if (!nullToAbsent || approvedBy != null) {
-      map['approved_by'] = Variable<String>(approvedBy);
     }
     if (!nullToAbsent || notes != null) {
       map['notes'] = Variable<String>(notes);
@@ -18729,7 +18517,6 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
           ? const Value.absent()
           : Value(lineDiscountValue),
       lineDiscountAmount: Value(lineDiscountAmount),
-      invoiceDiscountShare: Value(invoiceDiscountShare),
       taxableAmount: Value(taxableAmount),
       taxRate: Value(taxRate),
       taxAmount: Value(taxAmount),
@@ -18737,9 +18524,6 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
       allowDiscountSnapshot: allowDiscountSnapshot == null && nullToAbsent
           ? const Value.absent()
           : Value(allowDiscountSnapshot),
-      priceSource: priceSource == null && nullToAbsent
-          ? const Value.absent()
-          : Value(priceSource),
       unitSize: unitSize == null && nullToAbsent
           ? const Value.absent()
           : Value(unitSize),
@@ -18749,12 +18533,6 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
       priceLevelId: priceLevelId == null && nullToAbsent
           ? const Value.absent()
           : Value(priceLevelId),
-      overrideReason: overrideReason == null && nullToAbsent
-          ? const Value.absent()
-          : Value(overrideReason),
-      approvedBy: approvedBy == null && nullToAbsent
-          ? const Value.absent()
-          : Value(approvedBy),
       notes: notes == null && nullToAbsent
           ? const Value.absent()
           : Value(notes),
@@ -18785,9 +18563,6 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
       lineDiscountAmount: serializer.fromJson<double>(
         json['lineDiscountAmount'],
       ),
-      invoiceDiscountShare: serializer.fromJson<double>(
-        json['invoiceDiscountShare'],
-      ),
       taxableAmount: serializer.fromJson<double>(json['taxableAmount']),
       taxRate: serializer.fromJson<double>(json['taxRate']),
       taxAmount: serializer.fromJson<double>(json['taxAmount']),
@@ -18795,12 +18570,9 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
       allowDiscountSnapshot: serializer.fromJson<bool?>(
         json['allowDiscountSnapshot'],
       ),
-      priceSource: serializer.fromJson<String?>(json['priceSource']),
       unitSize: serializer.fromJson<double?>(json['unitSize']),
       storeId: serializer.fromJson<String?>(json['storeId']),
       priceLevelId: serializer.fromJson<String?>(json['priceLevelId']),
-      overrideReason: serializer.fromJson<String?>(json['overrideReason']),
-      approvedBy: serializer.fromJson<String?>(json['approvedBy']),
       notes: serializer.fromJson<String?>(json['notes']),
     );
   }
@@ -18822,18 +18594,14 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
       'lineDiscountType': serializer.toJson<String?>(lineDiscountType),
       'lineDiscountValue': serializer.toJson<double?>(lineDiscountValue),
       'lineDiscountAmount': serializer.toJson<double>(lineDiscountAmount),
-      'invoiceDiscountShare': serializer.toJson<double>(invoiceDiscountShare),
       'taxableAmount': serializer.toJson<double>(taxableAmount),
       'taxRate': serializer.toJson<double>(taxRate),
       'taxAmount': serializer.toJson<double>(taxAmount),
       'lineTotal': serializer.toJson<double>(lineTotal),
       'allowDiscountSnapshot': serializer.toJson<bool?>(allowDiscountSnapshot),
-      'priceSource': serializer.toJson<String?>(priceSource),
       'unitSize': serializer.toJson<double?>(unitSize),
       'storeId': serializer.toJson<String?>(storeId),
       'priceLevelId': serializer.toJson<String?>(priceLevelId),
-      'overrideReason': serializer.toJson<String?>(overrideReason),
-      'approvedBy': serializer.toJson<String?>(approvedBy),
       'notes': serializer.toJson<String?>(notes),
     };
   }
@@ -18853,18 +18621,14 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
     Value<String?> lineDiscountType = const Value.absent(),
     Value<double?> lineDiscountValue = const Value.absent(),
     double? lineDiscountAmount,
-    double? invoiceDiscountShare,
     double? taxableAmount,
     double? taxRate,
     double? taxAmount,
     double? lineTotal,
     Value<bool?> allowDiscountSnapshot = const Value.absent(),
-    Value<String?> priceSource = const Value.absent(),
     Value<double?> unitSize = const Value.absent(),
     Value<String?> storeId = const Value.absent(),
     Value<String?> priceLevelId = const Value.absent(),
-    Value<String?> overrideReason = const Value.absent(),
-    Value<String?> approvedBy = const Value.absent(),
     Value<String?> notes = const Value.absent(),
   }) => SaleLine(
     id: id ?? this.id,
@@ -18887,7 +18651,6 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
         ? lineDiscountValue.value
         : this.lineDiscountValue,
     lineDiscountAmount: lineDiscountAmount ?? this.lineDiscountAmount,
-    invoiceDiscountShare: invoiceDiscountShare ?? this.invoiceDiscountShare,
     taxableAmount: taxableAmount ?? this.taxableAmount,
     taxRate: taxRate ?? this.taxRate,
     taxAmount: taxAmount ?? this.taxAmount,
@@ -18895,14 +18658,9 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
     allowDiscountSnapshot: allowDiscountSnapshot.present
         ? allowDiscountSnapshot.value
         : this.allowDiscountSnapshot,
-    priceSource: priceSource.present ? priceSource.value : this.priceSource,
     unitSize: unitSize.present ? unitSize.value : this.unitSize,
     storeId: storeId.present ? storeId.value : this.storeId,
     priceLevelId: priceLevelId.present ? priceLevelId.value : this.priceLevelId,
-    overrideReason: overrideReason.present
-        ? overrideReason.value
-        : this.overrideReason,
-    approvedBy: approvedBy.present ? approvedBy.value : this.approvedBy,
     notes: notes.present ? notes.value : this.notes,
   );
   SaleLine copyWithCompanion(SaleLinesCompanion data) {
@@ -18933,9 +18691,6 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
       lineDiscountAmount: data.lineDiscountAmount.present
           ? data.lineDiscountAmount.value
           : this.lineDiscountAmount,
-      invoiceDiscountShare: data.invoiceDiscountShare.present
-          ? data.invoiceDiscountShare.value
-          : this.invoiceDiscountShare,
       taxableAmount: data.taxableAmount.present
           ? data.taxableAmount.value
           : this.taxableAmount,
@@ -18945,20 +18700,11 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
       allowDiscountSnapshot: data.allowDiscountSnapshot.present
           ? data.allowDiscountSnapshot.value
           : this.allowDiscountSnapshot,
-      priceSource: data.priceSource.present
-          ? data.priceSource.value
-          : this.priceSource,
       unitSize: data.unitSize.present ? data.unitSize.value : this.unitSize,
       storeId: data.storeId.present ? data.storeId.value : this.storeId,
       priceLevelId: data.priceLevelId.present
           ? data.priceLevelId.value
           : this.priceLevelId,
-      overrideReason: data.overrideReason.present
-          ? data.overrideReason.value
-          : this.overrideReason,
-      approvedBy: data.approvedBy.present
-          ? data.approvedBy.value
-          : this.approvedBy,
       notes: data.notes.present ? data.notes.value : this.notes,
     );
   }
@@ -18980,18 +18726,14 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
           ..write('lineDiscountType: $lineDiscountType, ')
           ..write('lineDiscountValue: $lineDiscountValue, ')
           ..write('lineDiscountAmount: $lineDiscountAmount, ')
-          ..write('invoiceDiscountShare: $invoiceDiscountShare, ')
           ..write('taxableAmount: $taxableAmount, ')
           ..write('taxRate: $taxRate, ')
           ..write('taxAmount: $taxAmount, ')
           ..write('lineTotal: $lineTotal, ')
           ..write('allowDiscountSnapshot: $allowDiscountSnapshot, ')
-          ..write('priceSource: $priceSource, ')
           ..write('unitSize: $unitSize, ')
           ..write('storeId: $storeId, ')
           ..write('priceLevelId: $priceLevelId, ')
-          ..write('overrideReason: $overrideReason, ')
-          ..write('approvedBy: $approvedBy, ')
           ..write('notes: $notes')
           ..write(')'))
         .toString();
@@ -19013,18 +18755,14 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
     lineDiscountType,
     lineDiscountValue,
     lineDiscountAmount,
-    invoiceDiscountShare,
     taxableAmount,
     taxRate,
     taxAmount,
     lineTotal,
     allowDiscountSnapshot,
-    priceSource,
     unitSize,
     storeId,
     priceLevelId,
-    overrideReason,
-    approvedBy,
     notes,
   ]);
   @override
@@ -19045,18 +18783,14 @@ class SaleLine extends DataClass implements Insertable<SaleLine> {
           other.lineDiscountType == this.lineDiscountType &&
           other.lineDiscountValue == this.lineDiscountValue &&
           other.lineDiscountAmount == this.lineDiscountAmount &&
-          other.invoiceDiscountShare == this.invoiceDiscountShare &&
           other.taxableAmount == this.taxableAmount &&
           other.taxRate == this.taxRate &&
           other.taxAmount == this.taxAmount &&
           other.lineTotal == this.lineTotal &&
           other.allowDiscountSnapshot == this.allowDiscountSnapshot &&
-          other.priceSource == this.priceSource &&
           other.unitSize == this.unitSize &&
           other.storeId == this.storeId &&
           other.priceLevelId == this.priceLevelId &&
-          other.overrideReason == this.overrideReason &&
-          other.approvedBy == this.approvedBy &&
           other.notes == this.notes);
 }
 
@@ -19075,18 +18809,14 @@ class SaleLinesCompanion extends UpdateCompanion<SaleLine> {
   final Value<String?> lineDiscountType;
   final Value<double?> lineDiscountValue;
   final Value<double> lineDiscountAmount;
-  final Value<double> invoiceDiscountShare;
   final Value<double> taxableAmount;
   final Value<double> taxRate;
   final Value<double> taxAmount;
   final Value<double> lineTotal;
   final Value<bool?> allowDiscountSnapshot;
-  final Value<String?> priceSource;
   final Value<double?> unitSize;
   final Value<String?> storeId;
   final Value<String?> priceLevelId;
-  final Value<String?> overrideReason;
-  final Value<String?> approvedBy;
   final Value<String?> notes;
   final Value<int> rowid;
   const SaleLinesCompanion({
@@ -19104,18 +18834,14 @@ class SaleLinesCompanion extends UpdateCompanion<SaleLine> {
     this.lineDiscountType = const Value.absent(),
     this.lineDiscountValue = const Value.absent(),
     this.lineDiscountAmount = const Value.absent(),
-    this.invoiceDiscountShare = const Value.absent(),
     this.taxableAmount = const Value.absent(),
     this.taxRate = const Value.absent(),
     this.taxAmount = const Value.absent(),
     this.lineTotal = const Value.absent(),
     this.allowDiscountSnapshot = const Value.absent(),
-    this.priceSource = const Value.absent(),
     this.unitSize = const Value.absent(),
     this.storeId = const Value.absent(),
     this.priceLevelId = const Value.absent(),
-    this.overrideReason = const Value.absent(),
-    this.approvedBy = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -19134,18 +18860,14 @@ class SaleLinesCompanion extends UpdateCompanion<SaleLine> {
     this.lineDiscountType = const Value.absent(),
     this.lineDiscountValue = const Value.absent(),
     this.lineDiscountAmount = const Value.absent(),
-    this.invoiceDiscountShare = const Value.absent(),
     this.taxableAmount = const Value.absent(),
     this.taxRate = const Value.absent(),
     this.taxAmount = const Value.absent(),
     required double lineTotal,
     this.allowDiscountSnapshot = const Value.absent(),
-    this.priceSource = const Value.absent(),
     this.unitSize = const Value.absent(),
     this.storeId = const Value.absent(),
     this.priceLevelId = const Value.absent(),
-    this.overrideReason = const Value.absent(),
-    this.approvedBy = const Value.absent(),
     this.notes = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -19170,18 +18892,14 @@ class SaleLinesCompanion extends UpdateCompanion<SaleLine> {
     Expression<String>? lineDiscountType,
     Expression<double>? lineDiscountValue,
     Expression<double>? lineDiscountAmount,
-    Expression<double>? invoiceDiscountShare,
     Expression<double>? taxableAmount,
     Expression<double>? taxRate,
     Expression<double>? taxAmount,
     Expression<double>? lineTotal,
     Expression<bool>? allowDiscountSnapshot,
-    Expression<String>? priceSource,
     Expression<double>? unitSize,
     Expression<String>? storeId,
     Expression<String>? priceLevelId,
-    Expression<String>? overrideReason,
-    Expression<String>? approvedBy,
     Expression<String>? notes,
     Expression<int>? rowid,
   }) {
@@ -19201,20 +18919,15 @@ class SaleLinesCompanion extends UpdateCompanion<SaleLine> {
       if (lineDiscountValue != null) 'line_discount_value': lineDiscountValue,
       if (lineDiscountAmount != null)
         'line_discount_amount': lineDiscountAmount,
-      if (invoiceDiscountShare != null)
-        'invoice_discount_share': invoiceDiscountShare,
       if (taxableAmount != null) 'taxable_amount': taxableAmount,
       if (taxRate != null) 'tax_rate': taxRate,
       if (taxAmount != null) 'tax_amount': taxAmount,
       if (lineTotal != null) 'line_total': lineTotal,
       if (allowDiscountSnapshot != null)
         'allow_discount_snapshot': allowDiscountSnapshot,
-      if (priceSource != null) 'price_source': priceSource,
       if (unitSize != null) 'unit_size': unitSize,
       if (storeId != null) 'store_id': storeId,
       if (priceLevelId != null) 'price_level_id': priceLevelId,
-      if (overrideReason != null) 'override_reason': overrideReason,
-      if (approvedBy != null) 'approved_by': approvedBy,
       if (notes != null) 'notes': notes,
       if (rowid != null) 'rowid': rowid,
     });
@@ -19235,18 +18948,14 @@ class SaleLinesCompanion extends UpdateCompanion<SaleLine> {
     Value<String?>? lineDiscountType,
     Value<double?>? lineDiscountValue,
     Value<double>? lineDiscountAmount,
-    Value<double>? invoiceDiscountShare,
     Value<double>? taxableAmount,
     Value<double>? taxRate,
     Value<double>? taxAmount,
     Value<double>? lineTotal,
     Value<bool?>? allowDiscountSnapshot,
-    Value<String?>? priceSource,
     Value<double?>? unitSize,
     Value<String?>? storeId,
     Value<String?>? priceLevelId,
-    Value<String?>? overrideReason,
-    Value<String?>? approvedBy,
     Value<String?>? notes,
     Value<int>? rowid,
   }) {
@@ -19265,19 +18974,15 @@ class SaleLinesCompanion extends UpdateCompanion<SaleLine> {
       lineDiscountType: lineDiscountType ?? this.lineDiscountType,
       lineDiscountValue: lineDiscountValue ?? this.lineDiscountValue,
       lineDiscountAmount: lineDiscountAmount ?? this.lineDiscountAmount,
-      invoiceDiscountShare: invoiceDiscountShare ?? this.invoiceDiscountShare,
       taxableAmount: taxableAmount ?? this.taxableAmount,
       taxRate: taxRate ?? this.taxRate,
       taxAmount: taxAmount ?? this.taxAmount,
       lineTotal: lineTotal ?? this.lineTotal,
       allowDiscountSnapshot:
           allowDiscountSnapshot ?? this.allowDiscountSnapshot,
-      priceSource: priceSource ?? this.priceSource,
       unitSize: unitSize ?? this.unitSize,
       storeId: storeId ?? this.storeId,
       priceLevelId: priceLevelId ?? this.priceLevelId,
-      overrideReason: overrideReason ?? this.overrideReason,
-      approvedBy: approvedBy ?? this.approvedBy,
       notes: notes ?? this.notes,
       rowid: rowid ?? this.rowid,
     );
@@ -19328,11 +19033,6 @@ class SaleLinesCompanion extends UpdateCompanion<SaleLine> {
     if (lineDiscountAmount.present) {
       map['line_discount_amount'] = Variable<double>(lineDiscountAmount.value);
     }
-    if (invoiceDiscountShare.present) {
-      map['invoice_discount_share'] = Variable<double>(
-        invoiceDiscountShare.value,
-      );
-    }
     if (taxableAmount.present) {
       map['taxable_amount'] = Variable<double>(taxableAmount.value);
     }
@@ -19350,9 +19050,6 @@ class SaleLinesCompanion extends UpdateCompanion<SaleLine> {
         allowDiscountSnapshot.value,
       );
     }
-    if (priceSource.present) {
-      map['price_source'] = Variable<String>(priceSource.value);
-    }
     if (unitSize.present) {
       map['unit_size'] = Variable<double>(unitSize.value);
     }
@@ -19361,12 +19058,6 @@ class SaleLinesCompanion extends UpdateCompanion<SaleLine> {
     }
     if (priceLevelId.present) {
       map['price_level_id'] = Variable<String>(priceLevelId.value);
-    }
-    if (overrideReason.present) {
-      map['override_reason'] = Variable<String>(overrideReason.value);
-    }
-    if (approvedBy.present) {
-      map['approved_by'] = Variable<String>(approvedBy.value);
     }
     if (notes.present) {
       map['notes'] = Variable<String>(notes.value);
@@ -19394,18 +19085,14 @@ class SaleLinesCompanion extends UpdateCompanion<SaleLine> {
           ..write('lineDiscountType: $lineDiscountType, ')
           ..write('lineDiscountValue: $lineDiscountValue, ')
           ..write('lineDiscountAmount: $lineDiscountAmount, ')
-          ..write('invoiceDiscountShare: $invoiceDiscountShare, ')
           ..write('taxableAmount: $taxableAmount, ')
           ..write('taxRate: $taxRate, ')
           ..write('taxAmount: $taxAmount, ')
           ..write('lineTotal: $lineTotal, ')
           ..write('allowDiscountSnapshot: $allowDiscountSnapshot, ')
-          ..write('priceSource: $priceSource, ')
           ..write('unitSize: $unitSize, ')
           ..write('storeId: $storeId, ')
           ..write('priceLevelId: $priceLevelId, ')
-          ..write('overrideReason: $overrideReason, ')
-          ..write('approvedBy: $approvedBy, ')
           ..write('notes: $notes, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -20560,654 +20247,6 @@ class SalePaymentsCompanion extends UpdateCompanion<SalePayment> {
           ..write('cardScheme: $cardScheme, ')
           ..write('cardLast4: $cardLast4, ')
           ..write('status: $status, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $SaleAdjustmentsTable extends SaleAdjustments
-    with TableInfo<$SaleAdjustmentsTable, SaleAdjustment> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $SaleAdjustmentsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _saleIdMeta = const VerificationMeta('saleId');
-  @override
-  late final GeneratedColumn<String> saleId = GeneratedColumn<String>(
-    'sale_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-    defaultConstraints: GeneratedColumn.constraintIsAlways(
-      'REFERENCES sales (id)',
-    ),
-  );
-  static const VerificationMeta _lineIdMeta = const VerificationMeta('lineId');
-  @override
-  late final GeneratedColumn<String> lineId = GeneratedColumn<String>(
-    'line_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _scopeMeta = const VerificationMeta('scope');
-  @override
-  late final GeneratedColumn<String> scope = GeneratedColumn<String>(
-    'scope',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _typeMeta = const VerificationMeta('type');
-  @override
-  late final GeneratedColumn<String> type = GeneratedColumn<String>(
-    'type',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _sourceMeta = const VerificationMeta('source');
-  @override
-  late final GeneratedColumn<String> source = GeneratedColumn<String>(
-    'source',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _valueMeta = const VerificationMeta('value');
-  @override
-  late final GeneratedColumn<double> value = GeneratedColumn<double>(
-    'value',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _amountMeta = const VerificationMeta('amount');
-  @override
-  late final GeneratedColumn<double> amount = GeneratedColumn<double>(
-    'amount',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _reasonMeta = const VerificationMeta('reason');
-  @override
-  late final GeneratedColumn<String> reason = GeneratedColumn<String>(
-    'reason',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _approvedByMeta = const VerificationMeta(
-    'approvedBy',
-  );
-  @override
-  late final GeneratedColumn<String> approvedBy = GeneratedColumn<String>(
-    'approved_by',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.dateTime,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    saleId,
-    lineId,
-    scope,
-    type,
-    source,
-    value,
-    amount,
-    reason,
-    approvedBy,
-    createdAt,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'sale_adjustments';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<SaleAdjustment> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('sale_id')) {
-      context.handle(
-        _saleIdMeta,
-        saleId.isAcceptableOrUnknown(data['sale_id']!, _saleIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_saleIdMeta);
-    }
-    if (data.containsKey('line_id')) {
-      context.handle(
-        _lineIdMeta,
-        lineId.isAcceptableOrUnknown(data['line_id']!, _lineIdMeta),
-      );
-    }
-    if (data.containsKey('scope')) {
-      context.handle(
-        _scopeMeta,
-        scope.isAcceptableOrUnknown(data['scope']!, _scopeMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_scopeMeta);
-    }
-    if (data.containsKey('type')) {
-      context.handle(
-        _typeMeta,
-        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_typeMeta);
-    }
-    if (data.containsKey('source')) {
-      context.handle(
-        _sourceMeta,
-        source.isAcceptableOrUnknown(data['source']!, _sourceMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_sourceMeta);
-    }
-    if (data.containsKey('value')) {
-      context.handle(
-        _valueMeta,
-        value.isAcceptableOrUnknown(data['value']!, _valueMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_valueMeta);
-    }
-    if (data.containsKey('amount')) {
-      context.handle(
-        _amountMeta,
-        amount.isAcceptableOrUnknown(data['amount']!, _amountMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_amountMeta);
-    }
-    if (data.containsKey('reason')) {
-      context.handle(
-        _reasonMeta,
-        reason.isAcceptableOrUnknown(data['reason']!, _reasonMeta),
-      );
-    }
-    if (data.containsKey('approved_by')) {
-      context.handle(
-        _approvedByMeta,
-        approvedBy.isAcceptableOrUnknown(data['approved_by']!, _approvedByMeta),
-      );
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  SaleAdjustment map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return SaleAdjustment(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      saleId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}sale_id'],
-      )!,
-      lineId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}line_id'],
-      ),
-      scope: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}scope'],
-      )!,
-      type: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}type'],
-      )!,
-      source: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}source'],
-      )!,
-      value: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}value'],
-      )!,
-      amount: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}amount'],
-      )!,
-      reason: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}reason'],
-      ),
-      approvedBy: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}approved_by'],
-      ),
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.dateTime,
-        data['${effectivePrefix}created_at'],
-      )!,
-    );
-  }
-
-  @override
-  $SaleAdjustmentsTable createAlias(String alias) {
-    return $SaleAdjustmentsTable(attachedDatabase, alias);
-  }
-}
-
-class SaleAdjustment extends DataClass implements Insertable<SaleAdjustment> {
-  final String id;
-  final String saleId;
-  final String? lineId;
-  final String scope;
-  final String type;
-  final String source;
-  final double value;
-  final double amount;
-  final String? reason;
-  final String? approvedBy;
-  final DateTime createdAt;
-  const SaleAdjustment({
-    required this.id,
-    required this.saleId,
-    this.lineId,
-    required this.scope,
-    required this.type,
-    required this.source,
-    required this.value,
-    required this.amount,
-    this.reason,
-    this.approvedBy,
-    required this.createdAt,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['sale_id'] = Variable<String>(saleId);
-    if (!nullToAbsent || lineId != null) {
-      map['line_id'] = Variable<String>(lineId);
-    }
-    map['scope'] = Variable<String>(scope);
-    map['type'] = Variable<String>(type);
-    map['source'] = Variable<String>(source);
-    map['value'] = Variable<double>(value);
-    map['amount'] = Variable<double>(amount);
-    if (!nullToAbsent || reason != null) {
-      map['reason'] = Variable<String>(reason);
-    }
-    if (!nullToAbsent || approvedBy != null) {
-      map['approved_by'] = Variable<String>(approvedBy);
-    }
-    map['created_at'] = Variable<DateTime>(createdAt);
-    return map;
-  }
-
-  SaleAdjustmentsCompanion toCompanion(bool nullToAbsent) {
-    return SaleAdjustmentsCompanion(
-      id: Value(id),
-      saleId: Value(saleId),
-      lineId: lineId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(lineId),
-      scope: Value(scope),
-      type: Value(type),
-      source: Value(source),
-      value: Value(value),
-      amount: Value(amount),
-      reason: reason == null && nullToAbsent
-          ? const Value.absent()
-          : Value(reason),
-      approvedBy: approvedBy == null && nullToAbsent
-          ? const Value.absent()
-          : Value(approvedBy),
-      createdAt: Value(createdAt),
-    );
-  }
-
-  factory SaleAdjustment.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return SaleAdjustment(
-      id: serializer.fromJson<String>(json['id']),
-      saleId: serializer.fromJson<String>(json['saleId']),
-      lineId: serializer.fromJson<String?>(json['lineId']),
-      scope: serializer.fromJson<String>(json['scope']),
-      type: serializer.fromJson<String>(json['type']),
-      source: serializer.fromJson<String>(json['source']),
-      value: serializer.fromJson<double>(json['value']),
-      amount: serializer.fromJson<double>(json['amount']),
-      reason: serializer.fromJson<String?>(json['reason']),
-      approvedBy: serializer.fromJson<String?>(json['approvedBy']),
-      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'saleId': serializer.toJson<String>(saleId),
-      'lineId': serializer.toJson<String?>(lineId),
-      'scope': serializer.toJson<String>(scope),
-      'type': serializer.toJson<String>(type),
-      'source': serializer.toJson<String>(source),
-      'value': serializer.toJson<double>(value),
-      'amount': serializer.toJson<double>(amount),
-      'reason': serializer.toJson<String?>(reason),
-      'approvedBy': serializer.toJson<String?>(approvedBy),
-      'createdAt': serializer.toJson<DateTime>(createdAt),
-    };
-  }
-
-  SaleAdjustment copyWith({
-    String? id,
-    String? saleId,
-    Value<String?> lineId = const Value.absent(),
-    String? scope,
-    String? type,
-    String? source,
-    double? value,
-    double? amount,
-    Value<String?> reason = const Value.absent(),
-    Value<String?> approvedBy = const Value.absent(),
-    DateTime? createdAt,
-  }) => SaleAdjustment(
-    id: id ?? this.id,
-    saleId: saleId ?? this.saleId,
-    lineId: lineId.present ? lineId.value : this.lineId,
-    scope: scope ?? this.scope,
-    type: type ?? this.type,
-    source: source ?? this.source,
-    value: value ?? this.value,
-    amount: amount ?? this.amount,
-    reason: reason.present ? reason.value : this.reason,
-    approvedBy: approvedBy.present ? approvedBy.value : this.approvedBy,
-    createdAt: createdAt ?? this.createdAt,
-  );
-  SaleAdjustment copyWithCompanion(SaleAdjustmentsCompanion data) {
-    return SaleAdjustment(
-      id: data.id.present ? data.id.value : this.id,
-      saleId: data.saleId.present ? data.saleId.value : this.saleId,
-      lineId: data.lineId.present ? data.lineId.value : this.lineId,
-      scope: data.scope.present ? data.scope.value : this.scope,
-      type: data.type.present ? data.type.value : this.type,
-      source: data.source.present ? data.source.value : this.source,
-      value: data.value.present ? data.value.value : this.value,
-      amount: data.amount.present ? data.amount.value : this.amount,
-      reason: data.reason.present ? data.reason.value : this.reason,
-      approvedBy: data.approvedBy.present
-          ? data.approvedBy.value
-          : this.approvedBy,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('SaleAdjustment(')
-          ..write('id: $id, ')
-          ..write('saleId: $saleId, ')
-          ..write('lineId: $lineId, ')
-          ..write('scope: $scope, ')
-          ..write('type: $type, ')
-          ..write('source: $source, ')
-          ..write('value: $value, ')
-          ..write('amount: $amount, ')
-          ..write('reason: $reason, ')
-          ..write('approvedBy: $approvedBy, ')
-          ..write('createdAt: $createdAt')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    saleId,
-    lineId,
-    scope,
-    type,
-    source,
-    value,
-    amount,
-    reason,
-    approvedBy,
-    createdAt,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is SaleAdjustment &&
-          other.id == this.id &&
-          other.saleId == this.saleId &&
-          other.lineId == this.lineId &&
-          other.scope == this.scope &&
-          other.type == this.type &&
-          other.source == this.source &&
-          other.value == this.value &&
-          other.amount == this.amount &&
-          other.reason == this.reason &&
-          other.approvedBy == this.approvedBy &&
-          other.createdAt == this.createdAt);
-}
-
-class SaleAdjustmentsCompanion extends UpdateCompanion<SaleAdjustment> {
-  final Value<String> id;
-  final Value<String> saleId;
-  final Value<String?> lineId;
-  final Value<String> scope;
-  final Value<String> type;
-  final Value<String> source;
-  final Value<double> value;
-  final Value<double> amount;
-  final Value<String?> reason;
-  final Value<String?> approvedBy;
-  final Value<DateTime> createdAt;
-  final Value<int> rowid;
-  const SaleAdjustmentsCompanion({
-    this.id = const Value.absent(),
-    this.saleId = const Value.absent(),
-    this.lineId = const Value.absent(),
-    this.scope = const Value.absent(),
-    this.type = const Value.absent(),
-    this.source = const Value.absent(),
-    this.value = const Value.absent(),
-    this.amount = const Value.absent(),
-    this.reason = const Value.absent(),
-    this.approvedBy = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  SaleAdjustmentsCompanion.insert({
-    required String id,
-    required String saleId,
-    this.lineId = const Value.absent(),
-    required String scope,
-    required String type,
-    required String source,
-    required double value,
-    required double amount,
-    this.reason = const Value.absent(),
-    this.approvedBy = const Value.absent(),
-    required DateTime createdAt,
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       saleId = Value(saleId),
-       scope = Value(scope),
-       type = Value(type),
-       source = Value(source),
-       value = Value(value),
-       amount = Value(amount),
-       createdAt = Value(createdAt);
-  static Insertable<SaleAdjustment> custom({
-    Expression<String>? id,
-    Expression<String>? saleId,
-    Expression<String>? lineId,
-    Expression<String>? scope,
-    Expression<String>? type,
-    Expression<String>? source,
-    Expression<double>? value,
-    Expression<double>? amount,
-    Expression<String>? reason,
-    Expression<String>? approvedBy,
-    Expression<DateTime>? createdAt,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (saleId != null) 'sale_id': saleId,
-      if (lineId != null) 'line_id': lineId,
-      if (scope != null) 'scope': scope,
-      if (type != null) 'type': type,
-      if (source != null) 'source': source,
-      if (value != null) 'value': value,
-      if (amount != null) 'amount': amount,
-      if (reason != null) 'reason': reason,
-      if (approvedBy != null) 'approved_by': approvedBy,
-      if (createdAt != null) 'created_at': createdAt,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  SaleAdjustmentsCompanion copyWith({
-    Value<String>? id,
-    Value<String>? saleId,
-    Value<String?>? lineId,
-    Value<String>? scope,
-    Value<String>? type,
-    Value<String>? source,
-    Value<double>? value,
-    Value<double>? amount,
-    Value<String?>? reason,
-    Value<String?>? approvedBy,
-    Value<DateTime>? createdAt,
-    Value<int>? rowid,
-  }) {
-    return SaleAdjustmentsCompanion(
-      id: id ?? this.id,
-      saleId: saleId ?? this.saleId,
-      lineId: lineId ?? this.lineId,
-      scope: scope ?? this.scope,
-      type: type ?? this.type,
-      source: source ?? this.source,
-      value: value ?? this.value,
-      amount: amount ?? this.amount,
-      reason: reason ?? this.reason,
-      approvedBy: approvedBy ?? this.approvedBy,
-      createdAt: createdAt ?? this.createdAt,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (saleId.present) {
-      map['sale_id'] = Variable<String>(saleId.value);
-    }
-    if (lineId.present) {
-      map['line_id'] = Variable<String>(lineId.value);
-    }
-    if (scope.present) {
-      map['scope'] = Variable<String>(scope.value);
-    }
-    if (type.present) {
-      map['type'] = Variable<String>(type.value);
-    }
-    if (source.present) {
-      map['source'] = Variable<String>(source.value);
-    }
-    if (value.present) {
-      map['value'] = Variable<double>(value.value);
-    }
-    if (amount.present) {
-      map['amount'] = Variable<double>(amount.value);
-    }
-    if (reason.present) {
-      map['reason'] = Variable<String>(reason.value);
-    }
-    if (approvedBy.present) {
-      map['approved_by'] = Variable<String>(approvedBy.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<DateTime>(createdAt.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('SaleAdjustmentsCompanion(')
-          ..write('id: $id, ')
-          ..write('saleId: $saleId, ')
-          ..write('lineId: $lineId, ')
-          ..write('scope: $scope, ')
-          ..write('type: $type, ')
-          ..write('source: $source, ')
-          ..write('value: $value, ')
-          ..write('amount: $amount, ')
-          ..write('reason: $reason, ')
-          ..write('approvedBy: $approvedBy, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -23338,820 +22377,6 @@ class HeldOrdersCompanion extends UpdateCompanion<HeldOrder> {
           ..write('heldAt: $heldAt, ')
           ..write('expiresAt: $expiresAt, ')
           ..write('resumedAt: $resumedAt, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $HeldOrderLinesTable extends HeldOrderLines
-    with TableInfo<$HeldOrderLinesTable, HeldOrderLine> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $HeldOrderLinesTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _heldOrderIdMeta = const VerificationMeta(
-    'heldOrderId',
-  );
-  @override
-  late final GeneratedColumn<String> heldOrderId = GeneratedColumn<String>(
-    'held_order_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _itemIdMeta = const VerificationMeta('itemId');
-  @override
-  late final GeneratedColumn<String> itemId = GeneratedColumn<String>(
-    'item_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _unitIdMeta = const VerificationMeta('unitId');
-  @override
-  late final GeneratedColumn<String> unitId = GeneratedColumn<String>(
-    'unit_id',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _barcodeMeta = const VerificationMeta(
-    'barcode',
-  );
-  @override
-  late final GeneratedColumn<String> barcode = GeneratedColumn<String>(
-    'barcode',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _itemNameSnapshotMeta = const VerificationMeta(
-    'itemNameSnapshot',
-  );
-  @override
-  late final GeneratedColumn<String> itemNameSnapshot = GeneratedColumn<String>(
-    'item_name_snapshot',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _unitNameSnapshotMeta = const VerificationMeta(
-    'unitNameSnapshot',
-  );
-  @override
-  late final GeneratedColumn<String> unitNameSnapshot = GeneratedColumn<String>(
-    'unit_name_snapshot',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  static const VerificationMeta _qtyScaledMeta = const VerificationMeta(
-    'qtyScaled',
-  );
-  @override
-  late final GeneratedColumn<int> qtyScaled = GeneratedColumn<int>(
-    'qty_scaled',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _qtyScaleMeta = const VerificationMeta(
-    'qtyScale',
-  );
-  @override
-  late final GeneratedColumn<int> qtyScale = GeneratedColumn<int>(
-    'qty_scale',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
-  static const VerificationMeta _unitPriceMeta = const VerificationMeta(
-    'unitPrice',
-  );
-  @override
-  late final GeneratedColumn<double> unitPrice = GeneratedColumn<double>(
-    'unit_price',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _discountAmountMeta = const VerificationMeta(
-    'discountAmount',
-  );
-  @override
-  late final GeneratedColumn<double> discountAmount = GeneratedColumn<double>(
-    'discount_amount',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0.0),
-  );
-  static const VerificationMeta _taxAmountMeta = const VerificationMeta(
-    'taxAmount',
-  );
-  @override
-  late final GeneratedColumn<double> taxAmount = GeneratedColumn<double>(
-    'tax_amount',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0.0),
-  );
-  static const VerificationMeta _lineTotalMeta = const VerificationMeta(
-    'lineTotal',
-  );
-  @override
-  late final GeneratedColumn<double> lineTotal = GeneratedColumn<double>(
-    'line_total',
-    aliasedName,
-    false,
-    type: DriftSqlType.double,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
-  @override
-  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
-    'notes',
-    aliasedName,
-    true,
-    type: DriftSqlType.string,
-    requiredDuringInsert: false,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    heldOrderId,
-    itemId,
-    unitId,
-    barcode,
-    itemNameSnapshot,
-    unitNameSnapshot,
-    qtyScaled,
-    qtyScale,
-    unitPrice,
-    discountAmount,
-    taxAmount,
-    lineTotal,
-    notes,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'held_order_lines';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<HeldOrderLine> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('held_order_id')) {
-      context.handle(
-        _heldOrderIdMeta,
-        heldOrderId.isAcceptableOrUnknown(
-          data['held_order_id']!,
-          _heldOrderIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_heldOrderIdMeta);
-    }
-    if (data.containsKey('item_id')) {
-      context.handle(
-        _itemIdMeta,
-        itemId.isAcceptableOrUnknown(data['item_id']!, _itemIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_itemIdMeta);
-    }
-    if (data.containsKey('unit_id')) {
-      context.handle(
-        _unitIdMeta,
-        unitId.isAcceptableOrUnknown(data['unit_id']!, _unitIdMeta),
-      );
-    }
-    if (data.containsKey('barcode')) {
-      context.handle(
-        _barcodeMeta,
-        barcode.isAcceptableOrUnknown(data['barcode']!, _barcodeMeta),
-      );
-    }
-    if (data.containsKey('item_name_snapshot')) {
-      context.handle(
-        _itemNameSnapshotMeta,
-        itemNameSnapshot.isAcceptableOrUnknown(
-          data['item_name_snapshot']!,
-          _itemNameSnapshotMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_itemNameSnapshotMeta);
-    }
-    if (data.containsKey('unit_name_snapshot')) {
-      context.handle(
-        _unitNameSnapshotMeta,
-        unitNameSnapshot.isAcceptableOrUnknown(
-          data['unit_name_snapshot']!,
-          _unitNameSnapshotMeta,
-        ),
-      );
-    }
-    if (data.containsKey('qty_scaled')) {
-      context.handle(
-        _qtyScaledMeta,
-        qtyScaled.isAcceptableOrUnknown(data['qty_scaled']!, _qtyScaledMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_qtyScaledMeta);
-    }
-    if (data.containsKey('qty_scale')) {
-      context.handle(
-        _qtyScaleMeta,
-        qtyScale.isAcceptableOrUnknown(data['qty_scale']!, _qtyScaleMeta),
-      );
-    }
-    if (data.containsKey('unit_price')) {
-      context.handle(
-        _unitPriceMeta,
-        unitPrice.isAcceptableOrUnknown(data['unit_price']!, _unitPriceMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_unitPriceMeta);
-    }
-    if (data.containsKey('discount_amount')) {
-      context.handle(
-        _discountAmountMeta,
-        discountAmount.isAcceptableOrUnknown(
-          data['discount_amount']!,
-          _discountAmountMeta,
-        ),
-      );
-    }
-    if (data.containsKey('tax_amount')) {
-      context.handle(
-        _taxAmountMeta,
-        taxAmount.isAcceptableOrUnknown(data['tax_amount']!, _taxAmountMeta),
-      );
-    }
-    if (data.containsKey('line_total')) {
-      context.handle(
-        _lineTotalMeta,
-        lineTotal.isAcceptableOrUnknown(data['line_total']!, _lineTotalMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_lineTotalMeta);
-    }
-    if (data.containsKey('notes')) {
-      context.handle(
-        _notesMeta,
-        notes.isAcceptableOrUnknown(data['notes']!, _notesMeta),
-      );
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {id};
-  @override
-  HeldOrderLine map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return HeldOrderLine(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      heldOrderId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}held_order_id'],
-      )!,
-      itemId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}item_id'],
-      )!,
-      unitId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}unit_id'],
-      ),
-      barcode: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}barcode'],
-      ),
-      itemNameSnapshot: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}item_name_snapshot'],
-      )!,
-      unitNameSnapshot: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}unit_name_snapshot'],
-      ),
-      qtyScaled: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}qty_scaled'],
-      )!,
-      qtyScale: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}qty_scale'],
-      )!,
-      unitPrice: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}unit_price'],
-      )!,
-      discountAmount: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}discount_amount'],
-      )!,
-      taxAmount: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}tax_amount'],
-      )!,
-      lineTotal: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
-        data['${effectivePrefix}line_total'],
-      )!,
-      notes: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}notes'],
-      ),
-    );
-  }
-
-  @override
-  $HeldOrderLinesTable createAlias(String alias) {
-    return $HeldOrderLinesTable(attachedDatabase, alias);
-  }
-}
-
-class HeldOrderLine extends DataClass implements Insertable<HeldOrderLine> {
-  final String id;
-  final String heldOrderId;
-  final String itemId;
-  final String? unitId;
-  final String? barcode;
-  final String itemNameSnapshot;
-  final String? unitNameSnapshot;
-  final int qtyScaled;
-  final int qtyScale;
-  final double unitPrice;
-  final double discountAmount;
-  final double taxAmount;
-  final double lineTotal;
-  final String? notes;
-  const HeldOrderLine({
-    required this.id,
-    required this.heldOrderId,
-    required this.itemId,
-    this.unitId,
-    this.barcode,
-    required this.itemNameSnapshot,
-    this.unitNameSnapshot,
-    required this.qtyScaled,
-    required this.qtyScale,
-    required this.unitPrice,
-    required this.discountAmount,
-    required this.taxAmount,
-    required this.lineTotal,
-    this.notes,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['held_order_id'] = Variable<String>(heldOrderId);
-    map['item_id'] = Variable<String>(itemId);
-    if (!nullToAbsent || unitId != null) {
-      map['unit_id'] = Variable<String>(unitId);
-    }
-    if (!nullToAbsent || barcode != null) {
-      map['barcode'] = Variable<String>(barcode);
-    }
-    map['item_name_snapshot'] = Variable<String>(itemNameSnapshot);
-    if (!nullToAbsent || unitNameSnapshot != null) {
-      map['unit_name_snapshot'] = Variable<String>(unitNameSnapshot);
-    }
-    map['qty_scaled'] = Variable<int>(qtyScaled);
-    map['qty_scale'] = Variable<int>(qtyScale);
-    map['unit_price'] = Variable<double>(unitPrice);
-    map['discount_amount'] = Variable<double>(discountAmount);
-    map['tax_amount'] = Variable<double>(taxAmount);
-    map['line_total'] = Variable<double>(lineTotal);
-    if (!nullToAbsent || notes != null) {
-      map['notes'] = Variable<String>(notes);
-    }
-    return map;
-  }
-
-  HeldOrderLinesCompanion toCompanion(bool nullToAbsent) {
-    return HeldOrderLinesCompanion(
-      id: Value(id),
-      heldOrderId: Value(heldOrderId),
-      itemId: Value(itemId),
-      unitId: unitId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(unitId),
-      barcode: barcode == null && nullToAbsent
-          ? const Value.absent()
-          : Value(barcode),
-      itemNameSnapshot: Value(itemNameSnapshot),
-      unitNameSnapshot: unitNameSnapshot == null && nullToAbsent
-          ? const Value.absent()
-          : Value(unitNameSnapshot),
-      qtyScaled: Value(qtyScaled),
-      qtyScale: Value(qtyScale),
-      unitPrice: Value(unitPrice),
-      discountAmount: Value(discountAmount),
-      taxAmount: Value(taxAmount),
-      lineTotal: Value(lineTotal),
-      notes: notes == null && nullToAbsent
-          ? const Value.absent()
-          : Value(notes),
-    );
-  }
-
-  factory HeldOrderLine.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return HeldOrderLine(
-      id: serializer.fromJson<String>(json['id']),
-      heldOrderId: serializer.fromJson<String>(json['heldOrderId']),
-      itemId: serializer.fromJson<String>(json['itemId']),
-      unitId: serializer.fromJson<String?>(json['unitId']),
-      barcode: serializer.fromJson<String?>(json['barcode']),
-      itemNameSnapshot: serializer.fromJson<String>(json['itemNameSnapshot']),
-      unitNameSnapshot: serializer.fromJson<String?>(json['unitNameSnapshot']),
-      qtyScaled: serializer.fromJson<int>(json['qtyScaled']),
-      qtyScale: serializer.fromJson<int>(json['qtyScale']),
-      unitPrice: serializer.fromJson<double>(json['unitPrice']),
-      discountAmount: serializer.fromJson<double>(json['discountAmount']),
-      taxAmount: serializer.fromJson<double>(json['taxAmount']),
-      lineTotal: serializer.fromJson<double>(json['lineTotal']),
-      notes: serializer.fromJson<String?>(json['notes']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'heldOrderId': serializer.toJson<String>(heldOrderId),
-      'itemId': serializer.toJson<String>(itemId),
-      'unitId': serializer.toJson<String?>(unitId),
-      'barcode': serializer.toJson<String?>(barcode),
-      'itemNameSnapshot': serializer.toJson<String>(itemNameSnapshot),
-      'unitNameSnapshot': serializer.toJson<String?>(unitNameSnapshot),
-      'qtyScaled': serializer.toJson<int>(qtyScaled),
-      'qtyScale': serializer.toJson<int>(qtyScale),
-      'unitPrice': serializer.toJson<double>(unitPrice),
-      'discountAmount': serializer.toJson<double>(discountAmount),
-      'taxAmount': serializer.toJson<double>(taxAmount),
-      'lineTotal': serializer.toJson<double>(lineTotal),
-      'notes': serializer.toJson<String?>(notes),
-    };
-  }
-
-  HeldOrderLine copyWith({
-    String? id,
-    String? heldOrderId,
-    String? itemId,
-    Value<String?> unitId = const Value.absent(),
-    Value<String?> barcode = const Value.absent(),
-    String? itemNameSnapshot,
-    Value<String?> unitNameSnapshot = const Value.absent(),
-    int? qtyScaled,
-    int? qtyScale,
-    double? unitPrice,
-    double? discountAmount,
-    double? taxAmount,
-    double? lineTotal,
-    Value<String?> notes = const Value.absent(),
-  }) => HeldOrderLine(
-    id: id ?? this.id,
-    heldOrderId: heldOrderId ?? this.heldOrderId,
-    itemId: itemId ?? this.itemId,
-    unitId: unitId.present ? unitId.value : this.unitId,
-    barcode: barcode.present ? barcode.value : this.barcode,
-    itemNameSnapshot: itemNameSnapshot ?? this.itemNameSnapshot,
-    unitNameSnapshot: unitNameSnapshot.present
-        ? unitNameSnapshot.value
-        : this.unitNameSnapshot,
-    qtyScaled: qtyScaled ?? this.qtyScaled,
-    qtyScale: qtyScale ?? this.qtyScale,
-    unitPrice: unitPrice ?? this.unitPrice,
-    discountAmount: discountAmount ?? this.discountAmount,
-    taxAmount: taxAmount ?? this.taxAmount,
-    lineTotal: lineTotal ?? this.lineTotal,
-    notes: notes.present ? notes.value : this.notes,
-  );
-  HeldOrderLine copyWithCompanion(HeldOrderLinesCompanion data) {
-    return HeldOrderLine(
-      id: data.id.present ? data.id.value : this.id,
-      heldOrderId: data.heldOrderId.present
-          ? data.heldOrderId.value
-          : this.heldOrderId,
-      itemId: data.itemId.present ? data.itemId.value : this.itemId,
-      unitId: data.unitId.present ? data.unitId.value : this.unitId,
-      barcode: data.barcode.present ? data.barcode.value : this.barcode,
-      itemNameSnapshot: data.itemNameSnapshot.present
-          ? data.itemNameSnapshot.value
-          : this.itemNameSnapshot,
-      unitNameSnapshot: data.unitNameSnapshot.present
-          ? data.unitNameSnapshot.value
-          : this.unitNameSnapshot,
-      qtyScaled: data.qtyScaled.present ? data.qtyScaled.value : this.qtyScaled,
-      qtyScale: data.qtyScale.present ? data.qtyScale.value : this.qtyScale,
-      unitPrice: data.unitPrice.present ? data.unitPrice.value : this.unitPrice,
-      discountAmount: data.discountAmount.present
-          ? data.discountAmount.value
-          : this.discountAmount,
-      taxAmount: data.taxAmount.present ? data.taxAmount.value : this.taxAmount,
-      lineTotal: data.lineTotal.present ? data.lineTotal.value : this.lineTotal,
-      notes: data.notes.present ? data.notes.value : this.notes,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('HeldOrderLine(')
-          ..write('id: $id, ')
-          ..write('heldOrderId: $heldOrderId, ')
-          ..write('itemId: $itemId, ')
-          ..write('unitId: $unitId, ')
-          ..write('barcode: $barcode, ')
-          ..write('itemNameSnapshot: $itemNameSnapshot, ')
-          ..write('unitNameSnapshot: $unitNameSnapshot, ')
-          ..write('qtyScaled: $qtyScaled, ')
-          ..write('qtyScale: $qtyScale, ')
-          ..write('unitPrice: $unitPrice, ')
-          ..write('discountAmount: $discountAmount, ')
-          ..write('taxAmount: $taxAmount, ')
-          ..write('lineTotal: $lineTotal, ')
-          ..write('notes: $notes')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    heldOrderId,
-    itemId,
-    unitId,
-    barcode,
-    itemNameSnapshot,
-    unitNameSnapshot,
-    qtyScaled,
-    qtyScale,
-    unitPrice,
-    discountAmount,
-    taxAmount,
-    lineTotal,
-    notes,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is HeldOrderLine &&
-          other.id == this.id &&
-          other.heldOrderId == this.heldOrderId &&
-          other.itemId == this.itemId &&
-          other.unitId == this.unitId &&
-          other.barcode == this.barcode &&
-          other.itemNameSnapshot == this.itemNameSnapshot &&
-          other.unitNameSnapshot == this.unitNameSnapshot &&
-          other.qtyScaled == this.qtyScaled &&
-          other.qtyScale == this.qtyScale &&
-          other.unitPrice == this.unitPrice &&
-          other.discountAmount == this.discountAmount &&
-          other.taxAmount == this.taxAmount &&
-          other.lineTotal == this.lineTotal &&
-          other.notes == this.notes);
-}
-
-class HeldOrderLinesCompanion extends UpdateCompanion<HeldOrderLine> {
-  final Value<String> id;
-  final Value<String> heldOrderId;
-  final Value<String> itemId;
-  final Value<String?> unitId;
-  final Value<String?> barcode;
-  final Value<String> itemNameSnapshot;
-  final Value<String?> unitNameSnapshot;
-  final Value<int> qtyScaled;
-  final Value<int> qtyScale;
-  final Value<double> unitPrice;
-  final Value<double> discountAmount;
-  final Value<double> taxAmount;
-  final Value<double> lineTotal;
-  final Value<String?> notes;
-  final Value<int> rowid;
-  const HeldOrderLinesCompanion({
-    this.id = const Value.absent(),
-    this.heldOrderId = const Value.absent(),
-    this.itemId = const Value.absent(),
-    this.unitId = const Value.absent(),
-    this.barcode = const Value.absent(),
-    this.itemNameSnapshot = const Value.absent(),
-    this.unitNameSnapshot = const Value.absent(),
-    this.qtyScaled = const Value.absent(),
-    this.qtyScale = const Value.absent(),
-    this.unitPrice = const Value.absent(),
-    this.discountAmount = const Value.absent(),
-    this.taxAmount = const Value.absent(),
-    this.lineTotal = const Value.absent(),
-    this.notes = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  HeldOrderLinesCompanion.insert({
-    required String id,
-    required String heldOrderId,
-    required String itemId,
-    this.unitId = const Value.absent(),
-    this.barcode = const Value.absent(),
-    required String itemNameSnapshot,
-    this.unitNameSnapshot = const Value.absent(),
-    required int qtyScaled,
-    this.qtyScale = const Value.absent(),
-    required double unitPrice,
-    this.discountAmount = const Value.absent(),
-    this.taxAmount = const Value.absent(),
-    required double lineTotal,
-    this.notes = const Value.absent(),
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       heldOrderId = Value(heldOrderId),
-       itemId = Value(itemId),
-       itemNameSnapshot = Value(itemNameSnapshot),
-       qtyScaled = Value(qtyScaled),
-       unitPrice = Value(unitPrice),
-       lineTotal = Value(lineTotal);
-  static Insertable<HeldOrderLine> custom({
-    Expression<String>? id,
-    Expression<String>? heldOrderId,
-    Expression<String>? itemId,
-    Expression<String>? unitId,
-    Expression<String>? barcode,
-    Expression<String>? itemNameSnapshot,
-    Expression<String>? unitNameSnapshot,
-    Expression<int>? qtyScaled,
-    Expression<int>? qtyScale,
-    Expression<double>? unitPrice,
-    Expression<double>? discountAmount,
-    Expression<double>? taxAmount,
-    Expression<double>? lineTotal,
-    Expression<String>? notes,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (heldOrderId != null) 'held_order_id': heldOrderId,
-      if (itemId != null) 'item_id': itemId,
-      if (unitId != null) 'unit_id': unitId,
-      if (barcode != null) 'barcode': barcode,
-      if (itemNameSnapshot != null) 'item_name_snapshot': itemNameSnapshot,
-      if (unitNameSnapshot != null) 'unit_name_snapshot': unitNameSnapshot,
-      if (qtyScaled != null) 'qty_scaled': qtyScaled,
-      if (qtyScale != null) 'qty_scale': qtyScale,
-      if (unitPrice != null) 'unit_price': unitPrice,
-      if (discountAmount != null) 'discount_amount': discountAmount,
-      if (taxAmount != null) 'tax_amount': taxAmount,
-      if (lineTotal != null) 'line_total': lineTotal,
-      if (notes != null) 'notes': notes,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  HeldOrderLinesCompanion copyWith({
-    Value<String>? id,
-    Value<String>? heldOrderId,
-    Value<String>? itemId,
-    Value<String?>? unitId,
-    Value<String?>? barcode,
-    Value<String>? itemNameSnapshot,
-    Value<String?>? unitNameSnapshot,
-    Value<int>? qtyScaled,
-    Value<int>? qtyScale,
-    Value<double>? unitPrice,
-    Value<double>? discountAmount,
-    Value<double>? taxAmount,
-    Value<double>? lineTotal,
-    Value<String?>? notes,
-    Value<int>? rowid,
-  }) {
-    return HeldOrderLinesCompanion(
-      id: id ?? this.id,
-      heldOrderId: heldOrderId ?? this.heldOrderId,
-      itemId: itemId ?? this.itemId,
-      unitId: unitId ?? this.unitId,
-      barcode: barcode ?? this.barcode,
-      itemNameSnapshot: itemNameSnapshot ?? this.itemNameSnapshot,
-      unitNameSnapshot: unitNameSnapshot ?? this.unitNameSnapshot,
-      qtyScaled: qtyScaled ?? this.qtyScaled,
-      qtyScale: qtyScale ?? this.qtyScale,
-      unitPrice: unitPrice ?? this.unitPrice,
-      discountAmount: discountAmount ?? this.discountAmount,
-      taxAmount: taxAmount ?? this.taxAmount,
-      lineTotal: lineTotal ?? this.lineTotal,
-      notes: notes ?? this.notes,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (heldOrderId.present) {
-      map['held_order_id'] = Variable<String>(heldOrderId.value);
-    }
-    if (itemId.present) {
-      map['item_id'] = Variable<String>(itemId.value);
-    }
-    if (unitId.present) {
-      map['unit_id'] = Variable<String>(unitId.value);
-    }
-    if (barcode.present) {
-      map['barcode'] = Variable<String>(barcode.value);
-    }
-    if (itemNameSnapshot.present) {
-      map['item_name_snapshot'] = Variable<String>(itemNameSnapshot.value);
-    }
-    if (unitNameSnapshot.present) {
-      map['unit_name_snapshot'] = Variable<String>(unitNameSnapshot.value);
-    }
-    if (qtyScaled.present) {
-      map['qty_scaled'] = Variable<int>(qtyScaled.value);
-    }
-    if (qtyScale.present) {
-      map['qty_scale'] = Variable<int>(qtyScale.value);
-    }
-    if (unitPrice.present) {
-      map['unit_price'] = Variable<double>(unitPrice.value);
-    }
-    if (discountAmount.present) {
-      map['discount_amount'] = Variable<double>(discountAmount.value);
-    }
-    if (taxAmount.present) {
-      map['tax_amount'] = Variable<double>(taxAmount.value);
-    }
-    if (lineTotal.present) {
-      map['line_total'] = Variable<double>(lineTotal.value);
-    }
-    if (notes.present) {
-      map['notes'] = Variable<String>(notes.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('HeldOrderLinesCompanion(')
-          ..write('id: $id, ')
-          ..write('heldOrderId: $heldOrderId, ')
-          ..write('itemId: $itemId, ')
-          ..write('unitId: $unitId, ')
-          ..write('barcode: $barcode, ')
-          ..write('itemNameSnapshot: $itemNameSnapshot, ')
-          ..write('unitNameSnapshot: $unitNameSnapshot, ')
-          ..write('qtyScaled: $qtyScaled, ')
-          ..write('qtyScale: $qtyScale, ')
-          ..write('unitPrice: $unitPrice, ')
-          ..write('discountAmount: $discountAmount, ')
-          ..write('taxAmount: $taxAmount, ')
-          ..write('lineTotal: $lineTotal, ')
-          ..write('notes: $notes, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -34003,15 +32228,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SalesTable sales = $SalesTable(this);
   late final $SaleLinesTable saleLines = $SaleLinesTable(this);
   late final $SalePaymentsTable salePayments = $SalePaymentsTable(this);
-  late final $SaleAdjustmentsTable saleAdjustments = $SaleAdjustmentsTable(
-    this,
-  );
   late final $SaleTaxSummaryTable saleTaxSummary = $SaleTaxSummaryTable(this);
   late final $InvoiceDocumentsTable invoiceDocuments = $InvoiceDocumentsTable(
     this,
   );
   late final $HeldOrdersTable heldOrders = $HeldOrdersTable(this);
-  late final $HeldOrderLinesTable heldOrderLines = $HeldOrderLinesTable(this);
   late final $MasterSyncStateTable masterSyncState = $MasterSyncStateTable(
     this,
   );
@@ -34122,10 +32343,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     'idx_sale_payments_method_id',
     'CREATE INDEX idx_sale_payments_method_id ON sale_payments (payment_method_id)',
   );
-  late final Index idxSaleAdjustmentsSaleId = Index(
-    'idx_sale_adjustments_sale_id',
-    'CREATE INDEX idx_sale_adjustments_sale_id ON sale_adjustments (sale_id)',
-  );
   late final Index idxSaleTaxSummarySaleId = Index(
     'idx_sale_tax_summary_sale_id',
     'CREATE INDEX idx_sale_tax_summary_sale_id ON sale_tax_summary (sale_id)',
@@ -34203,11 +32420,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     sales,
     saleLines,
     salePayments,
-    saleAdjustments,
     saleTaxSummary,
     invoiceDocuments,
     heldOrders,
-    heldOrderLines,
     masterSyncState,
     scopedSyncState,
     masterSyncRuns,
@@ -34243,7 +32458,6 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     idxSaleLinesItemId,
     idxSalePaymentsSaleId,
     idxSalePaymentsMethodId,
-    idxSaleAdjustmentsSaleId,
     idxSaleTaxSummarySaleId,
     idxInvoiceDocumentsSaleId,
     idxOutboxStatusCreatedAt,
@@ -39439,8 +37653,6 @@ typedef $$ItemPricesTableCreateCompanionBuilder =
       Value<String?> unitId,
       Value<String?> storeId,
       Value<String?> priceLevelId,
-      Value<double?> fromQty,
-      Value<double?> toQty,
       required double unitPrice,
       Value<double?> costPrice,
       Value<DateTime?> effectiveFrom,
@@ -39457,8 +37669,6 @@ typedef $$ItemPricesTableUpdateCompanionBuilder =
       Value<String?> unitId,
       Value<String?> storeId,
       Value<String?> priceLevelId,
-      Value<double?> fromQty,
-      Value<double?> toQty,
       Value<double> unitPrice,
       Value<double?> costPrice,
       Value<DateTime?> effectiveFrom,
@@ -39504,16 +37714,6 @@ class $$ItemPricesTableFilterComposer
 
   ColumnFilters<String> get priceLevelId => $composableBuilder(
     column: $table.priceLevelId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get fromQty => $composableBuilder(
-    column: $table.fromQty,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get toQty => $composableBuilder(
-    column: $table.toQty,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -39587,16 +37787,6 @@ class $$ItemPricesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get fromQty => $composableBuilder(
-    column: $table.fromQty,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get toQty => $composableBuilder(
-    column: $table.toQty,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<double> get unitPrice => $composableBuilder(
     column: $table.unitPrice,
     builder: (column) => ColumnOrderings(column),
@@ -39656,12 +37846,6 @@ class $$ItemPricesTableAnnotationComposer
     column: $table.priceLevelId,
     builder: (column) => column,
   );
-
-  GeneratedColumn<double> get fromQty =>
-      $composableBuilder(column: $table.fromQty, builder: (column) => column);
-
-  GeneratedColumn<double> get toQty =>
-      $composableBuilder(column: $table.toQty, builder: (column) => column);
 
   GeneratedColumn<double> get unitPrice =>
       $composableBuilder(column: $table.unitPrice, builder: (column) => column);
@@ -39725,8 +37909,6 @@ class $$ItemPricesTableTableManager
                 Value<String?> unitId = const Value.absent(),
                 Value<String?> storeId = const Value.absent(),
                 Value<String?> priceLevelId = const Value.absent(),
-                Value<double?> fromQty = const Value.absent(),
-                Value<double?> toQty = const Value.absent(),
                 Value<double> unitPrice = const Value.absent(),
                 Value<double?> costPrice = const Value.absent(),
                 Value<DateTime?> effectiveFrom = const Value.absent(),
@@ -39741,8 +37923,6 @@ class $$ItemPricesTableTableManager
                 unitId: unitId,
                 storeId: storeId,
                 priceLevelId: priceLevelId,
-                fromQty: fromQty,
-                toQty: toQty,
                 unitPrice: unitPrice,
                 costPrice: costPrice,
                 effectiveFrom: effectiveFrom,
@@ -39759,8 +37939,6 @@ class $$ItemPricesTableTableManager
                 Value<String?> unitId = const Value.absent(),
                 Value<String?> storeId = const Value.absent(),
                 Value<String?> priceLevelId = const Value.absent(),
-                Value<double?> fromQty = const Value.absent(),
-                Value<double?> toQty = const Value.absent(),
                 required double unitPrice,
                 Value<double?> costPrice = const Value.absent(),
                 Value<DateTime?> effectiveFrom = const Value.absent(),
@@ -39775,8 +37953,6 @@ class $$ItemPricesTableTableManager
                 unitId: unitId,
                 storeId: storeId,
                 priceLevelId: priceLevelId,
-                fromQty: fromQty,
-                toQty: toQty,
                 unitPrice: unitPrice,
                 costPrice: costPrice,
                 effectiveFrom: effectiveFrom,
@@ -41850,26 +40026,6 @@ final class $$SalesTableReferences
     );
   }
 
-  static MultiTypedResultKey<$SaleAdjustmentsTable, List<SaleAdjustment>>
-  _saleAdjustmentsRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
-    db.saleAdjustments,
-    aliasName: $_aliasNameGenerator(db.sales.id, db.saleAdjustments.saleId),
-  );
-
-  $$SaleAdjustmentsTableProcessedTableManager get saleAdjustmentsRefs {
-    final manager = $$SaleAdjustmentsTableTableManager(
-      $_db,
-      $_db.saleAdjustments,
-    ).filter((f) => f.saleId.id.sqlEquals($_itemColumn<String>('id')!));
-
-    final cache = $_typedResult.readTableOrNull(
-      _saleAdjustmentsRefsTable($_db),
-    );
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: cache),
-    );
-  }
-
   static MultiTypedResultKey<$SaleTaxSummaryTable, List<SaleTaxSummaryData>>
   _saleTaxSummaryRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
     db.saleTaxSummary,
@@ -42174,31 +40330,6 @@ class $$SalesTableFilterComposer extends Composer<_$AppDatabase, $SalesTable> {
           }) => $$SalePaymentsTableFilterComposer(
             $db: $db,
             $table: $db.salePayments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
-  Expression<bool> saleAdjustmentsRefs(
-    Expression<bool> Function($$SaleAdjustmentsTableFilterComposer f) f,
-  ) {
-    final $$SaleAdjustmentsTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.saleAdjustments,
-      getReferencedColumn: (t) => t.saleId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SaleAdjustmentsTableFilterComposer(
-            $db: $db,
-            $table: $db.saleAdjustments,
             $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
             joinBuilder: joinBuilder,
             $removeJoinBuilderFromRootComposer:
@@ -42704,31 +40835,6 @@ class $$SalesTableAnnotationComposer
     return f(composer);
   }
 
-  Expression<T> saleAdjustmentsRefs<T extends Object>(
-    Expression<T> Function($$SaleAdjustmentsTableAnnotationComposer a) f,
-  ) {
-    final $$SaleAdjustmentsTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.id,
-      referencedTable: $db.saleAdjustments,
-      getReferencedColumn: (t) => t.saleId,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SaleAdjustmentsTableAnnotationComposer(
-            $db: $db,
-            $table: $db.saleAdjustments,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return f(composer);
-  }
-
   Expression<T> saleTaxSummaryRefs<T extends Object>(
     Expression<T> Function($$SaleTaxSummaryTableAnnotationComposer a) f,
   ) {
@@ -42846,7 +40952,6 @@ class $$SalesTableTableManager
           PrefetchHooks Function({
             bool saleLinesRefs,
             bool salePaymentsRefs,
-            bool saleAdjustmentsRefs,
             bool saleTaxSummaryRefs,
             bool invoiceDocumentsRefs,
             bool printJobsRefs,
@@ -43030,7 +41135,6 @@ class $$SalesTableTableManager
               ({
                 saleLinesRefs = false,
                 salePaymentsRefs = false,
-                saleAdjustmentsRefs = false,
                 saleTaxSummaryRefs = false,
                 invoiceDocumentsRefs = false,
                 printJobsRefs = false,
@@ -43041,7 +41145,6 @@ class $$SalesTableTableManager
                   explicitlyWatchedTables: [
                     if (saleLinesRefs) db.saleLines,
                     if (salePaymentsRefs) db.salePayments,
-                    if (saleAdjustmentsRefs) db.saleAdjustments,
                     if (saleTaxSummaryRefs) db.saleTaxSummary,
                     if (invoiceDocumentsRefs) db.invoiceDocuments,
                     if (printJobsRefs) db.printJobs,
@@ -43082,27 +41185,6 @@ class $$SalesTableTableManager
                                 table,
                                 p0,
                               ).salePaymentsRefs,
-                          referencedItemsForCurrentItem:
-                              (item, referencedItems) => referencedItems.where(
-                                (e) => e.saleId == item.id,
-                              ),
-                          typedResults: items,
-                        ),
-                      if (saleAdjustmentsRefs)
-                        await $_getPrefetchedData<
-                          Sale,
-                          $SalesTable,
-                          SaleAdjustment
-                        >(
-                          currentTable: table,
-                          referencedTable: $$SalesTableReferences
-                              ._saleAdjustmentsRefsTable(db),
-                          managerFromTypedResult: (p0) =>
-                              $$SalesTableReferences(
-                                db,
-                                table,
-                                p0,
-                              ).saleAdjustmentsRefs,
                           referencedItemsForCurrentItem:
                               (item, referencedItems) => referencedItems.where(
                                 (e) => e.saleId == item.id,
@@ -43212,7 +41294,6 @@ typedef $$SalesTableProcessedTableManager =
       PrefetchHooks Function({
         bool saleLinesRefs,
         bool salePaymentsRefs,
-        bool saleAdjustmentsRefs,
         bool saleTaxSummaryRefs,
         bool invoiceDocumentsRefs,
         bool printJobsRefs,
@@ -43235,18 +41316,14 @@ typedef $$SaleLinesTableCreateCompanionBuilder =
       Value<String?> lineDiscountType,
       Value<double?> lineDiscountValue,
       Value<double> lineDiscountAmount,
-      Value<double> invoiceDiscountShare,
       Value<double> taxableAmount,
       Value<double> taxRate,
       Value<double> taxAmount,
       required double lineTotal,
       Value<bool?> allowDiscountSnapshot,
-      Value<String?> priceSource,
       Value<double?> unitSize,
       Value<String?> storeId,
       Value<String?> priceLevelId,
-      Value<String?> overrideReason,
-      Value<String?> approvedBy,
       Value<String?> notes,
       Value<int> rowid,
     });
@@ -43266,18 +41343,14 @@ typedef $$SaleLinesTableUpdateCompanionBuilder =
       Value<String?> lineDiscountType,
       Value<double?> lineDiscountValue,
       Value<double> lineDiscountAmount,
-      Value<double> invoiceDiscountShare,
       Value<double> taxableAmount,
       Value<double> taxRate,
       Value<double> taxAmount,
       Value<double> lineTotal,
       Value<bool?> allowDiscountSnapshot,
-      Value<String?> priceSource,
       Value<double?> unitSize,
       Value<String?> storeId,
       Value<String?> priceLevelId,
-      Value<String?> overrideReason,
-      Value<String?> approvedBy,
       Value<String?> notes,
       Value<int> rowid,
     });
@@ -43379,11 +41452,6 @@ class $$SaleLinesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<double> get invoiceDiscountShare => $composableBuilder(
-    column: $table.invoiceDiscountShare,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<double> get taxableAmount => $composableBuilder(
     column: $table.taxableAmount,
     builder: (column) => ColumnFilters(column),
@@ -43409,11 +41477,6 @@ class $$SaleLinesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get priceSource => $composableBuilder(
-    column: $table.priceSource,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<double> get unitSize => $composableBuilder(
     column: $table.unitSize,
     builder: (column) => ColumnFilters(column),
@@ -43426,16 +41489,6 @@ class $$SaleLinesTableFilterComposer
 
   ColumnFilters<String> get priceLevelId => $composableBuilder(
     column: $table.priceLevelId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get overrideReason => $composableBuilder(
-    column: $table.overrideReason,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get approvedBy => $composableBuilder(
-    column: $table.approvedBy,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -43542,11 +41595,6 @@ class $$SaleLinesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get invoiceDiscountShare => $composableBuilder(
-    column: $table.invoiceDiscountShare,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<double> get taxableAmount => $composableBuilder(
     column: $table.taxableAmount,
     builder: (column) => ColumnOrderings(column),
@@ -43572,11 +41620,6 @@ class $$SaleLinesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get priceSource => $composableBuilder(
-    column: $table.priceSource,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<double> get unitSize => $composableBuilder(
     column: $table.unitSize,
     builder: (column) => ColumnOrderings(column),
@@ -43589,16 +41632,6 @@ class $$SaleLinesTableOrderingComposer
 
   ColumnOrderings<String> get priceLevelId => $composableBuilder(
     column: $table.priceLevelId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get overrideReason => $composableBuilder(
-    column: $table.overrideReason,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get approvedBy => $composableBuilder(
-    column: $table.approvedBy,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -43691,11 +41724,6 @@ class $$SaleLinesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<double> get invoiceDiscountShare => $composableBuilder(
-    column: $table.invoiceDiscountShare,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<double> get taxableAmount => $composableBuilder(
     column: $table.taxableAmount,
     builder: (column) => column,
@@ -43715,11 +41743,6 @@ class $$SaleLinesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get priceSource => $composableBuilder(
-    column: $table.priceSource,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<double> get unitSize =>
       $composableBuilder(column: $table.unitSize, builder: (column) => column);
 
@@ -43728,16 +41751,6 @@ class $$SaleLinesTableAnnotationComposer
 
   GeneratedColumn<String> get priceLevelId => $composableBuilder(
     column: $table.priceLevelId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get overrideReason => $composableBuilder(
-    column: $table.overrideReason,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get approvedBy => $composableBuilder(
-    column: $table.approvedBy,
     builder: (column) => column,
   );
 
@@ -43810,18 +41823,14 @@ class $$SaleLinesTableTableManager
                 Value<String?> lineDiscountType = const Value.absent(),
                 Value<double?> lineDiscountValue = const Value.absent(),
                 Value<double> lineDiscountAmount = const Value.absent(),
-                Value<double> invoiceDiscountShare = const Value.absent(),
                 Value<double> taxableAmount = const Value.absent(),
                 Value<double> taxRate = const Value.absent(),
                 Value<double> taxAmount = const Value.absent(),
                 Value<double> lineTotal = const Value.absent(),
                 Value<bool?> allowDiscountSnapshot = const Value.absent(),
-                Value<String?> priceSource = const Value.absent(),
                 Value<double?> unitSize = const Value.absent(),
                 Value<String?> storeId = const Value.absent(),
                 Value<String?> priceLevelId = const Value.absent(),
-                Value<String?> overrideReason = const Value.absent(),
-                Value<String?> approvedBy = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SaleLinesCompanion(
@@ -43839,18 +41848,14 @@ class $$SaleLinesTableTableManager
                 lineDiscountType: lineDiscountType,
                 lineDiscountValue: lineDiscountValue,
                 lineDiscountAmount: lineDiscountAmount,
-                invoiceDiscountShare: invoiceDiscountShare,
                 taxableAmount: taxableAmount,
                 taxRate: taxRate,
                 taxAmount: taxAmount,
                 lineTotal: lineTotal,
                 allowDiscountSnapshot: allowDiscountSnapshot,
-                priceSource: priceSource,
                 unitSize: unitSize,
                 storeId: storeId,
                 priceLevelId: priceLevelId,
-                overrideReason: overrideReason,
-                approvedBy: approvedBy,
                 notes: notes,
                 rowid: rowid,
               ),
@@ -43870,18 +41875,14 @@ class $$SaleLinesTableTableManager
                 Value<String?> lineDiscountType = const Value.absent(),
                 Value<double?> lineDiscountValue = const Value.absent(),
                 Value<double> lineDiscountAmount = const Value.absent(),
-                Value<double> invoiceDiscountShare = const Value.absent(),
                 Value<double> taxableAmount = const Value.absent(),
                 Value<double> taxRate = const Value.absent(),
                 Value<double> taxAmount = const Value.absent(),
                 required double lineTotal,
                 Value<bool?> allowDiscountSnapshot = const Value.absent(),
-                Value<String?> priceSource = const Value.absent(),
                 Value<double?> unitSize = const Value.absent(),
                 Value<String?> storeId = const Value.absent(),
                 Value<String?> priceLevelId = const Value.absent(),
-                Value<String?> overrideReason = const Value.absent(),
-                Value<String?> approvedBy = const Value.absent(),
                 Value<String?> notes = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SaleLinesCompanion.insert(
@@ -43899,18 +41900,14 @@ class $$SaleLinesTableTableManager
                 lineDiscountType: lineDiscountType,
                 lineDiscountValue: lineDiscountValue,
                 lineDiscountAmount: lineDiscountAmount,
-                invoiceDiscountShare: invoiceDiscountShare,
                 taxableAmount: taxableAmount,
                 taxRate: taxRate,
                 taxAmount: taxAmount,
                 lineTotal: lineTotal,
                 allowDiscountSnapshot: allowDiscountSnapshot,
-                priceSource: priceSource,
                 unitSize: unitSize,
                 storeId: storeId,
                 priceLevelId: priceLevelId,
-                overrideReason: overrideReason,
-                approvedBy: approvedBy,
                 notes: notes,
                 rowid: rowid,
               ),
@@ -44602,449 +42599,6 @@ typedef $$SalePaymentsTableProcessedTableManager =
       $$SalePaymentsTableUpdateCompanionBuilder,
       (SalePayment, $$SalePaymentsTableReferences),
       SalePayment,
-      PrefetchHooks Function({bool saleId})
-    >;
-typedef $$SaleAdjustmentsTableCreateCompanionBuilder =
-    SaleAdjustmentsCompanion Function({
-      required String id,
-      required String saleId,
-      Value<String?> lineId,
-      required String scope,
-      required String type,
-      required String source,
-      required double value,
-      required double amount,
-      Value<String?> reason,
-      Value<String?> approvedBy,
-      required DateTime createdAt,
-      Value<int> rowid,
-    });
-typedef $$SaleAdjustmentsTableUpdateCompanionBuilder =
-    SaleAdjustmentsCompanion Function({
-      Value<String> id,
-      Value<String> saleId,
-      Value<String?> lineId,
-      Value<String> scope,
-      Value<String> type,
-      Value<String> source,
-      Value<double> value,
-      Value<double> amount,
-      Value<String?> reason,
-      Value<String?> approvedBy,
-      Value<DateTime> createdAt,
-      Value<int> rowid,
-    });
-
-final class $$SaleAdjustmentsTableReferences
-    extends
-        BaseReferences<_$AppDatabase, $SaleAdjustmentsTable, SaleAdjustment> {
-  $$SaleAdjustmentsTableReferences(
-    super.$_db,
-    super.$_table,
-    super.$_typedResult,
-  );
-
-  static $SalesTable _saleIdTable(_$AppDatabase db) => db.sales.createAlias(
-    $_aliasNameGenerator(db.saleAdjustments.saleId, db.sales.id),
-  );
-
-  $$SalesTableProcessedTableManager get saleId {
-    final $_column = $_itemColumn<String>('sale_id')!;
-
-    final manager = $$SalesTableTableManager(
-      $_db,
-      $_db.sales,
-    ).filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_saleIdTable($_db));
-    if (item == null) return manager;
-    return ProcessedTableManager(
-      manager.$state.copyWith(prefetchedData: [item]),
-    );
-  }
-}
-
-class $$SaleAdjustmentsTableFilterComposer
-    extends Composer<_$AppDatabase, $SaleAdjustmentsTable> {
-  $$SaleAdjustmentsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get lineId => $composableBuilder(
-    column: $table.lineId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get scope => $composableBuilder(
-    column: $table.scope,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get type => $composableBuilder(
-    column: $table.type,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get source => $composableBuilder(
-    column: $table.source,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get value => $composableBuilder(
-    column: $table.value,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get amount => $composableBuilder(
-    column: $table.amount,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get reason => $composableBuilder(
-    column: $table.reason,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get approvedBy => $composableBuilder(
-    column: $table.approvedBy,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  $$SalesTableFilterComposer get saleId {
-    final $$SalesTableFilterComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.saleId,
-      referencedTable: $db.sales,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SalesTableFilterComposer(
-            $db: $db,
-            $table: $db.sales,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$SaleAdjustmentsTableOrderingComposer
-    extends Composer<_$AppDatabase, $SaleAdjustmentsTable> {
-  $$SaleAdjustmentsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get lineId => $composableBuilder(
-    column: $table.lineId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get scope => $composableBuilder(
-    column: $table.scope,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get type => $composableBuilder(
-    column: $table.type,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get source => $composableBuilder(
-    column: $table.source,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get value => $composableBuilder(
-    column: $table.value,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get amount => $composableBuilder(
-    column: $table.amount,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get reason => $composableBuilder(
-    column: $table.reason,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get approvedBy => $composableBuilder(
-    column: $table.approvedBy,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  $$SalesTableOrderingComposer get saleId {
-    final $$SalesTableOrderingComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.saleId,
-      referencedTable: $db.sales,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SalesTableOrderingComposer(
-            $db: $db,
-            $table: $db.sales,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$SaleAdjustmentsTableAnnotationComposer
-    extends Composer<_$AppDatabase, $SaleAdjustmentsTable> {
-  $$SaleAdjustmentsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get lineId =>
-      $composableBuilder(column: $table.lineId, builder: (column) => column);
-
-  GeneratedColumn<String> get scope =>
-      $composableBuilder(column: $table.scope, builder: (column) => column);
-
-  GeneratedColumn<String> get type =>
-      $composableBuilder(column: $table.type, builder: (column) => column);
-
-  GeneratedColumn<String> get source =>
-      $composableBuilder(column: $table.source, builder: (column) => column);
-
-  GeneratedColumn<double> get value =>
-      $composableBuilder(column: $table.value, builder: (column) => column);
-
-  GeneratedColumn<double> get amount =>
-      $composableBuilder(column: $table.amount, builder: (column) => column);
-
-  GeneratedColumn<String> get reason =>
-      $composableBuilder(column: $table.reason, builder: (column) => column);
-
-  GeneratedColumn<String> get approvedBy => $composableBuilder(
-    column: $table.approvedBy,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<DateTime> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  $$SalesTableAnnotationComposer get saleId {
-    final $$SalesTableAnnotationComposer composer = $composerBuilder(
-      composer: this,
-      getCurrentColumn: (t) => t.saleId,
-      referencedTable: $db.sales,
-      getReferencedColumn: (t) => t.id,
-      builder:
-          (
-            joinBuilder, {
-            $addJoinBuilderToRootComposer,
-            $removeJoinBuilderFromRootComposer,
-          }) => $$SalesTableAnnotationComposer(
-            $db: $db,
-            $table: $db.sales,
-            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
-            joinBuilder: joinBuilder,
-            $removeJoinBuilderFromRootComposer:
-                $removeJoinBuilderFromRootComposer,
-          ),
-    );
-    return composer;
-  }
-}
-
-class $$SaleAdjustmentsTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $SaleAdjustmentsTable,
-          SaleAdjustment,
-          $$SaleAdjustmentsTableFilterComposer,
-          $$SaleAdjustmentsTableOrderingComposer,
-          $$SaleAdjustmentsTableAnnotationComposer,
-          $$SaleAdjustmentsTableCreateCompanionBuilder,
-          $$SaleAdjustmentsTableUpdateCompanionBuilder,
-          (SaleAdjustment, $$SaleAdjustmentsTableReferences),
-          SaleAdjustment,
-          PrefetchHooks Function({bool saleId})
-        > {
-  $$SaleAdjustmentsTableTableManager(
-    _$AppDatabase db,
-    $SaleAdjustmentsTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$SaleAdjustmentsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$SaleAdjustmentsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$SaleAdjustmentsTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> saleId = const Value.absent(),
-                Value<String?> lineId = const Value.absent(),
-                Value<String> scope = const Value.absent(),
-                Value<String> type = const Value.absent(),
-                Value<String> source = const Value.absent(),
-                Value<double> value = const Value.absent(),
-                Value<double> amount = const Value.absent(),
-                Value<String?> reason = const Value.absent(),
-                Value<String?> approvedBy = const Value.absent(),
-                Value<DateTime> createdAt = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => SaleAdjustmentsCompanion(
-                id: id,
-                saleId: saleId,
-                lineId: lineId,
-                scope: scope,
-                type: type,
-                source: source,
-                value: value,
-                amount: amount,
-                reason: reason,
-                approvedBy: approvedBy,
-                createdAt: createdAt,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String saleId,
-                Value<String?> lineId = const Value.absent(),
-                required String scope,
-                required String type,
-                required String source,
-                required double value,
-                required double amount,
-                Value<String?> reason = const Value.absent(),
-                Value<String?> approvedBy = const Value.absent(),
-                required DateTime createdAt,
-                Value<int> rowid = const Value.absent(),
-              }) => SaleAdjustmentsCompanion.insert(
-                id: id,
-                saleId: saleId,
-                lineId: lineId,
-                scope: scope,
-                type: type,
-                source: source,
-                value: value,
-                amount: amount,
-                reason: reason,
-                approvedBy: approvedBy,
-                createdAt: createdAt,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable(table),
-                  $$SaleAdjustmentsTableReferences(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: ({saleId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (saleId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.saleId,
-                                referencedTable:
-                                    $$SaleAdjustmentsTableReferences
-                                        ._saleIdTable(db),
-                                referencedColumn:
-                                    $$SaleAdjustmentsTableReferences
-                                        ._saleIdTable(db)
-                                        .id,
-                              )
-                              as T;
-                    }
-
-                    return state;
-                  },
-              getPrefetchedDataCallback: (items) async {
-                return [];
-              },
-            );
-          },
-        ),
-      );
-}
-
-typedef $$SaleAdjustmentsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $SaleAdjustmentsTable,
-      SaleAdjustment,
-      $$SaleAdjustmentsTableFilterComposer,
-      $$SaleAdjustmentsTableOrderingComposer,
-      $$SaleAdjustmentsTableAnnotationComposer,
-      $$SaleAdjustmentsTableCreateCompanionBuilder,
-      $$SaleAdjustmentsTableUpdateCompanionBuilder,
-      (SaleAdjustment, $$SaleAdjustmentsTableReferences),
-      SaleAdjustment,
       PrefetchHooks Function({bool saleId})
     >;
 typedef $$SaleTaxSummaryTableCreateCompanionBuilder =
@@ -46305,387 +43859,6 @@ typedef $$HeldOrdersTableProcessedTableManager =
       $$HeldOrdersTableUpdateCompanionBuilder,
       (HeldOrder, BaseReferences<_$AppDatabase, $HeldOrdersTable, HeldOrder>),
       HeldOrder,
-      PrefetchHooks Function()
-    >;
-typedef $$HeldOrderLinesTableCreateCompanionBuilder =
-    HeldOrderLinesCompanion Function({
-      required String id,
-      required String heldOrderId,
-      required String itemId,
-      Value<String?> unitId,
-      Value<String?> barcode,
-      required String itemNameSnapshot,
-      Value<String?> unitNameSnapshot,
-      required int qtyScaled,
-      Value<int> qtyScale,
-      required double unitPrice,
-      Value<double> discountAmount,
-      Value<double> taxAmount,
-      required double lineTotal,
-      Value<String?> notes,
-      Value<int> rowid,
-    });
-typedef $$HeldOrderLinesTableUpdateCompanionBuilder =
-    HeldOrderLinesCompanion Function({
-      Value<String> id,
-      Value<String> heldOrderId,
-      Value<String> itemId,
-      Value<String?> unitId,
-      Value<String?> barcode,
-      Value<String> itemNameSnapshot,
-      Value<String?> unitNameSnapshot,
-      Value<int> qtyScaled,
-      Value<int> qtyScale,
-      Value<double> unitPrice,
-      Value<double> discountAmount,
-      Value<double> taxAmount,
-      Value<double> lineTotal,
-      Value<String?> notes,
-      Value<int> rowid,
-    });
-
-class $$HeldOrderLinesTableFilterComposer
-    extends Composer<_$AppDatabase, $HeldOrderLinesTable> {
-  $$HeldOrderLinesTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get heldOrderId => $composableBuilder(
-    column: $table.heldOrderId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get itemId => $composableBuilder(
-    column: $table.itemId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get unitId => $composableBuilder(
-    column: $table.unitId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get barcode => $composableBuilder(
-    column: $table.barcode,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get itemNameSnapshot => $composableBuilder(
-    column: $table.itemNameSnapshot,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get unitNameSnapshot => $composableBuilder(
-    column: $table.unitNameSnapshot,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get qtyScaled => $composableBuilder(
-    column: $table.qtyScaled,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get qtyScale => $composableBuilder(
-    column: $table.qtyScale,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get unitPrice => $composableBuilder(
-    column: $table.unitPrice,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get discountAmount => $composableBuilder(
-    column: $table.discountAmount,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get taxAmount => $composableBuilder(
-    column: $table.taxAmount,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<double> get lineTotal => $composableBuilder(
-    column: $table.lineTotal,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get notes => $composableBuilder(
-    column: $table.notes,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$HeldOrderLinesTableOrderingComposer
-    extends Composer<_$AppDatabase, $HeldOrderLinesTable> {
-  $$HeldOrderLinesTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get heldOrderId => $composableBuilder(
-    column: $table.heldOrderId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get itemId => $composableBuilder(
-    column: $table.itemId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get unitId => $composableBuilder(
-    column: $table.unitId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get barcode => $composableBuilder(
-    column: $table.barcode,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get itemNameSnapshot => $composableBuilder(
-    column: $table.itemNameSnapshot,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get unitNameSnapshot => $composableBuilder(
-    column: $table.unitNameSnapshot,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get qtyScaled => $composableBuilder(
-    column: $table.qtyScaled,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get qtyScale => $composableBuilder(
-    column: $table.qtyScale,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get unitPrice => $composableBuilder(
-    column: $table.unitPrice,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get discountAmount => $composableBuilder(
-    column: $table.discountAmount,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get taxAmount => $composableBuilder(
-    column: $table.taxAmount,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<double> get lineTotal => $composableBuilder(
-    column: $table.lineTotal,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get notes => $composableBuilder(
-    column: $table.notes,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$HeldOrderLinesTableAnnotationComposer
-    extends Composer<_$AppDatabase, $HeldOrderLinesTable> {
-  $$HeldOrderLinesTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get heldOrderId => $composableBuilder(
-    column: $table.heldOrderId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get itemId =>
-      $composableBuilder(column: $table.itemId, builder: (column) => column);
-
-  GeneratedColumn<String> get unitId =>
-      $composableBuilder(column: $table.unitId, builder: (column) => column);
-
-  GeneratedColumn<String> get barcode =>
-      $composableBuilder(column: $table.barcode, builder: (column) => column);
-
-  GeneratedColumn<String> get itemNameSnapshot => $composableBuilder(
-    column: $table.itemNameSnapshot,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get unitNameSnapshot => $composableBuilder(
-    column: $table.unitNameSnapshot,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<int> get qtyScaled =>
-      $composableBuilder(column: $table.qtyScaled, builder: (column) => column);
-
-  GeneratedColumn<int> get qtyScale =>
-      $composableBuilder(column: $table.qtyScale, builder: (column) => column);
-
-  GeneratedColumn<double> get unitPrice =>
-      $composableBuilder(column: $table.unitPrice, builder: (column) => column);
-
-  GeneratedColumn<double> get discountAmount => $composableBuilder(
-    column: $table.discountAmount,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<double> get taxAmount =>
-      $composableBuilder(column: $table.taxAmount, builder: (column) => column);
-
-  GeneratedColumn<double> get lineTotal =>
-      $composableBuilder(column: $table.lineTotal, builder: (column) => column);
-
-  GeneratedColumn<String> get notes =>
-      $composableBuilder(column: $table.notes, builder: (column) => column);
-}
-
-class $$HeldOrderLinesTableTableManager
-    extends
-        RootTableManager<
-          _$AppDatabase,
-          $HeldOrderLinesTable,
-          HeldOrderLine,
-          $$HeldOrderLinesTableFilterComposer,
-          $$HeldOrderLinesTableOrderingComposer,
-          $$HeldOrderLinesTableAnnotationComposer,
-          $$HeldOrderLinesTableCreateCompanionBuilder,
-          $$HeldOrderLinesTableUpdateCompanionBuilder,
-          (
-            HeldOrderLine,
-            BaseReferences<_$AppDatabase, $HeldOrderLinesTable, HeldOrderLine>,
-          ),
-          HeldOrderLine,
-          PrefetchHooks Function()
-        > {
-  $$HeldOrderLinesTableTableManager(
-    _$AppDatabase db,
-    $HeldOrderLinesTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$HeldOrderLinesTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$HeldOrderLinesTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$HeldOrderLinesTableAnnotationComposer($db: db, $table: table),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> heldOrderId = const Value.absent(),
-                Value<String> itemId = const Value.absent(),
-                Value<String?> unitId = const Value.absent(),
-                Value<String?> barcode = const Value.absent(),
-                Value<String> itemNameSnapshot = const Value.absent(),
-                Value<String?> unitNameSnapshot = const Value.absent(),
-                Value<int> qtyScaled = const Value.absent(),
-                Value<int> qtyScale = const Value.absent(),
-                Value<double> unitPrice = const Value.absent(),
-                Value<double> discountAmount = const Value.absent(),
-                Value<double> taxAmount = const Value.absent(),
-                Value<double> lineTotal = const Value.absent(),
-                Value<String?> notes = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => HeldOrderLinesCompanion(
-                id: id,
-                heldOrderId: heldOrderId,
-                itemId: itemId,
-                unitId: unitId,
-                barcode: barcode,
-                itemNameSnapshot: itemNameSnapshot,
-                unitNameSnapshot: unitNameSnapshot,
-                qtyScaled: qtyScaled,
-                qtyScale: qtyScale,
-                unitPrice: unitPrice,
-                discountAmount: discountAmount,
-                taxAmount: taxAmount,
-                lineTotal: lineTotal,
-                notes: notes,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String heldOrderId,
-                required String itemId,
-                Value<String?> unitId = const Value.absent(),
-                Value<String?> barcode = const Value.absent(),
-                required String itemNameSnapshot,
-                Value<String?> unitNameSnapshot = const Value.absent(),
-                required int qtyScaled,
-                Value<int> qtyScale = const Value.absent(),
-                required double unitPrice,
-                Value<double> discountAmount = const Value.absent(),
-                Value<double> taxAmount = const Value.absent(),
-                required double lineTotal,
-                Value<String?> notes = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => HeldOrderLinesCompanion.insert(
-                id: id,
-                heldOrderId: heldOrderId,
-                itemId: itemId,
-                unitId: unitId,
-                barcode: barcode,
-                itemNameSnapshot: itemNameSnapshot,
-                unitNameSnapshot: unitNameSnapshot,
-                qtyScaled: qtyScaled,
-                qtyScale: qtyScale,
-                unitPrice: unitPrice,
-                discountAmount: discountAmount,
-                taxAmount: taxAmount,
-                lineTotal: lineTotal,
-                notes: notes,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$HeldOrderLinesTableProcessedTableManager =
-    ProcessedTableManager<
-      _$AppDatabase,
-      $HeldOrderLinesTable,
-      HeldOrderLine,
-      $$HeldOrderLinesTableFilterComposer,
-      $$HeldOrderLinesTableOrderingComposer,
-      $$HeldOrderLinesTableAnnotationComposer,
-      $$HeldOrderLinesTableCreateCompanionBuilder,
-      $$HeldOrderLinesTableUpdateCompanionBuilder,
-      (
-        HeldOrderLine,
-        BaseReferences<_$AppDatabase, $HeldOrderLinesTable, HeldOrderLine>,
-      ),
-      HeldOrderLine,
       PrefetchHooks Function()
     >;
 typedef $$MasterSyncStateTableCreateCompanionBuilder =
@@ -51853,16 +49026,12 @@ class $AppDatabaseManager {
       $$SaleLinesTableTableManager(_db, _db.saleLines);
   $$SalePaymentsTableTableManager get salePayments =>
       $$SalePaymentsTableTableManager(_db, _db.salePayments);
-  $$SaleAdjustmentsTableTableManager get saleAdjustments =>
-      $$SaleAdjustmentsTableTableManager(_db, _db.saleAdjustments);
   $$SaleTaxSummaryTableTableManager get saleTaxSummary =>
       $$SaleTaxSummaryTableTableManager(_db, _db.saleTaxSummary);
   $$InvoiceDocumentsTableTableManager get invoiceDocuments =>
       $$InvoiceDocumentsTableTableManager(_db, _db.invoiceDocuments);
   $$HeldOrdersTableTableManager get heldOrders =>
       $$HeldOrdersTableTableManager(_db, _db.heldOrders);
-  $$HeldOrderLinesTableTableManager get heldOrderLines =>
-      $$HeldOrderLinesTableTableManager(_db, _db.heldOrderLines);
   $$MasterSyncStateTableTableManager get masterSyncState =>
       $$MasterSyncStateTableTableManager(_db, _db.masterSyncState);
   $$ScopedSyncStateTableTableManager get scopedSyncState =>

@@ -182,7 +182,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     }
   }
 
-
   void _cancelBeforeCompletion() {
     if (_isProcessing) return;
 
@@ -288,10 +287,12 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                   PosFormatters.amountRich(
                     _totalAmount,
                     amountStyle: TextStyle(
-                    fontSize: MediaQuery.sizeOf(context).width < 600 ? 32 : 38,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
-                  ),
+                      fontSize: MediaQuery.sizeOf(context).width < 600
+                          ? 32
+                          : 38,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),

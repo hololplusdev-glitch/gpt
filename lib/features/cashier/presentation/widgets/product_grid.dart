@@ -413,10 +413,10 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
                   PosFormatters.amountRich(
                     unitPrice,
                     amountStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
-                  ),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
               ],

@@ -271,10 +271,10 @@ class _CartItemTile extends ConsumerWidget {
                       PosFormatters.amountRich(
                         lineTotal,
                         amountStyle: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
-                      ),
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.primary,
+                        ),
                       ),
                       textAlign: TextAlign.end,
                     ),
@@ -362,10 +362,10 @@ class _CartItemTile extends ConsumerWidget {
                     PosFormatters.amountRich(
                       lineTotal,
                       amountStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary,
-                    ),
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                      ),
                     ),
                     textAlign: TextAlign.end,
                   ),
@@ -462,10 +462,10 @@ class _CartTotals extends StatelessWidget {
                       PosFormatters.amountRich(
                         quote.grandTotal,
                         amountStyle: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
                   ],

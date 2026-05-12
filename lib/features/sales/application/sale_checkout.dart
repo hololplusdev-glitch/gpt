@@ -217,29 +217,30 @@ class SaleCheckout {
       now: now,
     );
 
-    final invoiceDocument = await _invoiceDocumentBuilder.buildFromCheckoutSnapshot(
-      saleId: saleId,
-      localInvoiceNo: localInvoiceNo,
-      invoiceDateTime: now,
-      statusCode: SaleStatus.completed.code,
-      syncStatusCode: OutboxStatus.pending.code,
-      terminalId: session.activeMachineNo,
-      machineNo: session.activeMachineNo,
-      branchNo: session.activeBranchNo,
-      branchYear: session.activeBranchYear,
-      storeId: session.activeStoreId,
-      priceLevelId: session.activePriceLevelId,
-      useTax: session.activeUseTax,
-      cashierId: session.activeUserId,
-      cashierName: session.activeUserName,
-      customerId: request.customerId,
-      customerName: request.customerName,
-      customerTaxNumber: request.customerTaxNumber,
-      lines: officialLines,
-      quote: quote,
-      payments: payments,
-      taxes: envelope.taxes,
-    );
+    final invoiceDocument = await _invoiceDocumentBuilder
+        .buildFromCheckoutSnapshot(
+          saleId: saleId,
+          localInvoiceNo: localInvoiceNo,
+          invoiceDateTime: now,
+          statusCode: SaleStatus.completed.code,
+          syncStatusCode: OutboxStatus.pending.code,
+          terminalId: session.activeMachineNo,
+          machineNo: session.activeMachineNo,
+          branchNo: session.activeBranchNo,
+          branchYear: session.activeBranchYear,
+          storeId: session.activeStoreId,
+          priceLevelId: session.activePriceLevelId,
+          useTax: session.activeUseTax,
+          cashierId: session.activeUserId,
+          cashierName: session.activeUserName,
+          customerId: request.customerId,
+          customerName: request.customerName,
+          customerTaxNumber: request.customerTaxNumber,
+          lines: officialLines,
+          quote: quote,
+          payments: payments,
+          taxes: envelope.taxes,
+        );
 
     final invoiceArchive = InvoiceDocumentsCompanion.insert(
       id: 'DOC_$saleId',
@@ -290,7 +291,6 @@ class SaleCheckout {
       uploadQueued: true,
     );
   }
-
 
   Future<ResolvedPaymentMethod> _resolvePaymentIntent(
     SalePaymentIntent intent,
@@ -732,7 +732,6 @@ class CheckoutPaymentRequirements {
   });
 }
 
-
 CheckoutPaymentRequirements checkoutPaymentRequirements(
   ResolvedPaymentMethod method, {
   bool paymentProfileRequiresReference = false,
@@ -923,7 +922,6 @@ class _ProcessedItem {
 const int _quantityScale = 1000;
 
 int _toQtyScaled(double quantity) => (quantity * _quantityScale).round();
-
 
 final saleCheckoutProvider = Provider<SaleCheckout>((ref) {
   return SaleCheckout(

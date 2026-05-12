@@ -171,7 +171,6 @@ extension PaymentMethodTypeRules on PaymentMethodType {
   bool get allowsChange => isCash;
 }
 
-
 // =============================================================================
 // PRINTING
 // =============================================================================

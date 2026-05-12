@@ -309,7 +309,11 @@ class InvoiceDocumentBuilder {
         userId: cashierId,
         name: _clean(cashierName) ?? cashierId,
       ),
-      customer: _customerFromValues(customerId, customerName, customerTaxNumber),
+      customer: _customerFromValues(
+        customerId,
+        customerName,
+        customerTaxNumber,
+      ),
       lines: invoiceLines,
       taxSummary: invoiceTaxes,
       payments: invoicePayments,
@@ -326,9 +330,10 @@ class InvoiceDocumentBuilder {
                   ? 0.0
                   : p.amount),
         ),
-        remainingTotal: payments.any(
-          (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
-        )
+        remainingTotal:
+            payments.any(
+              (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
+            )
             ? quote.grandTotal
             : 0.0,
         changeAmount: payments.fold(
@@ -351,8 +356,8 @@ class InvoiceDocumentBuilder {
         ),
         displayRemainingTotal: PosFormatters.amount(
           payments.any(
-            (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
-          )
+                (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
+              )
               ? quote.grandTotal
               : 0.0,
         ),

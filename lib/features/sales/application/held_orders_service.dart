@@ -42,9 +42,7 @@ class HeldOrdersService {
 
   static const _uuid = Uuid();
 
-  CheckoutQuote previewQuote({
-    required List<SaleLineInput> lineItems,
-  }) {
+  CheckoutQuote previewQuote({required List<SaleLineInput> lineItems}) {
     final session = _requireActiveSession();
 
     try {
@@ -229,7 +227,6 @@ class HeldOrdersService {
     return session;
   }
 }
-
 
 class SaleException extends BusinessException {
   const SaleException(super.message) : super(code: 'sale_error');

@@ -13,9 +13,8 @@ class PrintQueue {
 
   final PrinterProfileDao _printerProfileDao;
 
-  const PrintQueue({
-    required PrinterProfileDao printerProfileDao,
-  }) : _printerProfileDao = printerProfileDao;
+  const PrintQueue({required PrinterProfileDao printerProfileDao})
+    : _printerProfileDao = printerProfileDao;
 
   Future<List<PrintJobsCompanion>> invoiceReceipt({
     required InvoiceDocument document,

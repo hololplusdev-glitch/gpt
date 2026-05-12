@@ -266,10 +266,10 @@ class _SaleCard extends StatelessWidget {
                     PosFormatters.amountRich(
                       sale.grandTotal,
                       amountStyle: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: statusColor,
-                    ),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: statusColor,
+                      ),
                     ),
                     textAlign: TextAlign.end,
                   ),
@@ -366,9 +366,9 @@ class _AmountCell extends StatelessWidget {
       PosFormatters.amountRich(
         sale.grandTotal,
         amountStyle: TextStyle(
-        fontWeight: FontWeight.w800,
-        color: SaleStatusPresenter.color(sale.status),
-      ),
+          fontWeight: FontWeight.w800,
+          color: SaleStatusPresenter.color(sale.status),
+        ),
       ),
     );
   }

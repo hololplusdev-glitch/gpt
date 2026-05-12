@@ -113,7 +113,6 @@ class PricingLineInput {
   });
 }
 
-
 class CheckoutQuote {
   final List<PricedLine> lines;
   final double subtotal;
