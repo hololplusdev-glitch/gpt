@@ -5,17 +5,75 @@ import 'package:flutter/material.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 import 'package:holol_POS/core/services/invoices/receipt_template_labels.dart';
 
+class ThermalReceiptRasterImage {
+  final int widthPx;
+  final int heightPx;
+  final int paperWidthMm;
+  final Uint8List pngBytes;
+  final Uint8List rgbaBytes;
+
+  const ThermalReceiptRasterImage({
+    required this.widthPx,
+    required this.heightPx,
+    required this.paperWidthMm,
+    required this.pngBytes,
+    required this.rgbaBytes,
+  });
+}
+
 class ThermalRasterRenderer {
   final ReceiptTemplateLabels labels;
 
   const ThermalRasterRenderer({this.labels = const ReceiptTemplateLabels.ar()});
 
-  Future<List<int>> renderEscPosRaster(
+  Future<ThermalReceiptRasterImage> renderImage(
     InvoiceDocument document, {
     required int paperWidthMm,
   }) async {
     final widthPx = paperWidthMm == 58 ? 384 : 576;
+    final image = await _paintReceipt(
+      document,
+      paperWidthMm: paperWidthMm,
+      widthPx: widthPx,
+    );
 
+    final pngBytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    final rgbaBytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+
+    if (pngBytes == null || rgbaBytes == null) {
+      throw StateError('Unable to render thermal receipt image.');
+    }
+
+    return ThermalReceiptRasterImage(
+      widthPx: widthPx,
+      heightPx: image.height,
+      paperWidthMm: paperWidthMm,
+      pngBytes: _copyBytes(pngBytes),
+      rgbaBytes: _copyBytes(rgbaBytes),
+    );
+  }
+
+  Future<Uint8List> renderPng(
+    InvoiceDocument document, {
+    required int paperWidthMm,
+  }) async {
+    final image = await renderImage(document, paperWidthMm: paperWidthMm);
+    return image.pngBytes;
+  }
+
+  Future<List<int>> renderEscPosRaster(
+    InvoiceDocument document, {
+    required int paperWidthMm,
+  }) async {
+    final image = await renderImage(document, paperWidthMm: paperWidthMm);
+    return _encodeRaster(image.widthPx, image.heightPx, image.rgbaBytes);
+  }
+
+  Future<ui.Image> _paintReceipt(
+    InvoiceDocument document, {
+    required int paperWidthMm,
+    required int widthPx,
+  }) async {
     final painter = _ReceiptPainter(
       document: document,
       labels: labels,
@@ -34,11 +92,13 @@ class ThermalRasterRenderer {
 
     painter.paint(canvas);
 
-    final image = await recorder.endRecording().toImage(widthPx, heightPx);
-    final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-    if (bytes == null) return const [];
+    return recorder.endRecording().toImage(widthPx, heightPx);
+  }
 
-    return _encodeRaster(widthPx, heightPx, bytes.buffer.asUint8List());
+  static Uint8List _copyBytes(ByteData data) {
+    return Uint8List.fromList(
+      data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+    );
   }
 
   List<int> _encodeRaster(int widthPx, int heightPx, Uint8List rgba) {
