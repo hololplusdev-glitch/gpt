@@ -610,10 +610,11 @@ EXISTS (
   }
 
   Future<int> countActivePaymentMethods() async {
-    final rows = await (_db.select(
-      _db.paymentMethods,
-    )..where((method) => method.isActive.equals(true))).get();
-    return rows.length;
+    final count = countAll();
+    final query = _db.selectOnly(_db.paymentMethods)
+      ..addColumns([count])
+      ..where(_db.paymentMethods.isActive.equals(true));
+    return query.map((row) => row.read(count) ?? 0).getSingle();
   }
 
   Future<ItemUnit?> _getUnitByAnyId(String itemId, String unitId) async {

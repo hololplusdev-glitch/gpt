@@ -1100,7 +1100,7 @@ abstract class AppLocalizations {
   /// **'Complete Payment'**
   String get completePayment;
 
-  /// Button label clarifying this is a manual card payment record, not an integrated terminal sale
+  /// Button label clarifying this is a manual card payment record
   ///
   /// In en, this message translates to:
   /// **'Record Card Payment (Manual)'**

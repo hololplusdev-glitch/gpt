@@ -3,7 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
-import 'package:holol_POS/core/services/invoices/receipt_template_renderer.dart';
+import 'package:holol_POS/core/services/invoices/receipt_template_labels.dart';
 
 class ThermalRasterRenderer {
   final ReceiptTemplateLabels labels;

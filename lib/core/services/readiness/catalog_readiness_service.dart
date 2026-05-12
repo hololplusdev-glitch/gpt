@@ -93,18 +93,16 @@ class CatalogReadinessService {
       blockers.add(CatalogReadiness.noPricesForCurrentContext);
     }
 
-    // Check 5: At least one payment method exists.
+    // Payment methods are optional master data. Checkout has deterministic
+    // built-in defaults for cash, manual card, and customer credit.
     final paymentMethodCount = await _catalogDao.countActivePaymentMethods();
-    if (paymentMethodCount == 0) {
-      blockers.add('No active payment methods');
-    }
 
     return CatalogReadiness(
       hasMachineConfig: hasStoreId && hasPriceLevelId,
       hasItems: itemCount > 0,
       hasSellableUnits: sellableUnitCount > 0,
       hasPrices: priceCount > 0,
-      hasPaymentMethods: paymentMethodCount > 0,
+      hasPaymentMethods: true,
       hasStoreId: hasStoreId,
       hasPriceLevelId: hasPriceLevelId,
       itemCount: itemCount,

@@ -378,7 +378,7 @@ class _ReadinessSection extends ConsumerWidget {
   }
 }
 
-/// WHY: Unimplemented connection types (USB/Bluetooth/System/Built-in) are
+/// WHY: Unsupported connection types are
 /// hidden from the UI entirely. Showing them with "not available" labels
 /// confuses users into thinking these features should work. The factory
 /// retains knowledge of them for future enablement — we simply filter here.
@@ -386,7 +386,6 @@ class _UnavailableOptions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // WHY: Intentionally hidden. Uncomment only for developer debugging.
-    // Unimplemented connection types should NOT appear in production UX.
     return const SizedBox.shrink();
   }
 }

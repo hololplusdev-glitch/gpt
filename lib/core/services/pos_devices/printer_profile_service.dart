@@ -22,9 +22,6 @@ extension PrinterProfileSettings on PrinterProfile {
   String? get systemPrinterName => settings['systemPrinterName'] as String?;
   String? get systemPrinterUrl => settings['systemPrinterUrl'] as String?;
   String? get bluetoothAddress => settings['bluetoothAddress'] as String?;
-  int? get usbVendorId => settings['usbVendorId'] as int?;
-  int? get usbProductId => settings['usbProductId'] as int?;
-  String? get androidVendor => settings['androidVendor'] as String?;
 }
 
 class PrinterProfileService {
@@ -69,7 +66,6 @@ class PrinterProfileService {
     required String ipAddress,
     required int port,
     required int paperWidthMm,
-    required ArabicPrintMode arabicMode,
     required bool enabled,
     required bool autoPrint,
     required int copies,
@@ -82,7 +78,6 @@ class PrinterProfileService {
       ipAddress: ipAddress,
       port: port,
       paperWidthMm: paperWidthMm,
-      arabicMode: arabicMode,
       copies: copies,
     );
 
@@ -96,7 +91,7 @@ class PrinterProfileService {
         existing?.ipAddress == ipAddress.trim() &&
         existing?.port == port &&
         existing?.paperWidthMm == paperWidthMm &&
-        existing?.arabicMode == arabicMode.code;
+        existing?.arabicMode == ArabicPrintMode.raster.code;
     if (enabled && !testPassed && !unchangedFromReadyProfile) {
       throw StateError(
         'Run a successful test print before saving an enabled printer.',
@@ -113,7 +108,6 @@ class PrinterProfileService {
         ipAddress: ipAddress,
         port: port,
         paperWidthMm: paperWidthMm,
-        arabicMode: arabicMode,
         autoPrint: autoPrint,
         copies: copies,
         isDefault: isDefault,
@@ -144,7 +138,6 @@ class PrinterProfileService {
     required String ipAddress,
     required int port,
     required int paperWidthMm,
-    required ArabicPrintMode arabicMode,
     required bool enabled,
     required bool autoPrint,
     required int copies,
@@ -154,7 +147,6 @@ class PrinterProfileService {
       ipAddress: ipAddress,
       port: port,
       paperWidthMm: paperWidthMm,
-      arabicMode: arabicMode,
       copies: copies,
     );
     final now = _clock.now();
@@ -167,7 +159,7 @@ class PrinterProfileService {
       driverType: PrinterDriverType.escpos.code,
       settingsJson: jsonEncode({'ipAddress': ipAddress.trim(), 'port': port}),
       paperWidthMm: paperWidthMm,
-      arabicMode: arabicMode.code,
+      arabicMode: ArabicPrintMode.raster.code,
       autoPrint: autoPrint,
       copies: copies,
       isDefault: true,
@@ -344,7 +336,6 @@ class PrinterProfileService {
     required String ipAddress,
     required int port,
     required int paperWidthMm,
-    required ArabicPrintMode arabicMode,
     required int copies,
   }) {
     if (name.trim().isEmpty) {
@@ -393,7 +384,6 @@ class PrinterProfileService {
     required String ipAddress,
     required int port,
     required int paperWidthMm,
-    required ArabicPrintMode arabicMode,
     required bool autoPrint,
     required int copies,
     required bool isDefault,
@@ -414,7 +404,7 @@ class PrinterProfileService {
         jsonEncode({'ipAddress': ipAddress.trim(), 'port': port}),
       ),
       paperWidthMm: Value(paperWidthMm),
-      arabicMode: Value(arabicMode.code),
+      arabicMode: Value(ArabicPrintMode.raster.code),
       autoPrint: Value(autoPrint),
       copies: Value(copies),
       isDefault: Value(isDefault),

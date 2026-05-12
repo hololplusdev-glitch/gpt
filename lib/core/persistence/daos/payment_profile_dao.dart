@@ -12,28 +12,38 @@ class PaymentProfileDao {
 
   Stream<PaymentDeviceProfile?> watchActive(String userId) {
     return (_db.select(_db.paymentDeviceProfiles)..where(
-          (p) => p.id.equals(_manualProfileId(userId)) & p.enabled.equals(true),
+          (p) =>
+              p.id.equals(_manualProfileId(userId)) &
+              p.userId.equals(userId) &
+              p.enabled.equals(true),
         ))
         .watchSingleOrNull();
   }
 
   Stream<PaymentDeviceProfile?> watchManualProfile(String userId) {
-    return (_db.select(
-      _db.paymentDeviceProfiles,
-    )..where((p) => p.id.equals(_manualProfileId(userId)))).watchSingleOrNull();
+    return (_db.select(_db.paymentDeviceProfiles)..where(
+          (p) =>
+              p.id.equals(_manualProfileId(userId)) & p.userId.equals(userId),
+        ))
+        .watchSingleOrNull();
   }
 
   Future<PaymentDeviceProfile?> getActive(String userId) {
     return (_db.select(_db.paymentDeviceProfiles)..where(
-          (p) => p.id.equals(_manualProfileId(userId)) & p.enabled.equals(true),
+          (p) =>
+              p.id.equals(_manualProfileId(userId)) &
+              p.userId.equals(userId) &
+              p.enabled.equals(true),
         ))
         .getSingleOrNull();
   }
 
   Future<PaymentDeviceProfile?> getManualProfile(String userId) {
-    return (_db.select(
-      _db.paymentDeviceProfiles,
-    )..where((p) => p.id.equals(_manualProfileId(userId)))).getSingleOrNull();
+    return (_db.select(_db.paymentDeviceProfiles)..where(
+          (p) =>
+              p.id.equals(_manualProfileId(userId)) & p.userId.equals(userId),
+        ))
+        .getSingleOrNull();
   }
 
   Future<void> upsert(PaymentDeviceProfilesCompanion profile) {

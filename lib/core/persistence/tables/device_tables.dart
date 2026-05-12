@@ -1,11 +1,11 @@
 // core/persistence/tables/device_tables.dart
-// WHY: Local device config — NOT backend master data.
-// Payment device profiles and printer profiles are local hardware setup.
+// WHY: Local device config - NOT backend master data.
+// Payment profiles and printer profiles are local runtime setup.
 // Connection-specific fields moved to settings_json.
 
 import 'package:drift/drift.dart';
 
-/// Payment device profiles — local hardware/integration config.
+/// Payment device profiles - local manual payment config.
 /// Replaces PaymentProfiles. NOT backend master data.
 /// mode: 'manual'
 /// provider: 'manual'
@@ -35,12 +35,12 @@ class PaymentDeviceProfiles extends Table {
   Set<Column> get primaryKey => {id};
 }
 
-/// Printer profiles — local printer hardware config.
-/// Connection-specific fields (ip, port, bluetooth, usb, etc.) moved to settings_json.
+/// Printer profiles - local printer hardware config.
+/// Connection-specific fields (ip, port, bluetooth, etc.) moved to settings_json.
 /// role: 'cashier','kitchen'
-/// connection_type: 'network_ip','usb','bluetooth','system_printer','android_built_in'
-/// driver_type: 'escpos','system_printer','android_built_in'
-/// arabic_mode: 'text','raster'
+/// connection_type: 'network_ip','bluetooth','system_printer'
+/// driver_type: 'escpos','system_printer'
+/// arabic_mode: 'raster'
 class PrinterProfiles extends Table {
   TextColumn get id => text()();
   TextColumn get name => text()();

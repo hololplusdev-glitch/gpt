@@ -148,7 +148,6 @@ void showPrinterDialog(
   var role =
       PrinterStatusPresenter.roleFromName(current?.role) ?? PrinterRole.cashier;
   var paperWidth = current?.paperWidthMm ?? 80;
-  var arabicMode = _arabicModeFromName(current?.arabicMode);
   var enabled = current?.enabled ?? true;
   var autoPrint = current?.autoPrint ?? true;
   var copies = current?.copies ?? 1;
@@ -434,7 +433,6 @@ void showPrinterDialog(
                               ipAddress: ipCtrl.text,
                               port: port,
                               paperWidthMm: paperWidth,
-                              arabicMode: arabicMode,
                               copies: copies,
                             )
                           : await service.testSystemPrinter(
@@ -501,7 +499,6 @@ void showPrinterDialog(
                           ipAddress: ipCtrl.text,
                           port: port,
                           paperWidthMm: paperWidth,
-                          arabicMode: arabicMode,
                           autoPrint: autoPrint,
                           copies: copies,
                           isDefault: true, // Auto default first one
@@ -517,7 +514,6 @@ void showPrinterDialog(
                           ipAddress: ipCtrl.text,
                           port: port,
                           paperWidthMm: paperWidth,
-                          arabicMode: arabicMode,
                           autoPrint: autoPrint,
                           copies: copies,
                           isDefault: current.isDefault,
@@ -535,12 +531,5 @@ void showPrinterDialog(
         ],
       ),
     ),
-  );
-}
-
-ArabicPrintMode _arabicModeFromName(String? name) {
-  return ArabicPrintMode.values.firstWhere(
-    (mode) => mode.code == name,
-    orElse: () => ArabicPrintMode.raster,
   );
 }

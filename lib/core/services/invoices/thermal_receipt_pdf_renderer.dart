@@ -4,7 +4,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 import 'package:holol_POS/core/services/invoices/invoice_pdf_fonts.dart';
-import 'package:holol_POS/core/services/invoices/receipt_template_renderer.dart';
+import 'package:holol_POS/core/services/invoices/receipt_template_labels.dart';
 
 class ThermalReceiptPdfRenderer {
   final ReceiptTemplateLabels labels;

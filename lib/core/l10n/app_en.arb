@@ -221,7 +221,7 @@
   "completePayment": "Complete Payment",
   "recordCardPayment": "Record Card Payment (Manual)",
   "@recordCardPayment": {
-    "description": "Button label clarifying this is a manual card payment record, not an integrated terminal sale"
+    "description": "Button label clarifying this is a manual card payment record"
   },
   "recordBankPayment": "Record Bank Payment",
   "recordPayment": "Record Payment",

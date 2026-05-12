@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:holol_POS/core/constants/pos_config_keys.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
@@ -64,7 +65,7 @@ class ShiftService {
     final now = _clock.now();
     final idempotencyKey = 'shift_open_$localId';
     final defaultDuration = _config.getInt(
-      'shift_default_duration_minutes',
+      PosConfigKeys.shiftDefaultDurationMinutes,
       fallback: 480,
     );
     final expiresAt = now.add(Duration(minutes: defaultDuration));
