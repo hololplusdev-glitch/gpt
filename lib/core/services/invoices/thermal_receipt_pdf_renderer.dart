@@ -204,9 +204,29 @@ class ThermalReceiptPdfRenderer {
   }
 
   pw.Widget _items(InvoiceDocument document, InvoicePdfFontSet fonts) {
+    final headerLabels = [labels.unitPrice, labels.quantity, labels.discount, labels.total];
+
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
+        pw.Table(
+          border: pw.TableBorder.all(width: 0.7),
+          children: [
+            pw.TableRow(
+              decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+              children: [
+                for (final label in headerLabels)
+                  _cell(
+                    label,
+                    fonts,
+                    bold: true,
+                    align: pw.TextAlign.center,
+                    dir: pw.TextDirection.rtl,
+                  ),
+              ],
+            ),
+          ],
+        ),
         for (final line in document.lines) ...[
           pw.Table(
             border: pw.TableBorder.all(width: 0.7),
@@ -408,7 +428,8 @@ class ThermalReceiptPdfRenderer {
         (hasNotes ? 12 : 0) +
         (hasNotice ? 12 : 0);
 
-    return PdfPageFormat(width, heightMm.clamp(180, 900) * PdfPageFormat.mm);
+    final height = heightMm.clamp(180, 900).toDouble();
+    return PdfPageFormat(width, height * PdfPageFormat.mm);
   }
 
   String _date(DateTime value) {

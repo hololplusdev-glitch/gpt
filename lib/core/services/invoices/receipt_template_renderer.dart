@@ -9,6 +9,8 @@ class ReceiptTemplateLabels {
   final String terminal;
   final String cashier;
   final String customer;
+  final String unitPrice;
+  final String quantity;
   final String discount;
   final String subtotal;
   final String tax;
@@ -23,6 +25,8 @@ class ReceiptTemplateLabels {
     required this.terminal,
     required this.cashier,
     required this.customer,
+    required this.unitPrice,
+    required this.quantity,
     required this.discount,
     required this.subtotal,
     required this.tax,
@@ -39,6 +43,8 @@ class ReceiptTemplateLabels {
       terminal: l10n.terminal,
       cashier: l10n.cashierRole,
       customer: l10n.customer,
+      unitPrice: l10n.unitPrice,
+      quantity: l10n.quantity,
       discount: l10n.discount,
       subtotal: l10n.subtotal,
       tax: l10n.tax,
@@ -55,6 +61,8 @@ class ReceiptTemplateLabels {
       terminal = 'الجهاز',
       cashier = 'الكاشير',
       customer = 'العميل',
+      unitPrice = 'السعر',
+      quantity = 'الكمية',
       discount = 'الخصم',
       subtotal = 'المجموع',
       tax = 'الضريبة',

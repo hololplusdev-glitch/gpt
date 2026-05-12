@@ -115,7 +115,7 @@ class _ReceiptPainter {
         noticeExtra +
         50;
 
-    return height.clamp(720, 3600);
+    return height.clamp(720, 3600).toInt();
   }
 
   void paint(Canvas canvas) {
@@ -305,6 +305,32 @@ class _ReceiptPainter {
   double _items(Canvas canvas, double y) {
     final w = widthPx - margin * 2;
     final colW = w / 4;
+
+    final headerH = paperWidthMm == 58 ? 32.0 : 36.0;
+    final headerRect = Rect.fromLTWH(margin, y, w, headerH);
+    final headerLabels = [labels.unitPrice, labels.quantity, labels.discount, labels.total];
+
+    _box(canvas, headerRect, fill: const Color(0xFFEFEFEF));
+
+    for (var i = 0; i < headerLabels.length; i++) {
+      final cell = Rect.fromLTWH(margin + i * colW, y, colW, headerH);
+
+      if (i > 0) {
+        _line(canvas, Offset(cell.left, headerRect.top), Offset(cell.left, headerRect.bottom));
+      }
+
+      text.draw(
+        canvas,
+        headerLabels[i],
+        cell.deflate(3),
+        size: paperWidthMm == 58 ? 12.5 : 15,
+        bold: true,
+        align: TextAlign.center,
+        dir: TextDirection.rtl,
+      );
+    }
+
+    y += headerH;
 
     for (final line in document.lines) {
       final h = paperWidthMm == 58 ? 58.0 : 64.0;

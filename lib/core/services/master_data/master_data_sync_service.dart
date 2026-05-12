@@ -819,9 +819,6 @@ class MasterDataSyncService {
     // Login/readiness will validate whether the cached data can run POS offline.
   }
 
-  int _effectivePageLimitFor(MasterDataType type, int configuredLimit) {
-    return type.effectivePageLimit(configuredLimit);
-  }
 
   Future<Response<dynamic>> _getPageResponseWithRetry({
     required Map<String, dynamic> queryParams,
