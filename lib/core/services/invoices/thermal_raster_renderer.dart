@@ -265,7 +265,7 @@ class _ReceiptPainter {
         dir: TextDirection.ltr,
       ),
       (
-        label: '',
+        label: labels.date,
         value: _date(document.invoiceDateTime),
         dir: TextDirection.ltr,
       ),

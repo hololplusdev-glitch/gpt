@@ -443,12 +443,14 @@ class MasterDataSyncService {
 
         late _MasterDataPage page;
         try {
-          page = await _fetchPage(
+          page = await _fetchPageAdaptive(
             context: context,
             type: type,
             offset: offset,
+            limit: context.effectivePageLimitFor(type),
             lastUpdate: sentLastUpdate,
             cancelHandle: cancelHandle,
+            warnings: warnings,
           );
         } catch (error) {
           final pageFailureMessage = _pageFailureMessage(
@@ -841,6 +843,142 @@ class MasterDataSyncService {
 
     // Incremental no-change is valid for tenant-wide bootstrap downloads.
     // Login/readiness will validate whether the cached data can run POS offline.
+  }
+
+  Future<_MasterDataPage> _fetchPageAdaptive({
+    required MasterDataSyncContext context,
+    required MasterDataType type,
+    required int offset,
+    required int limit,
+    required String? lastUpdate,
+    MasterDataSyncCancelHandle? cancelHandle,
+    List<String>? warnings,
+  }) async {
+    try {
+      return await _fetchPageWithLimit(
+        context: context,
+        type: type,
+        offset: offset,
+        limit: limit,
+        lastUpdate: lastUpdate,
+        cancelHandle: cancelHandle,
+      );
+    } catch (error) {
+      if (!_isInvalidJsonPageError(error)) {
+        rethrow;
+      }
+
+      if (limit <= 1) {
+        throw SyncException(
+          '${type.code} offset=$offset limit=1 returned invalid JSON.',
+          code: 'BACKEND_INVALID_JSON',
+          originalError: error,
+        );
+      }
+
+      final leftLimit = limit ~/ 2;
+      final rightLimit = limit - leftLimit;
+      final rightOffset = offset + leftLimit;
+
+      warnings?.add(
+        '${type.code} offset=$offset limit=$limit returned invalid JSON; '
+        'recovered by split into $leftLimit + $rightLimit.',
+      );
+
+      final left = await _fetchPageAdaptive(
+        context: context,
+        type: type,
+        offset: offset,
+        limit: leftLimit,
+        lastUpdate: lastUpdate,
+        cancelHandle: cancelHandle,
+        warnings: warnings,
+      );
+
+      final right = await _fetchPageAdaptive(
+        context: context,
+        type: type,
+        offset: rightOffset,
+        limit: rightLimit,
+        lastUpdate: lastUpdate,
+        cancelHandle: cancelHandle,
+        warnings: warnings,
+      );
+
+      return _mergeAdaptivePages(
+        left: left,
+        right: right,
+        requestedLimit: limit,
+      );
+    }
+  }
+
+  Future<_MasterDataPage> _fetchPageWithLimit({
+    required MasterDataSyncContext context,
+    required MasterDataType type,
+    required int offset,
+    required int limit,
+    required String? lastUpdate,
+    MasterDataSyncCancelHandle? cancelHandle,
+  }) async {
+    final effectiveContext = context.copyWith(pageLimit: limit);
+
+    return _fetchPage(
+      context: effectiveContext,
+      type: type,
+      offset: offset,
+      lastUpdate: lastUpdate,
+      cancelHandle: cancelHandle,
+    );
+  }
+
+  _MasterDataPage _mergeAdaptivePages({
+    required _MasterDataPage left,
+    required _MasterDataPage right,
+    required int requestedLimit,
+  }) {
+    final mergedItems = <Map<String, dynamic>>[
+      ...left.items,
+      ...right.items,
+    ];
+
+    final serverTime = left.serverTime ?? right.serverTime;
+    final total = right.total > 0 ? right.total : left.total;
+
+    return _MasterDataPage(
+      items: mergedItems,
+      total: total,
+      limit: requestedLimit,
+      hasMore: right.hasMore,
+      serverTime: serverTime,
+    );
+  }
+
+  bool _isInvalidJsonPageError(Object error) {
+    final text = _errorDiagnosticText(error).toLowerCase();
+
+    if (text.contains('formatexception')) return true;
+    if (text.contains('unexpected character')) return true;
+    if (text.contains('unexpected end')) return true;
+    if (text.contains('syntaxerror')) return true;
+
+    return text.contains('json') &&
+        (text.contains('parse') ||
+            text.contains('parser') ||
+            text.contains('malformed') ||
+            text.contains('invalid'));
+  }
+
+  String _errorDiagnosticText(Object error) {
+    if (error is AppException) {
+      return [
+        error.code,
+        error.message,
+        error.originalError,
+      ].where((value) => value != null).join(' | ');
+    }
+
+    return error.toString();
   }
 
   Future<Response<dynamic>> _getPageResponseWithRetry({
