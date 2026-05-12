@@ -88,6 +88,8 @@ class PrintJobDao {
   }
 
   Future<void> insertAll(List<PrintJobsCompanion> jobs) async {
+    if (jobs.isEmpty) return;
+
     await _db.batch((batch) {
       batch.insertAll(_db.printJobs, jobs);
     });

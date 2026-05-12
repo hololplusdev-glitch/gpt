@@ -84,6 +84,7 @@ class InvoiceDocumentBuilder {
     return buildForSale(saleId, labels: labels);
   }
 
+  /// Build an InvoiceDocument from a persisted sale.
   Future<InvoiceDocument> buildForSale(
     String saleId, {
     InvoiceCopyInfo copyInfo = const InvoiceCopyInfo.original(),
@@ -158,6 +159,7 @@ class InvoiceDocumentBuilder {
 
     document = document.copyWith(qrPayload: _qrPayloadBuilder.build(document));
 
+    // Add audit hash + validation
     final validation = _validationService.validate(document);
     final auditHash = _auditHasher.hash(document);
     document = document.copyWith(
@@ -286,24 +288,6 @@ class InvoiceDocumentBuilder {
       );
     }).toList();
 
-    final paidTotal = payments.fold(
-      0.0,
-      (sum, p) =>
-          sum +
-          (p.paymentMethodType == PaymentMethodType.customerCredit
-              ? 0.0
-              : p.amount),
-    );
-    final remainingTotal = payments.any(
-      (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
-    )
-        ? quote.grandTotal
-        : 0.0;
-    final changeAmount = payments.fold(
-      0.0,
-      (sum, p) => sum + (p.changeGiven ?? 0.0),
-    );
-
     var document = InvoiceDocument(
       saleId: saleId,
       localInvoiceNo: localInvoiceNo,
@@ -338,16 +322,48 @@ class InvoiceDocumentBuilder {
         discountTotal: quote.discountTotal,
         taxTotal: quote.taxTotal,
         netTotal: quote.grandTotal,
-        paidTotal: paidTotal,
-        remainingTotal: remainingTotal,
-        changeAmount: changeAmount,
+        paidTotal: payments.fold(
+          0.0,
+          (sum, p) =>
+              sum +
+              (p.paymentMethodType == PaymentMethodType.customerCredit
+                  ? 0.0
+                  : p.amount),
+        ),
+        remainingTotal:
+            payments.any(
+              (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
+            )
+            ? quote.grandTotal
+            : 0.0,
+        changeAmount: payments.fold(
+          0.0,
+          (sum, p) => sum + (p.changeGiven ?? 0.0),
+        ),
         displaySubtotal: PosFormatters.amount(quote.subtotal),
         displayDiscountTotal: PosFormatters.amount(quote.discountTotal),
         displayTaxTotal: PosFormatters.amount(quote.taxTotal),
         displayNetTotal: PosFormatters.amount(quote.grandTotal),
-        displayPaidTotal: PosFormatters.amount(paidTotal),
-        displayRemainingTotal: PosFormatters.amount(remainingTotal),
-        displayChangeAmount: PosFormatters.amount(changeAmount),
+        displayPaidTotal: PosFormatters.amount(
+          payments.fold(
+            0.0,
+            (sum, p) =>
+                sum +
+                (p.paymentMethodType == PaymentMethodType.customerCredit
+                    ? 0.0
+                    : p.amount),
+          ),
+        ),
+        displayRemainingTotal: PosFormatters.amount(
+          payments.any(
+                (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
+              )
+              ? quote.grandTotal
+              : 0.0,
+        ),
+        displayChangeAmount: PosFormatters.amount(
+          payments.fold(0.0, (sum, p) => sum + (p.changeGiven ?? 0.0)),
+        ),
       ),
       copyInfo: const InvoiceCopyInfo.original(),
       printStatusLabel: labels.printStatusPending,
