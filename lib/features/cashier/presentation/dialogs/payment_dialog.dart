@@ -17,7 +17,6 @@ import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/customer.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
-import 'package:holol_POS/shared/presentation/widgets/app_dropdown.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
@@ -318,7 +317,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             SaleCheckoutRequest(
               cart: widget.cart,
               checkoutAttemptId: _checkoutAttemptId,
-              paymentIntent: paymentIntents.first,
               paymentIntents: paymentIntents,
               customerId: _selectedCustomerId,
               customerName: _selectedCustomerName,

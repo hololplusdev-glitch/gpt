@@ -30,18 +30,14 @@ final categoryListProvider = FutureProvider<List<ProductCategory>>((ref) async {
 
 class CashierCatalogState {
   final List<ProductCardViewModel> products;
-  final List<String> diagnostics;
   final String? emptyReason;
   final String? emptyMessage;
 
   const CashierCatalogState({
     required this.products,
-    this.diagnostics = const [],
     this.emptyReason,
     this.emptyMessage,
   });
-
-  bool get hasDiagnostics => diagnostics.isNotEmpty;
 }
 
 final cashierProductCardsProvider = FutureProvider<CashierCatalogState>((
@@ -112,27 +108,17 @@ final cashierProductCardsProvider = FutureProvider<CashierCatalogState>((
     priceLevelId: priceLevelId,
   );
 
-  final diagnostics = <String>[];
   final cards = <ProductCardViewModel>[];
 
   for (final item in items) {
     final itemUnits = unitsByItem[item.id] ?? const <SellableItemUnit>[];
-
-    if (itemUnits.isEmpty) {
-      diagnostics.add('UNIT_NOT_CONFIGURED:itemId=${item.id}');
-    }
 
     final units = _pricedUnitsForItem(
       catalogDao: catalogDao,
       item: item,
       units: itemUnits,
       pricesByItemUnit: pricesByItemUnit,
-      diagnostics: diagnostics,
     );
-
-    if (units.isEmpty) {
-      diagnostics.add('PRICE_NOT_CONFIGURED:itemId=${item.id}');
-    }
 
     cards.add(ProductCardViewModel(item: _productFromRow(item), units: units));
   }
@@ -140,13 +126,12 @@ final cashierProductCardsProvider = FutureProvider<CashierCatalogState>((
   if (cards.every((card) => card.units.isEmpty)) {
     return CashierCatalogState(
       products: const [],
-      diagnostics: diagnostics,
       emptyReason: 'NO_PRICED_PRODUCTS',
       emptyMessage: 'لا توجد أسعار صالحة لهذا المخزن ومستوى السعر.',
     );
   }
 
-  return CashierCatalogState(products: cards, diagnostics: diagnostics);
+  return CashierCatalogState(products: cards);
 });
 
 final customerSearchQueryProvider = StateProvider.autoDispose<String>(
@@ -178,7 +163,6 @@ List<ProductUnitOption> _pricedUnitsForItem({
   required Item item,
   required List<SellableItemUnit> units,
   required Map<ItemUnitPriceKey, ResolvedItemPrice> pricesByItemUnit,
-  required List<String> diagnostics,
 }) {
   final pricedUnits = <ProductUnitOption>[];
 
@@ -187,9 +171,6 @@ List<ProductUnitOption> _pricedUnitsForItem({
         pricesByItemUnit[ItemUnitPriceKey(item.id, unit.sourceUnitId)];
 
     if (price == null) {
-      diagnostics.add(
-        'PRICE_NOT_CONFIGURED:itemId=${item.id},unitId=${unit.sourceUnitId}',
-      );
       continue;
     }
 

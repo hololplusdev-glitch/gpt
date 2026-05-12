@@ -322,7 +322,7 @@ class _CartItemTile extends ConsumerWidget {
                     const SizedBox(width: AppSpacing.sm),
                     IconButton(
                       tooltip: 'خصم',
-                      onPressed: editDiscount,
+                      onPressed: item.allowDiscount ? editDiscount : null,
                       icon: Icon(
                         Icons.percent,
                         color: item.allowDiscount
@@ -422,7 +422,7 @@ class _CartItemTile extends ConsumerWidget {
                   ),
                   const SizedBox(height: 8),
                   InkWell(
-                    onTap: editDiscount,
+                    onTap: item.allowDiscount ? editDiscount : null,
                     borderRadius: BorderRadius.circular(4),
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),

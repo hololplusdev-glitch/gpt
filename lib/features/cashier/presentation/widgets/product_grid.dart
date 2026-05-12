@@ -120,14 +120,10 @@ class ProductGrid extends ConsumerWidget {
                         ),
                         const SizedBox(height: 8),
                         SelectableText(
-                          [
-                            l10n.storeAndPriceLevelDetails(
-                              session?.activeStoreId ?? '',
-                              session?.activePriceLevelId ?? '',
-                            ),
-                            if (catalogState.hasDiagnostics)
-                              catalogState.diagnostics.take(5).join('\n'),
-                          ].join('\n\n'),
+                          l10n.storeAndPriceLevelDetails(
+                            session?.activeStoreId ?? '',
+                            session?.activePriceLevelId ?? '',
+                          ),
                           style: const TextStyle(
                             color: AppColors.textSecondary,
                           ),
@@ -266,19 +262,13 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
 
   void _showNoPriceError() {
     HapticFeedback.vibrate();
-    final session = ref.read(activePosSessionProvider).valueOrNull;
     final l10n = AppLocalizations.of(context)!;
-    final details =
-        'ItemId: ${widget.card.item.id}\n'
-        '${l10n.storeAndPriceLevelDetails(session?.activeStoreId ?? '', session?.activePriceLevelId ?? '')}';
 
     AppDialog.show(
       context: context,
       dialog: AppDialog.error(
         title: l10n.error,
-        content: SelectableText(
-          '${l10n.noPriceForCurrentStorePriceLevel}\n\n$details',
-        ),
+        content: Text(l10n.noPriceForCurrentStorePriceLevel),
         cancelLabel: l10n.close,
       ),
     );

@@ -31,7 +31,7 @@ class PaymentProfileService {
     final existing = await _dao.getManualProfile(userId);
     await _dao.upsert(
       PaymentDeviceProfilesCompanion(
-        id: Value('manual-card-$userId'),
+        id: Value(PaymentProfileDao.manualProfileId(userId)),
         userId: Value(userId),
         name: const Value('Manual card'),
         enabled: Value(enabled),

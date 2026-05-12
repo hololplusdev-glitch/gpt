@@ -290,6 +290,15 @@ class ShiftService {
         'Cash movement amount must be greater than zero.',
       );
     }
+
+    final shift = await _shiftDao.getById(shiftId);
+    if (shift == null) {
+      throw ShiftException('Shift not found: $shiftId');
+    }
+    if (shift.status != ShiftStatus.open.code) {
+      throw const ShiftException('Cash movements require an open shift.');
+    }
+
     await _shiftDao.addCashMovement(
       ShiftCashMovementsCompanion.insert(
         id: 'CM_${_uuid.v4()}',

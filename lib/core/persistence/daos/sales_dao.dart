@@ -306,6 +306,16 @@ class SalesDao {
   /// Shift sales totals for shift closing calculation.
   Future<ShiftSalesTotals> getShiftSalesTotals(String shiftId) async {
     final sales = await getSalesForShift(shiftId);
+    final saleIds = sales.map((sale) => sale.id).toSet();
+    final payments = saleIds.isEmpty
+        ? const <SalePayment>[]
+        : await (_db.select(
+            _db.salePayments,
+          )..where((payment) => payment.saleId.isIn(saleIds))).get();
+    final paymentsBySaleId = <String, List<SalePayment>>{};
+    for (final payment in payments) {
+      paymentsBySaleId.putIfAbsent(payment.saleId, () => []).add(payment);
+    }
 
     var grossSales = 0.0;
     var netSales = 0.0;
@@ -332,8 +342,7 @@ class SalesDao {
         totalTaxes += s.taxTotal;
         saleCount++;
 
-        final payments = await getSalePayments(s.id);
-        for (final p in payments) {
+        for (final p in paymentsBySaleId[s.id] ?? const <SalePayment>[]) {
           final methodType = PaymentMethodResolver.typeFromStored(
             methodCode: p.methodCodeSnapshot,
             storedTypeCode: p.methodTypeSnapshot,
@@ -355,8 +364,7 @@ class SalesDao {
         }
       } else if (isReturn && isCompleted) {
         totalReturns += s.grandTotal;
-        final payments = await getSalePayments(s.id);
-        for (final p in payments) {
+        for (final p in paymentsBySaleId[s.id] ?? const <SalePayment>[]) {
           final methodType = PaymentMethodResolver.typeFromStored(
             methodCode: p.methodCodeSnapshot,
             storedTypeCode: p.methodTypeSnapshot,

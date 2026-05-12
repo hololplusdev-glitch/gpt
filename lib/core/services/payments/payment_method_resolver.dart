@@ -149,9 +149,6 @@ abstract final class PaymentMethodResolver {
     if (manualRecord && resolved == PaymentMethodType.bankTransfer) {
       return '$base - تسجيل يدوي';
     }
-    if (resolved?.code == 'integrated_card') {
-      return '$base - طرفية دفع';
-    }
     return base;
   }
 

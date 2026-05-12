@@ -75,8 +75,9 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     onUpgrade: (Migrator m, int from, int to) async {
-      // Schema v7 is a cleanup schema. Existing dev DBs should be recreated.
-      // Keep migrations empty to avoid carrying removed columns forward.
+      // Development-only schema cleanup. This project currently does not ship
+      // production migrations; existing dev DBs should be recreated.
+      // Keep this empty to avoid carrying removed columns forward.
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');

@@ -282,7 +282,9 @@ class PosSessionController extends StateNotifier<PosSessionState> {
     _ref.read(cartProvider.notifier).clearCart();
     _ref.read(searchQueryProvider.notifier).state = '';
     _ref.read(selectedCategoryProvider.notifier).state = null;
+    _ref.read(customerSearchQueryProvider.notifier).state = '';
     _ref.invalidate(cashierProductCardsProvider);
+    _ref.invalidate(customerSearchResultsProvider);
     _ref.invalidate(categoryListProvider);
   }
 }

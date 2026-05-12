@@ -368,10 +368,7 @@ enum PaymentProfileMode {
 }
 
 enum PaymentConnectionType {
-  none('none'),
-  lan('lan'),
-  usb('usb'),
-  sdk('sdk');
+  none('none');
 
   final String code;
   const PaymentConnectionType(this.code);
@@ -381,11 +378,7 @@ enum PaymentConnectionType {
 }
 
 enum PaymentProvider {
-  manual('manual'),
-  geidea('geidea'),
-  pax('pax'),
-  bank('bank'),
-  other('other');
+  manual('manual');
 
   final String code;
   const PaymentProvider(this.code);

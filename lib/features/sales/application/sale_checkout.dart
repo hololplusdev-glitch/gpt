@@ -367,10 +367,6 @@ class SaleCheckout {
         final method = firstWhere((method) => typeOf(method)?.isCash ?? false);
 
         if (method == null) return PaymentMethodResolver.builtInCash;
-        // ignore: unnecessary_null_comparison, dead_code
-        if (method == null) {
-          throw const SaleCheckoutException('لا توجد طريقة دفع كاش مفعلة.');
-        }
 
         return fromRow(method);
 
@@ -385,16 +381,7 @@ class SaleCheckout {
 
         if (card != null) return withoutReference(fromRow(card));
 
-        return const ResolvedPaymentMethod(
-          methodId: 'MANUAL_CARD_FALLBACK',
-          code: PaymentMethodCodes.manualCard,
-          displayName: 'شبكة',
-          type: PaymentMethodType.manualCard,
-          requiresReference: false,
-          allowsChange: false,
-          isManual: true,
-          needsPaymentProfile: false,
-        );
+        return PaymentMethodResolver.builtInManualCard;
 
       case SaleTenderKind.credit:
         final method = firstWhere(
@@ -403,16 +390,7 @@ class SaleCheckout {
 
         if (method != null) return fromRow(method);
 
-        return const ResolvedPaymentMethod(
-          methodId: 'CUSTOMER_CREDIT',
-          code: 'CUSTOMER_CREDIT',
-          displayName: 'آجل',
-          type: PaymentMethodType.customerCredit,
-          requiresReference: false,
-          allowsChange: false,
-          isManual: true,
-          needsPaymentProfile: false,
-        );
+        return PaymentMethodResolver.builtInCustomerCredit;
     }
   }
 
@@ -737,7 +715,6 @@ class SaleCheckout {
 class SaleCheckoutRequest {
   final Cart cart;
   final String checkoutAttemptId;
-  final SalePaymentIntent paymentIntent;
   final List<SalePaymentIntent> paymentIntents;
   final String? customerId;
   final String? customerName;
@@ -746,12 +723,11 @@ class SaleCheckoutRequest {
   SaleCheckoutRequest({
     required this.cart,
     required this.checkoutAttemptId,
-    required this.paymentIntent,
-    List<SalePaymentIntent>? paymentIntents,
+    required this.paymentIntents,
     this.customerId,
     this.customerName,
     this.customerTaxNumber,
-  }) : paymentIntents = paymentIntents ?? [paymentIntent];
+  });
 }
 
 class CheckoutPaymentRequirements {

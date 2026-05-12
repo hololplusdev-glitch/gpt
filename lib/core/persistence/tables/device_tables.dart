@@ -7,9 +7,9 @@ import 'package:drift/drift.dart';
 
 /// Payment device profiles — local hardware/integration config.
 /// Replaces PaymentProfiles. NOT backend master data.
-/// mode: 'manual','integrated'
-/// provider: 'manual','geidea','pax','bank','other'
-/// connection_type: 'none','lan','usb','sdk'
+/// mode: 'manual'
+/// provider: 'manual'
+/// connection_type: 'none'
 class PaymentDeviceProfiles extends Table {
   TextColumn get id => text()();
   TextColumn get userId => text()();

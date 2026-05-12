@@ -8,6 +8,7 @@ import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
 import 'package:holol_POS/core/persistence/daos/shift_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/invoice_number_service.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document_builder.dart';
 import 'package:holol_POS/core/services/sync/upload_queue.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
 import 'package:holol_POS/shared/models/enums.dart';
@@ -21,6 +22,7 @@ class SalesHistoryService {
   final SalesDao _salesDao;
   final ShiftDao _shiftDao;
   final InvoiceNumberService _invoiceNumberService;
+  final InvoiceDocumentBuilder _invoiceDocumentBuilder;
   final UploadQueue _uploadQueue;
   final ActivePosSession? _activeSession;
   final Clock _clock;
@@ -29,12 +31,14 @@ class SalesHistoryService {
     required SalesDao salesDao,
     required ShiftDao shiftDao,
     required InvoiceNumberService invoiceNumberService,
+    required InvoiceDocumentBuilder invoiceDocumentBuilder,
     required UploadQueue uploadQueue,
     required ActivePosSession? activeSession,
     Clock clock = const SystemClock(),
   }) : _salesDao = salesDao,
        _shiftDao = shiftDao,
        _invoiceNumberService = invoiceNumberService,
+       _invoiceDocumentBuilder = invoiceDocumentBuilder,
        _uploadQueue = uploadQueue,
        _activeSession = activeSession,
        _clock = clock;
@@ -66,6 +70,13 @@ class SalesHistoryService {
     final session = _requireSession();
     final sale = await _requireCompletedNormalSale(saleId);
     final now = _clock.now();
+
+    if (await _salesDao.hasCompletedReturnForSale(sale.id)) {
+      throw const BusinessException(
+        'Sale with a completed return cannot be voided.',
+        code: 'SALE_HAS_RETURN',
+      );
+    }
 
     await _salesDao.voidSaleEnvelope(
       saleId: sale.id,
@@ -257,6 +268,8 @@ class SalesHistoryService {
       ),
     );
 
+    await _invoiceDocumentBuilder.buildForSale(returnSaleId);
+
     return returnSaleId;
   }
 
@@ -323,6 +336,7 @@ final salesHistoryServiceProvider = Provider<SalesHistoryService>((ref) {
     salesDao: ref.watch(salesDaoProvider),
     shiftDao: ref.watch(shiftDaoProvider),
     invoiceNumberService: ref.watch(invoiceNumberServiceProvider),
+    invoiceDocumentBuilder: ref.watch(invoiceDocumentBuilderProvider),
     uploadQueue: ref.watch(uploadQueueProvider),
     activeSession: ref.watch(activePosSessionProvider).valueOrNull,
     clock: ref.watch(clockProvider),
