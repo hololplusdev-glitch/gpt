@@ -465,9 +465,11 @@ EXISTS (
           ? _sourceUnitIdFromLocalId(price.unitId)
           : _sourceUnitIdForUnitData(effectiveUnit),
       unitName: effectiveUnit?.name,
+      unitSize: effectiveUnit?.unitSize,
       barcode: null,
       taxRate: item.taxRate,
       allowDiscount: item.allowDiscount,
+      useQtyFraction: item.useQtyFraction,
     );
   }
 

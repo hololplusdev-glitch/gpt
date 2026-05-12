@@ -240,7 +240,6 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
   String? _selectedUnitId;
 
   Future<void> _addToCart(ProductUnitOption selectedUnit) async {
-    final l10n = AppLocalizations.of(context)!;
     try {
       HapticFeedback.lightImpact();
       SystemSound.play(SystemSoundType.click);

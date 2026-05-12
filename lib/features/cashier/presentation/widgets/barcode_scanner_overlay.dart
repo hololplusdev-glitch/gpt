@@ -324,7 +324,7 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
 
       switch (result) {
         case ScanSuccess():
-          final newQuantity = await _cartNotifier.addSellableItem(result.item);
+          final addResult = await _cartNotifier.addSellableItem(result.item);
 
           if (!_isAlive(token)) return;
 
@@ -336,8 +336,8 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
           _playFeedback(success: true);
           _showFeedback(
             _ScanFeedback(
-              message: newQuantity > 1
-                  ? l10n.scanAddedItemQuantity(newQuantity.round())
+              message: addResult.wasIncremented
+                  ? l10n.scanAddedItemQuantity(addResult.quantity.round())
                   : l10n.scanAddedItem,
               isError: false,
             ),
