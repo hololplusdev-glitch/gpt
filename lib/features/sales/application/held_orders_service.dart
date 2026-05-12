@@ -18,8 +18,8 @@ import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 
 /// Held-order owner only.
-/// Held orders are intentionally stored as JSON snapshots in HeldOrders.snapshotJson.
-/// Final sale totals are recalculated by SaleCheckout.
+/// Held orders are stored as cart intent snapshots.
+/// Final prices/totals are always recalculated by PricingEngine and SaleCheckout.
 class HeldOrdersService {
   final SalesDao _salesDao;
   final ShiftDao _shiftDao;
@@ -52,6 +52,8 @@ class HeldOrdersService {
 
   CheckoutQuote previewQuote({required List<SaleLineInput> lineItems}) {
     final session = _requireActiveSession();
+
+    _validatePreviewInputs(lineItems: lineItems);
 
     try {
       return _pricingEngine.calculateQuote(
@@ -89,47 +91,18 @@ class HeldOrdersService {
       );
     }
 
-  void _validatePreviewInputs({required List<SaleLineInput> lineItems}) {
-    for (final line in lineItems) {
-      if (line.quantity <= 0) {
-        throw SaleException('Invalid quantity for ${line.itemName}.');
-      }
+    _validatePreviewInputs(lineItems: items);
 
-      if (!line.useQtyFraction &&
-          (line.quantity - line.quantity.roundToDouble()).abs() > 0.000001) {
-        throw SaleException(
-          'Fraction quantity is not allowed for ${line.itemName}.',
-        );
-      }
-
-      if (line.unitPrice <= 0) {
-        throw SaleException('Missing price for ${line.itemName}.');
-      }
-
-      if (line.taxRate < 0) {
-        throw SaleException('Invalid tax rate for ${line.itemName}.');
-      }
-
-      if ((line.discountValue ?? 0) < 0) {
-        throw SaleException('Invalid discount for ${line.itemName}.');
-      }
-
-      if (!line.allowDiscount &&
-          line.discountType != null &&
-          (line.discountValue ?? 0) > 0) {
-        throw SaleException('Discounts are not allowed for ${line.itemName}.');
-      }
-    }
-  }
-';
+    final quote = previewQuote(lineItems: items);
+    final id = 'HLD_${_uuid.v4()}';
     final now = _clock.now();
 
     final snapshotJson = jsonEncode({
       'version': 1,
-      'type': 'cart_snapshot',
+      'type': 'cart_intent_snapshot',
       'createdAt': now.toIso8601String(),
       'createdBy': session.activeUserId,
-      'items': items.map((i) => i.toHeldOrderSnapshotJson()).toList(),
+      'items': items.map((line) => line.toHeldOrderSnapshotJson()).toList(),
     });
 
     await _salesDao.holdOrder(
@@ -315,24 +288,25 @@ class HeldOrdersService {
         );
       }
 
-      lines.add(
-        SaleLineInput(
-          itemId: sellable.itemId,
-          unitId: sellable.unitId,
-          itemName: sellable.itemName,
-          unitName: sellable.unitName,
-          unitSize: sellable.unitSize,
-          barcode: sellable.barcode,
-          useQtyFraction: sellable.useQtyFraction,
-          quantity: quantity,
-          unitPrice: sellable.unitPrice,
-          taxRate: sellable.taxRate,
-          discountType: discountType,
-          discountValue: discountValue,
-          allowDiscount: sellable.allowDiscount,
-          notes: _text(snapshot['notes']),
-        ),
+      final line = SaleLineInput(
+        itemId: sellable.itemId,
+        unitId: sellable.unitId,
+        itemName: sellable.itemName,
+        unitName: sellable.unitName,
+        unitSize: sellable.unitSize,
+        barcode: sellable.barcode,
+        useQtyFraction: sellable.useQtyFraction,
+        quantity: quantity,
+        unitPrice: sellable.unitPrice,
+        taxRate: sellable.taxRate,
+        discountType: discountType,
+        discountValue: discountValue,
+        allowDiscount: sellable.allowDiscount,
+        notes: _text(snapshot['notes']),
       );
+
+      _validatePreviewInputs(lineItems: [line]);
+      lines.add(line);
     }
 
     return HeldOrderResumeResult(lines: lines, warnings: warnings);
@@ -360,24 +334,46 @@ class HeldOrdersService {
       if (line.quantity <= 0) {
         throw SaleException('Invalid quantity for ${line.itemName}.');
       }
+
+      if (!line.useQtyFraction &&
+          (line.quantity - line.quantity.roundToDouble()).abs() > 0.000001) {
+        throw SaleException(
+          'Fraction quantity is not allowed for ${line.itemName}.',
+        );
+      }
+
       if (line.unitPrice <= 0) {
         throw SaleException('Missing price for ${line.itemName}.');
       }
-      if (line.discountAmount < 0) {
-        throw SaleException('Invalid discount for ${line.itemName}.');
-      }
-      if (!line.allowDiscount && line.discountAmount > 0) {
-        throw SaleException('Discounts are not allowed for ${line.itemName}.');
-      }
+
       if (line.taxRate < 0) {
         throw SaleException('Invalid tax rate for ${line.itemName}.');
       }
 
-      final lineSubtotal = line.unitPrice * line.quantity;
-      if (line.discountAmount > lineSubtotal) {
-        throw SaleException(
-          'Discount exceeds line subtotal for ${line.itemName}.',
+      if ((line.discountValue ?? 0) < 0) {
+        throw SaleException('Invalid discount for ${line.itemName}.');
+      }
+
+      if (!line.allowDiscount &&
+          line.discountType != null &&
+          (line.discountValue ?? 0) > 0) {
+        throw SaleException('Discounts are not allowed for ${line.itemName}.');
+      }
+
+      try {
+        _pricingEngine.calculateLine(
+          itemId: line.itemId,
+          unitId: line.unitId,
+          unitPrice: line.unitPrice,
+          quantity: line.quantity,
+          discountType: line.discountType,
+          discountValue: line.discountValue,
+          allowDiscount: line.allowDiscount,
+          taxRate: line.taxRate,
+          priceIncludesTax: false,
         );
+      } on PricingException catch (e) {
+        throw SaleException(e.message);
       }
     }
   }
