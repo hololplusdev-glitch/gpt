@@ -83,57 +83,19 @@ class SaleCheckout {
     }
 
     final draftLines = request.cart.toSaleLineInputs();
-  Future<List<SaleLineInput>> _resolveOfficialPrices({
-    required ActivePosSession session,
-    required List<SaleLineInput> draftLines,
-  }) async {
-    final resolved = <SaleLineInput>[];
+    final officialLines = await _resolveOfficialPrices(
+      session: session,
+      draftLines: draftLines,
+    );
 
-    for (final line in draftLines) {
-      final item = await _catalogDao.getItemById(line.itemId);
+    _validateSaleInputs(lineItems: officialLines);
 
-      if (item == null || item.inactive || item.noSale) {
-        throw SaleCheckoutException(
-          'Item ${line.itemName} is no longer sellable.',
-        );
-      }
+    final quote = _quoteSale(officialLines);
+    final requestedPaymentIntents = request.paymentIntents;
 
-      final price = await _catalogDao.resolveItemPrice(
-        itemId: line.itemId,
-        priceLevelId: session.activePriceLevelId,
-        storeId: session.activeStoreId,
-        unitId: line.unitId,
-      );
-
-      if (price == null) {
-        throw SaleCheckoutException(
-          'Missing exact ITEM_PRICE for ${line.itemName}.',
-        );
-      }
-
-      resolved.add(
-        SaleLineInput(
-          itemId: item.id,
-          unitId: price.unitId ?? line.unitId,
-          itemName: item.name,
-          unitName: price.unitName ?? line.unitName,
-          unitSize: price.unitSize ?? line.unitSize,
-          barcode: line.barcode ?? price.barcode,
-          useQtyFraction: price.useQtyFraction,
-          quantity: line.quantity,
-          unitPrice: price.unitPrice,
-          taxRate: price.taxRate != 0 ? price.taxRate : item.taxRate,
-          discountType: line.discountType,
-          discountValue: line.discountValue,
-          allowDiscount: price.allowDiscount,
-          notes: line.notes,
-        ),
-      );
+    if (requestedPaymentIntents.isEmpty) {
+      throw const SaleCheckoutException('At least one payment is required.');
     }
-
-    return resolved;
-  }
-
 
     final payments = <SalePaymentInput>[];
     var change = 0.0;
@@ -313,12 +275,6 @@ class SaleCheckout {
     if (resolved.needsPaymentProfile) {
       final profile = await _paymentProfileService.getActivePaymentProfile();
 
-      // Network/Card policy:
-      // - Network is never treated as cash.
-      // - If a real integrated terminal is unavailable, allow manual network
-      //   recording with a warning already shown in PaymentDialog.
-      // - Future terminal integration should replace this branch with actual
-      //   send/wait/approve flow and terminal approval fields.
       if (profile == null || !profile.enabled) {
         effectiveType = PaymentMethodType.manualCard;
         profileRequiresReference = resolved.requiresReference;
@@ -486,6 +442,14 @@ class SaleCheckout {
     final resolved = <SaleLineInput>[];
 
     for (final line in draftLines) {
+      final item = await _catalogDao.getItemById(line.itemId);
+
+      if (item == null || item.inactive || item.noSale) {
+        throw SaleCheckoutException(
+          'Item ${line.itemName} is no longer sellable.',
+        );
+      }
+
       final price = await _catalogDao.resolveItemPrice(
         itemId: line.itemId,
         priceLevelId: session.activePriceLevelId,
@@ -501,31 +465,40 @@ class SaleCheckout {
 
       resolved.add(
         SaleLineInput(
-          itemId: line.itemId,
+          itemId: item.id,
           unitId: price.unitId ?? line.unitId,
-          itemName: line.itemName,
+          itemName: item.name,
           unitName: price.unitName ?? line.unitName,
-          unitSize: line.unitSize,
-          barcode: line.barcode,
+          unitSize: price.unitSize ?? line.unitSize,
+          barcode: line.barcode ?? price.barcode,
+          useQtyFraction: price.useQtyFraction,
           quantity: line.quantity,
           unitPrice: price.unitPrice,
-          taxRate: price.taxRate,
+          taxRate: price.taxRate != 0 ? price.taxRate : item.taxRate,
           discountType: line.discountType,
           discountValue: line.discountValue,
-
-
-
-  double _officialDiscountAmount({
-    required SaleLineInput line,
-    required double officialUnitPrice,
-  }) {
-    if (line.discountType == DiscountType.percentage &&
-        line.discountValue != null) {
-      final base = officialUnitPrice * line.quantity;
-      return PricingEngine.roundAmount(base * (line.discountValue! / 100));
+          allowDiscount: price.allowDiscount,
+          notes: line.notes,
+        ),
+      );
     }
 
-    return line.discountAmount;
+    return resolved;
+  }
+
+  Future<Shift> _requireOpenShift(ActivePosSession session) async {
+    final shift = await _shiftDao.getOpenShift(
+      session.activeMachineNo,
+      cashierId: session.activeUserId,
+    );
+
+    if (shift == null || shift.status != ShiftStatus.open.code) {
+      throw const SaleCheckoutException(
+        'No open shift. Open a shift before selling.',
+      );
+    }
+
+    return shift;
   }
 
   CheckoutQuote _quoteSale(List<SaleLineInput> lines) {
@@ -755,39 +728,6 @@ class SaleCheckout {
           (line.discountValue ?? 0) > 0) {
         throw SaleCheckoutException(
           'Discounts are not allowed for ${line.itemName}.',
-        );
-      }
-    }
-  }
-) {
-    for (final line in lineItems) {
-      if (line.quantity <= 0) {
-        throw SaleCheckoutException('Invalid quantity for ${line.itemName}.');
-      }
-
-      if (line.unitPrice <= 0) {
-        throw SaleCheckoutException('Missing price for ${line.itemName}.');
-      }
-
-      if (line.discountAmount < 0) {
-        throw SaleCheckoutException('Invalid discount for ${line.itemName}.');
-      }
-
-      if (!line.allowDiscount && line.discountAmount > 0) {
-        throw SaleCheckoutException(
-          'Discounts are not allowed for ${line.itemName}.',
-        );
-      }
-
-      if (line.taxRate < 0) {
-        throw SaleCheckoutException('Invalid tax rate for ${line.itemName}.');
-      }
-
-      final lineSubtotal = line.unitPrice * line.quantity;
-
-      if (line.discountAmount > lineSubtotal) {
-        throw SaleCheckoutException(
-          'Discount exceeds line subtotal for ${line.itemName}.',
         );
       }
     }
@@ -1040,7 +980,6 @@ class _ProcessedItem {
     required this.lineTotal,
   });
 }
-
 
 const int _quantityScale = 1000;
 

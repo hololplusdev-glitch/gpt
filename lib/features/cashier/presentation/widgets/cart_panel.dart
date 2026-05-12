@@ -575,3 +575,16 @@ double? _lineTotalForItem(CartItem item, CartQuoteState quoteState) {
 
   return null;
 }
+
+double? _lineDiscountForItem(CartItem item, CartQuoteState quoteState) {
+  final quote = quoteState.quote;
+  if (quote == null) return null;
+
+  for (final line in quote.lines) {
+    if (line.itemId == item.itemId && line.unitId == item.unitId) {
+      return line.discountAmount;
+    }
+  }
+
+  return null;
+}
