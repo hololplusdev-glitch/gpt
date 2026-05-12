@@ -84,7 +84,6 @@ class InvoiceDocumentBuilder {
     return buildForSale(saleId, labels: labels);
   }
 
-  /// Build an InvoiceDocument from a persisted sale.
   Future<InvoiceDocument> buildForSale(
     String saleId, {
     InvoiceCopyInfo copyInfo = const InvoiceCopyInfo.original(),
@@ -159,7 +158,6 @@ class InvoiceDocumentBuilder {
 
     document = document.copyWith(qrPayload: _qrPayloadBuilder.build(document));
 
-    // Add audit hash + validation
     final validation = _validationService.validate(document);
     final auditHash = _auditHasher.hash(document);
     document = document.copyWith(
@@ -288,6 +286,24 @@ class InvoiceDocumentBuilder {
       );
     }).toList();
 
+    final paidTotal = payments.fold(
+      0.0,
+      (sum, p) =>
+          sum +
+          (p.paymentMethodType == PaymentMethodType.customerCredit
+              ? 0.0
+              : p.amount),
+    );
+    final remainingTotal = payments.any(
+      (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
+    )
+        ? quote.grandTotal
+        : 0.0;
+    final changeAmount = payments.fold(
+      0.0,
+      (sum, p) => sum + (p.changeGiven ?? 0.0),
+    );
+
     var document = InvoiceDocument(
       saleId: saleId,
       localInvoiceNo: localInvoiceNo,
@@ -322,48 +338,16 @@ class InvoiceDocumentBuilder {
         discountTotal: quote.discountTotal,
         taxTotal: quote.taxTotal,
         netTotal: quote.grandTotal,
-        paidTotal: payments.fold(
-          0.0,
-          (sum, p) =>
-              sum +
-              (p.paymentMethodType == PaymentMethodType.customerCredit
-                  ? 0.0
-                  : p.amount),
-        ),
-        remainingTotal:
-            payments.any(
-              (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
-            )
-            ? quote.grandTotal
-            : 0.0,
-        changeAmount: payments.fold(
-          0.0,
-          (sum, p) => sum + (p.changeGiven ?? 0.0),
-        ),
+        paidTotal: paidTotal,
+        remainingTotal: remainingTotal,
+        changeAmount: changeAmount,
         displaySubtotal: PosFormatters.amount(quote.subtotal),
         displayDiscountTotal: PosFormatters.amount(quote.discountTotal),
         displayTaxTotal: PosFormatters.amount(quote.taxTotal),
         displayNetTotal: PosFormatters.amount(quote.grandTotal),
-        displayPaidTotal: PosFormatters.amount(
-          payments.fold(
-            0.0,
-            (sum, p) =>
-                sum +
-                (p.paymentMethodType == PaymentMethodType.customerCredit
-                    ? 0.0
-                    : p.amount),
-          ),
-        ),
-        displayRemainingTotal: PosFormatters.amount(
-          payments.any(
-                (p) => p.paymentMethodType == PaymentMethodType.customerCredit,
-              )
-              ? quote.grandTotal
-              : 0.0,
-        ),
-        displayChangeAmount: PosFormatters.amount(
-          payments.fold(0.0, (sum, p) => sum + (p.changeGiven ?? 0.0)),
-        ),
+        displayPaidTotal: PosFormatters.amount(paidTotal),
+        displayRemainingTotal: PosFormatters.amount(remainingTotal),
+        displayChangeAmount: PosFormatters.amount(changeAmount),
       ),
       copyInfo: const InvoiceCopyInfo.original(),
       printStatusLabel: labels.printStatusPending,
@@ -452,7 +436,7 @@ class InvoiceDocumentBuilder {
   Future<List<InvoiceLineDocument>> _loadLines(String saleId) async {
     final rows = await _salesDao.getInvoiceLines(saleId);
     return rows.map((line) {
-      final quantity = line.qtyScaled.toDouble();
+      final quantity = _quantityFromScaled(line.qtyScaled, line.qtyScale);
       final unitPrice = line.unitPrice;
       final grossAmount = line.grossAmount;
       final discountAmount = line.lineDiscountAmount;
@@ -490,6 +474,11 @@ class InvoiceDocumentBuilder {
         ),
       );
     }).toList();
+  }
+
+  double _quantityFromScaled(int qtyScaled, int qtyScale) {
+    final scale = qtyScale <= 0 ? 1 : qtyScale;
+    return qtyScaled / scale;
   }
 
   Future<List<InvoiceTaxDocument>> _loadTaxes(String saleId) async {
