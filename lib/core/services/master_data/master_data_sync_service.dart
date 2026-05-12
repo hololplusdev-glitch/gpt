@@ -429,6 +429,7 @@ class MasterDataSyncService {
         : null;
     final typeRunId = _newId('md_type');
     final startedAt = _clock.now();
+
     await _insertTypeRun(
       id: typeRunId,
       runId: runId,
@@ -458,6 +459,7 @@ class MasterDataSyncService {
 
         final pageNo = pagesCount + 1;
         final pageStartedAt = _clock.now();
+
         late _MasterDataPage page;
         try {
           page = await _fetchPage(
@@ -474,10 +476,19 @@ class MasterDataSyncService {
             type: type,
             pageNo: pageNo,
             offset: offset,
-  int _effectivePageLimitFor(MasterDataType type, int configuredLimit) {
-    return type.effectivePageLimit(configuredLimit);
-  }
- else if (firstServerTime != page.serverTime) {
+            limit: _effectivePageLimitFor(type, context.pageLimit),
+            durationMs: _clock.now().difference(pageStartedAt).inMilliseconds,
+            status: MasterDataTypeRunStatus.failed,
+            errorMessage: ErrorMapper.userMessage(error),
+          );
+          rethrow;
+        }
+
+        pagesCount++;
+
+        if (firstServerTime == null) {
+          firstServerTime = page.serverTime;
+        } else if (firstServerTime != page.serverTime) {
           warnings.add(
             'server_time changed between pages; using first page server_time.',
           );
@@ -486,13 +497,16 @@ class MasterDataSyncService {
         rows.addAll(page.items);
         totalRows += page.items.length;
 
-        final limit = page.limit > 0 ? page.limit : context.pageLimit;
+        final limit = page.limit > 0
+            ? page.limit
+            : _effectivePageLimitFor(type, context.pageLimit);
         final totalPages = page.total > 0 && limit > 0
             ? (page.total / limit).ceil()
             : pageNo;
         final progress = page.total > 0
             ? (totalRows / page.total).clamp(0.0, 1.0)
             : 1.0;
+
         onTypeProgress?.call(progress, pageNo, totalPages);
 
         await _insertPageRun(
@@ -522,6 +536,7 @@ class MasterDataSyncService {
       );
 
       _validateContextRowsMapped(type, plan, context);
+
       await _validateZeroRowsForMode(
         type: type,
         context: context,
@@ -546,6 +561,7 @@ class MasterDataSyncService {
         if (!plan.isEmpty) {
           await _masterDataDao.persistPlanInCurrentTransaction(plan);
         }
+
         await _saveSyncState(
           type,
           context,
@@ -557,6 +573,7 @@ class MasterDataSyncService {
       final detailsJson = warnings.isEmpty
           ? null
           : jsonEncode(<String, dynamic>{'warnings': warnings});
+
       await _finishTypeRun(
         id: typeRunId,
         status: status,
@@ -566,6 +583,7 @@ class MasterDataSyncService {
         newServerTime: firstServerTime,
         detailsJson: detailsJson,
       );
+
       return MasterDataTypeResult(
         type: type,
         status: status,
@@ -585,7 +603,9 @@ class MasterDataSyncService {
           : MasterDataTypeRunStatus.failed;
       final message = ErrorMapper.userMessage(error);
       final code = _errorCode(error);
+
       await _saveSyncState(type, context, status: status.code, error: message);
+
       await _finishTypeRun(
         id: typeRunId,
         status: status,
@@ -599,6 +619,7 @@ class MasterDataSyncService {
             ? null
             : jsonEncode(<String, dynamic>{'warnings': warnings}),
       );
+
       return MasterDataTypeResult(
         type: type,
         status: status,
@@ -812,17 +833,7 @@ class MasterDataSyncService {
   }
 
   int _effectivePageLimitFor(MasterDataType type, int configuredLimit) {
-    // Heavy payloads can trigger ORDS/server/Dio connection resets when fetched
-    // with very large pages. Keep these bounded while preserving the user's
-    // configured limit for lightweight setup tables.
-    switch (type) {
-      case MasterDataType.item:
-      case MasterDataType.itemPrice:
-      case MasterDataType.customer:
-        return configuredLimit < 100 ? configuredLimit : 100;
-      default:
-        return configuredLimit;
-    }
+    return type.effectivePageLimit(configuredLimit);
   }
 
   Future<Response<dynamic>> _getPageResponseWithRetry({
