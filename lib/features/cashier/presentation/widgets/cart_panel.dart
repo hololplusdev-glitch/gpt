@@ -45,21 +45,21 @@ class _CartPanelState extends ConsumerState<CartPanel> {
       requestFocus: false,
       builder: (context) {
         return AlertDialog(
-          title: const Text('ظ…ط³ط­ ط§ظ„ط³ظ„ط©'),
+          title: const Text('مسح السلة'),
           content: Text(
             cart.items.length == 1
-                ? 'ط³ظٹطھظ… ط­ط°ظپ ط§ظ„طµظ†ظپ ط§ظ„ظ…ظˆط¬ظˆط¯ ظپظٹ ط§ظ„ط³ظ„ط©.'
-                : 'ط³ظٹطھظ… ط­ط°ظپ ط¬ظ…ظٹط¹ ط§ظ„ط£طµظ†ط§ظپ ط§ظ„ظ…ظˆط¬ظˆط¯ط© ظپظٹ ط§ظ„ط³ظ„ط©.',
+                ? 'سيتم حذف الصنف الموجود في السلة.'
+                : 'سيتم حذف جميع الأصناف الموجودة في السلة.',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('ط¥ظ„ط؛ط§ط،'),
+              child: const Text('إلغاء'),
             ),
             FilledButton.icon(
               onPressed: () => Navigator.of(context).pop(true),
               icon: const Icon(Icons.delete_outline),
-              label: const Text('ظ…ط³ط­ ط§ظ„ط³ظ„ط©'),
+              label: const Text('مسح السلة'),
             ),
           ],
         );

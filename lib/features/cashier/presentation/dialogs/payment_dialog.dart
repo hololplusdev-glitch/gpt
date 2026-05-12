@@ -176,6 +176,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
     if (existing == null && kind != SaleTenderKind.cash) {
       _submitInlineLine();
+    } else if (existing == null && kind == SaleTenderKind.cash) {
+      _submitInlineLine(showErrors: false);
     }
   }
 
@@ -201,9 +203,9 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     });
   }
 
-  void _submitInlineLine() {
+  bool _submitInlineLine({bool showErrors = true}) {
     final kind = _activeLineKind;
-    if (kind == null) return;
+    if (kind == null) return false;
 
     final existing = _editingLineId == null
         ? null
@@ -214,19 +216,17 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     );
 
     if (input.isNaN || input <= 0) {
-      setState(
-        () => _lineInputError =
-            'ط£ط¯ط®ظ„ ظ…ط¨ظ„ط؛ظ‹ط§ طµط­ظٹط­ظ‹ط§ ط£ظƒط¨ط± ظ…ظ† طµظپط±.',
-      );
-      return;
+      if (showErrors) {
+        setState(() => _lineInputError = 'أدخل مبلغًا صحيحًا أكبر من صفر.');
+      }
+      return false;
     }
 
     if (kind != SaleTenderKind.cash && input - available > 0.01) {
-      setState(
-        () => _lineInputError =
-            'ط§ظ„ظ…ط¨ظ„ط؛ ظ„ط§ ظٹظ…ظƒظ† ط£ظ† ظٹطھط¬ط§ظˆط² ط§ظ„ظ…طھط¨ظ‚ظٹ.',
-      );
-      return;
+      if (showErrors) {
+        setState(() => _lineInputError = 'المبلغ لا يمكن أن يتجاوز المتبقي.');
+      }
+      return false;
     }
 
     final amount = kind == SaleTenderKind.cash && input > available
@@ -246,6 +246,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       _lineInputError = null;
       _lineAmountController.text = line.tenderedAmount.toStringAsFixed(2);
     });
+    return true;
   }
 
   List<SalePaymentIntent> _buildPaymentIntents() {
@@ -268,16 +269,16 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     }
 
     if (_paymentLines.isEmpty) {
-      return 'ط£ط¯ط®ظ„ ط·ط±ظٹظ‚ط© ط¯ظپط¹ ظˆط§ط­ط¯ط© ط¹ظ„ظ‰ ط§ظ„ط£ظ‚ظ„.';
+      return 'أدخل طريقة دفع واحدة على الأقل.';
     }
 
     if (_remainingAmount > 0.01) {
-      return 'ط§ظ„ظ…ط¨ظ„ط؛ ط§ظ„ظ…طھط¨ظ‚ظٹ ط؛ظٹط± ظ…ط؛ط·ظ‰.';
+      return 'المبلغ المتبقي غير مغطى.';
     }
 
     if (_hasCreditLine &&
         (_selectedCustomerId == null || _selectedCustomerId!.trim().isEmpty)) {
-      return 'ط§ظ„ط¨ظٹط¹ ط§ظ„ط¢ط¬ظ„ ظٹطھط·ظ„ط¨ ط§ط®طھظٹط§ط± ط¹ظ…ظٹظ„.';
+      return 'البيع الآجل يتطلب اختيار عميل.';
     }
 
     return null;
@@ -457,7 +458,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                 _CompleteButton(
                   isProcessing: _isProcessing,
                   enabled: _canConfirm,
-                  label: 'ط¥طھظ…ط§ظ… ط§ظ„ط¯ظپط¹',
+                  label: 'إتمام الدفع',
                   onPressed: _processPayment,
                 ),
               ],
@@ -478,21 +479,15 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
-            _SummaryRow(
-              label: 'ط¥ط¬ظ…ط§ظ„ظٹ ط§ظ„ظپط§طھظˆط±ط©',
-              value: _totalAmount,
-            ),
+            _SummaryRow(label: 'إجمالي الفاتورة', value: _totalAmount),
             const Divider(height: AppSpacing.lg),
-            _SummaryRow(
-              label: 'ط§ظ„ظ…ط¯ظپظˆط¹ ظپط¹ظ„ظٹظ‹ط§',
-              value: _actualPaidAmount,
-            ),
+            _SummaryRow(label: 'المدفوع فعليًا', value: _actualPaidAmount),
             const SizedBox(height: AppSpacing.sm),
-            _SummaryRow(label: 'ط§ظ„ط¢ط¬ظ„', value: _creditAmount),
+            _SummaryRow(label: 'الآجل', value: _creditAmount),
             const SizedBox(height: AppSpacing.sm),
-            _SummaryRow(label: 'ط§ظ„ظ…طھط¨ظ‚ظٹ', value: _remainingAmount),
+            _SummaryRow(label: 'المتبقي', value: _remainingAmount),
             const SizedBox(height: AppSpacing.sm),
-            _SummaryRow(label: 'ط§ظ„ط±ط§ط¬ط¹', value: _change),
+            _SummaryRow(label: 'الراجع', value: _change),
           ],
         ),
       ),
@@ -502,7 +497,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   Widget _buildPaymentLines() {
     if (_paymentLines.isEmpty) {
       return const AppInfoBanner(
-        message: 'ط§ط®طھط± ط·ط±ظٹظ‚ط© ط¯ظپط¹ ظ„ط¥ط¶ط§ظپط© ط³ط·ط± ط¯ظپط¹.',
+        message: 'اختر طريقة دفع لإضافة سطر دفع.',
         type: AppBannerType.info,
       );
     }
@@ -527,7 +522,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       return const SizedBox.shrink();
     }
 
-    final prefix = _paymentLines.isEmpty ? '' : 'ط£ظƒظ…ظ„ ';
+    final prefix = _paymentLines.isEmpty ? '' : 'أكمل ';
 
     return Wrap(
       spacing: AppSpacing.sm,
@@ -539,21 +534,21 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
               ? null
               : () => _selectLineKind(SaleTenderKind.cash),
           icon: Icons.payments_outlined,
-          label: '${prefix}ظƒط§ط´ ${PosFormatters.amount(remaining)}',
+          label: '${prefix}كاش ${PosFormatters.amount(remaining)}',
         ),
         AppButton.outlined(
           onPressed: _isProcessing
               ? null
               : () => _selectLineKind(SaleTenderKind.network),
           icon: Icons.credit_card,
-          label: '${prefix}ط´ط¨ظƒط© ${PosFormatters.amount(remaining)}',
+          label: '${prefix}شبكة ${PosFormatters.amount(remaining)}',
         ),
         AppButton.outlined(
           onPressed: _isProcessing
               ? null
               : () => _selectLineKind(SaleTenderKind.credit),
           icon: Icons.person_outline,
-          label: '${prefix}ط¢ط¬ظ„ ${PosFormatters.amount(remaining)}',
+          label: '${prefix}آجل ${PosFormatters.amount(remaining)}',
         ),
       ],
     );
@@ -568,19 +563,11 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     final (icon, title, label) = switch (kind) {
       SaleTenderKind.cash => (
         Icons.payments_outlined,
-        'ط¯ظپط¹ ظƒط§ط´',
-        'ط§ظ„ظ…ط¨ظ„ط؛ ط§ظ„ظ…ط³طھظ„ظ…',
+        'دفع كاش',
+        'المبلغ المستلم',
       ),
-      SaleTenderKind.network => (
-        Icons.credit_card,
-        'ط¯ظپط¹ ط´ط¨ظƒط©',
-        'ط§ظ„ظ…ط¨ظ„ط؛',
-      ),
-      SaleTenderKind.credit => (
-        Icons.person_outline,
-        'ط¯ظپط¹ ط¢ط¬ظ„',
-        'ط§ظ„ظ…ط¨ظ„ط؛',
-      ),
+      SaleTenderKind.network => (Icons.credit_card, 'دفع شبكة', 'المبلغ'),
+      SaleTenderKind.credit => (Icons.person_outline, 'دفع آجل', 'المبلغ'),
     };
 
     return DecoratedBox(
@@ -618,39 +605,13 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
               ],
               labelText: label,
               prefixIcon: Icon(icon),
+              onChanged: (_) => _submitInlineLine(showErrors: false),
               onSubmitted: (_) => _submitInlineLine(),
             ),
             if (_lineInputError != null) ...[
               const SizedBox(height: AppSpacing.sm),
               AppInfoBanner.error(message: _lineInputError!),
             ],
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Expanded(
-                  child: AppButton.outlined(
-                    onPressed: _isProcessing
-                        ? null
-                        : () {
-                            setState(() {
-                              _activeLineKind = null;
-                              _editingLineId = null;
-                              _lineAmountController.clear();
-                              _lineInputError = null;
-                            });
-                          },
-                    label: 'ط¥ط؛ظ„ط§ظ‚',
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: AppButton.primary(
-                    onPressed: _isProcessing ? null : _submitInlineLine,
-                    label: existing == null ? 'ط¥ط¶ط§ظپط©' : 'طھط­ط¯ظٹط«',
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
@@ -686,8 +647,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         if (customers.isEmpty)
           AppInfoBanner(
             message: _customerSearchController.text.trim().isEmpty
-                ? 'ط§ط¨ط­ط« ط¨ط§ط³ظ… ط§ظ„ط¹ظ…ظٹظ„ ط£ظˆ ط§ظ„ط¬ظˆط§ظ„ ط£ظˆ ط§ظ„ط±ظ‚ظ… ط§ظ„ط¶ط±ظٹط¨ظٹ.'
-                : 'ظ„ط§ طھظˆط¬ط¯ ظ†طھط§ط¦ط¬ ظ…ط·ط§ط¨ظ‚ط©.',
+                ? 'ابحث باسم العميل أو الجوال أو الرقم الضريبي.'
+                : 'لا توجد نتائج مطابقة.',
             type: AppBannerType.info,
           )
         else
@@ -735,7 +696,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
     final title =
         _completedPaymentMethodType == PaymentMethodType.customerCredit
-        ? 'طھظ… طھط³ط¬ظٹظ„ ط§ظ„ط¨ظٹط¹ ط§ظ„ط¢ط¬ظ„'
+        ? 'تم تسجيل البيع الآجل'
         : l10n.paymentSuccessful;
 
     return SingleChildScrollView(
@@ -883,13 +844,13 @@ class _PaymentLineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, title) = switch (line.kind) {
-      SaleTenderKind.cash => (Icons.payments_outlined, 'ظƒط§ط´'),
-      SaleTenderKind.network => (Icons.credit_card, 'ط´ط¨ظƒط©'),
-      SaleTenderKind.credit => (Icons.person_outline, 'ط¢ط¬ظ„'),
+      SaleTenderKind.cash => (Icons.payments_outlined, 'كاش'),
+      SaleTenderKind.network => (Icons.credit_card, 'شبكة'),
+      SaleTenderKind.credit => (Icons.person_outline, 'آجل'),
     };
 
     final subtitle = line.kind == SaleTenderKind.cash && line.change > 0
-        ? 'ط§ظ„ظ…ط³طھظ„ظ… ${PosFormatters.amount(line.tenderedAmount)} - ط§ظ„ط±ط§ط¬ط¹ ${PosFormatters.amount(line.change)}'
+        ? 'المستلم ${PosFormatters.amount(line.tenderedAmount)} - الراجع ${PosFormatters.amount(line.change)}'
         : null;
 
     return DecoratedBox(
@@ -914,12 +875,12 @@ class _PaymentLineTile extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'طھط¹ط¯ظٹظ„',
+              tooltip: 'تعديل',
               icon: const Icon(Icons.edit_outlined),
               onPressed: onEdit,
             ),
             IconButton(
-              tooltip: 'ط­ط°ظپ',
+              tooltip: 'حذف',
               icon: const Icon(Icons.delete_outline),
               onPressed: onDelete,
             ),
