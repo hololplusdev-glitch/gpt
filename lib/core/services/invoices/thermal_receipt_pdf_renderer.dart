@@ -103,6 +103,13 @@ class ThermalReceiptPdfRenderer {
             textAlign: pw.TextAlign.center,
             style: fonts.style(fontSize: 12, isBold: true),
           ),
+          if (_visible(document.branch.name) &&
+              document.branch.name.trim() != document.seller.name.trim())
+            pw.Text(
+              document.branch.name,
+              textAlign: pw.TextAlign.center,
+              style: fonts.style(fontSize: 9, isBold: true),
+            ),
           if (_visible(document.seller.phone))
             pw.Text(
               document.seller.phone!,
@@ -156,7 +163,7 @@ class ThermalReceiptPdfRenderer {
         dir: pw.TextDirection.ltr,
       ),
       (
-        label: '',
+        label: labels.date,
         value: _date(document.invoiceDateTime),
         dir: pw.TextDirection.ltr,
       ),
@@ -320,8 +327,30 @@ class ThermalReceiptPdfRenderer {
   pw.Widget _payments(InvoiceDocument document, InvoicePdfFontSet fonts) {
     return pw.Table(
       border: pw.TableBorder.all(width: 0.7),
-      columnWidths: const {0: pw.FlexColumnWidth(2), 1: pw.FlexColumnWidth(1)},
+      columnWidths: const {
+        0: pw.FlexColumnWidth(2),
+        1: pw.FlexColumnWidth(1),
+      },
       children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
+          children: [
+            _cell(
+              labels.paymentMethod,
+              fonts,
+              bold: true,
+              align: pw.TextAlign.center,
+              dir: pw.TextDirection.rtl,
+            ),
+            _cell(
+              labels.amount,
+              fonts,
+              bold: true,
+              align: pw.TextAlign.center,
+              dir: pw.TextDirection.rtl,
+            ),
+          ],
+        ),
         for (final payment in document.payments)
           pw.TableRow(
             children: [
@@ -420,10 +449,11 @@ class ThermalReceiptPdfRenderer {
     bool hasNotice = false,
   }) {
     final width = paperWidthMm * PdfPageFormat.mm;
+    final paymentRows = paymentCount > 0 ? paymentCount + 1 : 0;
     final heightMm =
         130 +
         (itemCount * 12) +
-        (paymentCount * 6) +
+        (paymentRows * 6) +
         (hasNotes ? 12 : 0) +
         (hasNotice ? 12 : 0);
 

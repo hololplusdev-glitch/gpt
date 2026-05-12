@@ -9,6 +9,7 @@ class ReceiptTemplateLabels {
   final String terminal;
   final String cashier;
   final String customer;
+  final String date;
   final String unitPrice;
   final String quantity;
   final String discount;
@@ -16,6 +17,8 @@ class ReceiptTemplateLabels {
   final String tax;
   final String total;
   final String reference;
+  final String paymentMethod;
+  final String amount;
   final String change;
 
   const ReceiptTemplateLabels({
@@ -25,6 +28,7 @@ class ReceiptTemplateLabels {
     required this.terminal,
     required this.cashier,
     required this.customer,
+    required this.date,
     required this.unitPrice,
     required this.quantity,
     required this.discount,
@@ -32,6 +36,8 @@ class ReceiptTemplateLabels {
     required this.tax,
     required this.total,
     required this.reference,
+    required this.paymentMethod,
+    required this.amount,
     required this.change,
   });
 
@@ -43,6 +49,7 @@ class ReceiptTemplateLabels {
       terminal: l10n.terminal,
       cashier: l10n.cashierRole,
       customer: l10n.customer,
+      date: l10n.date,
       unitPrice: l10n.unitPrice,
       quantity: l10n.quantity,
       discount: l10n.discount,
@@ -50,6 +57,8 @@ class ReceiptTemplateLabels {
       tax: l10n.tax,
       total: l10n.total,
       reference: l10n.reference,
+      paymentMethod: l10n.paymentMethod,
+      amount: l10n.amount,
       change: l10n.change,
     );
   }
@@ -61,6 +70,7 @@ class ReceiptTemplateLabels {
       terminal = 'الجهاز',
       cashier = 'الكاشير',
       customer = 'العميل',
+      date = 'التاريخ',
       unitPrice = 'السعر',
       quantity = 'الكمية',
       discount = 'الخصم',
@@ -68,6 +78,8 @@ class ReceiptTemplateLabels {
       tax = 'الضريبة',
       total = 'الإجمالي',
       reference = 'المرجع',
+      paymentMethod = 'طريقة الدفع',
+      amount = 'المبلغ',
       change = 'الباقي';
 
   static String _arReceiptInvoiceTitle(String invoiceNo) => 'فاتورة $invoiceNo';

@@ -100,7 +100,7 @@ class _ReceiptPainter {
     final lineCount = document.lines.length.clamp(1, 80);
     final notesExtra = _visible(document.notes) ? 42 : 0;
     final noticeExtra = _visible(document.arabicPrintNotice) ? 42 : 0;
-    final paymentExtra = document.payments.length * 28;
+    final paymentExtra = document.payments.isEmpty ? 0 : (document.payments.length + 1) * 28;
 
     final height =
         170 +
@@ -166,6 +166,19 @@ class _ReceiptPainter {
       align: TextAlign.center,
       dir: TextDirection.rtl,
     );
+
+    if (_visible(document.branch.name) &&
+        document.branch.name.trim() != document.seller.name.trim()) {
+      cy = text.draw(
+        canvas,
+        document.branch.name,
+        Rect.fromLTWH(rect.left + 8, cy, rect.width - 16, 22),
+        size: small + 1,
+        bold: true,
+        align: TextAlign.center,
+        dir: TextDirection.rtl,
+      );
+    }
 
     if (_visible(document.seller.phone)) {
       cy = text.draw(
@@ -480,14 +493,46 @@ class _ReceiptPainter {
     final w = widthPx - margin * 2;
     final valueW = w * 0.34;
     final labelW = w - valueW;
-    final h = rowH * document.payments.length;
+    final h = rowH * (document.payments.length + 1);
     final rect = Rect.fromLTWH(margin, y, w, h);
 
     _box(canvas, rect);
 
+    final headerRow = Rect.fromLTWH(margin, y, w, rowH);
+    _line(
+      canvas,
+      Offset(headerRow.left + labelW, headerRow.top),
+      Offset(headerRow.left + labelW, headerRow.bottom),
+    );
+    _line(
+      canvas,
+      Offset(headerRow.left, headerRow.bottom),
+      Offset(headerRow.right, headerRow.bottom),
+    );
+
+    text.draw(
+      canvas,
+      labels.paymentMethod,
+      Rect.fromLTWH(headerRow.left + 5, headerRow.top + 3, labelW - 10, rowH - 6),
+      size: small + 1,
+      bold: true,
+      align: TextAlign.center,
+      dir: TextDirection.rtl,
+    );
+
+    text.draw(
+      canvas,
+      labels.amount,
+      Rect.fromLTWH(headerRow.left + labelW + 5, headerRow.top + 3, valueW - 10, rowH - 6),
+      size: small + 1,
+      bold: true,
+      align: TextAlign.center,
+      dir: TextDirection.rtl,
+    );
+
     for (var i = 0; i < document.payments.length; i++) {
       final payment = document.payments[i];
-      final top = y + i * rowH;
+      final top = y + rowH + (i * rowH);
       final row = Rect.fromLTWH(margin, top, w, rowH);
 
       if (i > 0) {
@@ -513,12 +558,7 @@ class _ReceiptPainter {
       text.draw(
         canvas,
         payment.displayAmount,
-        Rect.fromLTWH(
-          row.left + labelW + 5,
-          row.top + 3,
-          valueW - 10,
-          rowH - 6,
-        ),
+        Rect.fromLTWH(row.left + labelW + 5, row.top + 3, valueW - 10, rowH - 6),
         size: font + 1,
         bold: true,
         align: TextAlign.center,

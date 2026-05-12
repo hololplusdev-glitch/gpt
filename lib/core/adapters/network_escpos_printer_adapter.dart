@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:holol_POS/core/adapters/printer_adapter.dart';
@@ -102,7 +103,7 @@ class NetworkEscPosPrinterAdapter implements PrinterAdapter {
     final normalized = payload?.trim();
     if (normalized == null || normalized.isEmpty) return const [];
 
-    final data = normalized.codeUnits;
+    final data = utf8.encode(normalized);
     final length = data.length + 3;
 
     return [
