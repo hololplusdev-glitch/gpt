@@ -167,8 +167,10 @@ class MasterDataSyncContext {
 
   String get syncUserId => normalizedBootstrapUserId;
 
+  int get safePageLimit => pageLimit <= 0 ? 100 : pageLimit;
+
   int effectivePageLimitFor(MasterDataType type) {
-    return type.effectivePageLimit(pageLimit);
+    return type.effectivePageLimit(safePageLimit);
   }
 
   MasterDataSyncContext copyWith({

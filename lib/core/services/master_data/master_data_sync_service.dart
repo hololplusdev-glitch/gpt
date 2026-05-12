@@ -463,7 +463,7 @@ class MasterDataSyncService {
             type: type,
             pageNo: pageNo,
             offset: offset,
-            limit: _effectivePageLimitFor(type, context.pageLimit),
+            limit: context.effectivePageLimitFor(type),
             durationMs: _clock.now().difference(pageStartedAt).inMilliseconds,
             status: MasterDataTypeRunStatus.failed,
             errorMessage: ErrorMapper.userMessage(error),
@@ -486,7 +486,7 @@ class MasterDataSyncService {
 
         final limit = page.limit > 0
             ? page.limit
-            : _effectivePageLimitFor(type, context.pageLimit);
+            : context.effectivePageLimitFor(type);
         final totalPages = page.total > 0 && limit > 0
             ? (page.total / limit).ceil()
             : pageNo;
@@ -890,9 +890,11 @@ class MasterDataSyncService {
     required String? lastUpdate,
     MasterDataSyncCancelHandle? cancelHandle,
   }) async {
-    final queryParams = context
-        .copyWith(pageLimit: _effectivePageLimitFor(type, context.pageLimit))
-        .queryParameters(type: type, offset: offset, lastUpdate: lastUpdate);
+    final queryParams = context.queryParameters(
+      type: type,
+      offset: offset,
+      lastUpdate: lastUpdate,
+    );
 
     // WHY: Validate baseUrl doesn't end with /data to prevent /data/data.
     final baseUrl = _apiClient.debugBaseUrl;
@@ -942,7 +944,7 @@ class MasterDataSyncService {
           items: const [],
           serverTime: _clock.now().toIso8601String(),
           hasMore: false,
-          limit: _effectivePageLimitFor(type, context.pageLimit),
+          limit: context.effectivePageLimitFor(type),
           total: 0,
         );
       }
