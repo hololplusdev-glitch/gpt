@@ -65,7 +65,14 @@ class MasterDataSyncService {
   MasterDataSyncCancelHandle createCancelHandle() =>
       MasterDataSyncCancelHandle();
 
+
+  int _latencyMsSince(DateTime startedAt) {
+    final value = _clock.now().difference(startedAt).inMilliseconds;
+    return value < 0 ? 0 : value;
+  }
+
   Future<HealthCheckResult> checkConnection(SyncProfile profile) async {
+    final startedAt = _clock.now();
     try {
       _apiClient.configure(profile);
       final baseUrl = _apiClient.debugBaseUrl;
@@ -74,7 +81,7 @@ class MasterDataSyncService {
           status: HealthStatus.degraded,
           service: 'Backend API',
           error: 'API baseUrl must not end with /data.',
-          latencyMs: 0,
+          latencyMs: _latencyMsSince(startedAt),
           checkedAt: _clock.now(),
         );
       }
@@ -103,7 +110,7 @@ class MasterDataSyncService {
           status: HealthStatus.degraded,
           service: 'Backend API',
           error: 'Response was not a JSON object.',
-          latencyMs: 0,
+          latencyMs: _latencyMsSince(startedAt),
           checkedAt: _clock.now(),
         );
       }
@@ -114,7 +121,7 @@ class MasterDataSyncService {
           status: HealthStatus.degraded,
           service: 'Backend API',
           error: 'Unexpected response status.',
-          latencyMs: 0,
+          latencyMs: _latencyMsSince(startedAt),
           checkedAt: _clock.now(),
         );
       }
@@ -127,14 +134,14 @@ class MasterDataSyncService {
             data,
             fallback: 'API rejected request',
           ),
-          latencyMs: 0,
+          latencyMs: _latencyMsSince(startedAt),
           checkedAt: _clock.now(),
         );
       }
       return HealthCheckResult(
         status: HealthStatus.ok,
         service: 'Backend API',
-        latencyMs: 0,
+        latencyMs: _latencyMsSince(startedAt),
         checkedAt: _clock.now(),
       );
     } catch (e) {
@@ -142,7 +149,7 @@ class MasterDataSyncService {
         status: HealthStatus.degraded,
         service: 'Backend API',
         error: ErrorMapper.userMessage(e),
-        latencyMs: 0,
+        latencyMs: _latencyMsSince(startedAt),
         checkedAt: _clock.now(),
       );
     }
@@ -291,7 +298,7 @@ class MasterDataSyncService {
           }
           break;
         }
-      } else if (result.isFailure) {}
+      }
 
       if (type == MasterDataType.posMachine && !result.isFailure) {
         final devicePrivilegeResults =
