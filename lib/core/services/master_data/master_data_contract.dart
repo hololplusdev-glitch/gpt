@@ -47,6 +47,33 @@ enum MasterDataType {
 
   /// Types whose failure is fatal and must abort the entire sync.
   static const mandatoryTypes = {user, posMachine};
+
+  /// Types allowed to fail as warnings during first-run setup.
+  ///
+  /// Keep this policy here, not in SetupNotifier, so master-data behavior has
+  /// one owner.
+  static const setupWarningTypes = {bank, cash, creditCardType};
+
+  bool get isMandatory => mandatoryTypes.contains(this);
+
+  bool get isSetupWarning => setupWarningTypes.contains(this);
+
+  bool get isHeavyPayload {
+    switch (this) {
+      case item:
+      case itemPrice:
+      case customer:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  int effectivePageLimit(int configuredLimit) {
+    final safeConfigured = configuredLimit <= 0 ? 100 : configuredLimit;
+    if (!isHeavyPayload) return safeConfigured;
+    return safeConfigured < 100 ? safeConfigured : 100;
+  }
 }
 
 enum MasterDataSyncMode {

@@ -97,8 +97,8 @@ class MasterDataSyncService {
         queryParameters: queryParams,
       );
 
-      final body = response.data;
-      if (body is! Map) {
+      final data = _responseMapOrNull(response.data);
+      if (data == null) {
         return HealthCheckResult(
           status: HealthStatus.degraded,
           service: 'Backend API',
@@ -107,9 +107,9 @@ class MasterDataSyncService {
           checkedAt: _clock.now(),
         );
       }
-      final data = Map<String, dynamic>.from(body);
-      final status = data['status']?.toString().toUpperCase();
-      if (status != 'OK' && status != 'ERROR') {
+
+      final status = _responseStatus(data);
+      if (!_isKnownResponseStatus(status)) {
         return HealthCheckResult(
           status: HealthStatus.degraded,
           service: 'Backend API',
@@ -118,12 +118,15 @@ class MasterDataSyncService {
           checkedAt: _clock.now(),
         );
       }
-      if (status == 'ERROR') {
-        final errorMsg = data['message']?.toString() ?? 'API rejected request';
+
+      if (_isErrorResponse(status)) {
         return HealthCheckResult(
           status: HealthStatus.degraded,
           service: 'Backend API',
-          error: errorMsg,
+          error: _responseErrorMessage(
+            data,
+            fallback: 'API rejected request',
+          ),
           latencyMs: 0,
           checkedAt: _clock.now(),
         );
@@ -143,6 +146,71 @@ class MasterDataSyncService {
         checkedAt: _clock.now(),
       );
     }
+  }
+
+  Map<String, dynamic>? _responseMapOrNull(dynamic body) {
+    if (body is! Map) return null;
+    return Map<String, dynamic>.from(body);
+  }
+
+  Map<String, dynamic> _responseMap(
+    dynamic body, {
+    required String invalidMessage,
+  }) {
+    final data = _responseMapOrNull(body);
+    if (data == null) {
+      throw SyncException(
+        invalidMessage,
+        code: 'MASTER_DATA_INVALID_RESPONSE',
+      );
+    }
+    return data;
+  }
+
+  String _responseStatus(Map<String, dynamic> data) {
+    return _cleanResponseText(data['status']).toUpperCase();
+  }
+
+  bool _isKnownResponseStatus(String status) {
+    return status == 'OK' || status == 'ERROR';
+  }
+
+  bool _isErrorResponse(String status) {
+    return status == 'ERROR';
+  }
+
+  String _responseErrorCode(
+    Map<String, dynamic> data, {
+    required String fallback,
+  }) {
+    final code = _cleanResponseText(data['code']);
+    return code.isEmpty ? fallback : code;
+  }
+
+  String _responseErrorMessage(
+    Map<String, dynamic> data, {
+    required String fallback,
+  }) {
+    final message = _firstCleanResponseText([
+      data['message'],
+      data['error'],
+      data['details'],
+    ]);
+    return message.isEmpty ? fallback : message;
+  }
+
+  String _firstCleanResponseText(Iterable<Object?> values) {
+    for (final value in values) {
+      final text = _cleanResponseText(value);
+      if (text.isNotEmpty) return text;
+    }
+    return '';
+  }
+
+  String _cleanResponseText(Object? value) {
+    final text = value?.toString().trim() ?? '';
+    if (text.isEmpty || text.toLowerCase() == 'null') return '';
+    return text;
   }
 
   Future<MasterDataSyncSummary> syncAll(
@@ -210,7 +278,7 @@ class MasterDataSyncService {
       );
       results.add(result);
       // WHY: Mandatory types must succeed AND return rows — abort sync otherwise.
-      if (MasterDataType.mandatoryTypes.contains(type)) {
+      if (type.isMandatory) {
         if (result.isFailure) {
           // Ensure the result reflects the failure if it was only empty rows.
           if (result.error == null && result.rowCount == 0) {
@@ -406,18 +474,10 @@ class MasterDataSyncService {
             type: type,
             pageNo: pageNo,
             offset: offset,
-            limit: context.pageLimit,
-            durationMs: _clock.now().difference(pageStartedAt).inMilliseconds,
-            status: MasterDataTypeRunStatus.failed,
-            errorMessage: ErrorMapper.userMessage(error),
-          );
-          rethrow;
-        }
-
-        pagesCount++;
-        if (firstServerTime == null) {
-          firstServerTime = page.serverTime;
-        } else if (firstServerTime != page.serverTime) {
+  int _effectivePageLimitFor(MasterDataType type, int configuredLimit) {
+    return type.effectivePageLimit(configuredLimit);
+  }
+ else if (firstServerTime != page.serverTime) {
           warnings.add(
             'server_time changed between pages; using first page server_time.',
           );
@@ -738,7 +798,7 @@ class MasterDataSyncService {
 
     if (mode == MasterDataSyncMode.initial ||
         mode == MasterDataSyncMode.forceFull) {
-      if (MasterDataType.mandatoryTypes.contains(type)) {
+      if (type.isMandatory) {
         throw SyncException(
           '${type.code} returned 0 rows; this type is mandatory for ${mode.code} sync.',
           code: 'MASTER_DATA_MANDATORY_EMPTY',
@@ -884,7 +944,7 @@ class MasterDataSyncService {
           items: const [],
           serverTime: _clock.now().toIso8601String(),
           hasMore: false,
-          limit: context.pageLimit,
+          limit: _effectivePageLimitFor(type, context.pageLimit),
           total: 0,
         );
       }

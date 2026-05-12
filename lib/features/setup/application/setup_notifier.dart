@@ -171,7 +171,7 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
             cancelHandle: _cancelToken,
             requireReady: false,
             throwOnFatalFailures: true,
-            warningTypes: _setupWarningTypes,
+            warningTypes: MasterDataType.setupWarningTypes,
             onProgress: (progress) {
               final totalSections = progress.totalSections <= 0
                   ? 1
@@ -274,12 +274,6 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
       );
     }
   }
-
-  static const _setupWarningTypes = {
-    MasterDataType.bank,
-    MasterDataType.cash,
-    MasterDataType.creditCardType,
-  };
 }
 
 final setupProvider = AsyncNotifierProvider<SetupNotifier, SetupState>(
