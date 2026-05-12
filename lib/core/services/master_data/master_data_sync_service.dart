@@ -916,7 +916,6 @@ class MasterDataSyncService {
     );
   }
 
-
   _MasterDataPage _parseMasterDataPageResponse({
     required dynamic body,
     required MasterDataType type,
@@ -968,7 +967,8 @@ class MasterDataSyncService {
     final items = _pageItems(data);
     final pagination = _pagePagination(data);
 
-    final limit = _pageInt(
+    final limit =
+        _pageInt(
           pagination['limit'] ??
               pagination['page_limit'] ??
               pagination['pageLimit'] ??
@@ -985,7 +985,8 @@ class MasterDataSyncService {
       );
     }
 
-    final total = _pageInt(
+    final total =
+        _pageInt(
           pagination['total'] ??
               pagination['total_rows'] ??
               pagination['totalRows'] ??
@@ -1019,7 +1020,7 @@ class MasterDataSyncService {
   ) {
     final responseType = _cleanResponseText(data['type']).toUpperCase();
 
-    // Some backends omit type on OK responses. If present, it must match.
+    // Some backend responses may omit type. If present, it must match.
     if (responseType.isEmpty) return;
 
     if (responseType != expectedType.code) {
@@ -1065,7 +1066,6 @@ class MasterDataSyncService {
     final raw = data['pagination'] ?? data['page'] ?? data['paging'];
 
     if (raw == null) return const {};
-
     if (raw is! Map) {
       throw const SyncException(
         'Master data pagination was not a JSON object.',
@@ -1112,8 +1112,7 @@ class MasterDataSyncService {
       return offset + itemCount < total;
     }
 
-    // No explicit pagination signal. Stop safely to avoid infinite loops if the
-    // backend ignores offset. Correct API responses should provide has_more or total.
+    // No explicit pagination signal. Stop safely to avoid infinite loops.
     return false;
   }
 
@@ -1166,132 +1165,6 @@ class MasterDataSyncService {
     ]);
 
     return value.isEmpty ? fallback : value;
-  }
-) async {
-    final queryParams = context.queryParameters(
-      type: type,
-      offset: offset,
-      lastUpdate: lastUpdate,
-    );
-
-    // WHY: Validate baseUrl doesn't end with /data to prevent /data/data.
-    final baseUrl = _apiClient.debugBaseUrl;
-    if (baseUrl.endsWith(ApiPaths.data)) {
-      throw const SyncException(
-        'API baseUrl must not end with /data. '
-        'The sync engine appends /data automatically.',
-        code: 'MASTER_DATA_BAD_BASE_URL',
-      );
-    }
-
-    final response = await _getPageResponseWithRetry(
-      queryParams: queryParams,
-      cancelHandle: cancelHandle,
-    );
-    final body = response.data;
-
-    if (body is! Map) {
-      throw SyncException(
-        'Master data response was not a JSON object.',
-        code: 'MASTER_DATA_INVALID_RESPONSE',
-      );
-    }
-
-    final data = Map<String, dynamic>.from(body);
-    final status = data['status']?.toString().toUpperCase();
-    final responseType = data['type']?.toString().toUpperCase();
-    final serverTime = data['server_time']?.toString();
-
-    // WHY: status must be OK or ERROR — anything else is a contract violation.
-    if (status != 'OK' && status != 'ERROR') {
-      throw SyncException(
-        'Unexpected response status: "$status". Expected OK or ERROR.',
-        code: 'MASTER_DATA_INVALID_STATUS',
-      );
-    }
-
-    if (status == 'ERROR') {
-      final errorCode = data['code']?.toString() ?? 'MASTER_DATA_API_ERROR';
-      final errorMsg =
-          data['message']?.toString() ??
-          'Master data API rejected the request.';
-
-      if (type == MasterDataType.devicePrivilege &&
-          errorCode == 'NO_MACHINE_PRIV') {
-        return _MasterDataPage(
-          items: const [],
-          serverTime: _clock.now().toIso8601String(),
-          hasMore: false,
-          limit: context.effectivePageLimitFor(type),
-          total: 0,
-        );
-      }
-
-      throw SyncException(errorMsg, code: errorCode);
-    }
-
-    // WHY: response.type must be present and match the requested p_type.
-    if (responseType == null || responseType != type.code) {
-      throw SyncException(
-        'response.type=$responseType does not match requested p_type=${type.code}.',
-        code: 'TYPE_MISMATCH',
-      );
-    }
-
-    if (serverTime == null || serverTime.isEmpty) {
-      throw SyncException(
-        '${type.code} response is missing required server_time.',
-        code: 'MASTER_DATA_MISSING_SERVER_TIME',
-      );
-    }
-
-    final itemsValue = data['items'];
-    // WHY: items must be an array — anything else is a contract violation.
-    if (status == 'OK' && itemsValue != null && itemsValue is! List) {
-      throw const SyncException(
-        'response.items must be an array.',
-        code: 'MASTER_DATA_INVALID_ITEMS',
-      );
-    }
-    final items = itemsValue is List
-        ? itemsValue
-              .whereType<Map>()
-              .map((row) => Map<String, dynamic>.from(row))
-              .toList()
-        : <Map<String, dynamic>>[];
-
-    // WHY: pagination block is mandatory when status == OK.
-    final paginationRaw = data['pagination'];
-    if (paginationRaw == null) {
-      throw SyncException(
-        '${type.code} response is missing required pagination block.',
-        code: 'MISSING_PAGINATION',
-      );
-    }
-    if (paginationRaw is! Map) {
-      throw SyncException(
-        '${type.code} pagination block must be a JSON object.',
-        code: 'MISSING_PAGINATION',
-      );
-    }
-    final pagination = Map<String, dynamic>.from(paginationRaw);
-
-    // WHY: has_more must be strictly Y or N — unexpected values are a contract violation.
-    final hasMoreRaw = pagination['has_more']?.toString().toUpperCase();
-    if (hasMoreRaw != 'Y' && hasMoreRaw != 'N') {
-      throw SyncException(
-        'pagination.has_more="$hasMoreRaw" is not Y/N for ${type.code}.',
-        code: 'INVALID_HAS_MORE',
-      );
-    }
-
-    return _MasterDataPage(
-      items: items,
-      serverTime: serverTime,
-      hasMore: BackendValueReader.parseBool(pagination['has_more']),
-      limit: BackendValueReader.parseInt(pagination['limit']) ?? items.length,
-      total: BackendValueReader.parseInt(pagination['total']) ?? 0,
-    );
   }
 
   String _newId(String prefix) {
