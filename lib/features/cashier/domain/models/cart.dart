@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
@@ -24,7 +22,6 @@ class AddToCartResult {
 class CartItem {
   final SellableItemSnapshot sellableItem;
   final double quantity;
-  final double discountAmount;
   final DiscountType? discountType;
   final double? discountValue;
   final String? notes;
@@ -32,7 +29,6 @@ class CartItem {
   const CartItem({
     required this.sellableItem,
     required this.quantity,
-    this.discountAmount = 0.0,
     this.discountType,
     this.discountValue,
     this.notes,
@@ -53,7 +49,6 @@ class CartItem {
   CartItem copyWith({
     SellableItemSnapshot? sellableItem,
     double? quantity,
-    double? discountAmount,
     DiscountType? discountType,
     double? discountValue,
     String? notes,
@@ -61,7 +56,6 @@ class CartItem {
     return CartItem(
       sellableItem: sellableItem ?? this.sellableItem,
       quantity: quantity ?? this.quantity,
-      discountAmount: discountAmount ?? this.discountAmount,
       discountType: discountType ?? this.discountType,
       discountValue: discountValue ?? this.discountValue,
       notes: notes ?? this.notes,
@@ -82,7 +76,6 @@ class CartItem {
       taxRate: taxRate,
       discountType: discountType,
       discountValue: discountValue,
-      discountAmount: discountAmount,
       allowDiscount: allowDiscount,
       notes: notes,
     );
@@ -90,30 +83,6 @@ class CartItem {
 
   Map<String, dynamic> toHeldOrderSnapshotJson() {
     return toSaleLineInput().toHeldOrderSnapshotJson();
-  }
-
-  static CartItem fromSnapshotJson(Map<String, dynamic> json) {
-    final unitName = json['unitName'] as String? ?? 'Each';
-
-    return CartItem(
-      sellableItem: SellableItemSnapshot(
-        itemId: json['itemId'] as String,
-        unitId: json['unitId'] as String,
-        itemName: json['itemName'] as String,
-        unitName: unitName,
-        unitSize: _nullableDouble(json['unitSize']),
-        barcode: json['barcode'] as String?,
-        unitPrice: _double(json['unitPrice']),
-        taxRate: _double(json['taxRate']),
-        allowDiscount: json['allowDiscount'] as bool? ?? false,
-        useQtyFraction: json['useQtyFraction'] as bool? ?? false,
-      ),
-      quantity: _double(json['quantity'], fallback: 1.0),
-      discountType: _parseDiscountType(json['discountType']),
-      discountValue: _nullableDouble(json['discountValue']),
-      discountAmount: _double(json['discountAmount']),
-      notes: json['notes'] as String?,
-    );
   }
 }
 
@@ -178,17 +147,7 @@ class Cart {
 
     _validateQuantityForSnapshot(current.sellableItem, newQuantity);
 
-    final discountAmount = _calculateDiscountAmount(
-      unitPrice: current.unitPrice,
-      quantity: newQuantity,
-      discountType: current.discountType,
-      discountValue: current.discountValue,
-      allowDiscount: current.allowDiscount,
-    );
-
-    return replaceLine(
-      current.copyWith(quantity: newQuantity, discountAmount: discountAmount),
-    );
+    return replaceLine(current.copyWith(quantity: newQuantity));
   }
 
   Cart applyResolvedPrice({
@@ -199,20 +158,7 @@ class Cart {
     final current = findLine(itemId, unitId);
     if (current == null) return this;
 
-    final discountAmount = _calculateDiscountAmount(
-      unitPrice: pricedSnapshot.unitPrice,
-      quantity: current.quantity,
-      discountType: current.discountType,
-      discountValue: current.discountValue,
-      allowDiscount: pricedSnapshot.allowDiscount,
-    );
-
-    return replaceLine(
-      current.copyWith(
-        sellableItem: pricedSnapshot,
-        discountAmount: discountAmount,
-      ),
-    );
+    return replaceLine(current.copyWith(sellableItem: pricedSnapshot));
   }
 
   Cart applyLineDiscount(
@@ -225,19 +171,21 @@ class Cart {
       items: items.map((item) {
         if (!_sameLine(item, itemId, unitId)) return item;
 
-        final amount = _calculateDiscountAmount(
-          unitPrice: item.unitPrice,
-          quantity: item.quantity,
-          discountType: type,
-          discountValue: value,
-          allowDiscount: item.allowDiscount,
-        );
+        if (!item.allowDiscount && value > 0) {
+          throw BusinessException(
+            'Discount is not allowed for ${item.productName}.',
+            code: 'DISCOUNT_NOT_ALLOWED',
+          );
+        }
 
-        return item.copyWith(
-          discountType: type,
-          discountValue: value,
-          discountAmount: amount,
-        );
+        if (value < 0) {
+          throw BusinessException(
+            'Discount cannot be negative.',
+            code: 'INVALID_DISCOUNT',
+          );
+        }
+
+        return item.copyWith(discountType: type, discountValue: value);
       }).toList(),
     );
   }
@@ -295,7 +243,6 @@ class Cart {
         quantity: line.quantity,
         discountType: line.discountType,
         discountValue: line.discountValue,
-        discountAmount: line.discountAmount,
         notes: line.notes,
       );
 
@@ -310,34 +257,6 @@ class Cart {
     }
 
     return Cart(items: items);
-  }
-
-  static Cart fromHeldOrderSnapshotJson(String snapshotJson) {
-    final decoded = jsonDecode(snapshotJson);
-
-    if (decoded is List) {
-      return Cart(
-        items: decoded
-            .cast<Map<String, dynamic>>()
-            .map(CartItem.fromSnapshotJson)
-            .toList(),
-      );
-    }
-
-    if (decoded is Map<String, dynamic>) {
-      final items = decoded['items'];
-
-      if (items is List) {
-        return Cart(
-          items: items
-              .cast<Map<String, dynamic>>()
-              .map(CartItem.fromSnapshotJson)
-              .toList(),
-        );
-      }
-    }
-
-    throw const FormatException('Invalid held order snapshot.');
   }
 
   bool _sameLine(CartItem item, String itemId, String? unitId) {
@@ -361,45 +280,6 @@ void _validateQuantityForSnapshot(
 
 bool _isWholeQuantity(double value) {
   return (value - value.roundToDouble()).abs() < 0.000001;
-}
-
-double _calculateDiscountAmount({
-  required double unitPrice,
-  required double quantity,
-  required DiscountType? discountType,
-  required double? discountValue,
-  required bool allowDiscount,
-}) {
-  return const PricingEngine().calculateDiscountAmount(
-    grossAmount: PricingEngine.roundAmount(unitPrice * quantity),
-    discountType: discountType,
-    discountValue: discountValue,
-    allowDiscount: allowDiscount,
-  );
-}
-
-double _double(Object? value, {double fallback = 0.0}) {
-  if (value == null) return fallback;
-  if (value is num) return value.toDouble();
-  return double.tryParse(value.toString()) ?? fallback;
-}
-
-double? _nullableDouble(Object? value) {
-  if (value == null) return null;
-  if (value is num) return value.toDouble();
-  return double.tryParse(value.toString());
-}
-
-DiscountType? _parseDiscountType(Object? value) {
-  if (value == null) return null;
-
-  if (value is String) {
-    for (final type in DiscountType.values) {
-      if (type.code == value) return type;
-    }
-  }
-
-  return null;
 }
 
 typedef CartPriceResolver =
@@ -504,10 +384,6 @@ class CartController extends StateNotifier<Cart> {
 
   void restoreFromSaleLineInputs(List<SaleLineInput> lines) {
     state = Cart.fromSaleLineInputs(lines);
-  }
-
-  void restoreFromHeldOrderJson(String snapshotJson) {
-    state = Cart.fromHeldOrderSnapshotJson(snapshotJson);
   }
 
   Future<SellableItemSnapshot> _resolveCurrentSnapshot(

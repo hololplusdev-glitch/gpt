@@ -89,10 +89,39 @@ class HeldOrdersService {
       );
     }
 
-    _validatePreviewInputs(lineItems: items);
+  void _validatePreviewInputs({required List<SaleLineInput> lineItems}) {
+    for (final line in lineItems) {
+      if (line.quantity <= 0) {
+        throw SaleException('Invalid quantity for ${line.itemName}.');
+      }
 
-    final quote = previewQuote(lineItems: items);
-    final id = 'HLD_${_uuid.v4()}';
+      if (!line.useQtyFraction &&
+          (line.quantity - line.quantity.roundToDouble()).abs() > 0.000001) {
+        throw SaleException(
+          'Fraction quantity is not allowed for ${line.itemName}.',
+        );
+      }
+
+      if (line.unitPrice <= 0) {
+        throw SaleException('Missing price for ${line.itemName}.');
+      }
+
+      if (line.taxRate < 0) {
+        throw SaleException('Invalid tax rate for ${line.itemName}.');
+      }
+
+      if ((line.discountValue ?? 0) < 0) {
+        throw SaleException('Invalid discount for ${line.itemName}.');
+      }
+
+      if (!line.allowDiscount &&
+          line.discountType != null &&
+          (line.discountValue ?? 0) > 0) {
+        throw SaleException('Discounts are not allowed for ${line.itemName}.');
+      }
+    }
+  }
+';
     final now = _clock.now();
 
     final snapshotJson = jsonEncode({
@@ -267,12 +296,6 @@ class HeldOrdersService {
         _text(snapshot['discountType']),
       );
       final discountValue = _nullableDouble(snapshot['discountValue']);
-      final discountAmount = _pricingEngine.calculateDiscountAmount(
-        grossAmount: PricingEngine.roundAmount(sellable.unitPrice * quantity),
-        discountType: discountType,
-        discountValue: discountValue,
-        allowDiscount: sellable.allowDiscount,
-      );
 
       if (oldUnitPrice != null && oldUnitPrice != sellable.unitPrice) {
         warnings.add(
@@ -306,7 +329,6 @@ class HeldOrdersService {
           taxRate: sellable.taxRate,
           discountType: discountType,
           discountValue: discountValue,
-          discountAmount: discountAmount,
           allowDiscount: sellable.allowDiscount,
           notes: _text(snapshot['notes']),
         ),

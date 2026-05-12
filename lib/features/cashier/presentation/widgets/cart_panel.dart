@@ -147,10 +147,15 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                     itemBuilder: (context, index) {
                       final item = cart.items[index];
                       final lineTotal = _lineTotalForItem(item, quoteState);
+                      final discountAmount = _lineDiscountForItem(
+                        item,
+                        quoteState,
+                      );
 
                       return _CartItemTile(
                         item: item,
                         officialLineTotal: lineTotal,
+                        officialDiscountAmount: discountAmount,
                       );
                     },
                   ),
@@ -169,8 +174,13 @@ class _CartPanelState extends ConsumerState<CartPanel> {
 class _CartItemTile extends ConsumerWidget {
   final CartItem item;
   final double? officialLineTotal;
+  final double? officialDiscountAmount;
 
-  const _CartItemTile({required this.item, this.officialLineTotal});
+  const _CartItemTile({
+    required this.item,
+    this.officialLineTotal,
+    this.officialDiscountAmount,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -234,10 +244,10 @@ class _CartItemTile extends ConsumerWidget {
                     color: AppColors.textSecondary,
                   ),
                 ),
-                if (item.discountAmount > 0)
+                if ((officialDiscountAmount ?? 0) > 0)
                   Text(
                     l10n.discountAmountLabel(
-                      PosFormatters.amount(item.discountAmount),
+                      PosFormatters.amount(officialDiscountAmount ?? 0),
                     ),
                     style: const TextStyle(
                       fontSize: 11,
@@ -317,10 +327,10 @@ class _CartItemTile extends ConsumerWidget {
                         color: AppColors.textSecondary,
                       ),
                     ),
-                    if (item.discountAmount > 0)
+                    if ((officialDiscountAmount ?? 0) > 0)
                       Text(
                         l10n.discountAmountLabel(
-                          PosFormatters.amount(item.discountAmount),
+                          PosFormatters.amount(officialDiscountAmount ?? 0),
                         ),
                         style: const TextStyle(
                           fontSize: 11,

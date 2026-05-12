@@ -14,7 +14,6 @@ class SaleLineInput {
   final double taxRate;
   final DiscountType? discountType;
   final double? discountValue;
-  final double discountAmount;
   final bool allowDiscount;
   final String? notes;
 
@@ -31,7 +30,6 @@ class SaleLineInput {
     this.taxRate = 0.0,
     this.discountType,
     this.discountValue,
-    this.discountAmount = 0.0,
     this.allowDiscount = false,
     this.notes,
   });
@@ -49,7 +47,6 @@ class SaleLineInput {
     'taxRate': taxRate,
     'discountType': discountType?.code,
     'discountValue': discountValue,
-    'discountAmount': discountAmount,
     'allowDiscount': allowDiscount,
     'notes': notes,
   };
@@ -64,7 +61,6 @@ extension SaleLineInputPricingMapper on SaleLineInput {
       quantity: quantity,
       discountType: discountType,
       discountValue: discountValue,
-      discountAmount: discountAmount,
       allowDiscount: allowDiscount,
       taxRate: taxRate,
     );

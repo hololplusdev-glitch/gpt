@@ -92,7 +92,10 @@ class ProductGrid extends ConsumerWidget {
               if (products.isEmpty) {
                 final search = ref.read(searchQueryProvider);
                 final cat = ref.read(selectedCategoryProvider);
-                if (search.isEmpty && cat == null) {
+                final shouldShowDiagnostic =
+                    catalogState.emptyReason != null ||
+                    (search.isEmpty && cat == null);
+                if (shouldShowDiagnostic) {
                   final session = ref
                       .read(activePosSessionProvider)
                       .valueOrNull;

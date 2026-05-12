@@ -28,7 +28,6 @@ class PricingEngine {
         quantity: line.quantity,
         discountType: line.discountType,
         discountValue: line.discountValue,
-        discountAmount: line.discountAmount,
         allowDiscount: line.allowDiscount,
         taxRate: useTax ? (line.taxRate ?? taxRate) : 0.0,
         priceIncludesTax: priceIncludesTax,
@@ -43,16 +42,13 @@ class PricingEngine {
       pricedLines.add(pricedLine);
     }
 
-    final discountTotal = roundAmount(lineDiscountTotal);
-    final grandTotal = roundAmount(lineTotalSum);
-
     return CheckoutQuote(
       lines: pricedLines,
       subtotal: subtotal,
       lineDiscountTotal: lineDiscountTotal,
-      discountTotal: discountTotal,
+      discountTotal: roundAmount(lineDiscountTotal),
       taxTotal: taxTotal,
-      grandTotal: grandTotal,
+      grandTotal: roundAmount(lineTotalSum),
       roundingDelta: 0.0,
     );
   }
@@ -64,17 +60,27 @@ class PricingEngine {
     required double quantity,
     DiscountType? discountType,
     double? discountValue,
-    double discountAmount = 0.0,
     bool allowDiscount = true,
     required double taxRate,
     required bool priceIncludesTax,
   }) {
+    if (quantity <= 0) {
+      throw const PricingException('Quantity must be greater than zero.');
+    }
+
+    if (unitPrice < 0) {
+      throw const PricingException('Unit price cannot be negative.');
+    }
+
+    if (taxRate < 0) {
+      throw const PricingException('Tax rate cannot be negative.');
+    }
+
     final grossAmount = roundAmount(unitPrice * quantity);
     final resolvedDiscountAmount = calculateDiscountAmount(
       grossAmount: grossAmount,
       discountType: discountType,
       discountValue: discountValue,
-      fallbackDiscountAmount: discountAmount,
       allowDiscount: allowDiscount,
     );
 
@@ -86,11 +92,13 @@ class PricingEngine {
     final taxableAmount = priceIncludesTax && taxRate > 0
         ? roundAmount(discountedAmount / (1 + taxRate / 100))
         : discountedAmount;
+
     final taxAmount = taxRate <= 0
         ? 0.0
         : priceIncludesTax
         ? roundAmount(discountedAmount - taxableAmount)
         : roundAmount(taxableAmount * taxRate / 100);
+
     final lineTotal = priceIncludesTax
         ? discountedAmount
         : roundAmount(taxableAmount + taxAmount);
@@ -110,26 +118,31 @@ class PricingEngine {
     required double grossAmount,
     DiscountType? discountType,
     double? discountValue,
-    double fallbackDiscountAmount = 0.0,
     bool allowDiscount = true,
   }) {
-    final hasRule = discountType != null && (discountValue ?? 0) > 0;
-    final requestedAmount = hasRule
-        ? switch (discountType) {
-            DiscountType.percentage =>
-              grossAmount * ((discountValue ?? 0) / 100),
-            DiscountType.fixed => discountValue ?? 0,
-          }
-        : fallbackDiscountAmount;
+    final value = discountValue ?? 0.0;
 
-    final amount = roundAmount(requestedAmount);
+    if (value < 0) {
+      throw const PricingException('Discount cannot be negative.');
+    }
 
-    if (!allowDiscount && amount > 0) {
+    if (discountType == null || value == 0) {
+      return 0.0;
+    }
+
+    if (!allowDiscount) {
       throw const PricingException('Discount is not allowed for this item.');
     }
 
-    if (amount < 0) {
-      throw const PricingException('Discount cannot be negative.');
+    final requestedAmount = switch (discountType) {
+      DiscountType.percentage => grossAmount * (value / 100),
+      DiscountType.fixed => value,
+    };
+
+    final amount = roundAmount(requestedAmount);
+
+    if (amount > grossAmount) {
+      throw const PricingException('Discount exceeds line gross amount.');
     }
 
     return amount;
@@ -146,11 +159,6 @@ class PricingLineInput {
   final double quantity;
   final DiscountType? discountType;
   final double? discountValue;
-
-  /// Legacy/computed value. If discountType/value are provided, PricingEngine
-  /// recomputes the amount from the rule and ignores this fallback.
-  final double discountAmount;
-
   final bool allowDiscount;
   final double? taxRate;
 
@@ -161,7 +169,6 @@ class PricingLineInput {
     required this.quantity,
     this.discountType,
     this.discountValue,
-    this.discountAmount = 0.0,
     this.allowDiscount = true,
     this.taxRate,
   });

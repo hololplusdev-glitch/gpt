@@ -83,19 +83,57 @@ class SaleCheckout {
     }
 
     final draftLines = request.cart.toSaleLineInputs();
-    final officialLines = await _resolveOfficialPrices(
-      session: session,
-      draftLines: draftLines,
-    );
+  Future<List<SaleLineInput>> _resolveOfficialPrices({
+    required ActivePosSession session,
+    required List<SaleLineInput> draftLines,
+  }) async {
+    final resolved = <SaleLineInput>[];
 
-    _validateSaleInputs(lineItems: officialLines);
+    for (final line in draftLines) {
+      final item = await _catalogDao.getItemById(line.itemId);
 
-    final quote = _quoteSale(officialLines);
-    final requestedPaymentIntents = request.paymentIntents;
+      if (item == null || item.inactive || item.noSale) {
+        throw SaleCheckoutException(
+          'Item ${line.itemName} is no longer sellable.',
+        );
+      }
 
-    if (requestedPaymentIntents.isEmpty) {
-      throw const SaleCheckoutException('At least one payment is required.');
+      final price = await _catalogDao.resolveItemPrice(
+        itemId: line.itemId,
+        priceLevelId: session.activePriceLevelId,
+        storeId: session.activeStoreId,
+        unitId: line.unitId,
+      );
+
+      if (price == null) {
+        throw SaleCheckoutException(
+          'Missing exact ITEM_PRICE for ${line.itemName}.',
+        );
+      }
+
+      resolved.add(
+        SaleLineInput(
+          itemId: item.id,
+          unitId: price.unitId ?? line.unitId,
+          itemName: item.name,
+          unitName: price.unitName ?? line.unitName,
+          unitSize: price.unitSize ?? line.unitSize,
+          barcode: line.barcode ?? price.barcode,
+          useQtyFraction: price.useQtyFraction,
+          quantity: line.quantity,
+          unitPrice: price.unitPrice,
+          taxRate: price.taxRate != 0 ? price.taxRate : item.taxRate,
+          discountType: line.discountType,
+          discountValue: line.discountValue,
+          allowDiscount: price.allowDiscount,
+          notes: line.notes,
+        ),
+      );
     }
+
+    return resolved;
+  }
+
 
     final payments = <SalePaymentInput>[];
     var change = 0.0;
@@ -474,33 +512,8 @@ class SaleCheckout {
           taxRate: price.taxRate,
           discountType: line.discountType,
           discountValue: line.discountValue,
-          discountAmount: _officialDiscountAmount(
-            line: line,
-            officialUnitPrice: price.unitPrice,
-          ),
-          allowDiscount: price.allowDiscount,
-          notes: line.notes,
-        ),
-      );
-    }
 
-    return resolved;
-  }
 
-  Future<Shift> _requireOpenShift(ActivePosSession session) async {
-    final shift = await _shiftDao.getOpenShift(
-      session.activeMachineNo,
-      cashierId: session.activeUserId,
-    );
-
-    if (shift == null || shift.status != ShiftStatus.open.code) {
-      throw const SaleCheckoutException(
-        'No open shift. Open a shift before selling.',
-      );
-    }
-
-    return shift;
-  }
 
   double _officialDiscountAmount({
     required SaleLineInput line,
@@ -586,6 +599,8 @@ class SaleCheckout {
       processedItems.add(
         _ProcessedItem(
           input: line,
+          grossAmount: pricedLine.grossAmount,
+          discountAmount: pricedLine.discountAmount,
           taxableAmount: pricedLine.taxableAmount,
           taxAmount: pricedLine.taxAmount,
           lineTotal: pricedLine.lineTotal,
@@ -613,8 +628,8 @@ class SaleCheckout {
           taxAmount: Value(p.taxAmount),
           lineDiscountType: Value(p.input.discountType?.code),
           lineDiscountValue: Value(p.input.discountValue),
-          lineDiscountAmount: Value(p.input.discountAmount),
-          grossAmount: Value(p.input.unitPrice * p.input.quantity),
+          lineDiscountAmount: Value(p.discountAmount),
+          grossAmount: Value(p.grossAmount),
           allowDiscountSnapshot: Value(p.input.allowDiscount),
           storeId: Value(session.activeStoreId),
           priceLevelId: Value(session.activePriceLevelId),
@@ -711,6 +726,40 @@ class SaleCheckout {
   }
 
   void _validateSaleInputs({required List<SaleLineInput> lineItems}) {
+    for (final line in lineItems) {
+      if (line.quantity <= 0) {
+        throw SaleCheckoutException('Invalid quantity for ${line.itemName}.');
+      }
+
+      if (!line.useQtyFraction &&
+          (line.quantity - line.quantity.roundToDouble()).abs() > 0.000001) {
+        throw SaleCheckoutException(
+          'Fraction quantity is not allowed for ${line.itemName}.',
+        );
+      }
+
+      if (line.unitPrice <= 0) {
+        throw SaleCheckoutException('Missing price for ${line.itemName}.');
+      }
+
+      if (line.taxRate < 0) {
+        throw SaleCheckoutException('Invalid tax rate for ${line.itemName}.');
+      }
+
+      if ((line.discountValue ?? 0) < 0) {
+        throw SaleCheckoutException('Invalid discount for ${line.itemName}.');
+      }
+
+      if (!line.allowDiscount &&
+          line.discountType != null &&
+          (line.discountValue ?? 0) > 0) {
+        throw SaleCheckoutException(
+          'Discounts are not allowed for ${line.itemName}.',
+        );
+      }
+    }
+  }
+) {
     for (final line in lineItems) {
       if (line.quantity <= 0) {
         throw SaleCheckoutException('Invalid quantity for ${line.itemName}.');
@@ -976,17 +1025,22 @@ class _SaleEnvelope {
 
 class _ProcessedItem {
   final SaleLineInput input;
+  final double grossAmount;
+  final double discountAmount;
   final double taxableAmount;
   final double taxAmount;
   final double lineTotal;
 
   const _ProcessedItem({
     required this.input,
+    required this.grossAmount,
+    required this.discountAmount,
     required this.taxableAmount,
     required this.taxAmount,
     required this.lineTotal,
   });
 }
+
 
 const int _quantityScale = 1000;
 

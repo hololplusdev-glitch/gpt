@@ -3,6 +3,7 @@
 // Returns raw Drift data objects; mapping to domain models happens in repositories.
 
 import 'package:drift/drift.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/database.dart' hide Customer;
 import 'package:holol_POS/shared/models/customer.dart';
 import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
@@ -382,7 +383,13 @@ EXISTS (
       if (candidates.isEmpty) {
         continue;
       }
-      final price = candidates.first;
+      if (candidates.length > 1) {
+        throw BusinessException(
+          'Duplicate item price for item ${requested.itemId} and unit ${requested.sourceUnitId}.',
+          code: 'DUPLICATE_PRICE',
+        );
+      }
+      final price = candidates.single;
       final effectiveUnit =
           unit ??
           _firstUnitWhere(
@@ -457,7 +464,13 @@ EXISTS (
         .where((price) => unitIds.contains(price.unitId))
         .toList();
     if (candidates.isEmpty) return null;
-    final price = candidates.first;
+    if (candidates.length > 1) {
+      throw BusinessException(
+        'Duplicate item price for item $itemId and unit $unitId.',
+        code: 'DUPLICATE_PRICE',
+      );
+    }
+    final price = candidates.single;
     final effectiveUnit = unit ?? await _getUnitByAnyId(itemId, price.unitId);
     return ResolvedItemPrice(
       unitPrice: price.unitPrice,

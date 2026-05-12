@@ -139,7 +139,7 @@ final cashierProductCardsProvider = FutureProvider<CashierCatalogState>((
 
   if (cards.every((card) => card.units.isEmpty)) {
     return CashierCatalogState(
-      products: cards,
+      products: const [],
       diagnostics: diagnostics,
       emptyReason: 'NO_PRICED_PRODUCTS',
       emptyMessage: 'لا توجد أسعار صالحة لهذا المخزن ومستوى السعر.',
