@@ -75,11 +75,22 @@ enum SaleTenderKind { cash, network, credit }
 
 class SalePaymentIntent {
   final SaleTenderKind kind;
+
+  /// Applied amount for this payment line.
+  ///
+  /// Empty means "use full invoice total" for backward-compatible single-tender
+  /// checkout. Mixed checkout must always pass explicit amountText.
+  final String amountText;
+
+  /// Cash tendered amount. Only cash uses this for change calculation.
   final String tenderedText;
+
+  /// Optional manual/reference number. Network reference is optional.
   final String reference;
 
   const SalePaymentIntent({
     required this.kind,
+    this.amountText = '',
     required this.tenderedText,
     required this.reference,
   });

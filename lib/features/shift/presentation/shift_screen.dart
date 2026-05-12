@@ -146,45 +146,6 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     return AppInfoBanner.error(message: error.toString());
   }
 
-  Widget _buildMissingShiftView(
-    ShiftCommandState actionState,
-    AppLocalizations l10n,
-  ) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const _ShiftHeroIcon(icon: Icons.warning_amber, color: AppColors.error),
-        const SizedBox(height: AppSpacing.lg),
-        const Text(
-          'تعذر تحميل الشفت الحالي.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        const Text(
-          'الجلسة تشير إلى شفت غير موجود. سجل خروج ثم ادخل مرة أخرى.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-        if (actionState.errorMessage != null) ...[
-          const SizedBox(height: AppSpacing.md),
-          AppInfoBanner.error(message: actionState.errorMessage!),
-        ],
-        const SizedBox(height: AppSpacing.xl),
-        AppButton.primary(
-          onPressed: () => context.go(AppRoutes.login),
-          icon: Icons.login,
-          label: l10n.login,
-        ),
-      ],
-    );
-  }
-
   Widget _buildOpenShiftView(
     ShiftCommandState actionState,
     ActivePosSession activeSession,

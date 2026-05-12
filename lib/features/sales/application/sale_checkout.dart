@@ -91,106 +91,34 @@ class SaleCheckout {
     _validateSaleInputs(lineItems: officialLines);
 
     final quote = _quoteSale(officialLines);
-    final resolved = await _resolvePaymentIntent(request.paymentIntent);
+    final requestedPaymentIntents = request.paymentIntents;
 
-    var tendered = quote.grandTotal;
+    if (requestedPaymentIntents.isEmpty) {
+      throw const SaleCheckoutException('At least one payment is required.');
+    }
+
+    final payments = <SalePaymentInput>[];
     var change = 0.0;
+    PaymentMethodType? primaryType;
 
-    if (resolved.allowsChange) {
-      tendered =
-          double.tryParse(
-            request.paymentIntent.tenderedText.trim().isEmpty
-                ? '0'
-                : request.paymentIntent.tenderedText,
-          ) ??
-          double.nan;
-
-      if (tendered.isNaN) {
-        throw const SaleCheckoutException('Enter a valid tendered amount.');
-      }
-
-      if (tendered < quote.grandTotal) {
-        throw const SaleCheckoutException('Insufficient amount tendered.');
-      }
-
-      change = PricingEngine.roundAmount(tendered - quote.grandTotal);
+    for (final intent in requestedPaymentIntents) {
+      final payment = await _buildPaymentInput(intent: intent, quote: quote);
+      payments.add(payment);
+      primaryType ??= payment.paymentMethodType;
+      change += payment.changeGiven ?? 0.0;
     }
 
-    var effectiveType = resolved.type;
-    var profileRequiresReference = false;
-
-    if (resolved.needsPaymentProfile) {
-      final profile = await _paymentProfileService.getActivePaymentProfile();
-
-      // Network/Card policy:
-      // - Network is never treated as cash.
-      // - If a real integrated terminal is unavailable, allow manual network
-      //   recording with a warning already shown in PaymentDialog.
-      // - Future terminal integration should replace this branch with actual
-      //   send/wait/approve flow and terminal approval fields.
-      if (profile == null || !profile.enabled) {
-        effectiveType = PaymentMethodType.manualCard;
-        profileRequiresReference = resolved.requiresReference;
-      } else {
-        final mode = PaymentProfileMode.fromCode(profile.mode);
-
-        if (mode == PaymentProfileMode.integrated &&
-            !_paymentProfileService.integratedAvailable(profile)) {
-          effectiveType = PaymentMethodType.manualCard;
-          profileRequiresReference =
-              profile.requireReference || resolved.requiresReference;
-        } else if (mode == PaymentProfileMode.integrated) {
-          throw const SaleCheckoutException(
-            'Integrated payment flow is not implemented yet.',
-          );
-        } else {
-          effectiveType = PaymentMethodType.manualCard;
-          profileRequiresReference =
-              profile.requireReference || resolved.requiresReference;
-        }
-      }
-    }
-
-    final requirements = checkoutPaymentRequirements(
-      resolved,
-      paymentProfileRequiresReference:
-          request.paymentIntent.kind == SaleTenderKind.network
-          ? false
-          : profileRequiresReference,
+    final hasCustomerCredit = payments.any(
+      (payment) =>
+          payment.paymentMethodType == PaymentMethodType.customerCredit,
     );
 
-    final reference = request.paymentIntent.reference.trim();
-
-    if (requirements.requiresReference && reference.isEmpty) {
-      throw const SaleCheckoutException('Payment reference is required.');
-    }
-
-    final isCustomerCredit =
-        effectiveType == PaymentMethodType.customerCredit ||
-        resolved.type == PaymentMethodType.customerCredit;
-
-    if (isCustomerCredit &&
+    if (hasCustomerCredit &&
         (request.customerId == null || request.customerId!.trim().isEmpty)) {
       throw const SaleCheckoutException(
         'Customer is required for credit sale.',
       );
     }
-
-    final payments = [
-      SalePaymentInput(
-        paymentMethodId: resolved.methodId,
-        paymentMethodCode: resolved.code,
-        paymentMethodName: resolved.displayName,
-        paymentMethodType: effectiveType,
-        requiresReference: requirements.requiresReference,
-        amount: quote.grandTotal,
-        cashTendered: resolved.allowsChange ? tendered : null,
-        changeGiven: resolved.allowsChange ? change : null,
-        referenceNo: reference.isEmpty ? null : reference,
-        bankId: resolved.bankId,
-        cardTypeId: resolved.cardTypeId,
-      ),
-    ];
 
     final paymentResult = PaymentPolicy(
       requireCardReference: false,
@@ -301,10 +229,120 @@ class SaleCheckout {
     return SaleCheckoutResult(
       saleId: saleId,
       localSaleNo: localInvoiceNo,
-      selectedPaymentType: effectiveType,
+      selectedPaymentType: primaryType ?? PaymentMethodType.cash,
       change: change,
       uploadQueued: true,
     );
+  }
+
+  Future<SalePaymentInput> _buildPaymentInput({
+    required SalePaymentIntent intent,
+    required CheckoutQuote quote,
+  }) async {
+    final resolved = await _resolvePaymentIntent(intent);
+    final amount = _paymentAmount(intent, quote);
+
+    if (amount <= 0 || amount.isNaN) {
+      throw const SaleCheckoutException(
+        'Payment amount must be greater than zero.',
+      );
+    }
+
+    var tendered = amount;
+    var change = 0.0;
+
+    if (resolved.allowsChange) {
+      tendered = _parseAmount(
+        intent.tenderedText.trim().isEmpty
+            ? intent.amountText
+            : intent.tenderedText,
+        fallback: amount,
+      );
+
+      if (tendered.isNaN) {
+        throw const SaleCheckoutException('Enter a valid tendered amount.');
+      }
+
+      if (tendered < amount) {
+        throw const SaleCheckoutException('Insufficient amount tendered.');
+      }
+
+      change = PricingEngine.roundAmount(tendered - amount);
+    }
+
+    var effectiveType = resolved.type;
+    var profileRequiresReference = false;
+
+    if (resolved.needsPaymentProfile) {
+      final profile = await _paymentProfileService.getActivePaymentProfile();
+
+      // Network/Card policy:
+      // - Network is never treated as cash.
+      // - If a real integrated terminal is unavailable, allow manual network
+      //   recording with a warning already shown in PaymentDialog.
+      // - Future terminal integration should replace this branch with actual
+      //   send/wait/approve flow and terminal approval fields.
+      if (profile == null || !profile.enabled) {
+        effectiveType = PaymentMethodType.manualCard;
+        profileRequiresReference = resolved.requiresReference;
+      } else {
+        final mode = PaymentProfileMode.fromCode(profile.mode);
+
+        if (mode == PaymentProfileMode.integrated &&
+            !_paymentProfileService.integratedAvailable(profile)) {
+          effectiveType = PaymentMethodType.manualCard;
+          profileRequiresReference =
+              profile.requireReference || resolved.requiresReference;
+        } else if (mode == PaymentProfileMode.integrated) {
+          throw const SaleCheckoutException(
+            'Integrated payment flow is not implemented yet.',
+          );
+        } else {
+          effectiveType = PaymentMethodType.manualCard;
+          profileRequiresReference =
+              profile.requireReference || resolved.requiresReference;
+        }
+      }
+    }
+
+    final requirements = checkoutPaymentRequirements(
+      resolved,
+      paymentProfileRequiresReference: intent.kind == SaleTenderKind.network
+          ? false
+          : profileRequiresReference,
+    );
+
+    final reference = intent.reference.trim();
+
+    if (requirements.requiresReference && reference.isEmpty) {
+      throw const SaleCheckoutException('Payment reference is required.');
+    }
+
+    return SalePaymentInput(
+      paymentMethodId: resolved.methodId,
+      paymentMethodCode: resolved.code,
+      paymentMethodName: resolved.displayName,
+      paymentMethodType: effectiveType,
+      requiresReference: requirements.requiresReference,
+      amount: amount,
+      cashTendered: resolved.allowsChange ? tendered : null,
+      changeGiven: resolved.allowsChange ? change : null,
+      referenceNo: reference.isEmpty ? null : reference,
+      bankId: resolved.bankId,
+      cardTypeId: resolved.cardTypeId,
+    );
+  }
+
+  double _paymentAmount(SalePaymentIntent intent, CheckoutQuote quote) {
+    final text = intent.amountText.trim();
+    if (text.isEmpty) return quote.grandTotal;
+    return _parseAmount(text, fallback: double.nan);
+  }
+
+  double _parseAmount(String text, {required double fallback}) {
+    final normalized = text.trim().replaceAll(',', '.');
+    if (normalized.isEmpty) return fallback;
+    return double.tryParse(normalized) ?? fallback;
   }
 
   Future<ResolvedPaymentMethod> _resolvePaymentIntent(
@@ -730,6 +768,7 @@ class SaleCheckoutRequest {
   final Cart cart;
   final String checkoutAttemptId;
   final SalePaymentIntent paymentIntent;
+  final List<SalePaymentIntent> paymentIntents;
   final String? customerId;
   final String? customerName;
   final String? customerTaxNumber;
@@ -738,10 +777,11 @@ class SaleCheckoutRequest {
     required this.cart,
     required this.checkoutAttemptId,
     required this.paymentIntent,
+    List<SalePaymentIntent>? paymentIntents,
     this.customerId,
     this.customerName,
     this.customerTaxNumber,
-  });
+  }) : paymentIntents = paymentIntents ?? const [paymentIntent];
 }
 
 class CheckoutPaymentRequirements {
@@ -808,10 +848,13 @@ class PaymentPolicy {
 
     var paidTotal = 0.0;
     var explicitChangeTotal = 0.0;
+    var arrangementTotal = 0.0;
     var hasChangeCapablePayment = false;
 
     for (final payment in payments) {
       final type = payment.resolvedType;
+
+      arrangementTotal += payment.amount;
 
       if (payment.amount <= 0) {
         throw const SaleCheckoutException(
@@ -867,6 +910,12 @@ class PaymentPolicy {
 
       paidTotal += payment.amount;
       explicitChangeTotal += changeGiven;
+    }
+
+    if ((arrangementTotal - quote.grandTotal).abs() > 0.01) {
+      throw const SaleCheckoutException(
+        'Payment split must equal invoice total.',
+      );
     }
 
     final remaining = quote.grandTotal - paidTotal;

@@ -22,7 +22,7 @@ import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 
-enum _CheckoutTenderKind { cash, network, credit }
+enum _CheckoutTenderKind { cash, network, credit, mixed }
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final Cart cart;
@@ -36,6 +36,10 @@ class PaymentDialog extends ConsumerStatefulWidget {
 class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   final _tenderedController = TextEditingController();
   final _referenceController = TextEditingController();
+  final _mixedCashController = TextEditingController();
+  final _mixedNetworkController = TextEditingController();
+  final _mixedNetworkReferenceController = TextEditingController();
+
   final String _checkoutAttemptId = 'CHK_${const Uuid().v4()}';
 
   _CheckoutTenderKind _selectedKind = _CheckoutTenderKind.cash;
@@ -52,20 +56,13 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   bool _initialized = false;
   bool _isProcessing = false;
   bool _isComplete = false;
+  bool _mixedCreditRemainder = false;
 
   String? _errorMessage;
   String? _invoiceNo;
   String? _saleId;
 
   double get _totalAmount => _quote?.grandTotal ?? 0.0;
-
-  SaleTenderKind get _saleTenderKind {
-    return switch (_selectedKind) {
-      _CheckoutTenderKind.cash => SaleTenderKind.cash,
-      _CheckoutTenderKind.network => SaleTenderKind.network,
-      _CheckoutTenderKind.credit => SaleTenderKind.credit,
-    };
-  }
 
   @override
   void didChangeDependencies() {
@@ -92,14 +89,51 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   void dispose() {
     _tenderedController.dispose();
     _referenceController.dispose();
+    _mixedCashController.dispose();
+    _mixedNetworkController.dispose();
+    _mixedNetworkReferenceController.dispose();
     super.dispose();
   }
 
+  double _parseMoney(String text) {
+    final normalized = text.trim().replaceAll(',', '.');
+    if (normalized.isEmpty) return 0.0;
+    return double.tryParse(normalized) ?? double.nan;
+  }
+
+  String _amountText(double value) {
+    return PricingEngine.roundAmount(value).toStringAsFixed(2);
+  }
+
+  double get _mixedCashAmount => _parseMoney(_mixedCashController.text);
+  double get _mixedNetworkAmount => _parseMoney(_mixedNetworkController.text);
+
+  double get _mixedPaidAmount {
+    final cash = _mixedCashAmount;
+    final network = _mixedNetworkAmount;
+    if (cash.isNaN || network.isNaN) return double.nan;
+    return PricingEngine.roundAmount(cash + network);
+  }
+
+  double get _mixedRemainingAmount {
+    final paid = _mixedPaidAmount;
+    if (paid.isNaN) return double.nan;
+    final remaining = PricingEngine.roundAmount(_totalAmount - paid);
+    return remaining > 0 ? remaining : 0.0;
+  }
+
+  bool get _mixedNeedsCustomer {
+    return _selectedKind == _CheckoutTenderKind.credit ||
+        (_selectedKind == _CheckoutTenderKind.mixed &&
+            _mixedCreditRemainder &&
+            _mixedRemainingAmount > 0.01);
+  }
+
   void _recalculateChange() {
-    final tendered =
-        double.tryParse(_tenderedController.text.trim().replaceAll(',', '.')) ??
-        0.0;
-    final change = PricingEngine.roundAmount(tendered - _totalAmount);
+    final tendered = _parseMoney(_tenderedController.text);
+    final change = tendered.isNaN
+        ? 0.0
+        : PricingEngine.roundAmount(tendered - _totalAmount);
     _change = change > 0 ? change : 0.0;
   }
 
@@ -108,25 +142,151 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       _selectedKind = kind;
       _errorMessage = null;
       _referenceController.clear();
+      _mixedNetworkReferenceController.clear();
 
       if (kind == _CheckoutTenderKind.cash) {
         _tenderedController.text = _totalAmount.toStringAsFixed(2);
         _recalculateChange();
       }
+
+      if (kind != _CheckoutTenderKind.mixed) {
+        _mixedCashController.clear();
+        _mixedNetworkController.clear();
+        _mixedCreditRemainder = false;
+      }
     });
+  }
+
+  List<SalePaymentIntent> _buildPaymentIntents() {
+    switch (_selectedKind) {
+      case _CheckoutTenderKind.cash:
+        return [
+          SalePaymentIntent(
+            kind: SaleTenderKind.cash,
+            amountText: _amountText(_totalAmount),
+            tenderedText: _tenderedController.text,
+            reference: '',
+          ),
+        ];
+
+      case _CheckoutTenderKind.network:
+        return [
+          SalePaymentIntent(
+            kind: SaleTenderKind.network,
+            amountText: _amountText(_totalAmount),
+            tenderedText: _amountText(_totalAmount),
+            reference: _referenceController.text,
+          ),
+        ];
+
+      case _CheckoutTenderKind.credit:
+        return [
+          SalePaymentIntent(
+            kind: SaleTenderKind.credit,
+            amountText: _amountText(_totalAmount),
+            tenderedText: _amountText(_totalAmount),
+            reference: '',
+          ),
+        ];
+
+      case _CheckoutTenderKind.mixed:
+        final intents = <SalePaymentIntent>[];
+        final cash = _mixedCashAmount;
+        final network = _mixedNetworkAmount;
+        final remaining = _mixedRemainingAmount;
+
+        if (!cash.isNaN && cash > 0) {
+          intents.add(
+            SalePaymentIntent(
+              kind: SaleTenderKind.cash,
+              amountText: _amountText(cash),
+              tenderedText: _amountText(cash),
+              reference: '',
+            ),
+          );
+        }
+
+        if (!network.isNaN && network > 0) {
+          intents.add(
+            SalePaymentIntent(
+              kind: SaleTenderKind.network,
+              amountText: _amountText(network),
+              tenderedText: _amountText(network),
+              reference: _mixedNetworkReferenceController.text,
+            ),
+          );
+        }
+
+        if (_mixedCreditRemainder && !remaining.isNaN && remaining > 0.01) {
+          intents.add(
+            SalePaymentIntent(
+              kind: SaleTenderKind.credit,
+              amountText: _amountText(remaining),
+              tenderedText: _amountText(remaining),
+              reference: '',
+            ),
+          );
+        }
+
+        return intents;
+    }
+  }
+
+  String? _validatePaymentBeforeSubmit() {
+    if (_quote == null) {
+      return AppLocalizations.of(context)!.unableToPrepareCheckoutTotal;
+    }
+
+    if (_mixedNeedsCustomer &&
+        (_selectedCustomerId == null || _selectedCustomerId!.trim().isEmpty)) {
+      return 'البيع الآجل يتطلب اختيار عميل.';
+    }
+
+    if (_selectedKind != _CheckoutTenderKind.mixed) {
+      return null;
+    }
+
+    final cash = _mixedCashAmount;
+    final network = _mixedNetworkAmount;
+    final paid = _mixedPaidAmount;
+    final remaining = _mixedRemainingAmount;
+
+    if (cash.isNaN || network.isNaN || paid.isNaN || remaining.isNaN) {
+      return 'أدخل مبالغ دفع صحيحة.';
+    }
+
+    if (cash < 0 || network < 0) {
+      return 'لا يمكن إدخال مبلغ دفع سالب.';
+    }
+
+    if (paid <= 0 && !_mixedCreditRemainder) {
+      return 'أدخل مبلغ كاش أو شبكة، أو فعّل خيار الآجل للباقي.';
+    }
+
+    if (paid - _totalAmount > 0.01) {
+      return 'مجموع الكاش والشبكة أكبر من إجمالي الفاتورة.';
+    }
+
+    if (remaining > 0.01 && !_mixedCreditRemainder) {
+      return 'المبلغ المدفوع أقل من إجمالي الفاتورة. فعّل الآجل للباقي أو أكمل المبلغ.';
+    }
+
+    return null;
   }
 
   Future<void> _processPayment() async {
     final l10n = AppLocalizations.of(context)!;
+    final validationMessage = _validatePaymentBeforeSubmit();
 
-    if (_quote == null) {
-      setState(() => _errorMessage ??= l10n.unableToPrepareCheckoutTotal);
+    if (validationMessage != null) {
+      setState(() => _errorMessage = validationMessage);
       return;
     }
 
-    if (_selectedKind == _CheckoutTenderKind.credit &&
-        (_selectedCustomerId == null || _selectedCustomerId!.trim().isEmpty)) {
-      setState(() => _errorMessage = 'البيع الآجل يتطلب اختيار عميل.');
+    final paymentIntents = _buildPaymentIntents();
+
+    if (paymentIntents.isEmpty) {
+      setState(() => _errorMessage = 'أدخل طريقة دفع واحدة على الأقل.');
       return;
     }
 
@@ -142,13 +302,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             SaleCheckoutRequest(
               cart: widget.cart,
               checkoutAttemptId: _checkoutAttemptId,
-              paymentIntent: SalePaymentIntent(
-                kind: _saleTenderKind,
-                tenderedText: _selectedKind == _CheckoutTenderKind.cash
-                    ? _tenderedController.text
-                    : _totalAmount.toStringAsFixed(2),
-                reference: _referenceController.text,
-              ),
+              paymentIntent: paymentIntents.first,
+              paymentIntents: paymentIntents,
               customerId: _selectedCustomerId,
               customerName: _selectedCustomerName,
               customerTaxNumber: _selectedCustomerTaxNumber,
@@ -207,7 +362,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       child: Dialog(
         insetPadding: isCompact ? EdgeInsets.zero : AppSpacing.paddingLg,
         child: Container(
-          width: isCompact ? double.infinity : 620,
+          width: isCompact ? double.infinity : 680,
           height: isCompact ? size.height : null,
           constraints: BoxConstraints(
             maxHeight: isCompact
@@ -230,6 +385,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   Widget _buildPaymentView() {
     final l10n = AppLocalizations.of(context)!;
     final customers = ref.watch(customersProvider);
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -315,6 +471,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       _CheckoutTenderKind.cash => _buildCashBody(),
       _CheckoutTenderKind.network => _buildNetworkBody(),
       _CheckoutTenderKind.credit => _buildCreditBody(customers),
+      _CheckoutTenderKind.mixed => _buildMixedBody(customers),
     };
   }
 
@@ -343,7 +500,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             message: '${l10n.change}: ${PosFormatters.amount(_change)}',
             type: AppBannerType.info,
           ),
-        const SizedBox(height: AppSpacing.md),
         const SizedBox(height: AppSpacing.xl),
         _CompleteButton(
           isProcessing: _isProcessing,
@@ -413,6 +569,98 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         _CompleteButton(
           isProcessing: _isProcessing,
           label: 'إتمام بيع آجل',
+          onPressed: _processPayment,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMixedBody(AsyncValue<List<Customer>> customers) {
+    final paid = _mixedPaidAmount;
+    final remaining = _mixedRemainingAmount;
+    final paidText = paid.isNaN ? '-' : PosFormatters.amount(paid);
+    final remainingText = remaining.isNaN
+        ? '-'
+        : PosFormatters.amount(remaining);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const AppInfoBanner(
+          message:
+              'قسّم الفاتورة بين كاش وشبكة. إذا بقي مبلغ، يمكن تحويل الباقي إلى حساب العميل.',
+          type: AppBannerType.info,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: [
+            Expanded(
+              child: AppTextField(
+                controller: _mixedCashController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                ],
+                labelText: 'مبلغ الكاش',
+                prefixIcon: const Icon(Icons.payments_outlined),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: AppTextField(
+                controller: _mixedNetworkController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                ],
+                labelText: 'مبلغ الشبكة',
+                prefixIcon: const Icon(Icons.credit_card),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppTextField(
+          controller: _mixedNetworkReferenceController,
+          textInputAction: TextInputAction.done,
+          labelText: 'رقم مرجع الشبكة اختياري',
+          prefixIcon: const Icon(Icons.confirmation_number_outlined),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        CheckboxListTile(
+          value: _mixedCreditRemainder,
+          onChanged: (value) {
+            setState(() {
+              _mixedCreditRemainder = value ?? false;
+            });
+          },
+          title: const Text('تحويل الباقي إلى حساب العميل'),
+          subtitle: Text('المدفوع: $paidText — الباقي: $remainingText'),
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+        ),
+        if (_mixedCreditRemainder && remaining > 0.01) ...[
+          const SizedBox(height: AppSpacing.md),
+          customers.when(
+            data: _buildCustomerSelector,
+            loading: () => const Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: AppLoading(),
+            ),
+            error: (error, _) =>
+                AppInfoBanner.error(message: ErrorMapper.userMessage(error)),
+          ),
+        ],
+        const SizedBox(height: AppSpacing.xl),
+        _CompleteButton(
+          isProcessing: _isProcessing,
+          label: 'إتمام الدفع المختلط',
           onPressed: _processPayment,
         ),
       ],
@@ -602,6 +850,13 @@ class _TenderKindSelector extends StatelessWidget {
           subtitle: 'على حساب عميل',
           selected: selectedKind == _CheckoutTenderKind.credit,
           onTap: () => onSelected(_CheckoutTenderKind.credit),
+        ),
+        _TenderKindButton(
+          icon: Icons.call_split,
+          label: 'مختلط',
+          subtitle: 'كاش + شبكة + آجل',
+          selected: selectedKind == _CheckoutTenderKind.mixed,
+          onTap: () => onSelected(_CheckoutTenderKind.mixed),
         ),
       ],
     );
