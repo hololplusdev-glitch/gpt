@@ -1,13 +1,14 @@
-// core/services/master_data/backend_master_data_types.dart
-// WHY: Centralized Backend master data type definitions and sync context.
-// Extracted from master_data_sync_service.dart for DRY/SRP compliance.
+// core/services/master_data/master_data_contract.dart
+// WHY: Centralized Backend master data type definitions and download context.
+// SSOT for download type policy, request policy, warning policy, and result models.
 
 import 'package:holol_POS/core/errors/app_exception.dart';
 
 /// Enumeration of all master data types supported by the POS data download engine.
 ///
 /// SSOT: Most backend data is downloaded tenant-wide by p_type.
-/// DEVICE_PRIV is special: it is downloaded per USER because it is keyed by usr_id + mchn_nbr.
+/// DEVICE_PRIV is special: it is downloaded per USER because it is keyed by
+/// usr_id + mchn_nbr.
 enum MasterDataType {
   posMachine('POS_MACHINE'),
   user('USER'),
@@ -28,8 +29,9 @@ enum MasterDataType {
   final String code;
 
   /// Download order.
-  /// DEVICE_PRIV is intentionally excluded here.
-  /// It is synced per downloaded user after USER + POS_MACHINE.
+  ///
+  /// DEVICE_PRIV is intentionally excluded here. It is synced per downloaded
+  /// user after USER + POS_MACHINE.
   static const syncOrder = [
     user,
     posMachine,
@@ -50,9 +52,12 @@ enum MasterDataType {
 
   /// Types allowed to fail as warnings during first-run setup.
   ///
-  /// Keep this policy here, not in SetupNotifier, so master-data behavior has
-  /// one owner.
-  static const setupWarningTypes = {bank, cash, creditCardType};
+  /// Keep this policy here, not in SetupNotifier.
+  static const setupWarningTypes = {
+    bank,
+    cash,
+    creditCardType,
+  };
 
   bool get isMandatory => mandatoryTypes.contains(this);
 
@@ -87,9 +92,9 @@ enum MasterDataSyncMode {
 
   /// Default warning policy for each download mode.
   ///
-  /// Setup is allowed to finish with non-critical setup table warnings.
-  /// Normal incremental/full sync should report failures as failures unless a
-  /// caller explicitly overrides the policy.
+  /// Setup is allowed to finish with non-critical setup-table warnings.
+  /// Normal incremental/full sync reports failures as failures unless caller
+  /// explicitly overrides the policy.
   Set<MasterDataType> get defaultWarningTypes {
     switch (this) {
       case MasterDataSyncMode.initial:
@@ -129,8 +134,11 @@ enum MasterDataTypeRunStatus {
 }
 
 /// Context passed to every data download request.
-/// SSOT: backend download is global per tenant/bootstrap user.
-/// Runtime machine/store/price filtering happens after login.
+///
+/// SSOT:
+/// - Backend download is global per tenant/bootstrap user.
+/// - Runtime machine/store/price filtering happens after login.
+/// - Request query construction is owned here, not by SyncService.
 class MasterDataSyncContext {
   final String custCode;
   final String bootstrapUserId;
@@ -143,8 +151,6 @@ class MasterDataSyncContext {
     this.branchNo,
     this.pageLimit = 500,
   });
-
-  String get syncUserId => bootstrapUserId;
 
   String get normalizedCustCode => custCode.trim();
 
@@ -159,10 +165,11 @@ class MasterDataSyncContext {
     return normalized;
   }
 
+  String get syncUserId => normalizedBootstrapUserId;
+
   int effectivePageLimitFor(MasterDataType type) {
     return type.effectivePageLimit(pageLimit);
   }
-
 
   MasterDataSyncContext copyWith({
     String? custCode,
@@ -207,50 +214,6 @@ class MasterDataSyncContext {
 
     return params;
   }
-) {
-    final normalizedLastUpdate = lastUpdate?.trim();
-
-    final params = <String, dynamic>{
-      'p_type': type.code,
-      'p_cust_code': normalizedCustCode,
-      'p_usr_id': normalizedBootstrapUserId,
-      'p_limit': effectivePageLimitFor(type),
-      'p_offset': offset < 0 ? 0 : offset,
-    };
-
-    final branch = normalizedBranchNo;
-    if (branch != null) {
-      params['p_bra_nbr'] = branch;
-    }
-
-    if (normalizedLastUpdate != null &&
-        normalizedLastUpdate.isNotEmpty &&
-        normalizedLastUpdate.toLowerCase() != 'null') {
-      params['p_last_update'] = normalizedLastUpdate;
-    }
-
-    return params;
-  }
-) {
-    final params = <String, dynamic>{
-      'p_type': type.code,
-      'p_cust_code': custCode,
-      'p_usr_id': bootstrapUserId,
-      'p_limit': pageLimit,
-      'p_offset': offset,
-    };
-
-    final branch = branchNo?.trim();
-    if (branch != null && branch.isNotEmpty) {
-      params['p_bra_nbr'] = branch;
-    }
-
-    if (lastUpdate != null && lastUpdate.isNotEmpty) {
-      params['p_last_update'] = lastUpdate;
-    }
-
-    return params;
-  }
 }
 
 /// Aggregated result from a full syncAll run.
@@ -268,22 +231,28 @@ class MasterDataSyncSummary {
   });
 
   int get rowCount => results.fold(0, (sum, result) => sum + result.rowsSaved);
-  int get rowsReceived =>
-      results.fold(0, (sum, result) => sum + result.rowsReceived);
-  bool get hasFailures => results.any((result) => result.isFailure);
-  bool get allNoChanges =>
-      results.isNotEmpty &&
-      results.every(
-        (result) => result.status == MasterDataTypeRunStatus.noChanges,
-      );
-  int get failedTypesCount =>
-      results.where((result) => result.isFailure).length;
 
-  /// Whether a mandatory type failed, causing
-  /// the sync to abort early.
-  bool get abortedEarly => results.any(
-    (r) => r.isFailure && r.type.isMandatory,
-  );
+  int get rowsReceived {
+    return results.fold(0, (sum, result) => sum + result.rowsReceived);
+  }
+
+  bool get hasFailures => results.any((result) => result.isFailure);
+
+  bool get allNoChanges {
+    return results.isNotEmpty &&
+        results.every(
+          (result) => result.status == MasterDataTypeRunStatus.noChanges,
+        );
+  }
+
+  int get failedTypesCount {
+    return results.where((result) => result.isFailure).length;
+  }
+
+  /// Whether a mandatory type failed, causing the sync to abort early.
+  bool get abortedEarly {
+    return results.any((result) => result.isFailure && result.type.isMandatory);
+  }
 }
 
 /// Result for a single data type sync operation.
@@ -321,7 +290,9 @@ class MasterDataTypeResult {
        rowsSaved = rowsSaved ?? rowCount ?? 0;
 
   int get rowCount => rowsSaved;
+
   bool get isFailure => status.isFailure || error != null;
+
   bool get hasWarnings => warnings.isNotEmpty;
 }
 
