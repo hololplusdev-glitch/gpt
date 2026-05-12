@@ -880,6 +880,7 @@ class MasterDataSyncService {
     return false;
   }
 
+
   Future<_MasterDataPage> _fetchPage({
     required MasterDataSyncContext context,
     required MasterDataType type,
@@ -887,6 +888,286 @@ class MasterDataSyncService {
     required String? lastUpdate,
     MasterDataSyncCancelHandle? cancelHandle,
   }) async {
+    final queryParams = context.queryParameters(
+      type: type,
+      offset: offset,
+      lastUpdate: lastUpdate,
+    );
+
+    // WHY: Validate baseUrl doesn't end with /data to prevent /data/data.
+    final baseUrl = _apiClient.debugBaseUrl;
+    if (baseUrl.endsWith(ApiPaths.data)) {
+      throw const SyncException(
+        'API baseUrl must not end with /data. The client appends /data.',
+        code: 'MASTER_DATA_INVALID_BASE_URL',
+      );
+    }
+
+    final response = await _getPageResponseWithRetry(
+      queryParams: queryParams,
+      cancelHandle: cancelHandle,
+    );
+
+    return _parseMasterDataPageResponse(
+      body: response.data,
+      type: type,
+      offset: offset,
+      requestedLimit: context.effectivePageLimitFor(type),
+    );
+  }
+
+
+  _MasterDataPage _parseMasterDataPageResponse({
+    required dynamic body,
+    required MasterDataType type,
+    required int offset,
+    required int requestedLimit,
+  }) {
+    final data = _responseMapOrNull(body);
+    if (data == null) {
+      throw const SyncException(
+        'Master data response was not a JSON object.',
+        code: 'MASTER_DATA_INVALID_RESPONSE',
+      );
+    }
+
+    final status = _responseStatus(data);
+    if (!_isKnownResponseStatus(status)) {
+      throw SyncException(
+        'Unexpected response status: "$status". Expected OK or ERROR.',
+        code: 'MASTER_DATA_INVALID_STATUS',
+      );
+    }
+
+    if (_isErrorResponse(status)) {
+      final errorCode = _pageResponseErrorCode(
+        data,
+        fallback: 'MASTER_DATA_API_ERROR',
+      );
+      final errorMessage = _responseErrorMessage(
+        data,
+        fallback: 'Master data API rejected the request.',
+      );
+
+      if (type == MasterDataType.devicePrivilege &&
+          errorCode == 'NO_MACHINE_PRIV') {
+        return _MasterDataPage(
+          items: const [],
+          serverTime: _clock.now().toIso8601String(),
+          hasMore: false,
+          limit: requestedLimit,
+          total: 0,
+        );
+      }
+
+      throw SyncException(errorMessage, code: errorCode);
+    }
+
+    _validatePageResponseType(data, type);
+
+    final items = _pageItems(data);
+    final pagination = _pagePagination(data);
+
+    final limit = _pageInt(
+          pagination['limit'] ??
+              pagination['page_limit'] ??
+              pagination['pageLimit'] ??
+              data['limit'] ??
+              data['page_limit'] ??
+              data['pageLimit'],
+        ) ??
+        requestedLimit;
+
+    if (limit <= 0) {
+      throw const SyncException(
+        'Master data response returned invalid page limit.',
+        code: 'MASTER_DATA_INVALID_PAGINATION',
+      );
+    }
+
+    final total = _pageInt(
+          pagination['total'] ??
+              pagination['total_rows'] ??
+              pagination['totalRows'] ??
+              data['total'] ??
+              data['total_rows'] ??
+              data['totalRows'],
+        ) ??
+        items.length;
+
+    final hasMore = _pageHasMore(
+      pagination: pagination,
+      data: data,
+      offset: offset,
+      limit: limit,
+      itemCount: items.length,
+      total: total,
+    );
+
+    return _MasterDataPage(
+      items: items,
+      serverTime: _pageServerTime(data),
+      hasMore: hasMore,
+      limit: limit,
+      total: total,
+    );
+  }
+
+  void _validatePageResponseType(
+    Map<String, dynamic> data,
+    MasterDataType expectedType,
+  ) {
+    final responseType = _cleanResponseText(data['type']).toUpperCase();
+
+    // Some backends omit type on OK responses. If present, it must match.
+    if (responseType.isEmpty) return;
+
+    if (responseType != expectedType.code) {
+      throw SyncException(
+        'Master data response type mismatch. Expected ${expectedType.code}, got $responseType.',
+        code: 'MASTER_DATA_TYPE_MISMATCH',
+      );
+    }
+  }
+
+  List<Map<String, dynamic>> _pageItems(Map<String, dynamic> data) {
+    dynamic raw = data['items'] ?? data['rows'] ?? data['data'];
+
+    if (raw is Map) {
+      raw = raw['items'] ?? raw['rows'] ?? raw['data'];
+    }
+
+    if (raw is! List) {
+      throw const SyncException(
+        'Master data response did not contain a valid items list.',
+        code: 'MASTER_DATA_INVALID_ITEMS',
+      );
+    }
+
+    final items = <Map<String, dynamic>>[];
+
+    for (var index = 0; index < raw.length; index++) {
+      final row = raw[index];
+      if (row is! Map) {
+        throw SyncException(
+          'Master data item at index $index was not a JSON object.',
+          code: 'MASTER_DATA_INVALID_ITEM_ROW',
+        );
+      }
+
+      items.add(Map<String, dynamic>.from(row));
+    }
+
+    return items;
+  }
+
+  Map<String, dynamic> _pagePagination(Map<String, dynamic> data) {
+    final raw = data['pagination'] ?? data['page'] ?? data['paging'];
+
+    if (raw == null) return const {};
+
+    if (raw is! Map) {
+      throw const SyncException(
+        'Master data pagination was not a JSON object.',
+        code: 'MASTER_DATA_INVALID_PAGINATION',
+      );
+    }
+
+    return Map<String, dynamic>.from(raw);
+  }
+
+  String _pageServerTime(Map<String, dynamic> data) {
+    final value = _firstCleanResponseText([
+      data['server_time'],
+      data['serverTime'],
+      data['server_timestamp'],
+      data['serverTimestamp'],
+    ]);
+
+    return value.isEmpty ? _clock.now().toIso8601String() : value;
+  }
+
+  bool _pageHasMore({
+    required Map<String, dynamic> pagination,
+    required Map<String, dynamic> data,
+    required int offset,
+    required int limit,
+    required int itemCount,
+    required int total,
+  }) {
+    final explicit = _pageBool(
+      pagination['has_more'] ??
+          pagination['hasMore'] ??
+          pagination['has_next'] ??
+          pagination['hasNext'] ??
+          data['has_more'] ??
+          data['hasMore'] ??
+          data['has_next'] ??
+          data['hasNext'],
+    );
+
+    if (explicit != null) return explicit;
+
+    if (total > 0) {
+      return offset + itemCount < total;
+    }
+
+    // No explicit pagination signal. Stop safely to avoid infinite loops if the
+    // backend ignores offset. Correct API responses should provide has_more or total.
+    return false;
+  }
+
+  int? _pageInt(Object? value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+
+    final text = _cleanResponseText(value);
+    if (text.isEmpty) return null;
+
+    return int.tryParse(text);
+  }
+
+  bool? _pageBool(Object? value) {
+    if (value == null) return null;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+
+    final text = _cleanResponseText(value).toLowerCase();
+    if (text.isEmpty) return null;
+
+    if (text == 'true' ||
+        text == 't' ||
+        text == 'yes' ||
+        text == 'y' ||
+        text == '1') {
+      return true;
+    }
+
+    if (text == 'false' ||
+        text == 'f' ||
+        text == 'no' ||
+        text == 'n' ||
+        text == '0') {
+      return false;
+    }
+
+    return null;
+  }
+
+  String _pageResponseErrorCode(
+    Map<String, dynamic> data, {
+    required String fallback,
+  }) {
+    final value = _firstCleanResponseText([
+      data['code'],
+      data['error_code'],
+      data['errorCode'],
+    ]);
+
+    return value.isEmpty ? fallback : value;
+  }
+) async {
     final queryParams = context.queryParameters(
       type: type,
       offset: offset,
