@@ -83,9 +83,6 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 
-    return false;
-  }
-
   static QueryExecutor _openConnection() {
     // WHY: New filename ensures a clean DB after schema cleanup.
     return driftDatabase(name: 'pos_data_v4');
