@@ -4,8 +4,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart' hide Customer;
-import 'package:holol_POS/core/services/payments/payment_method_resolver.dart';
-import 'package:holol_POS/features/cashier/domain/models/payment_method_option.dart';
 import 'package:holol_POS/features/cashier/domain/models/product.dart';
 import 'package:holol_POS/shared/models/customer.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
@@ -60,7 +58,6 @@ final cashierProductCardsProvider = FutureProvider<List<ProductCardViewModel>>((
     unitsByItem.values.expand((units) => units),
     storeId: storeId,
     priceLevelId: priceLevelId,
-    quantity: 1,
   );
 
   return items.map((item) {
@@ -73,32 +70,6 @@ final cashierProductCardsProvider = FutureProvider<List<ProductCardViewModel>>((
         units: itemUnits,
         pricesByItemUnit: pricesByItemUnit,
       ),
-    );
-  }).toList();
-});
-
-final paymentMethodsProvider = FutureProvider<List<PaymentMethodOption>>((
-  ref,
-) async {
-  final rows = await ref.watch(catalogDaoProvider).getActivePaymentMethods();
-  return rows.map((row) {
-    final resolved = PaymentMethodResolver.resolve(
-      methodId: row.id,
-      code: row.code,
-      displayName: row.name,
-      storedTypeCode: row.type,
-      requiresReference: row.requiresReference,
-      bankId: row.bankId,
-      cardTypeId: row.cardTypeId,
-    );
-    return PaymentMethodOption(
-      id: resolved.methodId,
-      code: resolved.code,
-      name: resolved.displayName,
-      type: resolved.type,
-      requiresReference: resolved.requiresReference,
-      bankId: resolved.bankId,
-      cardTypeId: resolved.cardTypeId,
     );
   }).toList();
 });

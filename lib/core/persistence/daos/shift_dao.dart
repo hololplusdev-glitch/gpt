@@ -44,23 +44,11 @@ class ShiftDao {
     required ShiftsCompanion shift,
     required OutboxEventsCompanion outboxEntry,
     required AuditLogCompanion auditLogEntry,
-    String? attachOpenShiftId,
   }) async {
     await _db.transaction(() async {
       await _db.into(_db.shifts).insert(shift);
       await _db.into(_db.outboxEvents).insert(outboxEntry);
       await _db.into(_db.auditLog).insert(auditLogEntry);
-
-      if (attachOpenShiftId != null) {
-        await (_db.update(
-          _db.activePosSessions,
-        )..where((row) => row.id.equals(1))).write(
-          ActivePosSessionsCompanion(
-            openShiftId: Value(attachOpenShiftId),
-            updatedAt: Value(_clock.now()),
-          ),
-        );
-      }
     });
   }
 
@@ -108,7 +96,6 @@ class ShiftDao {
     required OutboxEventsCompanion outboxEntry,
     required AuditLogCompanion auditLogEntry,
     String? closingNotes,
-    String? clearOpenShiftId,
   }) async {
     final summaryJson = _buildSummaryJson(
       grossSales: grossSales,
@@ -130,7 +117,6 @@ class ShiftDao {
           actualCash: Value(actualCash),
           difference: Value(difference),
           status: const Value('closed'),
-          syncStatus: const Value('pending'),
           closedAt: Value(_clock.now()),
           closingNotes: Value(closingNotes),
           closeSummaryJson: Value(summaryJson),
@@ -138,19 +124,6 @@ class ShiftDao {
       );
       await _db.into(_db.outboxEvents).insert(outboxEntry);
       await _db.into(_db.auditLog).insert(auditLogEntry);
-
-      if (clearOpenShiftId != null) {
-        await (_db.update(_db.activePosSessions)..where(
-              (row) =>
-                  row.id.equals(1) & row.openShiftId.equals(clearOpenShiftId),
-            ))
-            .write(
-              ActivePosSessionsCompanion(
-                openShiftId: const Value<String?>(null),
-                updatedAt: Value(_clock.now()),
-              ),
-            );
-      }
     });
   }
 
@@ -170,12 +143,6 @@ class ShiftDao {
   }
 
   /// Update shift sync status.
-  Future<void> updateSyncStatus(String localId, String status) async {
-    await (_db.update(_db.shifts)..where((s) => s.id.equals(localId))).write(
-      ShiftsCompanion(syncStatus: Value(status)),
-    );
-  }
-
   Future<void> updateServerId(String localId, String serverId) async {
     await (_db.update(_db.shifts)..where((s) => s.id.equals(localId))).write(
       ShiftsCompanion(serverId: Value(serverId)),

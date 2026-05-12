@@ -6,7 +6,6 @@ import 'package:drift/drift.dart';
 
 /// Shift records.
 /// status: 'open','closing','closed'
-/// sync_status: 'pending','synced','failed','blocked'
 @TableIndex(name: 'idx_shifts_machine_status', columns: {#machineNo, #status})
 @TableIndex(name: 'idx_shifts_opened_at', columns: {#openedAt})
 class Shifts extends Table {
@@ -25,7 +24,6 @@ class Shifts extends Table {
   RealColumn get actualCash => real().withDefault(const Constant(0.0))();
   RealColumn get difference => real().withDefault(const Constant(0.0))();
   TextColumn get status => text()(); // stable string code
-  TextColumn get syncStatus => text()(); // stable string code
   DateTimeColumn get openedAt => dateTime()();
   DateTimeColumn get closedAt => dateTime().nullable()();
   DateTimeColumn get expiresAt => dateTime().nullable()();

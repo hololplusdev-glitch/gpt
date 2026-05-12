@@ -78,7 +78,6 @@ class ShiftService {
       shiftTypeId: Value(shiftTypeId),
       openingCash: openingCash,
       status: ShiftStatus.open.code,
-      syncStatus: OutboxStatus.pending.code,
       openedAt: now,
       expiresAt: Value(expiresAt),
       idempotencyKey: idempotencyKey,
@@ -110,7 +109,6 @@ class ShiftService {
       shift: shiftEntry,
       outboxEntry: outboxEntry,
       auditLogEntry: auditLogEntry,
-      attachOpenShiftId: localId,
     );
 
     return (await _shiftDao.getById(localId))!;
@@ -219,7 +217,6 @@ class ShiftService {
       closingNotes: closingNotes,
       outboxEntry: outboxEntry,
       auditLogEntry: auditLogEntry,
-      clearOpenShiftId: localId,
     );
   }
 

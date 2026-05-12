@@ -36,7 +36,6 @@ class ActivePosSession {
   final bool autoPrint;
   final String? invoiceSeries;
   final String? returnInvoiceSeries;
-  final String? openShiftId;
   final DateTime loginAt;
 
   const ActivePosSession({
@@ -62,7 +61,6 @@ class ActivePosSession {
     required this.autoPrint,
     required this.invoiceSeries,
     required this.returnInvoiceSeries,
-    required this.openShiftId,
     required this.loginAt,
   });
 }
@@ -217,7 +215,6 @@ class ActivePosSessionDao {
   Future<ActivePosSession> startSession({
     required PosUser user,
     required PosMachine machine,
-    String? openShiftId,
   }) async {
     _validateUser(user);
     _validateMachine(machine);
@@ -249,7 +246,6 @@ class ActivePosSessionDao {
             custCode: Value(user.custCode),
             activeUserId: Value(user.id),
             activeMachineNo: Value(machine.machineNo),
-            openShiftId: Value(openShiftId),
             loginAt: Value(now),
             updatedAt: Value(now),
           ),
@@ -261,20 +257,6 @@ class ActivePosSessionDao {
     }
 
     return session;
-  }
-
-  Future<void> clearOpenShift(String shiftId) async {
-    final row = await _readActiveRow();
-    if (row == null || row.openShiftId != shiftId) return;
-
-    await (_db.update(
-      _db.activePosSessions,
-    )..where((row) => row.id.equals(1))).write(
-      ActivePosSessionsCompanion(
-        openShiftId: const Value(null),
-        updatedAt: Value(_clock.now()),
-      ),
-    );
   }
 
   Future<void> clearActive() async {
@@ -373,7 +355,6 @@ class ActivePosSessionDao {
       autoPrint: machine.autoPrint,
       invoiceSeries: machine.invoiceSeries,
       returnInvoiceSeries: machine.returnInvoiceSeries,
-      openShiftId: row.openShiftId,
       loginAt: row.loginAt,
     );
   }

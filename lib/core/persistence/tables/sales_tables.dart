@@ -8,10 +8,8 @@ import 'package:drift/drift.dart';
 /// Sale header — replaces Sales table.
 /// status: 'draft','completed','voided','refunded','pending_sync','synced'
 /// type: 'sale','return','void'
-/// sync_status: 'pending','synced','failed','blocked'
 @TableIndex(name: 'idx_sales_shift_id', columns: {#shiftId})
 @TableIndex(name: 'idx_sales_completed_at', columns: {#completedAt})
-@TableIndex(name: 'idx_sales_sync_status', columns: {#syncStatus})
 @TableIndex(name: 'idx_sales_status', columns: {#status})
 @TableIndex(
   name: 'idx_sales_terminal_local_no',
@@ -25,7 +23,6 @@ class Sales extends Table {
   TextColumn get idempotencyKey => text()();
   TextColumn get type => text()(); // stable string code
   TextColumn get status => text()(); // stable string code
-  TextColumn get syncStatus => text()(); // stable string code
   TextColumn get custCode => text().nullable()();
   TextColumn get branchNo => text().nullable()();
   TextColumn get branchYear => text().nullable()();

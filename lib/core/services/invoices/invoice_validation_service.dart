@@ -1,4 +1,5 @@
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
+import 'package:holol_POS/shared/models/enums.dart';
 
 class InvoiceValidationService {
   const InvoiceValidationService();
@@ -23,7 +24,8 @@ class InvoiceValidationService {
     );
     final paymentTotal = document.payments.fold<double>(
       0.0,
-      (sum, payment) => sum + payment.amount,
+      (sum, payment) =>
+          _isCustomerCreditPayment(payment) ? sum : sum + payment.amount,
     );
 
     _expect('subtotal', lineSubtotal, document.totals.subtotal, errors);
@@ -49,6 +51,11 @@ class InvoiceValidationService {
     }
 
     return InvoiceValidationResult(errors);
+  }
+
+  bool _isCustomerCreditPayment(InvoicePaymentDocument payment) {
+    return payment.methodType == PaymentMethodType.customerCredit.code ||
+        payment.paymentMethodCode == 'CUSTOMER_CREDIT';
   }
 
   void _expect(

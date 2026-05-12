@@ -1,6 +1,6 @@
 // core/persistence/daos/auth_dao.dart
 // WHY: Organized DB access for authentication operations.
-// AuthDao owns local PIN and authentication-related audit logs.
+// AuthDao owns local PIN and user lookup only.
 
 import 'dart:math';
 
@@ -8,7 +8,7 @@ import 'package:drift/drift.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
 
-/// Data access for user authentication and session logging.
+/// Data access for user authentication.
 class AuthDao {
   final AppDatabase _db;
   final Clock _clock;
@@ -140,46 +140,4 @@ class AuthDao {
       (_) => random.nextInt(256),
     ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
-
-  Future<void> writeSessionLog({
-    required String id,
-    required String userId,
-    required String username,
-    required String terminalId,
-  }) async {
-    await _db
-        .into(_db.auditLog)
-        .insert(
-          AuditLogCompanion(
-            id: Value(id),
-            action: Value('login'),
-            actorId: Value(userId),
-            actorName: Value(username),
-            terminalId: Value(terminalId),
-            createdAt: Value(_clock.now()),
-          ),
-        );
-  }
-
-  Future<void> updateSessionLogout(String sessionId) async {
-    final log = await (_db.select(
-      _db.auditLog,
-    )..where((s) => s.id.equals(sessionId))).getSingleOrNull();
-
-    if (log == null) return;
-
-    await _db
-        .into(_db.auditLog)
-        .insert(
-          AuditLogCompanion(
-            id: Value('${sessionId}_logout'),
-            action: Value('logout'),
-            actorId: Value(log.actorId),
-            actorName: Value(log.actorName),
-            terminalId: Value(log.terminalId),
-            createdAt: Value(_clock.now()),
-          ),
-        );
-  }
 }
-//n

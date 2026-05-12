@@ -6,6 +6,7 @@ import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
 import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
+import 'package:holol_POS/core/persistence/daos/shift_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/persistence/pos_config_repository.dart';
 import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
@@ -16,10 +17,11 @@ import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
 
 /// Held-order owner only.
-/// Held-order totals are UI/preview values.
-/// Final sale totals are recalculated by SaleCheckout from exact ITEM_PRICE.
+/// Held orders are intentionally stored as JSON snapshots in HeldOrders.snapshotJson.
+/// Final sale totals are recalculated by SaleCheckout.
 class HeldOrdersService {
   final SalesDao _salesDao;
+  final ShiftDao _shiftDao;
   final AuditDao _auditDao;
   final PosConfigRepository _config;
   final ActivePosSession? _activeSession;
@@ -28,12 +30,14 @@ class HeldOrdersService {
 
   HeldOrdersService({
     required SalesDao salesDao,
+    required ShiftDao shiftDao,
     required AuditDao auditDao,
     required PosConfigRepository config,
     required ActivePosSession? activeSession,
     PricingEngine pricingEngine = const PricingEngine(),
     Clock clock = const SystemClock(),
   }) : _salesDao = salesDao,
+       _shiftDao = shiftDao,
        _auditDao = auditDao,
        _config = config,
        _activeSession = activeSession,
@@ -65,7 +69,8 @@ class HeldOrdersService {
     String? notes,
   }) async {
     final session = _requireActiveSession();
-    final shiftId = _requireOpenShiftId(session);
+    final shift = await _requireOpenShift(session);
+    final shiftId = shift.id;
 
     if (!_config.useHeldInvoices) {
       throw const SaleException(
@@ -134,7 +139,8 @@ class HeldOrdersService {
 
   Future<String> resumeHeldOrder({required String orderId}) async {
     final session = _requireActiveSession();
-    final shiftId = _requireOpenShiftId(session);
+    final shift = await _requireOpenShift(session);
+    final shiftId = shift.id;
 
     final orders = await _salesDao.getActiveHeldOrders(shiftId);
     final order = orders.where((o) => o.id == orderId).firstOrNull;
@@ -143,39 +149,62 @@ class HeldOrdersService {
       throw const SaleException('Held order not found or already resumed.');
     }
 
-    await _salesDao.resumeHeldOrder(orderId, _clock.now());
-
-    await _auditDao.log(
+    final now = _clock.now();
+    final auditLogEntry = AuditLogCompanion.insert(
       id: 'AUD_${_uuid.v4()}',
-      action: AuditAction.orderRecalled,
+      action: AuditAction.orderRecalled.code,
       actorId: session.activeUserId,
-      targetType: OutboxEntityType.heldOrder.code,
-      targetId: orderId,
+      targetType: Value(OutboxEntityType.heldOrder.code),
+      targetId: Value(orderId),
       terminalId: session.activeMachineNo,
+      createdAt: now,
     );
+
+    final updated = await _salesDao.resumeHeldOrderEnvelope(
+      orderId: orderId,
+      shiftId: shiftId,
+      now: now,
+      auditLogEntry: auditLogEntry,
+    );
+
+    if (!updated) {
+      throw const SaleException('Held order was already changed.');
+    }
 
     return order.snapshotJson;
   }
 
   Future<void> cancelHeldOrder({required String orderId}) async {
     final session = _requireActiveSession();
+    final shift = await _requireOpenShift(session);
+    final shiftId = shift.id;
+    final now = _clock.now();
 
-    await _salesDao.cancelHeldOrder(orderId);
-
-    await _auditDao.log(
+    final auditLogEntry = AuditLogCompanion.insert(
       id: 'AUD_${_uuid.v4()}',
-      action: AuditAction.orderCancelled,
+      action: AuditAction.orderCancelled.code,
       actorId: session.activeUserId,
-      targetType: OutboxEntityType.heldOrder.code,
-      targetId: orderId,
+      targetType: Value(OutboxEntityType.heldOrder.code),
+      targetId: Value(orderId),
       terminalId: session.activeMachineNo,
+      createdAt: now,
     );
+
+    final updated = await _salesDao.cancelHeldOrderEnvelope(
+      orderId: orderId,
+      shiftId: shiftId,
+      auditLogEntry: auditLogEntry,
+    );
+
+    if (!updated) {
+      throw const SaleException('Held order not found or already changed.');
+    }
   }
 
-  Future<List<HeldOrder>> getCurrentHeldOrders() {
+  Future<List<HeldOrder>> getCurrentHeldOrders() async {
     final session = _requireActiveSession();
-    final shiftId = _requireOpenShiftId(session);
-    return _salesDao.getActiveHeldOrders(shiftId);
+    final shift = await _requireOpenShift(session);
+    return _salesDao.getActiveHeldOrders(shift.id);
   }
 
   Future<List<HeldOrder>> getHeldOrders(String shiftId) {
@@ -209,12 +238,17 @@ class HeldOrdersService {
     }
   }
 
-  String _requireOpenShiftId(ActivePosSession session) {
-    final shiftId = session.openShiftId?.trim();
-    if (shiftId == null || shiftId.isEmpty) {
+  Future<Shift> _requireOpenShift(ActivePosSession session) async {
+    final shift = await _shiftDao.getOpenShift(
+      session.activeMachineNo,
+      cashierId: session.activeUserId,
+    );
+
+    if (shift == null || shift.status != ShiftStatus.open.code) {
       throw const SaleException('Open a shift before holding orders.');
     }
-    return shiftId;
+
+    return shift;
   }
 
   ActivePosSession _requireActiveSession() {
@@ -235,6 +269,7 @@ class SaleException extends BusinessException {
 final heldOrdersServiceProvider = Provider<HeldOrdersService>((ref) {
   return HeldOrdersService(
     salesDao: ref.watch(salesDaoProvider),
+    shiftDao: ref.watch(shiftDaoProvider),
     auditDao: ref.watch(auditDaoProvider),
     config: ref.watch(posConfigProvider),
     activeSession: ref.watch(activePosSessionProvider).valueOrNull,

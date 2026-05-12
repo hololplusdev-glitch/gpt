@@ -16,6 +16,7 @@ class InvoiceAuditHasher {
       ..remove('auditHash')
       ..remove('copyInfo')
       ..remove('printStatusLabel')
+      ..remove('syncStatusLabel')
       ..remove('arabicPrintNotice');
     return json;
   }

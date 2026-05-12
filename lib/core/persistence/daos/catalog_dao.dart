@@ -308,14 +308,12 @@ EXISTS (
     required String priceLevelId,
     required String storeId,
     required String unitId,
-    double quantity = 1,
   }) {
     return _resolveItemPriceRow(
       itemId: itemId,
       priceLevelId: priceLevelId,
       storeId: storeId,
       unitId: unitId,
-      quantity: quantity,
     );
   }
 
@@ -323,7 +321,6 @@ EXISTS (
     Iterable<SellableItemUnit> units, {
     required String priceLevelId,
     required String storeId,
-    double quantity = 1,
   }) async {
     final requestedUnits = units.toList();
     if (requestedUnits.isEmpty) return {};
@@ -436,7 +433,6 @@ EXISTS (
     required String priceLevelId,
     required String storeId,
     required String unitId,
-    required double quantity,
   }) async {
     final item = await getItemById(itemId);
     if (item == null) return null;

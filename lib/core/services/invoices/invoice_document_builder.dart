@@ -80,7 +80,9 @@ class InvoiceDocumentBuilder {
     InvoiceDocumentLabels labels = const InvoiceDocumentLabels.ar(),
   }) async {
     final archived = await _archiveRepository.loadOriginal(saleId);
-    if (archived != null) return archived;
+    if (archived != null) {
+      return _withOperationalLabels(archived, labels);
+    }
     return buildForSale(saleId, labels: labels);
   }
 
@@ -96,7 +98,9 @@ class InvoiceDocumentBuilder {
     }
 
     final archived = await _archiveRepository.loadOriginal(saleId);
-    if (archived != null) return archived;
+    if (archived != null) {
+      return _withOperationalLabels(archived, labels);
+    }
 
     final sale = await _salesDao.getInvoiceSale(saleId);
     if (sale == null) {
@@ -110,6 +114,7 @@ class InvoiceDocumentBuilder {
     final payments = await _loadPayments(saleId);
     final printStatus = await _printStatus(saleId, labels);
 
+    final syncStatusLabel = await _syncStatusLabel(sale.id);
     var document = InvoiceDocument(
       saleId: sale.id,
       localInvoiceNo: sale.localSaleNo,
@@ -117,7 +122,7 @@ class InvoiceDocumentBuilder {
       invoiceTypeLabel: labels.invoiceTypeSales,
       statusCode: sale.status,
       statusLabel: PosFormatters.saleStatusLabel(sale.status),
-      syncStatusLabel: PosFormatters.saleSyncStatusLabel(sale.syncStatus),
+      syncStatusLabel: syncStatusLabel,
       seller: seller,
       branch: branch,
       terminal: InvoiceTerminalInfo(
@@ -379,6 +384,27 @@ class InvoiceDocumentBuilder {
       validationStatus: validation.isValid ? 'valid' : 'invalid',
       validationMessage: validation.message,
     );
+  }
+
+  Future<InvoiceDocument> _withOperationalLabels(
+    InvoiceDocument document,
+    InvoiceDocumentLabels labels,
+  ) async {
+    return document.copyWith(
+      printStatusLabel: await _printStatus(document.saleId, labels),
+      syncStatusLabel: await _syncStatusLabel(document.saleId),
+    );
+  }
+
+  Future<String> _syncStatusLabel(String saleId) async {
+    final status =
+        await _salesDao.getEntityOutboxStatus(
+          entityType: OutboxEntityType.sale.code,
+          entityId: saleId,
+        ) ??
+        OutboxStatus.pending.code;
+
+    return PosFormatters.saleSyncStatusLabel(status);
   }
 
   Future<InvoiceBranchInfo> _loadBranch(Sale sale) async {

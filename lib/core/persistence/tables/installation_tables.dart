@@ -131,7 +131,6 @@ class ActivePosSessions extends Table {
   TextColumn get custCode => text()();
   TextColumn get activeUserId => text()();
   TextColumn get activeMachineNo => text()();
-  TextColumn get openShiftId => text().nullable()();
   DateTimeColumn get loginAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 

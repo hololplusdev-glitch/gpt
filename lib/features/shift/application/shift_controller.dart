@@ -1,6 +1,6 @@
 // features/shift/application/shift_controller.dart
 // WHY: Shift command controller + shift dashboard projection.
-// Runtime SSOT is ActivePosSession.openShiftId.
+// Runtime SSOT is the Shifts table.
 // This file must not own "current shift" truth.
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -65,20 +65,24 @@ class ShiftDashboard {
 final activeShiftDashboardProvider =
     FutureProvider.autoDispose<ShiftDashboard?>((ref) async {
       final session = ref.watch(activePosSessionProvider).valueOrNull;
-      final shiftId = session?.openShiftId?.trim();
 
-      if (shiftId == null || shiftId.isEmpty) {
+      if (session == null) {
         return null;
       }
 
       final shiftDao = ref.watch(shiftDaoProvider);
       final salesDao = ref.watch(salesDaoProvider);
 
-      final shift = await shiftDao.getById(shiftId);
+      final shift = await shiftDao.getOpenShift(
+        session.activeMachineNo,
+        cashierId: session.activeUserId,
+      );
+
       if (shift == null) {
         return null;
       }
 
+      final shiftId = shift.id;
       final totals = await salesDao.getShiftSalesTotals(shiftId);
       final movements = await shiftDao.getCashMovementTotals(shiftId);
 
@@ -94,12 +98,12 @@ final activeShiftDashboardProvider =
 class ShiftController extends StateNotifier<ShiftCommandState> {
   final ShiftService _shiftService;
   final ActiveSessionReader _readSession;
-  final Future<void> Function() _refreshActiveSession;
+  final Future<void> Function() _refreshShiftState;
 
   ShiftController(
     this._shiftService,
     this._readSession,
-    this._refreshActiveSession,
+    this._refreshShiftState,
   ) : super(const ShiftCommandState());
 
   Future<ShiftCommandResult> openShift({
@@ -115,7 +119,7 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
         shiftTypeId: shiftTypeId,
       );
 
-      await _refreshActiveSession();
+      await _refreshShiftState();
 
       state = const ShiftCommandState();
       return const ShiftCommandResult.success();
@@ -151,7 +155,7 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
         closingNotes: closingNotes,
       );
 
-      await _refreshActiveSession();
+      await _refreshShiftState();
 
       state = const ShiftCommandState();
       return const ShiftCommandResult.success();
@@ -214,8 +218,7 @@ final shiftControllerProvider =
         ref.watch(shiftServiceProvider),
         () => ref.read(activePosSessionProvider).valueOrNull,
         () async {
-          ref.invalidate(activePosSessionProvider);
-          await ref.read(activePosSessionProvider.future);
+          ref.invalidate(activeShiftDashboardProvider);
         },
       );
     });

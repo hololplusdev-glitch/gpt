@@ -14,6 +14,7 @@ import 'package:holol_POS/core/services/invoices/invoice_document_builder.dart';
 import 'package:holol_POS/core/services/payments/payment_method_resolver.dart';
 import 'package:holol_POS/core/services/pos_devices/payment_profile_service.dart';
 import 'package:holol_POS/core/services/pos_devices/print_queue.dart';
+import 'package:holol_POS/core/services/pos_devices/print_job_processor.dart';
 import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
 import 'package:holol_POS/core/services/sync/upload_queue.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
@@ -36,6 +37,7 @@ class SaleCheckout {
   final InvoiceDocumentBuilder _invoiceDocumentBuilder;
   final UploadQueue _uploadQueue;
   final PrintQueue _printQueue;
+  final PrintJobProcessor _printJobProcessor;
   final PaymentProfileService _paymentProfileService;
   final ActivePosSession? _activeSession;
   final PricingEngine _pricingEngine;
@@ -50,6 +52,7 @@ class SaleCheckout {
     required InvoiceDocumentBuilder invoiceDocumentBuilder,
     required UploadQueue uploadQueue,
     required PrintQueue printQueue,
+    required PrintJobProcessor printJobProcessor,
     required PaymentProfileService paymentProfileService,
     required ActivePosSession? activeSession,
     PricingEngine pricingEngine = const PricingEngine(),
@@ -62,6 +65,7 @@ class SaleCheckout {
        _invoiceDocumentBuilder = invoiceDocumentBuilder,
        _uploadQueue = uploadQueue,
        _printQueue = printQueue,
+       _printJobProcessor = printJobProcessor,
        _paymentProfileService = paymentProfileService,
        _activeSession = activeSession,
        _pricingEngine = pricingEngine,
@@ -71,8 +75,8 @@ class SaleCheckout {
 
   Future<SaleCheckoutResult> complete(SaleCheckoutRequest request) async {
     final session = _requireActiveSession();
-    final shiftId = _requireOpenShiftId(session);
-    await _validateOpenShift(shiftId);
+    final shift = await _requireOpenShift(session);
+    final shiftId = shift.id;
 
     if (request.cart.isEmpty) {
       throw const SaleCheckoutException('No items in cart.');
@@ -149,7 +153,10 @@ class SaleCheckout {
 
     final requirements = checkoutPaymentRequirements(
       resolved,
-      paymentProfileRequiresReference: profileRequiresReference,
+      paymentProfileRequiresReference:
+          request.paymentIntent.kind == SaleTenderKind.network
+          ? false
+          : profileRequiresReference,
     );
 
     final reference = request.paymentIntent.reference.trim();
@@ -262,6 +269,10 @@ class SaleCheckout {
           )
         : const <PrintJobsCompanion>[];
 
+    final printJobIds = printJobs
+        .map((job) => job.id.value)
+        .toList(growable: false);
+
     await _salesDao.persistSaleEnvelope(
       header: envelope.header,
       items: envelope.items,
@@ -282,6 +293,10 @@ class SaleCheckout {
         idempotencyKey: idempotencyKey,
       ),
     );
+
+    if (printJobIds.isNotEmpty) {
+      await _printJobProcessor.processJobIds(printJobIds);
+    }
 
     return SaleCheckoutResult(
       saleId: saleId,
@@ -327,6 +342,21 @@ class SaleCheckout {
       );
     }
 
+    ResolvedPaymentMethod withoutReference(ResolvedPaymentMethod method) {
+      return ResolvedPaymentMethod(
+        methodId: method.methodId,
+        code: method.code,
+        displayName: method.displayName,
+        type: method.type,
+        bankId: method.bankId,
+        cardTypeId: method.cardTypeId,
+        requiresReference: false,
+        allowsChange: method.allowsChange,
+        isManual: method.isManual,
+        needsPaymentProfile: method.needsPaymentProfile,
+      );
+    }
+
     switch (intent.kind) {
       case SaleTenderKind.cash:
         final method = firstWhere((method) => typeOf(method)?.isCash ?? false);
@@ -339,17 +369,17 @@ class SaleCheckout {
         final manual = firstWhere(
           (method) => typeOf(method) == PaymentMethodType.manualCard,
         );
-        if (manual != null) return fromRow(manual);
+        if (manual != null) return withoutReference(fromRow(manual));
 
         final card = firstWhere((method) => typeOf(method)?.isCard ?? false);
-        if (card != null) return fromRow(card);
+        if (card != null) return withoutReference(fromRow(card));
 
         return const ResolvedPaymentMethod(
           methodId: 'MANUAL_CARD_FALLBACK',
           code: PaymentMethodCodes.manualCard,
           displayName: 'شبكة',
           type: PaymentMethodType.manualCard,
-          requiresReference: true,
+          requiresReference: false,
           allowsChange: false,
           isManual: true,
           needsPaymentProfile: false,
@@ -386,7 +416,6 @@ class SaleCheckout {
         priceLevelId: session.activePriceLevelId,
         storeId: session.activeStoreId,
         unitId: line.unitId,
-        quantity: line.quantity,
       );
 
       if (price == null) {
@@ -403,7 +432,6 @@ class SaleCheckout {
           unitName: price.unitName ?? line.unitName,
           unitSize: line.unitSize,
           barcode: line.barcode,
-          quantity: line.quantity,
           unitPrice: price.unitPrice,
           taxRate: price.taxRate,
           discountType: line.discountType,
@@ -421,14 +449,19 @@ class SaleCheckout {
     return resolved;
   }
 
-  String _requireOpenShiftId(ActivePosSession session) {
-    final shiftId = session.openShiftId?.trim();
-    if (shiftId == null || shiftId.isEmpty) {
+  Future<Shift> _requireOpenShift(ActivePosSession session) async {
+    final shift = await _shiftDao.getOpenShift(
+      session.activeMachineNo,
+      cashierId: session.activeUserId,
+    );
+
+    if (shift == null || shift.status != ShiftStatus.open.code) {
       throw const SaleCheckoutException(
-        'Open a shift before completing payment.',
+        'No open shift. Open a shift before selling.',
       );
     }
-    return shiftId;
+
+    return shift;
   }
 
   double _officialDiscountAmount({
@@ -442,17 +475,6 @@ class SaleCheckout {
     }
 
     return line.discountAmount;
-  }
-
-  Future<void> _validateOpenShift(String shiftId) async {
-    final shift = await _shiftDao.getById(shiftId);
-    final isOpen = shift != null && shift.status == ShiftStatus.open.code;
-
-    if (!isOpen) {
-      throw const SaleCheckoutException(
-        'No open shift. Open a shift before selling.',
-      );
-    }
   }
 
   CheckoutQuote _quoteSale(List<SaleLineInput> lines) {
@@ -513,7 +535,6 @@ class SaleCheckout {
       paidTotal: Value(paymentResult.paidTotal),
       remainingTotal: Value(paymentResult.remainingTotal),
       changeTotal: Value(paymentResult.changeTotal),
-      syncStatus: Value(OutboxStatus.pending.code),
       idempotencyKey: Value(idempotencyKey),
       createdAt: Value(now),
       completedAt: Value(now),
@@ -933,6 +954,7 @@ final saleCheckoutProvider = Provider<SaleCheckout>((ref) {
     invoiceDocumentBuilder: ref.watch(invoiceDocumentBuilderProvider),
     uploadQueue: ref.watch(uploadQueueProvider),
     printQueue: ref.watch(printQueueProvider),
+    printJobProcessor: ref.watch(printJobProcessorProvider),
     paymentProfileService: ref.watch(paymentProfileServiceProvider),
     activeSession: ref.watch(activePosSessionProvider).valueOrNull,
     clock: ref.watch(clockProvider),

@@ -5,6 +5,5 @@ void invalidateMasterDataDownloadProviders(dynamic ref) {
   ref.invalidate(catalogReadinessProvider);
   ref.invalidate(cashierProductCardsProvider);
   ref.invalidate(categoryListProvider);
-  ref.invalidate(paymentMethodsProvider);
   ref.invalidate(customersProvider);
 }

@@ -138,6 +138,25 @@ class SalesDao {
         .getSingleOrNull();
   }
 
+  Future<String?> getEntityOutboxStatus({
+    required String entityType,
+    required String entityId,
+  }) async {
+    final events =
+        await (_db.select(_db.outboxEvents)
+              ..where(
+                (event) =>
+                    event.entityType.equals(entityType) &
+                    event.entityId.equals(entityId),
+              )
+              ..orderBy([(event) => OrderingTerm.desc(event.createdAt)])
+              ..limit(1))
+            .get();
+
+    if (events.isEmpty) return null;
+    return events.first.status;
+  }
+
   Future<List<PrintJob>> getSalePrintJobs(String saleId) {
     return (_db.select(_db.printJobs)
           ..where((job) => job.saleId.equals(saleId))
@@ -434,29 +453,11 @@ class SalesDao {
         SalesCompanion(
           status: Value(SaleStatus.voided.code),
           voidedAt: Value(voidedAt),
-          syncStatus: Value(OutboxStatus.pending.code),
         ),
       );
       await _db.into(_db.outboxEvents).insert(outboxEntry);
       await _db.into(_db.auditLog).insert(auditLogEntry);
     });
-  }
-
-  /// Update sync status for a sale.
-  Future<void> updateSyncStatus(
-    String saleId,
-    OutboxStatus status, {
-    String? serverId,
-  }) async {
-    final companion = SalesCompanion(syncStatus: Value(status.code));
-    await (_db.update(
-      _db.sales,
-    )..where((t) => t.id.equals(saleId))).write(companion);
-    if (serverId != null) {
-      await (_db.update(_db.sales)..where((t) => t.id.equals(saleId))).write(
-        SalesCompanion(serverId: Value(serverId)),
-      );
-    }
   }
 
   /// Reserve next invoice sequence number.
@@ -553,23 +554,58 @@ class SalesDao {
     return orders.length;
   }
 
-  Future<void> resumeHeldOrder(String orderId, DateTime now) async {
-    await (_db.update(
-      _db.heldOrders,
-    )..where((h) => h.id.equals(orderId))).write(
-      HeldOrdersCompanion(
-        status: Value(HeldOrderStatus.resumed.code),
-        resumedAt: Value(now),
-      ),
-    );
+  Future<bool> resumeHeldOrderEnvelope({
+    required String orderId,
+    required String shiftId,
+    required DateTime now,
+    required AuditLogCompanion auditLogEntry,
+  }) async {
+    return _db.transaction(() async {
+      final updated =
+          await (_db.update(_db.heldOrders)..where(
+                (h) =>
+                    h.id.equals(orderId) &
+                    h.shiftId.equals(shiftId) &
+                    h.status.equals(HeldOrderStatus.held.code),
+              ))
+              .write(
+                HeldOrdersCompanion(
+                  status: Value(HeldOrderStatus.resumed.code),
+                  resumedAt: Value(now),
+                ),
+              );
+
+      if (updated != 1) return false;
+
+      await _db.into(_db.auditLog).insert(auditLogEntry);
+      return true;
+    });
   }
 
-  Future<void> cancelHeldOrder(String orderId) async {
-    await (_db.update(
-      _db.heldOrders,
-    )..where((h) => h.id.equals(orderId))).write(
-      HeldOrdersCompanion(status: Value(HeldOrderStatus.cancelled.code)),
-    );
+  Future<bool> cancelHeldOrderEnvelope({
+    required String orderId,
+    required String shiftId,
+    required AuditLogCompanion auditLogEntry,
+  }) async {
+    return _db.transaction(() async {
+      final updated =
+          await (_db.update(_db.heldOrders)..where(
+                (h) =>
+                    h.id.equals(orderId) &
+                    h.shiftId.equals(shiftId) &
+                    h.status.equals(HeldOrderStatus.held.code),
+              ))
+              .write(
+                HeldOrdersCompanion(
+                  status: Value(HeldOrderStatus.cancelled.code),
+                ),
+              );
+
+      if (updated != 1) return false;
+
+      await _db.into(_db.auditLog).insert(auditLogEntry);
+      return true;
+    });
   }
 
   String? _clean(String? value) {

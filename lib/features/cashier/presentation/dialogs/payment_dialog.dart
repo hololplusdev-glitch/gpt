@@ -369,7 +369,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         ? 'جهاز الدفع غير متصل. سيتم تسجيل عملية شبكة يدويًا مع حفظها كدفعة شبكة.'
         : 'لم يتم تفعيل ربط جهاز الدفع بعد. سيتم تسجيل عملية شبكة يدويًا مع حفظها كدفعة شبكة.';
 
-    final requiresReference = profile?.requireReference ?? true;
+    const requiresReference = false;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -379,9 +379,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         AppTextField(
           controller: _referenceController,
           textInputAction: TextInputAction.done,
-          labelText: requiresReference
-              ? 'رقم مرجع الشبكة *'
-              : 'رقم مرجع الشبكة',
+          labelText: 'رقم مرجع الشبكة اختياري',
           prefixIcon: const Icon(Icons.confirmation_number_outlined),
         ),
         const SizedBox(height: AppSpacing.xl),
