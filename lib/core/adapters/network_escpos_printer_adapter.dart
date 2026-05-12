@@ -1,23 +1,26 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:holol_POS/core/adapters/printer_adapter.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
-import 'package:holol_POS/core/services/pos_devices/printer_profile_service.dart';
-import 'package:holol_POS/core/services/invoices/receipt_template_renderer.dart';
 import 'package:holol_POS/core/services/invoices/thermal_raster_renderer.dart';
+import 'package:holol_POS/core/services/pos_devices/printer_profile_service.dart';
 import 'package:holol_POS/core/services/pos_devices/printer_test_document.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 
+/// Network ESC/POS printer adapter.
+///
+/// SSOT:
+/// - Invoice shape is owned by ThermalRasterRenderer.
+/// - This adapter is transport only: socket + ESC/POS init/QR/cut.
+/// - No text receipt branch.
+/// - No arabicMode layout switching.
+/// - Network ESC/POS always prints the unified raster receipt.
 class NetworkEscPosPrinterAdapter implements PrinterAdapter {
-  final ReceiptTemplateRenderer _renderer;
-  final ThermalRasterRenderer _rasterRenderer;
+  final ThermalRasterRenderer _renderer;
 
   const NetworkEscPosPrinterAdapter({
-    ReceiptTemplateRenderer renderer = const ReceiptTemplateRenderer(),
-    ThermalRasterRenderer rasterRenderer = const ThermalRasterRenderer(),
-  }) : _renderer = renderer,
-       _rasterRenderer = rasterRenderer;
+    ThermalRasterRenderer renderer = const ThermalRasterRenderer(),
+  }) : _renderer = renderer;
 
   @override
   bool isSupportedOnCurrentPlatform(PrinterProfile profile) {
@@ -26,17 +29,18 @@ class NetworkEscPosPrinterAdapter implements PrinterAdapter {
   }
 
   @override
-  Future<PrinterAdapterResult> test(PrinterProfile profile) async {
+  Future<PrinterAdapterResult> test(PrinterProfile profile) {
     return print(profile, buildPrinterTestDocument());
   }
 
   @override
   Future<PrinterAdapterResult> print(
     PrinterProfile profile,
-    InvoiceDocument payload,
+    InvoiceDocument document,
   ) async {
     final host = profile.ipAddress?.trim();
     final port = profile.port ?? 9100;
+
     if (host == null || host.isEmpty) {
       return const PrinterAdapterResult.failure(
         'Printer IP address is required.',
@@ -44,15 +48,18 @@ class NetworkEscPosPrinterAdapter implements PrinterAdapter {
     }
 
     Socket? socket;
+
     try {
       socket = await Socket.connect(
         host,
         port,
         timeout: const Duration(seconds: 5),
       );
-      socket.add(await _buildReceiptBytes(profile, payload));
+
+      socket.add(await _buildReceiptBytes(profile, document));
       await socket.flush();
       await socket.close();
+
       return const PrinterAdapterResult.success();
     } catch (_) {
       socket?.destroy();
@@ -66,45 +73,45 @@ class NetworkEscPosPrinterAdapter implements PrinterAdapter {
     PrinterProfile profile,
     ReceiptPayload payload,
   ) async {
-    final buffer = StringBuffer()
-      ..writeln('\x1B@')
-      ..write(
-        profile.arabicMode == ArabicPrintMode.raster.code
-            ? ''
-            : _renderer.renderThermalText(
-                payload,
-                paperWidthMm: profile.paperWidthMm,
-              ),
-      );
-    if (profile.arabicMode == ArabicPrintMode.raster.code) {
-      return [
-        ...utf8.encode('\x1B@'),
-        ...await _rasterRenderer.renderEscPosRaster(
-          payload,
-          paperWidthMm: profile.paperWidthMm,
-        ),
-        ..._nativeQrBytes(payload.qrPayload),
-        ...utf8.encode('\n\n\x1DVA\x00'),
-      ];
-    }
-    buffer.writeln('\n');
-    final bytes = <int>[
-      ...utf8.encode(buffer.toString()),
+    return [
+      ..._initializePrinter(),
+      ...await _renderer.renderEscPosRaster(
+        payload,
+        paperWidthMm: profile.paperWidthMm,
+      ),
+      ..._lineFeed(1),
       ..._nativeQrBytes(payload.qrPayload),
-      ...utf8.encode('\n'),
+      ..._lineFeed(2),
+      ..._cutPaper(),
     ];
-    bytes.addAll(utf8.encode('\x1DVA\x00'));
-    return bytes;
+  }
+
+  List<int> _initializePrinter() {
+    return const [0x1B, 0x40];
+  }
+
+  List<int> _lineFeed(int count) {
+    return List<int>.filled(count, 0x0A);
+  }
+
+  List<int> _cutPaper() {
+    return const [0x1D, 0x56, 0x41, 0x00];
   }
 
   List<int> _nativeQrBytes(String? payload) {
-    if (payload == null || payload.isEmpty) return const [];
-    final data = utf8.encode(payload);
+    final normalized = payload?.trim();
+    if (normalized == null || normalized.isEmpty) return const [];
+
+    final data = normalized.codeUnits;
     final length = data.length + 3;
+
     return [
+      // Center align.
       0x1B,
       0x61,
       0x01,
+
+      // Select QR model 2.
       0x1D,
       0x28,
       0x6B,
@@ -114,6 +121,8 @@ class NetworkEscPosPrinterAdapter implements PrinterAdapter {
       0x41,
       0x32,
       0x00,
+
+      // QR module size.
       0x1D,
       0x28,
       0x6B,
@@ -122,6 +131,8 @@ class NetworkEscPosPrinterAdapter implements PrinterAdapter {
       0x31,
       0x43,
       0x06,
+
+      // QR error correction.
       0x1D,
       0x28,
       0x6B,
@@ -130,6 +141,8 @@ class NetworkEscPosPrinterAdapter implements PrinterAdapter {
       0x31,
       0x45,
       0x31,
+
+      // Store QR data.
       0x1D,
       0x28,
       0x6B,
@@ -139,6 +152,8 @@ class NetworkEscPosPrinterAdapter implements PrinterAdapter {
       0x50,
       0x30,
       ...data,
+
+      // Print QR.
       0x1D,
       0x28,
       0x6B,
@@ -147,6 +162,8 @@ class NetworkEscPosPrinterAdapter implements PrinterAdapter {
       0x31,
       0x51,
       0x30,
+
+      // Left align.
       0x1B,
       0x61,
       0x00,
