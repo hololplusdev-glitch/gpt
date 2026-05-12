@@ -1,7 +1,7 @@
 // app/router.dart
 // WHY: GoRouter with setup guard → auth guard → shift guard.
 // Enforces: first-run setup → login → open shift → cashier.
-import 'package:holol_POS/features/owner_console/owner_console_screen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +12,7 @@ import 'package:holol_POS/features/auth/presentation/login_screen.dart';
 import 'package:holol_POS/features/cashier/presentation/cashier_screen.dart';
 import 'package:holol_POS/features/history/presentation/history_screen.dart';
 import 'package:holol_POS/features/invoices/presentation/invoice_preview_screen.dart';
+import 'package:holol_POS/features/owner_console/owner_console_screen.dart';
 import 'package:holol_POS/features/pos_devices/presentation/pos_devices_screen.dart';
 import 'package:holol_POS/features/settings/presentation/settings_screen.dart';
 import 'package:holol_POS/features/setup/application/setup_notifier.dart';
@@ -65,7 +66,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final shiftRequired = isAuthenticated;
       final activeShift = ref.read(activeShiftDashboardProvider).valueOrNull;
       final hasOpenShift = activeShift != null;
-      final hasOpenShift =
+
       final isBootRoute = state.matchedLocation == AppRoutes.boot;
       final isLoginRoute = state.matchedLocation == AppRoutes.login;
       final isSetupRoute = state.matchedLocation == AppRoutes.setup;
@@ -107,10 +108,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (isAuthenticated && isLoginRoute) {
-        final target = !shiftRequired || hasOpenShift
-            ? AppRoutes.cashier
-            : AppRoutes.shift;
-        return target;
+        return hasOpenShift ? AppRoutes.cashier : AppRoutes.shift;
       }
 
       if (isSetupComplete && isSetupRoute) {
@@ -126,7 +124,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         AppRoutes.posDevices,
         AppRoutes.syncMonitor,
         AppRoutes.invoice,
+        AppRoutes.ownerConsole,
       };
+
       if (isAuthenticated &&
           shiftRequired &&
           !hasOpenShift &&
@@ -134,9 +134,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return AppRoutes.shift;
       }
 
-      // WHY: Guard 6 — Readiness gate. Prevent selling when the local
-      // catalog is incomplete. This catches the case where setup completed
-      // with warnings or a re-sync is needed after Backend identity change.
+      // WHY: Readiness gate. Prevent selling when local catalog is incomplete.
       if (isAuthenticated && state.matchedLocation == AppRoutes.cashier) {
         final readiness = ref.read(catalogReadinessProvider).valueOrNull;
         if (readiness != null && !readiness.isReady) {

@@ -365,8 +365,30 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     }
 
     final activeSession = ref.read(activePosSessionProvider).valueOrNull;
+    if (activeSession == null) {
       return;
     }
+
+    final heldOrdersService = ref.read(heldOrdersServiceProvider);
+
+    try {
+      await heldOrdersService.holdOrder(items: cart.toSaleLineInputs());
+
+      ref.read(cartProvider.notifier).clearCart();
+
+      if (context.mounted) {
+        AppSnackbar.showSuccess(context, l10n.orderHeldSuccessfully);
+      }
+    } on SaleException catch (e) {
+      if (context.mounted) {
+        AppSnackbar.showError(context, e.message);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        AppSnackbar.showError(context, ErrorMapper.userMessage(e));
+      }
+    }
+  }
 
     final heldOrdersService = ref.read(heldOrdersServiceProvider);
 

@@ -417,7 +417,7 @@ class CartController extends StateNotifier<Cart> {
 
       if (price == null) {
         throw const BusinessException(
-          'No active sale price is configured for this quantity.',
+          'No active sale price is configured for this item.',
           code: 'PRICE_NOT_CONFIGURED',
         );
       }

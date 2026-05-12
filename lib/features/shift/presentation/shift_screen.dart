@@ -42,6 +42,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final actionState = ref.watch(shiftControllerProvider);
     final activeSession = ref.watch(activePosSessionProvider).valueOrNull;
