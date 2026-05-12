@@ -127,7 +127,7 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
       state = state.copyWith(isLoading: false, errorMessage: e.message);
       return ShiftCommandResult.failure(e.message);
     } catch (e) {
-      final message = ErrorMapper.userMessage(e);
+      final message = _commandErrorMessage(e);
       state = state.copyWith(isLoading: false, errorMessage: message);
       return ShiftCommandResult.failure(message);
     }
@@ -163,7 +163,7 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
       state = state.copyWith(isLoading: false, errorMessage: e.message);
       return ShiftCommandResult.failure(e.message);
     } catch (e) {
-      final message = ErrorMapper.userMessage(e);
+      final message = _commandErrorMessage(e);
       state = state.copyWith(isLoading: false, errorMessage: message);
       return ShiftCommandResult.failure(message);
     }
@@ -190,7 +190,7 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
       state = const ShiftCommandState();
       return const ShiftCommandResult.success();
     } catch (e) {
-      final message = ErrorMapper.userMessage(e);
+      final message = _commandErrorMessage(e);
       state = state.copyWith(isLoading: false, errorMessage: message);
       return ShiftCommandResult.failure(message);
     }
@@ -198,6 +198,22 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
 
   void clearError() {
     state = state.copyWith(clearError: true);
+  }
+
+  String _commandErrorMessage(Object error) {
+    final mapped = ErrorMapper.userMessage(error);
+    final raw = error.toString().trim();
+
+    if (raw.isEmpty || raw.toLowerCase() == 'null' || raw == mapped) {
+      return mapped;
+    }
+
+    if (mapped == 'Something went wrong. Please try again.' ||
+        mapped == 'Enter a valid value.') {
+      return raw;
+    }
+
+    return '$mapped\n$raw';
   }
 
   ActivePosSession _requireSession() {

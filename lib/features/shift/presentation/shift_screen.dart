@@ -34,6 +34,16 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
   final _notesController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(shiftControllerProvider.notifier).clearError();
+    });
+  }
+
+  @override
   void dispose() {
     _openingCashController.dispose();
     _actualCashController.dispose();
@@ -41,7 +51,6 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     super.dispose();
   }
 
-  @override
   @override
   Widget build(BuildContext context) {
     final actionState = ref.watch(shiftControllerProvider);
