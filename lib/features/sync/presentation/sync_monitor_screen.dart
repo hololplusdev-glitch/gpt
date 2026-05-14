@@ -11,7 +11,6 @@ import 'package:holol_POS/core/design_system/spacing.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/l10n/app_localizations.dart';
 import 'package:holol_POS/core/services/master_data/master_data_contract.dart';
-import 'package:holol_POS/core/services/master_data/master_data_download_helper.dart';
 import 'package:holol_POS/core/services/master_data/master_data_sync_service.dart';
 import 'package:holol_POS/features/setup/application/setup_notifier.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
@@ -67,6 +66,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
   Future<void> _downloadMasterData() async {
     final l10n = AppLocalizations.of(context)!;
     final cancelToken = MasterDataSyncCancelHandle();
+
     setState(() {
       _isSyncing = true;
       _lastResult = null;
@@ -78,6 +78,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
 
     try {
       final syncProfile = ref.read(setupProvider).value?.syncProfile;
+
       if (syncProfile == null) {
         setState(() {
           _isSyncing = false;
@@ -88,45 +89,42 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
         return;
       }
 
-      final download = await ref
-          .read(masterDataDownloadHelperProvider)
-          .download(
-            syncProfile: syncProfile,
-            mode: MasterDataSyncMode.incremental,
-            cancelHandle: cancelToken,
-            onProgress: (progress) {
-              if (!mounted) return;
-              setState(() {
-                _progress = progress;
-              });
-            },
-          );
+      final download = await PosMasterDataRuntimeWorkflow.downloadIncremental(
+        ref: ref,
+        syncProfile: syncProfile,
+        cancelHandle: cancelToken,
+        onProgress: (progress) {
+          if (!mounted) return;
+          setState(() {
+            _progress = progress;
+          });
+        },
+      );
 
       if (!mounted) return;
 
-      final result = download.summary;
-      final failed = download.fatalFailures;
-      final readinessWarnings = download.readinessWarnings;
-      final resultMessage = result.allNoChanges
-          ? 'تم فحص بيانات التشغيل، لا توجد تغييرات جديدة.'
-          : failed.isNotEmpty
-          ? l10n.masterDataDownloadSummary(result.rowCount, failed.length)
-          : l10n.masterDataDownloadSummary(result.rowCount, 0);
+      final message = PosMasterDataRuntimeWorkflow.incrementalResultMessage(
+        download: download,
+        noChangesMessage: 'تم فحص بيانات التشغيل، لا توجد تغييرات جديدة.',
+        summaryBuilder: l10n.masterDataDownloadSummary,
+      );
+
       setState(() {
         _isSyncing = false;
         _lastSummary = download.summary;
-        _lastResult = readinessWarnings.isEmpty
-            ? resultMessage
-            : '$resultMessage\n${readinessWarnings.join('\n')}';
-        _lastResultIsError = failed.isNotEmpty || readinessWarnings.isNotEmpty;
+        _lastResult = message;
+        _lastResultIsError =
+            PosMasterDataRuntimeWorkflow.incrementalResultIsError(download);
         _progress = null;
         _cancelToken = null;
       });
+
       ref.invalidate(scopedSyncStateProvider);
-      PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
     } catch (e) {
       if (!mounted) return;
-      final isCancelled = e is AppException && e.code == 'CANCELLED';
+
+      final isCancelled = PosMasterDataRuntimeWorkflow.isCancelled(e);
+
       setState(() {
         _isSyncing = false;
         _lastResult = isCancelled
@@ -136,6 +134,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
         _progress = null;
         _cancelToken = null;
       });
+
       ref.invalidate(scopedSyncStateProvider);
     }
   }

@@ -15,6 +15,10 @@ import 'package:holol_POS/core/persistence/database.dart' hide Customer;
 import 'package:holol_POS/features/cashier/domain/models/product.dart';
 import 'package:holol_POS/shared/models/customer.dart';
 import 'package:uuid/uuid.dart';
+import 'package:holol_POS/core/network/network_models.dart';
+import 'package:holol_POS/core/services/master_data/master_data_contract.dart';
+import 'package:holol_POS/core/services/master_data/master_data_download_helper.dart';
+import 'package:holol_POS/core/services/master_data/master_data_sync_service.dart';
 
 typedef CartPriceResolver =
     Future<ResolvedItemPrice?> Function({
@@ -746,4 +750,199 @@ List<ProductUnitOption> _pricedUnitsForItem({
   }
 
   return pricedUnits;
+}
+
+class PosMasterDataProgressSnapshot {
+  final double progress;
+  final String status;
+  final String pagination;
+
+  const PosMasterDataProgressSnapshot({
+    required this.progress,
+    required this.status,
+    required this.pagination,
+  });
+
+  factory PosMasterDataProgressSnapshot.fromProgress(
+    MasterDataSyncProgress progress,
+  ) {
+    final totalSections = progress.totalSections <= 0
+        ? 1
+        : progress.totalSections;
+
+    final overallProgress =
+        ((progress.currentSection + progress.sectionProgress) / totalSections)
+            .clamp(0.0, 1.0);
+
+    final pagination = progress.totalPages > 1
+        ? 'صفحة ${progress.currentPage} من ${progress.totalPages}'
+        : '';
+
+    final label = progress.typeCode == MasterDataType.devicePrivilege.code
+        ? progress.typeLabel
+        : 'تحميل ${progress.typeCode}';
+
+    return PosMasterDataProgressSnapshot(
+      progress: overallProgress,
+      status: label,
+      pagination: pagination,
+    );
+  }
+}
+
+class PosIncrementalMasterDataResult {
+  final MasterDataDownloadResult download;
+  final String message;
+  final bool isError;
+
+  const PosIncrementalMasterDataResult({
+    required this.download,
+    required this.message,
+    required this.isError,
+  });
+}
+
+abstract final class PosMasterDataRuntimeWorkflow {
+  static Future<String> completeInitialSetup({
+    required dynamic ref,
+    required SyncProfile syncProfile,
+    required MasterDataSyncCancelHandle cancelHandle,
+    required dynamic posSessionControllerProvider,
+    required dynamic shiftControllerProvider,
+    required void Function(PosMasterDataProgressSnapshot snapshot) onProgress,
+  }) async {
+    final cleanProfile = syncProfile;
+    if (cleanProfile.custCode.trim().isEmpty) {
+      throw StateError('Customer code is required.');
+    }
+
+    final configRepo = ref.read(posConfigProvider);
+    await configRepo.seedDefaults();
+    await configRepo.initialize();
+
+    await ref.read(masterDataDaoProvider).clearMasterDataCache();
+
+    final download = await ref
+        .read(masterDataDownloadHelperProvider)
+        .download(
+          syncProfile: cleanProfile,
+          mode: MasterDataSyncMode.initial,
+          cancelHandle: cancelHandle,
+          requireReady: false,
+          throwOnFatalFailures: true,
+          onProgress: (progress) {
+            onProgress(PosMasterDataProgressSnapshot.fromProgress(progress));
+          },
+        );
+
+    await verifySetupUserExists(
+      ref: ref,
+      usrId: cleanProfile.bootstrapUserId.trim(),
+    );
+
+    PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
+    await ref.read(runtimeConfigRepositoryProvider).setSetupComplete(true);
+
+    return download.operationalWarningSummary();
+  }
+
+  static Future<void> cleanupFailedInitialSetup({
+    required dynamic ref,
+    required dynamic posSessionControllerProvider,
+    required dynamic shiftControllerProvider,
+  }) async {
+    await ref.read(masterDataDaoProvider).clearMasterDataCache();
+    await ref.read(activePosSessionDaoProvider).clearActive();
+
+    PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
+    PosRuntimeStateInvalidator.invalidateSetupRuntime(
+      ref,
+      posSessionControllerProvider: posSessionControllerProvider,
+      shiftControllerProvider: shiftControllerProvider,
+    );
+  }
+
+  static Future<void> resetSetup({
+    required dynamic ref,
+    required dynamic posSessionControllerProvider,
+    required dynamic shiftControllerProvider,
+  }) async {
+    final repo = ref.read(runtimeConfigRepositoryProvider);
+
+    await repo.resetSetupStatus();
+    await repo.clearSyncProfile();
+    await ref
+        .read(masterDataDaoProvider)
+        .clearMasterDataCache(clearRunLogs: true);
+    await ref.read(activePosSessionDaoProvider).clearActive();
+    ref.read(apiClientProvider).clearConfiguration();
+
+    PosRuntimeStateInvalidator.invalidateSetupRuntime(
+      ref,
+      posSessionControllerProvider: posSessionControllerProvider,
+      shiftControllerProvider: shiftControllerProvider,
+      includeSyncProfile: true,
+    );
+  }
+
+  static Future<void> verifySetupUserExists({
+    required dynamic ref,
+    required String usrId,
+  }) async {
+    final exists = await ref.read(masterDataDaoProvider).setupUserExists(usrId);
+    if (!exists) {
+      throw SyncException(
+        'Bootstrap user was not found in synced users.',
+        code: 'SETUP_USER_NOT_SYNCED',
+      );
+    }
+  }
+
+  static Future<MasterDataDownloadResult> downloadIncremental({
+    required dynamic ref,
+    required SyncProfile syncProfile,
+    required MasterDataSyncCancelHandle cancelHandle,
+    required void Function(MasterDataSyncProgress progress) onProgress,
+  }) async {
+    final download = await ref
+        .read(masterDataDownloadHelperProvider)
+        .download(
+          syncProfile: syncProfile,
+          mode: MasterDataSyncMode.incremental,
+          cancelHandle: cancelHandle,
+          onProgress: onProgress,
+        );
+
+    PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
+    return download;
+  }
+
+  static String incrementalResultMessage({
+    required MasterDataDownloadResult download,
+    required String noChangesMessage,
+    required String Function(int rowCount, int failedCount) summaryBuilder,
+  }) {
+    final result = download.summary;
+    final failed = download.fatalFailures;
+    final readinessWarnings = download.readinessWarnings;
+
+    final resultMessage = result.allNoChanges
+        ? noChangesMessage
+        : failed.isNotEmpty
+        ? summaryBuilder(result.rowCount, failed.length)
+        : summaryBuilder(result.rowCount, 0);
+
+    return readinessWarnings.isEmpty
+        ? resultMessage
+        : '$resultMessage\n${readinessWarnings.join('\n')}';
+  }
+
+  static bool incrementalResultIsError(MasterDataDownloadResult download) {
+    return download.fatalFailures.isNotEmpty ||
+        download.readinessWarnings.isNotEmpty;
+  }
+
+  static bool isCancelled(Object error) {
+    return error is AppException && error.code == 'CANCELLED';
+  }
 }

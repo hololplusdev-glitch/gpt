@@ -1091,11 +1091,7 @@ class AppPageHeaderWithBottom extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      icon,
-                      color: AppColors.onPrimary,
-                      size: 22,
-                    ),
+                    child: Icon(icon, color: AppColors.onPrimary, size: 22),
                   ),
                   const SizedBox(width: AppSpacing.md),
                   Expanded(

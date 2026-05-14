@@ -177,8 +177,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     // Search
-                    _HistorySearchField(
+                    AppHeaderSearchField(
                       controller: _searchController,
+                      hintText: l10n.searchInvoiceOrProduct,
+                      clearTooltip: l10n.clearFilters,
                       onChanged: _onSearchChanged,
                       onSubmitted: _applySearch,
                       onClear: _clearSearch,

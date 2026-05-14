@@ -178,9 +178,7 @@ class SyncDao {
       )..where((s) => s.id.equals(entry.id))).write(
         OutboxEventsCompanion(
           status: Value(OutboxStatus.failed.code),
-          lastError: const Value(
-            DaoOutboxSyncPolicy.staleUploadingRecoveryMessage,
-          ),
+          lastError: Value(DaoOutboxSyncPolicy.staleUploadingRecoveryMessage),
           lastAttemptAt: Value(_clock.now()),
         ),
       );
