@@ -86,8 +86,7 @@ class PrinterAdapterFactory {
           reason: _bluetoothReason,
         ),
       ]);
-    } else if (platform == AppPlatform.macos ||
-        platform == AppPlatform.linux) {
+    } else if (platform == AppPlatform.macos || platform == AppPlatform.linux) {
       options.addAll(const [
         PrinterConnectionOption(
           type: PrinterConnectionType.bluetooth,

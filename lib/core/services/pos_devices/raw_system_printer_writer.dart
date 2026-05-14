@@ -1,4 +1,3 @@
-
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:typed_data';
@@ -11,43 +10,45 @@ final class _DocInfo1W extends Struct {
   external Pointer<Utf16> pDatatype;
 }
 
-typedef _OpenPrinterWNative = Int32 Function(
-  Pointer<Utf16> printerName,
-  Pointer<Pointer<Void>> printerHandle,
-  Pointer<Void> defaults,
-);
-typedef _OpenPrinterW = int Function(
-  Pointer<Utf16> printerName,
-  Pointer<Pointer<Void>> printerHandle,
-  Pointer<Void> defaults,
-);
+typedef _OpenPrinterWNative =
+    Int32 Function(
+      Pointer<Utf16> printerName,
+      Pointer<Pointer<Void>> printerHandle,
+      Pointer<Void> defaults,
+    );
+typedef _OpenPrinterW =
+    int Function(
+      Pointer<Utf16> printerName,
+      Pointer<Pointer<Void>> printerHandle,
+      Pointer<Void> defaults,
+    );
 
-typedef _StartDocPrinterWNative = Uint32 Function(
-  Pointer<Void> printerHandle,
-  Uint32 level,
-  Pointer<Void> docInfo,
-);
-typedef _StartDocPrinterW = int Function(
-  Pointer<Void> printerHandle,
-  int level,
-  Pointer<Void> docInfo,
-);
+typedef _StartDocPrinterWNative =
+    Uint32 Function(
+      Pointer<Void> printerHandle,
+      Uint32 level,
+      Pointer<Void> docInfo,
+    );
+typedef _StartDocPrinterW =
+    int Function(Pointer<Void> printerHandle, int level, Pointer<Void> docInfo);
 
 typedef _BoolPrinterFnNative = Int32 Function(Pointer<Void> printerHandle);
 typedef _BoolPrinterFn = int Function(Pointer<Void> printerHandle);
 
-typedef _WritePrinterNative = Int32 Function(
-  Pointer<Void> printerHandle,
-  Pointer<Void> data,
-  Uint32 dataLength,
-  Pointer<Uint32> written,
-);
-typedef _WritePrinter = int Function(
-  Pointer<Void> printerHandle,
-  Pointer<Void> data,
-  int dataLength,
-  Pointer<Uint32> written,
-);
+typedef _WritePrinterNative =
+    Int32 Function(
+      Pointer<Void> printerHandle,
+      Pointer<Void> data,
+      Uint32 dataLength,
+      Pointer<Uint32> written,
+    );
+typedef _WritePrinter =
+    int Function(
+      Pointer<Void> printerHandle,
+      Pointer<Void> data,
+      int dataLength,
+      Pointer<Uint32> written,
+    );
 
 class RawSystemPrinterWriter {
   const RawSystemPrinterWriter();
@@ -85,23 +86,22 @@ class RawSystemPrinterWriter {
 
     final openPrinter = spooler
         .lookupFunction<_OpenPrinterWNative, _OpenPrinterW>('OpenPrinterW');
-    final startDocPrinter = spooler.lookupFunction<
-        _StartDocPrinterWNative,
-        _StartDocPrinterW>('StartDocPrinterW');
-    final startPagePrinter = spooler.lookupFunction<
-        _BoolPrinterFnNative,
-        _BoolPrinterFn>('StartPagePrinter');
+    final startDocPrinter = spooler
+        .lookupFunction<_StartDocPrinterWNative, _StartDocPrinterW>(
+          'StartDocPrinterW',
+        );
+    final startPagePrinter = spooler
+        .lookupFunction<_BoolPrinterFnNative, _BoolPrinterFn>(
+          'StartPagePrinter',
+        );
     final writePrinter = spooler
         .lookupFunction<_WritePrinterNative, _WritePrinter>('WritePrinter');
-    final endPagePrinter = spooler.lookupFunction<
-        _BoolPrinterFnNative,
-        _BoolPrinterFn>('EndPagePrinter');
-    final endDocPrinter = spooler.lookupFunction<
-        _BoolPrinterFnNative,
-        _BoolPrinterFn>('EndDocPrinter');
-    final closePrinter = spooler.lookupFunction<
-        _BoolPrinterFnNative,
-        _BoolPrinterFn>('ClosePrinter');
+    final endPagePrinter = spooler
+        .lookupFunction<_BoolPrinterFnNative, _BoolPrinterFn>('EndPagePrinter');
+    final endDocPrinter = spooler
+        .lookupFunction<_BoolPrinterFnNative, _BoolPrinterFn>('EndDocPrinter');
+    final closePrinter = spooler
+        .lookupFunction<_BoolPrinterFnNative, _BoolPrinterFn>('ClosePrinter');
 
     final printerNamePtr = printerName.toNativeUtf16();
     final printerHandlePtr = calloc<Pointer<Void>>();

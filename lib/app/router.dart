@@ -53,7 +53,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     ..listen(setupProvider, (_, __) => refreshNotifier.refresh())
     ..listen(posConfigRevisionProvider, (_, __) => refreshNotifier.refresh())
     ..listen(activePosSessionProvider, (_, __) => refreshNotifier.refresh())
-    ..listen(activeShiftProvider, (_, __) => refreshNotifier.refresh());
+    ..listen(activeShiftProvider, (_, __) => refreshNotifier.refresh())
+    ..listen(catalogReadinessProvider, (_, __) => refreshNotifier.refresh());
 
   return GoRouter(
     initialLocation: AppRoutes.boot,
@@ -88,7 +89,6 @@ final routerProvider = Provider<GoRouter>((ref) {
             : AppRoutes.cashier;
         return target;
       }
-
 
       if (!isSetupComplete && !isSetupRoute) {
         return AppRoutes.setup;
@@ -129,10 +129,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // WHY: Readiness gate. Prevent selling when local catalog is incomplete.
+      // Loading is not "not ready"; wait until the provider resolves.
       if (isAuthenticated && state.matchedLocation == AppRoutes.cashier) {
         final readinessAsync = ref.read(catalogReadinessProvider);
+
+        if (readinessAsync.hasError) {
+          return AppRoutes.syncMonitor;
+        }
+
+        if (readinessAsync.isLoading || !readinessAsync.hasValue) {
+          return null;
+        }
+
         final readiness = readinessAsync.valueOrNull;
-        if (!readinessAsync.hasValue || readiness == null || !readiness.isReady) {
+        if (readiness != null && !readiness.isReady) {
           return AppRoutes.syncMonitor;
         }
       }

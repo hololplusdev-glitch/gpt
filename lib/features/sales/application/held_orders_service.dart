@@ -1,4 +1,3 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
@@ -45,7 +44,7 @@ class HeldOrdersService {
        _pricingEngine = pricingEngine,
        _clock = clock;
 
-PosHeldOrdersWorkflow get _workflow => PosHeldOrdersWorkflow(
+  PosHeldOrdersWorkflow get _workflow => PosHeldOrdersWorkflow(
     salesDao: _salesDao,
     shiftDao: _shiftDao,
     auditDao: _auditDao,
@@ -56,11 +55,11 @@ PosHeldOrdersWorkflow get _workflow => PosHeldOrdersWorkflow(
     clock: _clock,
     exceptionFactory: SaleException.new,
   );
-CheckoutQuote previewQuote({required List<SaleLineInput> lineItems}) {
+  CheckoutQuote previewQuote({required List<SaleLineInput> lineItems}) {
     return _workflow.previewQuote(lineItems: lineItems);
   }
 
-Future<String> holdOrder({
+  Future<String> holdOrder({
     required List<SaleLineInput> items,
     String? customerId,
     String? customerName,
@@ -76,7 +75,7 @@ Future<String> holdOrder({
     );
   }
 
-Future<HeldOrderResumeResult> resumeHeldOrder({
+  Future<HeldOrderResumeResult> resumeHeldOrder({
     required String orderId,
   }) async {
     final resumeData = await _workflow.resumeHeldOrder(orderId: orderId);
@@ -86,18 +85,17 @@ Future<HeldOrderResumeResult> resumeHeldOrder({
     );
   }
 
-Future<void> cancelHeldOrder({required String orderId}) {
+  Future<void> cancelHeldOrder({required String orderId}) {
     return _workflow.cancelHeldOrder(orderId: orderId);
   }
 
-Future<List<HeldOrder>> getCurrentHeldOrders() {
+  Future<List<HeldOrder>> getCurrentHeldOrders() {
     return _workflow.getCurrentHeldOrders();
   }
 
-Future<List<HeldOrder>> getHeldOrders(String shiftId) {
+  Future<List<HeldOrder>> getHeldOrders(String shiftId) {
     return _workflow.getHeldOrders(shiftId);
   }
-
 }
 
 class HeldOrderResumeResult {
@@ -106,7 +104,6 @@ class HeldOrderResumeResult {
 
   const HeldOrderResumeResult({required this.lines, this.warnings = const []});
 }
-
 
 class SaleException extends BusinessException {
   const SaleException(super.message) : super(code: 'sale_error');

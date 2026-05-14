@@ -14,7 +14,6 @@ import 'package:holol_POS/core/design_system/layout.dart';
 import 'package:holol_POS/core/design_system/spacing.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/l10n/app_localizations.dart';
-import 'package:holol_POS/core/scanner/barcode_scanner_service.dart';
 import 'package:holol_POS/core/scanner/scanner_providers.dart';
 import 'package:holol_POS/core/services/formatters/pos_formatters.dart';
 import 'package:holol_POS/features/auth/application/pos_session_controller.dart';
@@ -29,6 +28,7 @@ import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
+import 'package:holol_POS/shared/refactor/pos_scan_flow.dart';
 
 enum _BarcodeSubmitIntent { manualSearch, scannerLikeInput }
 
@@ -64,26 +64,23 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     final input = text.trim();
     if (input.isEmpty) return;
 
-    final service = ref.read(barcodeScannerServiceProvider);
-    final result = await service.processBarcode(
-      input,
-      source: BarcodeScanSource.keyboard,
+    final result = await PosScanFlow.processKeyboard(
+      rawCode: input,
+      scannerService: ref.read(barcodeScannerServiceProvider),
+      cartController: ref.read(cartProvider.notifier),
+      manualSearchFallback: intent == _BarcodeSubmitIntent.manualSearch,
     );
 
     if (!mounted) return;
 
-    switch (result) {
-      case ScanSuccess():
-        final addResult = await ref
-            .read(cartProvider.notifier)
-            .addSellableItem(result.item);
-
-        if (!mounted) return;
+    switch (result.outcome) {
+      case PosScanFlowOutcome.added:
+        final addResult = result.cartResult!;
 
         _searchController.clear();
         _applyProductSearch('');
 
-        _playScanFeedback(success: true);
+        PosScanFeedbackPlayer.play(success: true);
 
         AppSnackbar.showSuccess(
           context,
@@ -95,27 +92,29 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
               : l10n.scanAddedProduct(addResult.itemName),
         );
 
-      case ScanNotFound():
-        if (intent == _BarcodeSubmitIntent.scannerLikeInput) {
-          _playScanFeedback(success: false);
-          AppSnackbar.showError(context, l10n.barcodeNotFoundCatalog);
-        } else {
-          _applyProductSearch(input);
-        }
+      case PosScanFlowOutcome.manualSearch:
+        _applyProductSearch(input);
 
-      case ScanNoPrice():
-        _playScanFeedback(success: false);
+      case PosScanFlowOutcome.notFound:
+        PosScanFeedbackPlayer.play(success: false);
+        AppSnackbar.showError(context, l10n.barcodeNotFoundCatalog);
+
+      case PosScanFlowOutcome.noPrice:
+        PosScanFeedbackPlayer.play(success: false);
         AppSnackbar.showError(
           context,
           l10n.scannedItemNotSellableInCurrentStore,
         );
 
-      case ScanError():
-        _playScanFeedback(success: false);
-        AppSnackbar.showError(context, result.message);
+      case PosScanFlowOutcome.error:
+        PosScanFeedbackPlayer.play(success: false);
+        AppSnackbar.showError(
+          context,
+          result.errorMessage ?? 'تعذر معالجة الباركود.',
+        );
 
-      case ScanDuplicate():
-        _playScanFeedback(success: false);
+      case PosScanFlowOutcome.duplicate:
+        PosScanFeedbackPlayer.play(success: false);
         AppSnackbar.showError(context, 'الباركود مكرر في الكتالوج');
     }
 
@@ -203,19 +202,6 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   void _applyProductSearch(String value) {
     _searchDebounce?.cancel();
     ref.read(searchQueryProvider.notifier).state = value.trim();
-  }
-
-  void _playScanFeedback({required bool success}) {
-    try {
-      SystemSound.play(success ? SystemSoundType.click : SystemSoundType.alert);
-      if (success) {
-        HapticFeedback.lightImpact();
-      } else {
-        HapticFeedback.mediumImpact();
-      }
-    } catch (_) {
-      // Feedback is non-critical.
-    }
   }
 
   Future<void> _showHeldOrders(BuildContext context) async {

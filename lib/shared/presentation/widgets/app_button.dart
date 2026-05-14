@@ -265,7 +265,8 @@ class _ButtonContent extends StatelessWidget {
               Icon(icon, size: 20),
               const SizedBox(width: AppSpacing.sm),
               Flexible(
-                child: labelWidget ??
+                child:
+                    labelWidget ??
                     Text(
                       label,
                       maxLines: 1,

@@ -1,4 +1,3 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
@@ -91,10 +90,7 @@ class SaleCheckout {
     final officialLines = await PosOfficialPriceResolver(
       catalogDao: _catalogDao,
       exceptionFactory: SaleCheckoutException.new,
-    ).resolve(
-      session: session,
-      draftLines: draftLines,
-    );
+    ).resolve(session: session, draftLines: draftLines);
 
     SaleLineValidator.validateSaleLines(
       officialLines,
@@ -151,28 +147,28 @@ class SaleCheckout {
       exceptionFactory: SaleCheckoutException.new,
     ).validate(quote: quote, payments: payments);
 
-
-    final persistenceResult = await PosSaleCompletionWorkflow(
-      salesDao: _salesDao,
-      config: _config,
-      invoiceNumberService: _invoiceNumberService,
-      invoiceDocumentBuilder: _invoiceDocumentBuilder,
-      outboxEventFactory: _outboxEventFactory,
-      printQueue: _printQueue,
-      printJobProcessor: _printJobProcessor,
-      clock: _clock,
-    ).persistCompletedSale(
-      shiftId: shiftId,
-      session: session,
-      lines: officialLines,
-      payments: payments,
-      quote: quote,
-      paymentResult: paymentResult,
-      checkoutAttemptId: request.checkoutAttemptId,
-      customerId: request.customerId,
-      customerName: request.customerName,
-      customerTaxNumber: request.customerTaxNumber,
-    );
+    final persistenceResult =
+        await PosSaleCompletionWorkflow(
+          salesDao: _salesDao,
+          config: _config,
+          invoiceNumberService: _invoiceNumberService,
+          invoiceDocumentBuilder: _invoiceDocumentBuilder,
+          outboxEventFactory: _outboxEventFactory,
+          printQueue: _printQueue,
+          printJobProcessor: _printJobProcessor,
+          clock: _clock,
+        ).persistCompletedSale(
+          shiftId: shiftId,
+          session: session,
+          lines: officialLines,
+          payments: payments,
+          quote: quote,
+          paymentResult: paymentResult,
+          checkoutAttemptId: request.checkoutAttemptId,
+          customerId: request.customerId,
+          customerName: request.customerName,
+          customerTaxNumber: request.customerTaxNumber,
+        );
 
     return SaleCheckoutResult(
       saleId: persistenceResult.saleId,

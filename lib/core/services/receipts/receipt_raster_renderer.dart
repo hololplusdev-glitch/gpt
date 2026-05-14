@@ -51,7 +51,8 @@ class ReceiptRasterRenderer {
     ReceiptRenderProfile? profile,
   }) async {
     final effectiveProfile =
-        profile ?? ReceiptRenderProfile.thermal(paperWidthMm: paperWidthMm ?? 80);
+        profile ??
+        ReceiptRenderProfile.thermal(paperWidthMm: paperWidthMm ?? 80);
     final sideLogo = await _loadImageAsset(sideLogoAsset);
 
     final painter = _ReceiptPainter(
@@ -121,7 +122,8 @@ class ReceiptRasterRenderer {
     ReceiptRenderProfile? profile,
   }) async {
     final effectiveProfile =
-        profile ?? ReceiptRenderProfile.thermal(paperWidthMm: paperWidthMm ?? 80);
+        profile ??
+        ReceiptRenderProfile.thermal(paperWidthMm: paperWidthMm ?? 80);
     final image = await renderImage(document, profile: effectiveProfile);
     return _encodeRasterBands(image, effectiveProfile);
   }
@@ -271,9 +273,8 @@ class _ReceiptPainter {
 
     if (_visible(address)) {
       lines.add(
-        _HeaderLine(
-        ': $address', size: profile.smallFont, maxLines: 2),
-                  //_HeaderLine('العنوان: $address', size: profile.smallFont, maxLines: 2),
+        _HeaderLine(': $address', size: profile.smallFont, maxLines: 2),
+        //_HeaderLine('العنوان: $address', size: profile.smallFont, maxLines: 2),
       );
     }
 
@@ -1058,7 +1059,11 @@ class _ReceiptPainter {
     final segments = <_SideBrandSegment>[
       const _SideBrandSegment('نظام', TextDirection.rtl, bold: true),
       const _SideBrandSegment('hololErp', TextDirection.ltr, bold: true),
-      const _SideBrandSegment('المحاسبي السحابي', TextDirection.rtl, bold: true),
+      const _SideBrandSegment(
+        'المحاسبي السحابي',
+        TextDirection.rtl,
+        bold: true,
+      ),
       _SideBrandSegment(sideBrandWebsite, TextDirection.ltr),
       _SideBrandSegment(sideBrandPhone, TextDirection.ltr),
     ];
@@ -1135,7 +1140,7 @@ class _ReceiptPainter {
     return RegExp(r'[\u0600-\u06FF]').hasMatch(value);
   }
 
-void _drawImageCover(Canvas canvas, ui.Image image, Rect dst) {
+  void _drawImageCover(Canvas canvas, ui.Image image, Rect dst) {
     final src = Rect.fromLTWH(
       0,
       0,
@@ -1233,17 +1238,12 @@ void _drawImageCover(Canvas canvas, ui.Image image, Rect dst) {
   double _max(double a, double b) => a > b ? a : b;
 }
 
-
 class _SideBrandSegment {
   final String text;
   final TextDirection direction;
   final bool bold;
 
-  const _SideBrandSegment(
-    this.text,
-    this.direction, {
-    this.bold = false,
-  });
+  const _SideBrandSegment(this.text, this.direction, {this.bold = false});
 }
 
 class _HeaderLine {
@@ -1307,8 +1307,6 @@ class _KeyValue {
   });
 }
 
-
-
 class _ReceiptText {
   static const String _riyalSymbol = '\uE900';
   static const String _riyalFontFamily = 'saudi-riyal';
@@ -1356,11 +1354,7 @@ class _ReceiptText {
     int? maxLines = 2,
   }) {
     if (_isSingleMoney(value)) {
-      return _measureMoney(
-        value,
-        size: size,
-        bold: bold,
-      );
+      return _measureMoney(value, size: size, bold: bold);
     }
 
     final painter = _painter(
@@ -1386,14 +1380,7 @@ class _ReceiptText {
     int? maxLines = 2,
   }) {
     if (_isSingleMoney(value)) {
-      _drawMoney(
-        canvas,
-        value,
-        rect,
-        size: size,
-        bold: bold,
-        align: align,
-      );
+      _drawMoney(canvas, value, rect, size: size, bold: bold, align: align);
       return;
     }
 
@@ -1498,10 +1485,7 @@ class _ReceiptText {
 
     symbolPainter.paint(
       canvas,
-      Offset(
-        symbolX,
-        y + ((amountPainter.height - symbolPainter.height) / 2),
-      ),
+      Offset(symbolX, y + ((amountPainter.height - symbolPainter.height) / 2)),
     );
 
     amountPainter.paint(canvas, Offset(amountX, y));

@@ -126,9 +126,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-
   Future<void> _handleLoginPressed() async {
-
     final controller = ref.read(posSessionControllerProvider.notifier);
     final state = ref.read(posSessionControllerProvider);
 

@@ -22,7 +22,8 @@ import 'package:holol_POS/core/services/sync/outbox_event_factory.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
 import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
 
-typedef BusinessRuleExceptionFactory = BusinessException Function(String message);
+typedef BusinessRuleExceptionFactory =
+    BusinessException Function(String message);
 
 abstract final class PosDomainTolerances {
   static const double money = 0.01;
@@ -30,7 +31,10 @@ abstract final class PosDomainTolerances {
 }
 
 abstract final class PosBusinessRules {
-  static String sequenceType(String? configuredSeries, {required String fallback}) {
+  static String sequenceType(
+    String? configuredSeries, {
+    required String fallback,
+  }) {
     final series = configuredSeries?.trim();
     return series == null || series.isEmpty ? fallback : series;
   }
@@ -124,22 +128,48 @@ abstract final class SaleLineValidator {
     BusinessRuleExceptionFactory? exceptionFactory,
   }) {
     if (line.quantity <= 0) {
-      throw _exception(exceptionFactory, 'Invalid quantity for ${line.itemName}.', code: 'INVALID_QUANTITY');
+      throw _exception(
+        exceptionFactory,
+        'Invalid quantity for ${line.itemName}.',
+        code: 'INVALID_QUANTITY',
+      );
     }
     if (!line.useQtyFraction && !isWholeQuantity(line.quantity)) {
-      throw _exception(exceptionFactory, 'Fraction quantity is not allowed for ${line.itemName}.', code: 'QUANTITY_FRACTION_NOT_ALLOWED');
+      throw _exception(
+        exceptionFactory,
+        'Fraction quantity is not allowed for ${line.itemName}.',
+        code: 'QUANTITY_FRACTION_NOT_ALLOWED',
+      );
     }
     if (line.unitPrice <= 0) {
-      throw _exception(exceptionFactory, 'Missing price for ${line.itemName}.', code: 'MISSING_PRICE');
+      throw _exception(
+        exceptionFactory,
+        'Missing price for ${line.itemName}.',
+        code: 'MISSING_PRICE',
+      );
     }
     if (line.taxRate < 0) {
-      throw _exception(exceptionFactory, 'Invalid tax rate for ${line.itemName}.', code: 'INVALID_TAX_RATE');
+      throw _exception(
+        exceptionFactory,
+        'Invalid tax rate for ${line.itemName}.',
+        code: 'INVALID_TAX_RATE',
+      );
     }
     if ((line.discountValue ?? 0) < 0) {
-      throw _exception(exceptionFactory, 'Invalid discount for ${line.itemName}.', code: 'INVALID_DISCOUNT');
+      throw _exception(
+        exceptionFactory,
+        'Invalid discount for ${line.itemName}.',
+        code: 'INVALID_DISCOUNT',
+      );
     }
-    if (!line.allowDiscount && line.discountType != null && (line.discountValue ?? 0) > 0) {
-      throw _exception(exceptionFactory, 'Discounts are not allowed for ${line.itemName}.', code: 'DISCOUNT_NOT_ALLOWED');
+    if (!line.allowDiscount &&
+        line.discountType != null &&
+        (line.discountValue ?? 0) > 0) {
+      throw _exception(
+        exceptionFactory,
+        'Discounts are not allowed for ${line.itemName}.',
+        code: 'DISCOUNT_NOT_ALLOWED',
+      );
     }
   }
 
@@ -168,7 +198,8 @@ abstract final class PosSaleQuoteRules {
         priceIncludesTax: priceIncludesTax,
       );
     } on PricingException catch (e) {
-      throw exceptionFactory?.call(e.message) ?? BusinessException(e.message, code: 'PRICING_ERROR');
+      throw exceptionFactory?.call(e.message) ??
+          BusinessException(e.message, code: 'PRICING_ERROR');
     }
   }
 }
@@ -181,7 +212,8 @@ abstract final class PosBusinessGuards {
     String code = 'NO_ACTIVE_POS_SESSION',
   }) {
     if (session == null) {
-      throw exceptionFactory?.call(message) ?? BusinessException(message, code: code);
+      throw exceptionFactory?.call(message) ??
+          BusinessException(message, code: code);
     }
     return session;
   }
@@ -198,7 +230,8 @@ abstract final class PosBusinessGuards {
       cashierId: session.activeUserId,
     );
     if (shift == null || shift.status != ShiftStatus.open.code) {
-      throw exceptionFactory?.call(message) ?? BusinessException(message, code: code);
+      throw exceptionFactory?.call(message) ??
+          BusinessException(message, code: code);
     }
     return shift;
   }
@@ -210,11 +243,18 @@ abstract final class PosBusinessGuards {
   }) async {
     final sale = await salesDao.getById(saleId);
     if (sale == null) {
-      throw exceptionFactory?.call('Sale not found.') ?? const BusinessException('Sale not found.', code: 'SALE_NOT_FOUND');
+      throw exceptionFactory?.call('Sale not found.') ??
+          const BusinessException('Sale not found.', code: 'SALE_NOT_FOUND');
     }
-    if (sale.type != SaleType.sale.code || sale.status != SaleStatus.completed.code) {
-      throw exceptionFactory?.call('Only completed normal sales can be changed.') ??
-          const BusinessException('Only completed normal sales can be changed.', code: 'SALE_NOT_MUTABLE');
+    if (sale.type != SaleType.sale.code ||
+        sale.status != SaleStatus.completed.code) {
+      throw exceptionFactory?.call(
+            'Only completed normal sales can be changed.',
+          ) ??
+          const BusinessException(
+            'Only completed normal sales can be changed.',
+            code: 'SALE_NOT_MUTABLE',
+          );
     }
     return sale;
   }
@@ -277,7 +317,8 @@ class PosOfficialPriceResolver {
   }
 
   BusinessException _exception(String message) {
-    return exceptionFactory?.call(message) ?? BusinessException(message, code: 'OFFICIAL_PRICE_ERROR');
+    return exceptionFactory?.call(message) ??
+        BusinessException(message, code: 'OFFICIAL_PRICE_ERROR');
   }
 }
 
@@ -296,7 +337,8 @@ abstract final class PosHeldSnapshotReader {
     }
 
     final message = 'Invalid held order snapshot.';
-    throw exceptionFactory?.call(message) ?? BusinessException(message, code: 'INVALID_HELD_ORDER_SNAPSHOT');
+    throw exceptionFactory?.call(message) ??
+        BusinessException(message, code: 'INVALID_HELD_ORDER_SNAPSHOT');
   }
 
   static String requiredText(
@@ -307,14 +349,16 @@ abstract final class PosHeldSnapshotReader {
     final result = text(value);
     if (result == null || result.isEmpty) {
       final message = 'Held order snapshot is missing $fieldName.';
-      throw exceptionFactory?.call(message) ?? BusinessException(message, code: 'INVALID_HELD_ORDER_SNAPSHOT');
+      throw exceptionFactory?.call(message) ??
+          BusinessException(message, code: 'INVALID_HELD_ORDER_SNAPSHOT');
     }
     return result;
   }
 
   static String? text(Object? value) {
     final result = value?.toString().trim();
-    if (result == null || result.isEmpty || result.toLowerCase() == 'null') return null;
+    if (result == null || result.isEmpty || result.toLowerCase() == 'null')
+      return null;
     return result;
   }
 
@@ -358,13 +402,29 @@ class PosHeldOrderRehydrator {
     final warnings = <String>[];
 
     for (final snapshot in snapshotItems) {
-      final itemId = PosHeldSnapshotReader.requiredText(snapshot['itemId'], 'itemId', exceptionFactory: exceptionFactory);
-      final unitId = PosHeldSnapshotReader.requiredText(snapshot['unitId'], 'unitId', exceptionFactory: exceptionFactory);
-      final quantity = PosHeldSnapshotReader.doubleValue(snapshot['quantity'], fallback: 1.0);
-      final oldUnitPrice = PosHeldSnapshotReader.nullableDouble(snapshot['unitPrice']);
-      final oldTaxRate = PosHeldSnapshotReader.nullableDouble(snapshot['taxRate']);
+      final itemId = PosHeldSnapshotReader.requiredText(
+        snapshot['itemId'],
+        'itemId',
+        exceptionFactory: exceptionFactory,
+      );
+      final unitId = PosHeldSnapshotReader.requiredText(
+        snapshot['unitId'],
+        'unitId',
+        exceptionFactory: exceptionFactory,
+      );
+      final quantity = PosHeldSnapshotReader.doubleValue(
+        snapshot['quantity'],
+        fallback: 1.0,
+      );
+      final oldUnitPrice = PosHeldSnapshotReader.nullableDouble(
+        snapshot['unitPrice'],
+      );
+      final oldTaxRate = PosHeldSnapshotReader.nullableDouble(
+        snapshot['taxRate'],
+      );
       final oldUnitName = PosHeldSnapshotReader.text(snapshot['unitName']);
-      final itemName = PosHeldSnapshotReader.text(snapshot['itemName']) ?? itemId;
+      final itemName =
+          PosHeldSnapshotReader.text(snapshot['itemName']) ?? itemId;
 
       final item = await catalogDao.getItemById(itemId);
       if (item == null || item.inactive || item.noSale) {
@@ -390,17 +450,27 @@ class PosHeldOrderRehydrator {
         barcode: PosHeldSnapshotReader.text(snapshot['barcode']),
       );
 
-      final discountType = DiscountType.fromCode(PosHeldSnapshotReader.text(snapshot['discountType']));
-      final discountValue = PosHeldSnapshotReader.nullableDouble(snapshot['discountValue']);
+      final discountType = DiscountType.fromCode(
+        PosHeldSnapshotReader.text(snapshot['discountType']),
+      );
+      final discountValue = PosHeldSnapshotReader.nullableDouble(
+        snapshot['discountValue'],
+      );
 
       if (oldUnitPrice != null && oldUnitPrice != sellable.unitPrice) {
-        warnings.add('تغير سعر $itemName من $oldUnitPrice إلى ${sellable.unitPrice}.');
+        warnings.add(
+          'تغير سعر $itemName من $oldUnitPrice إلى ${sellable.unitPrice}.',
+        );
       }
       if (oldTaxRate != null && oldTaxRate != sellable.taxRate) {
-        warnings.add('تغيرت ضريبة $itemName من $oldTaxRate إلى ${sellable.taxRate}.');
+        warnings.add(
+          'تغيرت ضريبة $itemName من $oldTaxRate إلى ${sellable.taxRate}.',
+        );
       }
       if (oldUnitName != null && oldUnitName != sellable.unitName) {
-        warnings.add('تغير اسم وحدة $itemName من $oldUnitName إلى ${sellable.unitName}.');
+        warnings.add(
+          'تغير اسم وحدة $itemName من $oldUnitName إلى ${sellable.unitName}.',
+        );
       }
 
       final line = SaleLineInput(
@@ -434,7 +504,8 @@ class PosHeldOrderRehydrator {
   }
 
   BusinessException _exception(String message) {
-    return exceptionFactory?.call(message) ?? BusinessException(message, code: 'HELD_ORDER_REHYDRATION_ERROR');
+    return exceptionFactory?.call(message) ??
+        BusinessException(message, code: 'HELD_ORDER_REHYDRATION_ERROR');
   }
 }
 
@@ -442,10 +513,7 @@ class PosHeldOrderResumeData {
   final List<SaleLineInput> lines;
   final List<String> warnings;
 
-  const PosHeldOrderResumeData({
-    required this.lines,
-    required this.warnings,
-  });
+  const PosHeldOrderResumeData({required this.lines, required this.warnings});
 }
 
 class PosHeldOrdersWorkflow {
@@ -502,7 +570,9 @@ class PosHeldOrdersWorkflow {
 
     final currentCount = await salesDao.countActiveHeldOrders(shiftId);
     if (currentCount >= config.maxHeldInvoices) {
-      throw _exception('Maximum held orders (${config.maxHeldInvoices}) reached.');
+      throw _exception(
+        'Maximum held orders (${config.maxHeldInvoices}) reached.',
+      );
     }
 
     _validateLines(items);
@@ -556,7 +626,9 @@ class PosHeldOrdersWorkflow {
     return id;
   }
 
-  Future<PosHeldOrderResumeData> resumeHeldOrder({required String orderId}) async {
+  Future<PosHeldOrderResumeData> resumeHeldOrder({
+    required String orderId,
+  }) async {
     final session = _requireSession();
     final shift = await _requireOpenShift(session);
     final shiftId = shift.id;
@@ -572,10 +644,7 @@ class PosHeldOrdersWorkflow {
       catalogDao: catalogDao,
       pricingEngine: pricingEngine,
       exceptionFactory: exceptionFactory,
-    ).rehydrate(
-      order: order,
-      session: session,
-    );
+    ).rehydrate(order: order, session: session);
 
     final now = clock.now();
     final auditLogEntry = AuditLogCompanion.insert(
@@ -674,7 +743,8 @@ class PosHeldOrdersWorkflow {
   }
 
   BusinessException _exception(String message) {
-    return exceptionFactory?.call(message) ?? BusinessException(message, code: 'HELD_ORDER_ERROR');
+    return exceptionFactory?.call(message) ??
+        BusinessException(message, code: 'HELD_ORDER_ERROR');
   }
 }
 
@@ -824,7 +894,8 @@ class PosSaleEnvelopeBuilder {
     }
 
     final taxCompanions = <SaleTaxSummaryCompanion>[];
-final taxGroups = <double, ({double taxableAmount, double taxAmount, double rate})>{};
+    final taxGroups =
+        <double, ({double taxableAmount, double taxAmount, double rate})>{};
     for (final p in processedItems) {
       if (p.taxAmount <= 0 && p.input.taxRate <= 0) continue;
       final existing = taxGroups[p.input.taxRate];
@@ -971,29 +1042,30 @@ class PosSaleCompletionWorkflow {
       now: now,
     );
 
-    final invoiceDocument = await invoiceDocumentBuilder.buildFromCheckoutSnapshot(
-      saleId: saleId,
-      localInvoiceNo: localInvoiceNo,
-      invoiceDateTime: now,
-      statusCode: SaleStatus.completed.code,
-      syncStatusCode: OutboxStatus.pending.code,
-      terminalId: session.activeMachineNo,
-      machineNo: session.activeMachineNo,
-      branchNo: session.activeBranchNo,
-      branchYear: session.activeBranchYear,
-      storeId: session.activeStoreId,
-      priceLevelId: session.activePriceLevelId,
-      useTax: session.activeUseTax,
-      cashierId: session.activeUserId,
-      cashierName: session.activeUserName,
-      customerId: customerId,
-      customerName: customerName,
-      customerTaxNumber: customerTaxNumber,
-      lines: lines,
-      quote: quote,
-      payments: payments,
-      taxes: envelope.taxes,
-    );
+    final invoiceDocument = await invoiceDocumentBuilder
+        .buildFromCheckoutSnapshot(
+          saleId: saleId,
+          localInvoiceNo: localInvoiceNo,
+          invoiceDateTime: now,
+          statusCode: SaleStatus.completed.code,
+          syncStatusCode: OutboxStatus.pending.code,
+          terminalId: session.activeMachineNo,
+          machineNo: session.activeMachineNo,
+          branchNo: session.activeBranchNo,
+          branchYear: session.activeBranchYear,
+          storeId: session.activeStoreId,
+          priceLevelId: session.activePriceLevelId,
+          useTax: session.activeUseTax,
+          cashierId: session.activeUserId,
+          cashierName: session.activeUserName,
+          customerId: customerId,
+          customerName: customerName,
+          customerTaxNumber: customerTaxNumber,
+          lines: lines,
+          quote: quote,
+          payments: payments,
+          taxes: envelope.taxes,
+        );
 
     final invoiceArchive = InvoiceDocumentsCompanion.insert(
       id: 'DOC_$saleId',

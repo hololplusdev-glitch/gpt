@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:holol_POS/app/router.dart';
 import 'package:holol_POS/core/design_system/colors.dart';
 import 'package:holol_POS/core/design_system/layout.dart';
 import 'package:holol_POS/core/design_system/spacing.dart';
@@ -101,8 +103,6 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
 
       if (!mounted) return;
 
-      if (!mounted) return;
-
       final result = download.summary;
       final failed = download.fatalFailures;
       final readinessWarnings = download.readinessWarnings;
@@ -186,7 +186,14 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
                         Icons.arrow_back,
                         color: AppColors.onPrimary,
                       ),
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                          return;
+                        }
+
+                        context.go(AppRoutes.shift);
+                      },
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Container(

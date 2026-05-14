@@ -242,7 +242,6 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
 
     return '$mapped\n$raw';
   }
-
 }
 
 final shiftControllerProvider =

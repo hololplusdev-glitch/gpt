@@ -241,9 +241,7 @@ final catalogReadinessServiceProvider = Provider<CatalogReadinessService>((
 
 /// WHY: FutureProvider so the router and UI can reactively gate on
 /// catalog readiness. Invalidated when config changes (posConfigRevision).
-final catalogReadinessProvider = FutureProvider.autoDispose<CatalogReadiness>((
-  ref,
-) async {
+final catalogReadinessProvider = FutureProvider<CatalogReadiness>((ref) async {
   // Re-evaluate whenever config changes (e.g. after sync).
   ref.watch(posConfigRevisionProvider);
   return ref.watch(catalogReadinessServiceProvider).check();

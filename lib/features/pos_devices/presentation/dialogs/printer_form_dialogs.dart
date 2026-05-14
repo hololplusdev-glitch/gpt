@@ -269,7 +269,8 @@ void showPrinterDialog(
                       }
                       if (printers.isEmpty) {
                         return AppInfoBanner.error(
-                          message: 'No system-defined thermal printers are available.',
+                          message:
+                              'No system-defined thermal printers are available.',
                         );
                       }
                       final selectedUrl =

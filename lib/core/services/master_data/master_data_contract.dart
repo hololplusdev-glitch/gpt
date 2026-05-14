@@ -57,7 +57,6 @@ enum MasterDataType {
 
   bool get isMandatory => mandatoryTypes.contains(this);
 
-
   bool get isHeavyPayload {
     switch (this) {
       case item:

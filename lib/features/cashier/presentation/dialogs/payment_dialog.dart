@@ -106,7 +106,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         : null;
   }
 
-
   @override
   void dispose() {
     _customerSearchDebounce?.cancel();
@@ -140,7 +139,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     });
   }
 
-
   void _selectLineKind(SaleTenderKind kind, [PaymentDraftLine? existing]) {
     final selection = _paymentDraft.selectLineKind(
       kind: kind,
@@ -166,8 +164,6 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       existing: existing,
     );
   }
-
-
 
   bool _submitInlineLine({bool showErrors = true, bool updateText = false}) {
     final result = _paymentDraft.submitInlineLine(
@@ -198,13 +194,14 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       quoteReady: _quote != null,
       totalAmount: _totalAmount,
       selectedCustomerId: _selectedCustomerId,
-      quoteNotReadyMessage: AppLocalizations.of(context)!.unableToPrepareCheckoutTotal,
+      quoteNotReadyMessage: AppLocalizations.of(
+        context,
+      )!.unableToPrepareCheckoutTotal,
       emptyPaymentMessage: 'أدخل طريقة دفع واحدة على الأقل.',
       remainingNotCoveredMessage: 'المبلغ المتبقي غير مغطى.',
       creditRequiresCustomerMessage: 'البيع الآجل يتطلب اختيار عميل.',
     );
   }
-
 
   Future<void> _processPayment() async {
     final l10n = AppLocalizations.of(context)!;
@@ -612,10 +609,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
               ],
               labelText: label,
               prefixIcon: Icon(icon),
-              onChanged: (_) => _submitInlineLine(
-                showErrors: false,
-                updateText: false,
-              ),
+              onChanged: (_) =>
+                  _submitInlineLine(showErrors: false, updateText: false),
               onSubmitted: (_) => _submitInlineLine(updateText: true),
             ),
             if (_lineInputError != null) ...[

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:holol_POS/core/design_system/colors.dart';
@@ -10,6 +9,7 @@ import 'package:holol_POS/core/l10n/app_localizations.dart';
 import 'package:holol_POS/core/scanner/barcode_scanner_service.dart';
 import 'package:holol_POS/core/scanner/scanner_providers.dart';
 import 'package:holol_POS/features/cashier/domain/models/cart.dart';
+import 'package:holol_POS/shared/refactor/pos_scan_flow.dart';
 
 bool _barcodeScannerSheetOpen = false;
 Future<void> _barcodeScannerReleaseFuture = Future<void>.value();
@@ -287,24 +287,22 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
     try {
       if (!_isAlive(token)) return;
 
-      final result = await _scannerService.processBarcode(
-        code,
-        source: BarcodeScanSource.camera,
+      final result = await PosScanFlow.processCamera(
+        rawCode: code,
+        scannerService: _scannerService,
+        cartController: _cartNotifier,
       );
 
       if (!_isAlive(token)) return;
 
-      switch (result) {
-        case ScanSuccess():
-          final addResult = await _cartNotifier.addSellableItem(result.item);
-
-          if (!_isAlive(token)) return;
-
+      switch (result.outcome) {
+        case PosScanFlowOutcome.added:
+          final addResult = result.cartResult!;
           final l10n = AppLocalizations.of(context)!;
 
           _sessionScanCount++;
 
-          _playFeedback(success: true);
+          PosScanFeedbackPlayer.play(success: true);
           _showFeedback(
             _ScanFeedback(
               message: addResult.wasIncremented
@@ -314,8 +312,8 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
             ),
           );
 
-        case ScanNotFound():
-          _playFeedback(success: false);
+        case PosScanFlowOutcome.notFound:
+          PosScanFeedbackPlayer.play(success: false);
           _showFeedback(
             _ScanFeedback(
               message: AppLocalizations.of(context)!.barcodeNotFoundCatalog,
@@ -323,8 +321,8 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
             ),
           );
 
-        case ScanNoPrice():
-          _playFeedback(success: false);
+        case PosScanFlowOutcome.noPrice:
+          PosScanFeedbackPlayer.play(success: false);
           _showFeedback(
             _ScanFeedback(
               message: AppLocalizations.of(context)!.scanNoPriceCurrentStore,
@@ -332,29 +330,21 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
             ),
           );
 
-        case ScanError():
-          _playFeedback(success: false);
-          _showFeedback(_ScanFeedback(message: result.message, isError: true));
+        case PosScanFlowOutcome.error:
+          PosScanFeedbackPlayer.play(success: false);
+          _showFeedback(
+            _ScanFeedback(
+              message: result.errorMessage ?? 'تعذر معالجة الباركود.',
+              isError: true,
+            ),
+          );
 
-        case ScanDuplicate():
+        case PosScanFlowOutcome.manualSearch:
+        case PosScanFlowOutcome.duplicate:
           break;
       }
     } finally {
       _processingCodes.remove(code);
-    }
-  }
-
-  void _playFeedback({required bool success}) {
-    try {
-      SystemSound.play(success ? SystemSoundType.click : SystemSoundType.alert);
-
-      if (success) {
-        HapticFeedback.lightImpact();
-      } else {
-        HapticFeedback.mediumImpact();
-      }
-    } catch (_) {
-      // Feedback is non-critical.
     }
   }
 

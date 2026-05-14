@@ -218,7 +218,8 @@ class Cart {
   List<Map<String, dynamic>> toHeldOrderSnapshotJson() {
     return items.map((item) => item.toHeldOrderSnapshotJson()).toList();
   }
-CheckoutQuote previewQuote({
+
+  CheckoutQuote previewQuote({
     required PricingEngine pricingEngine,
     required bool useTax,
     required bool priceIncludesTax,
@@ -231,7 +232,7 @@ CheckoutQuote previewQuote({
     );
   }
 
-static Cart fromSaleLineInputs(List<SaleLineInput> lines) {
+  static Cart fromSaleLineInputs(List<SaleLineInput> lines) {
     final items = <CartItem>[];
 
     for (final line in lines) {

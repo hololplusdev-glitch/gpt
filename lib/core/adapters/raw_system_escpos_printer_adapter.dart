@@ -1,4 +1,3 @@
-
 import 'dart:io';
 
 import 'package:holol_POS/core/adapters/printer_adapter.dart';
@@ -72,10 +71,7 @@ class RawSystemEscPosPrinterAdapter implements PrinterAdapter {
     final renderProfile = ReceiptRenderProfile.fromPrinterProfile(profile);
     return [
       ..._initializePrinter(),
-      ...await _renderer.renderEscPosRaster(
-        document,
-        profile: renderProfile,
-      ),
+      ...await _renderer.renderEscPosRaster(document, profile: renderProfile),
       ..._lineFeed(3),
       ..._cutPaper(),
     ];

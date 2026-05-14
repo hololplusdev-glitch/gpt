@@ -123,7 +123,9 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
       throw StateError('Customer code is required.');
     }
 
-    state = AsyncData(_currentState.copyWith(isLoading: true, clearError: true));
+    state = AsyncData(
+      _currentState.copyWith(isLoading: true, clearError: true),
+    );
 
     try {
       final apiClient = ref.read(apiClientProvider);
@@ -159,12 +161,20 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
 
   Future<void> setLanguage(String lang) async {
     await ref.read(runtimeConfigRepositoryProvider).setLanguage(lang);
-    state = AsyncData(PosRuntimeStateInvalidator.requireAsyncValue(state, message: 'Setup state is not ready.').copyWith(language: lang));
+    state = AsyncData(
+      PosRuntimeStateInvalidator.requireAsyncValue(
+        state,
+        message: 'Setup state is not ready.',
+      ).copyWith(language: lang),
+    );
   }
 
   Future<void> completeSetup() async {
     state = AsyncData(
-      PosRuntimeStateInvalidator.requireAsyncValue(state, message: 'Setup state is not ready.').copyWith(
+      PosRuntimeStateInvalidator.requireAsyncValue(
+        state,
+        message: 'Setup state is not ready.',
+      ).copyWith(
         isLoading: true,
         clearError: true,
         syncProgress: 0.0,
@@ -175,7 +185,10 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
     _cancelToken = MasterDataSyncCancelHandle();
 
     try {
-      final syncProfile = PosRuntimeStateInvalidator.requireAsyncValue(state, message: 'Setup state is not ready.').syncProfile;
+      final syncProfile = PosRuntimeStateInvalidator.requireAsyncValue(
+        state,
+        message: 'Setup state is not ready.',
+      ).syncProfile;
       if (syncProfile == null || syncProfile.custCode.trim().isEmpty) {
         throw StateError('Customer code is required.');
       }
@@ -209,7 +222,10 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
                   ? progress.typeLabel
                   : 'تحميل ${progress.typeCode}';
               state = AsyncData(
-                PosRuntimeStateInvalidator.requireAsyncValue(state, message: 'Setup state is not ready.').copyWith(
+                PosRuntimeStateInvalidator.requireAsyncValue(
+                  state,
+                  message: 'Setup state is not ready.',
+                ).copyWith(
                   syncProgress: overallProgress,
                   syncStatus: label,
                   syncPagination: paginationStr,
@@ -223,7 +239,10 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
       PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
       await ref.read(runtimeConfigRepositoryProvider).setSetupComplete(true);
       state = AsyncData(
-        PosRuntimeStateInvalidator.requireAsyncValue(state, message: 'Setup state is not ready.').copyWith(
+        PosRuntimeStateInvalidator.requireAsyncValue(
+          state,
+          message: 'Setup state is not ready.',
+        ).copyWith(
           isSetupComplete: true,
           isLoading: false,
           syncProgress: 1.0,
@@ -251,7 +270,10 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
       }
 
       state = AsyncData(
-        PosRuntimeStateInvalidator.requireAsyncValue(state, message: 'Setup state is not ready.').copyWith(
+        PosRuntimeStateInvalidator.requireAsyncValue(
+          state,
+          message: 'Setup state is not ready.',
+        ).copyWith(
           isLoading: false,
           isSetupComplete: false,
           clearSync: true,
@@ -275,7 +297,9 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
     final repo = ref.read(runtimeConfigRepositoryProvider);
     await repo.resetSetupStatus();
     await repo.clearSyncProfile();
-    await ref.read(masterDataDaoProvider).clearMasterDataCache(clearRunLogs: true);
+    await ref
+        .read(masterDataDaoProvider)
+        .clearMasterDataCache(clearRunLogs: true);
     await ref.read(activePosSessionDaoProvider).clearActive();
     ref.read(apiClientProvider).clearConfiguration();
     PosRuntimeStateInvalidator.invalidateSetupRuntime(
@@ -303,4 +327,3 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
 final setupProvider = AsyncNotifierProvider<SetupNotifier, SetupState>(
   SetupNotifier.new,
 );
-

@@ -14,10 +14,9 @@ class AppInstallationService {
   const AppInstallationService({required AppDatabase db}) : _db = db;
 
   Future<void> ensureInitialized() async {
-    final existing =
-        await (_db.select(
-          _db.appInstallation,
-        )..where((row) => row.id.equals(_localRowId))).getSingleOrNull();
+    final existing = await (_db.select(
+      _db.appInstallation,
+    )..where((row) => row.id.equals(_localRowId))).getSingleOrNull();
 
     final now = DateTime.now();
     final snapshot = await _buildSnapshot();

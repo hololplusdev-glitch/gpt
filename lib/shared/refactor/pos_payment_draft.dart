@@ -10,7 +10,8 @@ import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
 import 'package:uuid/uuid.dart';
 
-typedef PaymentRuleExceptionFactory = BusinessException Function(String message);
+typedef PaymentRuleExceptionFactory =
+    BusinessException Function(String message);
 
 class PaymentDraftLine {
   final String id;
@@ -90,12 +91,18 @@ abstract final class PaymentDraftRules {
     required Iterable<PaymentDraftLine> lines,
   }) {
     final actualPaidAmount = PricingEngine.roundAmount(
-      lines.where((line) => line.kind != SaleTenderKind.credit).fold(0.0, (sum, line) => sum + line.amount),
+      lines
+          .where((line) => line.kind != SaleTenderKind.credit)
+          .fold(0.0, (sum, line) => sum + line.amount),
     );
     final creditAmount = PricingEngine.roundAmount(
-      lines.where((line) => line.kind == SaleTenderKind.credit).fold(0.0, (sum, line) => sum + line.amount),
+      lines
+          .where((line) => line.kind == SaleTenderKind.credit)
+          .fold(0.0, (sum, line) => sum + line.amount),
     );
-    final arrangedAmount = PricingEngine.roundAmount(actualPaidAmount + creditAmount);
+    final arrangedAmount = PricingEngine.roundAmount(
+      actualPaidAmount + creditAmount,
+    );
     final remaining = PricingEngine.roundAmount(totalAmount - arrangedAmount);
     return PaymentDraftTotals(
       totalAmount: totalAmount,
@@ -103,7 +110,9 @@ abstract final class PaymentDraftRules {
       creditAmount: creditAmount,
       arrangedAmount: arrangedAmount,
       remainingAmount: remaining > PosDomainTolerances.money ? remaining : 0.0,
-      change: PricingEngine.roundAmount(lines.fold(0.0, (sum, line) => sum + line.change)),
+      change: PricingEngine.roundAmount(
+        lines.fold(0.0, (sum, line) => sum + line.change),
+      ),
       hasCreditLine: lines.any((line) => line.kind == SaleTenderKind.credit),
     );
   }
@@ -114,7 +123,9 @@ abstract final class PaymentDraftRules {
     PaymentDraftLine? existing,
   }) {
     final totals = calculateTotals(totalAmount: totalAmount, lines: lines);
-    return PricingEngine.roundAmount(totals.remainingAmount + (existing?.amount ?? 0));
+    return PricingEngine.roundAmount(
+      totals.remainingAmount + (existing?.amount ?? 0),
+    );
   }
 
   static PaymentDraftLineBuildResult buildDraftLine({
@@ -125,12 +136,19 @@ abstract final class PaymentDraftRules {
   }) {
     final input = PricingEngine.roundAmount(rawInputAmount);
     if (input.isNaN || input <= 0) {
-      return const PaymentDraftLineBuildResult.failure(PaymentDraftLineError.invalidAmount);
+      return const PaymentDraftLineBuildResult.failure(
+        PaymentDraftLineError.invalidAmount,
+      );
     }
-    if (kind != SaleTenderKind.cash && input - availableAmount > PosDomainTolerances.money) {
-      return const PaymentDraftLineBuildResult.failure(PaymentDraftLineError.exceedsRemaining);
+    if (kind != SaleTenderKind.cash &&
+        input - availableAmount > PosDomainTolerances.money) {
+      return const PaymentDraftLineBuildResult.failure(
+        PaymentDraftLineError.exceedsRemaining,
+      );
     }
-    final amount = kind == SaleTenderKind.cash && input > availableAmount ? availableAmount : input;
+    final amount = kind == SaleTenderKind.cash && input > availableAmount
+        ? availableAmount
+        : input;
     return PaymentDraftLineBuildResult.success(
       PaymentDraftLine(
         id: id,
@@ -141,13 +159,19 @@ abstract final class PaymentDraftRules {
     );
   }
 
-  static List<SalePaymentIntent> toPaymentIntents(Iterable<PaymentDraftLine> lines) {
+  static List<SalePaymentIntent> toPaymentIntents(
+    Iterable<PaymentDraftLine> lines,
+  ) {
     return lines
-        .map((line) => SalePaymentIntent(
-              kind: line.kind,
-              amount: line.amount,
-              tenderedAmount: line.kind == SaleTenderKind.cash ? line.tenderedAmount : line.amount,
-            ))
+        .map(
+          (line) => SalePaymentIntent(
+            kind: line.kind,
+            amount: line.amount,
+            tenderedAmount: line.kind == SaleTenderKind.cash
+                ? line.tenderedAmount
+                : line.amount,
+          ),
+        )
         .toList(growable: false);
   }
 
@@ -164,8 +188,10 @@ abstract final class PaymentDraftRules {
   }) {
     if (!quoteReady) return quoteNotReadyMessage;
     if (!hasPaymentLines) return emptyPaymentMessage;
-    if (remainingAmount > PosDomainTolerances.money) return remainingNotCoveredMessage;
-    if (hasCreditLine && (selectedCustomerId == null || selectedCustomerId.trim().isEmpty)) {
+    if (remainingAmount > PosDomainTolerances.money)
+      return remainingNotCoveredMessage;
+    if (hasCreditLine &&
+        (selectedCustomerId == null || selectedCustomerId.trim().isEmpty)) {
       return creditRequiresCustomerMessage;
     }
     return null;
@@ -184,9 +210,9 @@ class PaymentDraftSelection {
   });
 
   const PaymentDraftSelection.rejected()
-      : canSelect = false,
-        amountText = '',
-        autoSubmit = false;
+    : canSelect = false,
+      amountText = '',
+      autoSubmit = false;
 }
 
 class PaymentDraftSubmitResult {
@@ -316,10 +342,7 @@ class PaymentDraftController {
             }
           : null;
 
-      return PaymentDraftSubmitResult(
-        success: false,
-        error: result.error,
-      );
+      return PaymentDraftSubmitResult(success: false, error: result.error);
     }
 
     final line = result.line!;
@@ -442,7 +465,9 @@ class PaymentInputResolver {
         message: 'Select a cashier and POS machine before selling.',
         exceptionFactory: exceptionFactory,
       );
-      final profile = await paymentProfileService.getActivePaymentProfile(session.activeUserId);
+      final profile = await paymentProfileService.getActivePaymentProfile(
+        session.activeUserId,
+      );
       if (profile == null || !profile.enabled) {
         effectiveType = PaymentMethodType.manualCard;
       } else {
@@ -529,20 +554,25 @@ class PaymentInputResolver {
         if (method == null) return PaymentMethodResolver.builtInCash;
         return fromRow(method);
       case SaleTenderKind.network:
-        final manual = firstWhere((method) => typeOf(method) == PaymentMethodType.manualCard);
+        final manual = firstWhere(
+          (method) => typeOf(method) == PaymentMethodType.manualCard,
+        );
         if (manual != null) return withoutReference(fromRow(manual));
         final card = firstWhere((method) => typeOf(method)?.isCard ?? false);
         if (card != null) return withoutReference(fromRow(card));
         return PaymentMethodResolver.builtInManualCard;
       case SaleTenderKind.credit:
-        final method = firstWhere((method) => typeOf(method) == PaymentMethodType.customerCredit);
+        final method = firstWhere(
+          (method) => typeOf(method) == PaymentMethodType.customerCredit,
+        );
         if (method != null) return fromRow(method);
         return PaymentMethodResolver.builtInCustomerCredit;
     }
   }
 
   BusinessException _exception(String message) {
-    return exceptionFactory?.call(message) ?? BusinessException(message, code: 'payment_input_error');
+    return exceptionFactory?.call(message) ??
+        BusinessException(message, code: 'payment_input_error');
   }
 }
 
@@ -571,7 +601,8 @@ class PaymentPolicy {
       final type = payment.resolvedType;
       arrangementTotal += payment.amount;
 
-      if (payment.amount <= 0) throw _exception('Payment amount must be greater than zero.');
+      if (payment.amount <= 0)
+        throw _exception('Payment amount must be greater than zero.');
 
       final cashTendered = payment.cashTendered;
       final changeGiven = payment.changeGiven ?? 0;
@@ -599,17 +630,26 @@ class PaymentPolicy {
       explicitChangeTotal += changeGiven;
     }
 
-    if ((arrangementTotal - quote.grandTotal).abs() > PosDomainTolerances.money) {
+    if ((arrangementTotal - quote.grandTotal).abs() >
+        PosDomainTolerances.money) {
       throw _exception('Payment split must equal invoice total.');
     }
 
     final remaining = quote.grandTotal - paidTotal;
-    if (remaining > 0 && !payments.any((payment) => payment.resolvedType == PaymentMethodType.customerCredit)) {
-      throw _exception('Payment of ${paidTotal.toStringAsFixed(2)} is insufficient for total ${quote.grandTotal.toStringAsFixed(2)}');
+    if (remaining > 0 &&
+        !payments.any(
+          (payment) => payment.resolvedType == PaymentMethodType.customerCredit,
+        )) {
+      throw _exception(
+        'Payment of ${paidTotal.toStringAsFixed(2)} is insufficient for total ${quote.grandTotal.toStringAsFixed(2)}',
+      );
     }
 
-    final overpayment = paidTotal > quote.grandTotal ? paidTotal - quote.grandTotal : 0.0;
-    if ((overpayment > 0 || explicitChangeTotal > 0) && !hasChangeCapablePayment) {
+    final overpayment = paidTotal > quote.grandTotal
+        ? paidTotal - quote.grandTotal
+        : 0.0;
+    if ((overpayment > 0 || explicitChangeTotal > 0) &&
+        !hasChangeCapablePayment) {
       throw _exception('Overpayment requires a cash payment for change.');
     }
 
@@ -621,6 +661,7 @@ class PaymentPolicy {
   }
 
   BusinessException _exception(String message) {
-    return exceptionFactory?.call(message) ?? BusinessException(message, code: 'payment_policy_error');
+    return exceptionFactory?.call(message) ??
+        BusinessException(message, code: 'payment_policy_error');
   }
 }

@@ -295,7 +295,6 @@ class SalesHistoryService {
 
     return returnSaleId;
   }
-
 }
 
 class SaleDetail {

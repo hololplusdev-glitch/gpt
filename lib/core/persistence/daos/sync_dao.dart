@@ -14,7 +14,6 @@ class SyncDao {
 
   SyncDao(this._db, {Clock clock = const SystemClock()}) : _clock = clock;
 
-
   /// Get all pending sync entries, ordered by creation time.
   Future<List<OutboxEvent>> getPending({int limit = 50}) async {
     final rows =

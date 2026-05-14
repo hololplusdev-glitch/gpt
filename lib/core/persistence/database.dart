@@ -84,22 +84,22 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onCreate: (Migrator m) async {
-          await m.createAll();
-        },
-        onUpgrade: (Migrator m, int from, int to) async {
-          // TODO: Add production migrations before shipping.
-          // Do not delete or recreate the database in production.
-        },
-        beforeOpen: (details) async {
-          await customStatement('PRAGMA foreign_keys = ON');
+    onCreate: (Migrator m) async {
+      await m.createAll();
+    },
+    onUpgrade: (Migrator m, int from, int to) async {
+      // TODO: Add production migrations before shipping.
+      // Do not delete or recreate the database in production.
+    },
+    beforeOpen: (details) async {
+      await customStatement('PRAGMA foreign_keys = ON');
 
-          // Good defaults for local POS durability/performance.
-          await customStatement('PRAGMA journal_mode = WAL');
-          await customStatement('PRAGMA synchronous = NORMAL');
-          await customStatement('PRAGMA busy_timeout = 5000');
-        },
-      );
+      // Good defaults for local POS durability/performance.
+      await customStatement('PRAGMA journal_mode = WAL');
+      await customStatement('PRAGMA synchronous = NORMAL');
+      await customStatement('PRAGMA busy_timeout = 5000');
+    },
+  );
 
   static QueryExecutor _openConnection() {
     return LazyDatabase(() async {
@@ -131,36 +131,20 @@ class AppDatabase extends _$AppDatabase {
     // Uses application support directory, not temporary/cache.
     final supportDirectory = await getApplicationSupportDirectory();
 
-    return Directory(
-      p.join(
-        supportDirectory.path,
-        'data',
-      ),
-    );
+    return Directory(p.join(supportDirectory.path, 'data'));
   }
 
   static Future<Directory> _windowsDataDirectory() async {
     final programData = Platform.environment['PROGRAMDATA'];
 
     if (programData != null && programData.trim().isNotEmpty) {
-      return Directory(
-        p.join(
-          programData,
-          'HololPlusPOS',
-          'data',
-        ),
-      );
+      return Directory(p.join(programData, 'HololPlusPOS', 'data'));
     }
 
     // Fallback if PROGRAMDATA is unavailable.
     final supportDirectory = await getApplicationSupportDirectory();
 
-    return Directory(
-      p.join(
-        supportDirectory.path,
-        'data',
-      ),
-    );
+    return Directory(p.join(supportDirectory.path, 'data'));
   }
 
   static Future<Directory> _linuxDataDirectory() async {
@@ -169,11 +153,6 @@ class AppDatabase extends _$AppDatabase {
     // /var/lib/hololplus-pos/data
     final supportDirectory = await getApplicationSupportDirectory();
 
-    return Directory(
-      p.join(
-        supportDirectory.path,
-        'data',
-      ),
-    );
+    return Directory(p.join(supportDirectory.path, 'data'));
   }
 }

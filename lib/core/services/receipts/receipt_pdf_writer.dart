@@ -10,18 +10,13 @@ class ReceiptPdfDocument {
   final Uint8List bytes;
   final PdfPageFormat pageFormat;
 
-  const ReceiptPdfDocument({
-    required this.bytes,
-    required this.pageFormat,
-  });
+  const ReceiptPdfDocument({required this.bytes, required this.pageFormat});
 }
 
 class ReceiptPdfWriter {
   final ReceiptRasterRenderer rasterRenderer;
 
-  const ReceiptPdfWriter({
-    this.rasterRenderer = const ReceiptRasterRenderer(),
-  });
+  const ReceiptPdfWriter({this.rasterRenderer = const ReceiptRasterRenderer()});
 
   /// Builds a PDF for saving/sharing.
   ///
@@ -34,8 +29,7 @@ class ReceiptPdfWriter {
     return (await renderShareDocument(
       document,
       paperWidthMm: paperWidthMm,
-    ))
-        .bytes;
+    )).bytes;
   }
 
   Future<ReceiptPdfDocument> renderShareDocument(
@@ -90,10 +84,7 @@ class ReceiptPdfWriter {
       ),
     );
 
-    return ReceiptPdfDocument(
-      bytes: await pdf.save(),
-      pageFormat: pageFormat,
-    );
+    return ReceiptPdfDocument(bytes: await pdf.save(), pageFormat: pageFormat);
   }
 
   /// Builds a PDF for OS-defined thermal receipt printers.
@@ -140,9 +131,6 @@ class ReceiptPdfWriter {
       ),
     );
 
-    return ReceiptPdfDocument(
-      bytes: await pdf.save(),
-      pageFormat: pageFormat,
-    );
+    return ReceiptPdfDocument(bytes: await pdf.save(), pageFormat: pageFormat);
   }
 }
