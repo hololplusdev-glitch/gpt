@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:holol_POS/features/cashier/application/product_providers.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
@@ -8,6 +7,14 @@ import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
 import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
+import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
+import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
+import 'package:holol_POS/core/persistence/daos/auth_dao.dart';
+import 'package:holol_POS/core/persistence/daos/shift_dao.dart';
+import 'package:holol_POS/core/persistence/database.dart' hide Customer;
+import 'package:holol_POS/features/cashier/domain/models/product.dart';
+import 'package:holol_POS/shared/models/customer.dart';
+import 'package:uuid/uuid.dart';
 
 typedef CartPriceResolver =
     Future<ResolvedItemPrice?> Function({
@@ -267,4 +274,477 @@ abstract final class PosRuntimeStateInvalidator {
     ref.invalidate(shiftControllerProvider);
     invalidateMasterDataDownloadProviders(ref);
   }
+}
+
+/// Command controller for POS runtime session.
+///
+/// SSOT rules:
+/// - ActivePosSession stores runtime user + machine only.
+/// - Shifts table is the only source of open-shift state.
+/// - AuthDao owns PIN/user lookup only.
+/// - AuditDao owns login/logout audit.
+class PosSessionState {
+  final bool isLoading;
+  final bool isResolvingUser;
+  final String? errorMessage;
+  final PosUser? resolvedUser;
+  final List<RuntimeMachineChoice> machineChoices;
+  final String? selectedMachineNo;
+
+  const PosSessionState({
+    this.isLoading = false,
+    this.isResolvingUser = false,
+    this.errorMessage,
+    this.resolvedUser,
+    this.machineChoices = const [],
+    this.selectedMachineNo,
+  });
+
+  bool get canLogin {
+    return resolvedUser != null &&
+        selectedMachineNo?.trim().isNotEmpty == true &&
+        !isResolvingUser &&
+        !isLoading;
+  }
+
+  PosSessionState copyWith({
+    bool? isLoading,
+    bool? isResolvingUser,
+    String? errorMessage,
+    bool clearError = false,
+    PosUser? resolvedUser,
+    bool clearResolvedUser = false,
+    List<RuntimeMachineChoice>? machineChoices,
+    String? selectedMachineNo,
+    bool clearSelectedMachine = false,
+  }) {
+    return PosSessionState(
+      isLoading: isLoading ?? this.isLoading,
+      isResolvingUser: isResolvingUser ?? this.isResolvingUser,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      resolvedUser: clearResolvedUser
+          ? null
+          : (resolvedUser ?? this.resolvedUser),
+      machineChoices: machineChoices ?? this.machineChoices,
+      selectedMachineNo: clearSelectedMachine
+          ? null
+          : (selectedMachineNo ?? this.selectedMachineNo),
+    );
+  }
+}
+
+class PosSessionController extends StateNotifier<PosSessionState> {
+  final AuthDao _authDao;
+  final AuditDao _auditDao;
+  final ActivePosSessionDao _sessionDao;
+  final ShiftDao _shiftDao;
+  final Ref _ref;
+
+  PosSessionController({
+    required AuthDao authDao,
+    required AuditDao auditDao,
+    required ActivePosSessionDao sessionDao,
+    required ShiftDao shiftDao,
+    required Ref ref,
+  }) : _authDao = authDao,
+       _auditDao = auditDao,
+       _sessionDao = sessionDao,
+       _shiftDao = shiftDao,
+       _ref = ref,
+       super(const PosSessionState());
+
+  static const _uuid = Uuid();
+
+  int _resolveToken = 0;
+
+  Future<void> resolveUserNumber(String value) async {
+    final token = ++_resolveToken;
+    final number = value.trim();
+
+    state = const PosSessionState();
+
+    if (number.isEmpty) {
+      return;
+    }
+
+    state = state.copyWith(isResolvingUser: true, clearError: true);
+
+    try {
+      final user = await _authDao.findByUsername(number);
+
+      if (token != _resolveToken) return;
+
+      if (user == null) {
+        state = const PosSessionState(
+          errorMessage: 'رقم المستخدم غير موجود في بيانات التشغيل.',
+        );
+        return;
+      }
+
+      if (!user.isActive || !user.canLoginPos) {
+        state = const PosSessionState(
+          errorMessage: 'هذا المستخدم غير مسموح له بالدخول إلى نقاط البيع.',
+        );
+        return;
+      }
+
+      final choices = await _sessionDao.listRuntimeMachineChoicesForUser(
+        user: user,
+      );
+
+      if (token != _resolveToken) return;
+
+      state = PosSessionState(
+        resolvedUser: user,
+        machineChoices: choices,
+        selectedMachineNo: choices.length == 1
+            ? choices.single.machineNo
+            : null,
+        errorMessage: choices.isEmpty
+            ? 'لا توجد نقطة تشغيل مرتبطة بهذا المستخدم.'
+            : null,
+      );
+    } catch (e) {
+      if (token != _resolveToken) return;
+      state = PosSessionState(errorMessage: ErrorMapper.userMessage(e));
+    }
+  }
+
+  void selectMachine(String? machineNo) {
+    state = state.copyWith(
+      selectedMachineNo: machineNo,
+      clearSelectedMachine: machineNo == null || machineNo.trim().isEmpty,
+      clearError: true,
+    );
+  }
+
+  Future<bool> hasLocalPinForResolvedUser() async {
+    final user = state.resolvedUser;
+
+    if (user == null) {
+      state = state.copyWith(errorMessage: 'أدخل رقم المستخدم أولًا.');
+      return false;
+    }
+
+    return _authDao.hasLocalPin(userId: user.id);
+  }
+
+  Future<bool> loginWithPin(String pin) async {
+    final user = state.resolvedUser;
+    final machineNo = state.selectedMachineNo?.trim();
+
+    if (user == null || machineNo == null || machineNo.isEmpty) {
+      state = state.copyWith(
+        errorMessage: 'أدخل رقم المستخدم واختر نقطة التشغيل.',
+      );
+      return false;
+    }
+
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final hasPin = await _authDao.hasLocalPin(userId: user.id);
+
+      if (hasPin) {
+        final ok = await _authDao.verifyLocalPin(userId: user.id, pin: pin);
+
+        if (!ok) {
+          state = state.copyWith(
+            isLoading: false,
+            errorMessage: 'PIN غير صحيح.',
+          );
+          return false;
+        }
+      } else {
+        await _authDao.setLocalPin(userId: user.id, pin: pin);
+      }
+
+      final machine = await _sessionDao.getMachine(machineNo: machineNo);
+
+      if (machine == null) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage: 'Selected POS machine not found.',
+        );
+        return false;
+      }
+
+      final existingMachineShift = await _shiftDao.getOpenShift(
+        machine.machineNo,
+      );
+
+      if (existingMachineShift != null &&
+          existingMachineShift.cashierId != user.id) {
+        state = state.copyWith(
+          isLoading: false,
+          errorMessage:
+              'يوجد شفت مفتوح على هذا الجهاز لمستخدم آخر. أغلق الشفت أولًا.',
+        );
+        return false;
+      }
+
+      final session = await _sessionDao.startSession(
+        user: user,
+        machine: machine,
+      );
+
+      await _auditDao.log(
+        id: 'AUD_${_uuid.v4()}',
+        action: AuditAction.login,
+        actorId: session.activeUserId,
+        actorName: session.activeUserName,
+        terminalId: session.activeMachineNo,
+      );
+
+      await _refreshActiveSession();
+
+      state = const PosSessionState();
+      return true;
+    } catch (e) {
+      state = PosSessionState(errorMessage: ErrorMapper.userMessage(e));
+      return false;
+    }
+  }
+
+  Future<void> logout() async {
+    final session = await _sessionDao.getActive();
+
+    if (session != null) {
+      await _auditDao.log(
+        id: 'AUD_${_uuid.v4()}',
+        action: AuditAction.logout,
+        actorId: session.activeUserId,
+        actorName: session.activeUserName,
+        terminalId: session.activeMachineNo,
+      );
+    }
+
+    await _sessionDao.clearActive();
+    _clearCashierState();
+    await _refreshActiveSession();
+
+    state = const PosSessionState();
+  }
+
+  void clearError() {
+    if (state.errorMessage != null) {
+      state = state.copyWith(clearError: true);
+    }
+  }
+
+  Future<void> _refreshActiveSession() async {
+    PosRuntimeStateInvalidator.invalidateActiveSessionRuntime(_ref);
+    await _ref.read(activePosSessionProvider.future);
+  }
+
+  void _clearCashierState() {
+    PosRuntimeStateInvalidator.clearCashierState(_ref);
+  }
+}
+
+final posSessionControllerProvider =
+    StateNotifierProvider<PosSessionController, PosSessionState>((ref) {
+      return PosSessionController(
+        authDao: ref.watch(authDaoProvider),
+        auditDao: ref.watch(auditDaoProvider),
+        sessionDao: ref.watch(activePosSessionDaoProvider),
+        shiftDao: ref.watch(shiftDaoProvider),
+        ref: ref,
+      );
+    });
+
+// WHY: DB-backed product/category/payment providers for the cashier UI.
+
+
+final searchQueryProvider = StateProvider<String>((ref) => '');
+
+final selectedCategoryProvider = StateProvider<String?>((ref) => null);
+
+final categoryListProvider = FutureProvider<List<ProductCategory>>((ref) async {
+  final rows = await ref.watch(catalogDaoProvider).getActiveGroups();
+  return rows
+      .map(
+        (row) => ProductCategory(
+          id: row.id,
+          name: row.name,
+          nameAr: row.nameAr,
+          sortOrder: row.sortOrder,
+          iconName: row.iconName,
+        ),
+      )
+      .toList();
+});
+
+class CashierCatalogState {
+  final List<ProductCardViewModel> products;
+  final String? emptyReason;
+  final String? emptyMessage;
+
+  const CashierCatalogState({
+    required this.products,
+    this.emptyReason,
+    this.emptyMessage,
+  });
+}
+
+final cashierProductCardsProvider = FutureProvider<CashierCatalogState>((
+  ref,
+) async {
+  final catalogDao = ref.watch(catalogDaoProvider);
+  final search = ref.watch(searchQueryProvider);
+  final selectedCategory = ref.watch(selectedCategoryProvider);
+  final session = ref.watch(activePosSessionProvider).valueOrNull;
+
+  if (session == null) {
+    return const CashierCatalogState(
+      products: [],
+      emptyReason: 'NO_ACTIVE_POS_SESSION',
+      emptyMessage: 'لا توجد جلسة كاشير نشطة.',
+    );
+  }
+
+  final storeId = session.activeStoreId;
+  final priceLevelId = session.activePriceLevelId;
+
+  if (storeId.isEmpty) {
+    return const CashierCatalogState(
+      products: [],
+      emptyReason: 'NO_ACTIVE_STORE',
+      emptyMessage: 'لا يوجد مخزن نشط للجهاز الحالي.',
+    );
+  }
+
+  if (priceLevelId.isEmpty) {
+    return const CashierCatalogState(
+      products: [],
+      emptyReason: 'NO_ACTIVE_PRICE_LEVEL',
+      emptyMessage: 'لا يوجد مستوى سعر نشط للجهاز الحالي.',
+    );
+  }
+
+  final items = switch ((search.isNotEmpty, selectedCategory)) {
+    (true, _) => await catalogDao.searchItems(search, storeId, priceLevelId),
+    (false, final category?) => await catalogDao.getItemsByGroup(
+      category,
+      storeId,
+      priceLevelId,
+    ),
+    _ => await catalogDao.getActiveItems(storeId, priceLevelId),
+  };
+
+  if (items.isEmpty) {
+    return CashierCatalogState(
+      products: const [],
+      emptyReason: search.isNotEmpty || selectedCategory != null
+          ? 'NO_MATCHING_PRODUCTS'
+          : 'NO_SELLABLE_ITEMS',
+      emptyMessage: search.isNotEmpty || selectedCategory != null
+          ? 'لا توجد منتجات مطابقة.'
+          : 'لا توجد منتجات قابلة للبيع.',
+    );
+  }
+
+  final unitsByItem = await catalogDao.getSellableUnitsForItems(
+    items.map((item) => item.id).toSet(),
+  );
+  final allUnits = unitsByItem.values.expand((units) => units).toList();
+
+  final pricesByItemUnit = await catalogDao.resolveItemPricesForUnits(
+    allUnits,
+    storeId: storeId,
+    priceLevelId: priceLevelId,
+  );
+
+  final cards = <ProductCardViewModel>[];
+
+  for (final item in items) {
+    final itemUnits = unitsByItem[item.id] ?? const <SellableItemUnit>[];
+
+    final units = _pricedUnitsForItem(
+      catalogDao: catalogDao,
+      item: item,
+      units: itemUnits,
+      pricesByItemUnit: pricesByItemUnit,
+    );
+
+    cards.add(ProductCardViewModel(item: _productFromRow(item), units: units));
+  }
+
+  if (cards.every((card) => card.units.isEmpty)) {
+    return CashierCatalogState(
+      products: const [],
+      emptyReason: 'NO_PRICED_PRODUCTS',
+      emptyMessage: 'لا توجد أسعار صالحة لهذا المخزن ومستوى السعر.',
+    );
+  }
+
+  return CashierCatalogState(products: cards);
+});
+
+final customerSearchQueryProvider = StateProvider.autoDispose<String>(
+  (ref) => '',
+);
+
+final customerSearchResultsProvider =
+    FutureProvider.autoDispose<List<Customer>>((ref) async {
+      final query = ref.watch(customerSearchQueryProvider);
+      return ref
+          .watch(catalogDaoProvider)
+          .searchActiveCustomers(query: query, limit: 30);
+    });
+
+ProductListItem _productFromRow(Item item) {
+  return ProductListItem(
+    id: item.id,
+    name: item.name,
+    nameAr: item.nameAr,
+    categoryId: item.groupId,
+    imageUrl: item.imageUrl,
+    defaultUnitId: item.defaultUnitId,
+    code: item.code,
+  );
+}
+
+List<ProductUnitOption> _pricedUnitsForItem({
+  required CatalogDao catalogDao,
+  required Item item,
+  required List<SellableItemUnit> units,
+  required Map<ItemUnitPriceKey, ResolvedItemPrice> pricesByItemUnit,
+}) {
+  final pricedUnits = <ProductUnitOption>[];
+
+  for (final unit in units) {
+    final price =
+        pricesByItemUnit[ItemUnitPriceKey(item.id, unit.sourceUnitId)];
+
+    if (price == null) {
+      continue;
+    }
+
+    try {
+      final sellableItem = catalogDao.toSellableItemSnapshot(
+        item: item,
+        price: price,
+        fallbackUnitId: unit.sourceUnitId,
+        fallbackUnitName: unit.unitName,
+        barcode: unit.barcode,
+      );
+
+      pricedUnits.add(
+        ProductUnitOption(
+          isDefault: unit.isDefault,
+          sellableItem: sellableItem,
+        ),
+      );
+    } on AppException {
+      rethrow;
+    } catch (error) {
+      throw BusinessException(
+        'تعذر تجهيز المنتج ${item.name} للبيع.',
+        code: 'PRODUCT_CARD_BUILD_FAILED',
+      );
+    }
+  }
+
+  return pricedUnits;
 }

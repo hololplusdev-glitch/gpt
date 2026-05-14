@@ -16,6 +16,7 @@ import 'package:holol_POS/shared/presentation/widgets/app_dropdown.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_numeric_keypad.dart';
+import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 
 final loginIdentityCardProvider = FutureProvider.autoDispose<LoginIdentityInfo>(
   (ref) async {
@@ -417,14 +418,14 @@ class _PinEntryDialogState extends State<_PinEntryDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             // ── PIN Display ──
-            _PinDotsDisplay(
+            AppPinDotsDisplay(
               length: _pinController.text.length,
               maxLength: 4,
               label: widget.createMode ? 'PIN جديد' : 'PIN',
             ),
             if (widget.createMode) ...[
               const SizedBox(height: AppSpacing.md),
-              _PinDotsDisplay(
+              AppPinDotsDisplay(
                 length: _confirmController.text.length,
                 maxLength: 4,
                 label: 'تأكيد PIN',
@@ -548,54 +549,6 @@ class _LoginFooter extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ],
-    );
-  }
-}
-
-class _PinDotsDisplay extends StatelessWidget {
-  final int length;
-  final int maxLength;
-  final String label;
-
-  const _PinDotsDisplay({
-    required this.length,
-    required this.maxLength,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(maxLength, (i) {
-            final filled = i < length;
-            return Container(
-              width: 16,
-              height: 16,
-              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: filled ? AppColors.primary : Colors.transparent,
-                border: Border.all(
-                  color: filled ? AppColors.primary : AppColors.border,
-                  width: 2,
-                ),
-              ),
-            );
-          }),
         ),
       ],
     );
