@@ -1,4 +1,3 @@
-import 'package:holol_POS/core/persistence/database.dart' hide InvoiceDocument;
 import 'package:holol_POS/core/services/pos_devices/printer_profile_service.dart';
 
 class ReceiptRenderProfile {

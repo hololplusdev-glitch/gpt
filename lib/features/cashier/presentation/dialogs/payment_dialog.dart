@@ -10,7 +10,6 @@ import 'package:holol_POS/core/design_system/spacing.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/l10n/app_localizations.dart';
 import 'package:holol_POS/core/services/formatters/pos_formatters.dart';
-import 'package:holol_POS/features/cashier/application/cart_quote_provider.dart';
 import 'package:holol_POS/features/cashier/application/product_providers.dart';
 import 'package:holol_POS/features/cashier/domain/models/cart.dart';
 import 'package:holol_POS/features/sales/application/sale_checkout.dart';

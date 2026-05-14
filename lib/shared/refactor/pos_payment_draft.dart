@@ -303,7 +303,7 @@ class PaymentDraftController {
     return PaymentDraftSelection(
       canSelect: true,
       amountText: value.toStringAsFixed(2),
-      autoSubmit: existing == null && kind != SaleTenderKind.cash,
+      autoSubmit: existing == null,
     );
   }
 
