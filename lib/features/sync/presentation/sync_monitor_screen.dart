@@ -122,7 +122,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
         _cancelToken = null;
       });
       ref.invalidate(scopedSyncStateProvider);
-      PosRuntimeStateInvalidator.PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
+      PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
     } catch (e) {
       if (!mounted) return;
       final isCancelled = e is AppException && e.code == 'CANCELLED';

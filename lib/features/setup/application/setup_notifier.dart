@@ -220,7 +220,7 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
 
       await _verifySetupUserExists(syncProfile.bootstrapUserId.trim());
       final warningSummary = download.operationalWarningSummary();
-      PosRuntimeStateInvalidator.PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
+      PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
       await ref.read(runtimeConfigRepositoryProvider).setSetupComplete(true);
       state = AsyncData(
         PosRuntimeStateInvalidator.requireAsyncValue(state, message: 'Setup state is not ready.').copyWith(
@@ -240,7 +240,7 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
       try {
         await ref.read(masterDataDaoProvider).clearMasterDataCache();
         await ref.read(activePosSessionDaoProvider).clearActive();
-        PosRuntimeStateInvalidator.PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
+        PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
         PosRuntimeStateInvalidator.invalidateSetupRuntime(
           ref,
           posSessionControllerProvider: posSessionControllerProvider,

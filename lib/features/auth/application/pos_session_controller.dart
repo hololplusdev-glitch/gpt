@@ -221,16 +221,16 @@ class PosSessionController extends StateNotifier<PosSessionState> {
         user: user,
         machine: machine,
       );
-void _clearCashierState() {
-    PosRuntimeStateInvalidator.clearCashierState(_ref);
-  }
 
-',
+      await _auditDao.log(
+        id: 'AUD_${_uuid.v4()}',
         action: AuditAction.login,
-        actorId: effectiveSession.activeUserId,
-        actorName: effectiveSession.activeUserName,
-        terminalId: effectiveSession.activeMachineNo,
+        actorId: session.activeUserId,
+        actorName: session.activeUserName,
+        terminalId: session.activeMachineNo,
       );
+
+      await _refreshActiveSession();
 
       state = const PosSessionState();
       return true;
@@ -266,15 +266,14 @@ void _clearCashierState() {
     }
   }
 
-Future<void> _refreshActiveSession() async {
-  PosRuntimeStateInvalidator.invalidateActiveSessionRuntime(_ref);
-  await _ref.read(activePosSessionProvider.future);
-}
+  Future<void> _refreshActiveSession() async {
+    PosRuntimeStateInvalidator.invalidateActiveSessionRuntime(_ref);
+    await _ref.read(activePosSessionProvider.future);
+  }
 
-void _clearCashierState() {
-  PosRuntimeStateInvalidator.clearCashierState(_ref);
-}
-
+  void _clearCashierState() {
+    PosRuntimeStateInvalidator.clearCashierState(_ref);
+  }
 }
 
 final posSessionControllerProvider =

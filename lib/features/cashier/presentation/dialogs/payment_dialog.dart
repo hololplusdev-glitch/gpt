@@ -23,6 +23,7 @@ import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
 import 'package:uuid/uuid.dart';
 import 'package:holol_POS/shared/refactor/pos_payment_draft.dart';
+import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final Cart cart;
@@ -106,6 +107,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         : null;
   }
 
+
   @override
   void dispose() {
     _customerSearchDebounce?.cancel();
@@ -113,9 +115,18 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     _lineAmountController.dispose();
     super.dispose();
   }
-double _parseMoney(String text) => PaymentDraftRules.parseMoney(text);
 
-void _selectCustomer(Customer customer) {
+  double _parseMoney(String text) => PaymentDraftRules.parseMoney(text);
+
+  void _scheduleCustomerSearch(String value) {
+    _customerSearchDebounce?.cancel();
+    _customerSearchDebounce = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      ref.read(customerSearchQueryProvider.notifier).state = value.trim();
+    });
+  }
+
+  void _selectCustomer(Customer customer) {
     setState(() {
       _selectedCustomerId = customer.id;
       _selectedCustomerName = customer.name;
@@ -154,46 +165,11 @@ void _selectCustomer(Customer customer) {
     });
 
     if (existing == null && kind != SaleTenderKind.cash) {
-bool _submitInlineLine({bool showErrors = true}) {
-    final kind = _activeLineKind;
-    if (kind == null) return false;
-
-    final existing = _editingLineId == null
-        ? null
-        : _paymentLines.where((line) => line.id == _editingLineId).firstOrNull;
-    final result = PaymentDraftRules.buildDraftLine(
-      id: existing?.id ?? const Uuid().v4(),
-      kind: kind,
-      rawInputAmount: _parseMoney(_lineAmountController.text),
-      availableAmount: _availableFor(existing),
-    );
-
-    if (!result.isSuccess) {
-      if (showErrors) {
-        setState(() {
-          _lineInputError = switch (result.error) {
-            PaymentDraftLineError.invalidAmount => 'أدخل مبلغًا صحيحًا أكبر من صفر.',
-            PaymentDraftLineError.exceedsRemaining => 'المبلغ لا يمكن أن يتجاوز المتبقي.',
-            null => 'أدخل مبلغًا صحيحًا أكبر من صفر.',
-          };
-        });
-      }
-      return false;
+      _submitInlineLine(showErrors: false, updateText: true);
     }
-
-    final line = result.line!;
-    _upsertLine(line, existing);
-    setState(() {
-      _activeLineKind = kind;
-      _editingLineId = line.id;
-      _lineInputError = null;
-      _lineAmountController.text = line.tenderedAmount.toStringAsFixed(2);
-    });
-    return true;
   }
 
-}
-double _availableFor(PaymentDraftLine? existing) {
+  double _availableFor(PaymentDraftLine? existing) {
     return PaymentDraftRules.availableFor(
       totalAmount: _totalAmount,
       lines: _paymentLines,
@@ -201,7 +177,7 @@ double _availableFor(PaymentDraftLine? existing) {
     );
   }
 
-void _upsertLine(PaymentDraftLine line, PaymentDraftLine? existing) {
+  void _upsertLine(PaymentDraftLine line, PaymentDraftLine? existing) {
     setState(() {
       if (existing == null) {
         _paymentLines.add(line);
@@ -224,44 +200,32 @@ void _upsertLine(PaymentDraftLine line, PaymentDraftLine? existing) {
     final existing = _editingLineId == null
         ? null
         : _paymentLines.where((line) => line.id == _editingLineId).firstOrNull;
-    final available = _availableFor(existing);
-    final input = PricingEngine.roundAmount(
-      _parseMoney(_lineAmountController.text),
+
+    final result = PaymentDraftRules.buildDraftLine(
+      id: existing?.id ?? const Uuid().v4(),
+      kind: kind,
+      rawInputAmount: _parseMoney(_lineAmountController.text),
+      availableAmount: _availableFor(existing),
     );
 
-    if (input.isNaN || input <= 0) {
-      if (existing != null) {
-        _upsertLine(
-          existing.copyWith(amount: 0, tenderedAmount: 0),
-          existing,
-        );
-      }
+    if (!result.isSuccess) {
       if (showErrors) {
-        setState(() => _lineInputError = 'أدخل مبلغًا صحيحًا أكبر من صفر.');
+        setState(() {
+          _lineInputError = switch (result.error) {
+            PaymentDraftLineError.invalidAmount => 'أدخل مبلغًا صحيحًا أكبر من صفر.',
+            PaymentDraftLineError.exceedsRemaining => 'المبلغ لا يمكن أن يتجاوز المتبقي.',
+            null => 'أدخل مبلغًا صحيحًا أكبر من صفر.',
+          };
+        });
       } else {
         setState(() => _lineInputError = null);
       }
       return false;
     }
 
-    if (kind != SaleTenderKind.cash && input - available > 0.01) {
-      if (showErrors) {
-        setState(() => _lineInputError = 'المبلغ لا يمكن أن يتجاوز المتبقي.');
-      }
-      return false;
-    }
-
-    final amount = kind == SaleTenderKind.cash && input > available
-        ? available
-        : input;
-    final line = PaymentDraftLine(
-      id: existing?.id ?? const Uuid().v4(),
-      kind: kind,
-      amount: PricingEngine.roundAmount(amount),
-      tenderedAmount: kind == SaleTenderKind.cash ? input : amount,
-    );
-
+    final line = result.line!;
     _upsertLine(line, existing);
+
     setState(() {
       _activeLineKind = kind;
       _editingLineId = line.id;
@@ -270,12 +234,15 @@ void _upsertLine(PaymentDraftLine line, PaymentDraftLine? existing) {
         _lineAmountController.text = line.tenderedAmount.toStringAsFixed(2);
       }
     });
+
     return true;
   }
-List<SalePaymentIntent> _buildPaymentIntents() {
+
+  List<SalePaymentIntent> _buildPaymentIntents() {
     return PaymentDraftRules.toPaymentIntents(_paymentLines);
   }
-String? _validatePaymentBeforeSubmit() {
+
+  String? _validatePaymentBeforeSubmit() {
     return PaymentDraftRules.validateBeforeSubmit(
       quoteReady: _quote != null,
       hasPaymentLines: _paymentLines.isNotEmpty,
@@ -289,7 +256,7 @@ String? _validatePaymentBeforeSubmit() {
     );
   }
 
-Future<void> _processPayment() async {
+  Future<void> _processPayment() async {
     final l10n = AppLocalizations.of(context)!;
     final validationMessage = _validatePaymentBeforeSubmit();
 
