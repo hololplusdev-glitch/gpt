@@ -11,14 +11,14 @@ import 'package:holol_POS/core/design_system/colors.dart';
 import 'package:holol_POS/core/design_system/spacing.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 import 'package:holol_POS/core/services/invoices/invoice_output_actions.dart';
-import 'package:holol_POS/core/services/invoices/thermal_raster_renderer.dart';
+import 'package:holol_POS/core/services/receipts/receipt_raster_renderer.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 
 /// Shows a thermal receipt image preview in a dialog.
 ///
 /// [saleId] is used to build the InvoiceDocument via [InvoiceOutputActions].
-/// The receipt is rendered as a PNG image using [ThermalRasterRenderer].
+/// The receipt is rendered as a PNG image using [ReceiptRasterRenderer].
 Future<void> showThermalReceiptPreview({
   required BuildContext context,
   required String saleId,
@@ -27,10 +27,8 @@ Future<void> showThermalReceiptPreview({
   return showDialog(
     context: context,
     barrierDismissible: true,
-    builder: (context) => _ThermalReceiptDialog(
-      saleId: saleId,
-      outputActions: outputActions,
-    ),
+    builder: (context) =>
+        _ThermalReceiptDialog(saleId: saleId, outputActions: outputActions),
   );
 }
 
@@ -63,7 +61,7 @@ class _ThermalReceiptDialogState extends State<_ThermalReceiptDialog> {
       final document = await widget.outputActions.getOrCreateOriginal(
         widget.saleId,
       );
-      final renderer = const ThermalRasterRenderer();
+      final renderer = const ReceiptRasterRenderer();
       // Use 80mm paper for a good preview resolution
       final pngBytes = await renderer.renderPng(document, paperWidthMm: 80);
 
@@ -151,51 +149,49 @@ class _ThermalReceiptDialogState extends State<_ThermalReceiptDialog> {
                       child: AppLoading(),
                     )
                   : _error != null
-                      ? Padding(
-                          padding: const EdgeInsets.all(AppSpacing.xxl),
-                          child: Text(
-                            _error!,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: AppColors.error),
-                          ),
-                        )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
-                            vertical: AppSpacing.lg,
-                          ),
-                          child: Center(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: AppSpacing.borderRadiusSm,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.08),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
+                  ? Padding(
+                      padding: const EdgeInsets.all(AppSpacing.xxl),
+                      child: Text(
+                        _error!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.lg,
+                      ),
+                      child: Center(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: AppSpacing.borderRadiusSm,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
                               ),
-                              child: ClipRRect(
-                                borderRadius: AppSpacing.borderRadiusSm,
-                                child: Image.memory(
-                                  _pngBytes!,
-                                  filterQuality: FilterQuality.high,
-                                ),
-                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: AppSpacing.borderRadiusSm,
+                            child: Image.memory(
+                              _pngBytes!,
+                              filterQuality: FilterQuality.high,
                             ),
                           ),
                         ),
+                      ),
+                    ),
             ),
             // ── Actions ──
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(AppSpacing.md),
               decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: AppColors.border),
-                ),
+                border: Border(top: BorderSide(color: AppColors.border)),
               ),
               child: Row(
                 children: [
@@ -211,9 +207,7 @@ class _ThermalReceiptDialogState extends State<_ThermalReceiptDialog> {
                     child: AppButton.primary(
                       onPressed: () {
                         Navigator.of(context).pop();
-                        context.push(
-                          AppRoutes.invoicePath(widget.saleId),
-                        );
+                        context.push(AppRoutes.invoicePath(widget.saleId));
                       },
                       icon: Icons.open_in_new,
                       label: 'التفاصيل الكاملة',

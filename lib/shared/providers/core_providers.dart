@@ -29,7 +29,7 @@ import 'package:holol_POS/core/services/pos_devices/printer_profile_service.dart
 import 'package:holol_POS/core/services/pos_devices/runtime_platform.dart';
 import 'package:holol_POS/core/services/invoices/invoice_archive_repository.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document_builder.dart';
-import 'package:holol_POS/core/services/invoices/invoice_pdf_exporter.dart';
+import 'package:holol_POS/core/services/receipts/receipt_file_writer.dart';
 import 'package:holol_POS/core/services/installation/app_installation_service.dart';
 import 'package:holol_POS/core/services/sync/db_sync_service.dart';
 import 'package:holol_POS/core/services/sync/upload_queue.dart';
@@ -187,8 +187,8 @@ final invoiceDocumentBuilderProvider = Provider<InvoiceDocumentBuilder>((ref) {
   );
 });
 
-final invoicePdfExporterProvider = Provider<InvoicePdfExporter>((ref) {
-  return const InvoicePdfExporter();
+final receiptFileWriterProvider = Provider<ReceiptFileWriter>((ref) {
+  return const ReceiptFileWriter();
 });
 
 final printQueueProvider = Provider<PrintQueue>((ref) {

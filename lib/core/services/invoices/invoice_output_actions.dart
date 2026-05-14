@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:holol_POS/core/persistence/daos/print_job_dao.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document_builder.dart';
-import 'package:holol_POS/core/services/invoices/invoice_pdf_exporter.dart';
-import 'package:holol_POS/core/services/invoices/thermal_receipt_pdf_renderer.dart';
+import 'package:holol_POS/core/services/receipts/receipt_file_writer.dart';
+import 'package:holol_POS/core/services/receipts/receipt_pdf_writer.dart';
 import 'package:holol_POS/core/services/pos_devices/print_job_processor.dart';
 import 'package:holol_POS/core/services/pos_devices/print_job_service.dart';
 import 'package:holol_POS/core/services/pos_devices/print_queue.dart';
@@ -16,8 +16,8 @@ import 'package:share_plus/share_plus.dart';
 
 class InvoiceOutputActions {
   final InvoiceDocumentBuilder _documentBuilder;
-  final InvoicePdfExporter _pdfExporter;
-  final ThermalReceiptPdfRenderer _thermalPdfRenderer;
+  final ReceiptFileWriter _fileWriter;
+  final ReceiptPdfWriter _pdfWriter;
   final PrintQueue _printQueue;
   final PrintJobService _printJobService;
   final PrintJobProcessor _printJobProcessor;
@@ -26,16 +26,16 @@ class InvoiceOutputActions {
 
   const InvoiceOutputActions({
     required InvoiceDocumentBuilder documentBuilder,
-    required InvoicePdfExporter pdfExporter,
-    required ThermalReceiptPdfRenderer thermalPdfRenderer,
+    required ReceiptFileWriter fileWriter,
+    required ReceiptPdfWriter pdfWriter,
     required PrintQueue printQueue,
     required PrintJobService printJobService,
     required PrintJobProcessor printJobProcessor,
     required PrintJobDao printJobDao,
     Clock clock = const SystemClock(),
   }) : _documentBuilder = documentBuilder,
-       _pdfExporter = pdfExporter,
-       _thermalPdfRenderer = thermalPdfRenderer,
+       _fileWriter = fileWriter,
+       _pdfWriter = pdfWriter,
        _printQueue = printQueue,
        _printJobService = printJobService,
        _printJobProcessor = printJobProcessor,
@@ -76,12 +76,14 @@ class InvoiceOutputActions {
     }
 
     final document = await getOrCreateOriginal(saleId);
+
     final jobs = await _printQueue.invoiceReceipt(
       document: document,
       createdAt: _clock.now(),
       createdBy: createdBy,
       requireAutoPrint: requireAutoPrint,
     );
+
     await _printJobDao.insertAll(jobs);
 
     return _processJobs(jobs.map((job) => job.id.value).toList());
@@ -101,26 +103,25 @@ class InvoiceOutputActions {
       createdBy: createdBy,
       documentType: PrintDocumentType.invoiceReceiptCopy,
     );
+
     await _printJobDao.insertAll(jobs);
 
     return _processJobs(jobs.map((job) => job.id.value).toList());
   }
 
-  /// WHY: Uses ThermalReceiptPdfRenderer so the saved PDF looks
-  /// identical to the thermal printer output — same layout, same boxes,
-  /// same Arabic rendering. Falls back to A4 exporter if thermal fails.
+  /// Saves the unified receipt design inside an A4 PDF container.
+  ///
+  /// No fallback to a second A4 invoice layout is allowed.
+  /// If rendering fails, the failure must be visible because silent fallback breaks SSOT.
   Future<File> savePdf(String saleId, {int paperWidthMm = 80}) async {
     final document = await getOrCreateOriginal(saleId);
-    try {
-      final pdfBytes = await _thermalPdfRenderer.render(
-        document,
-        paperWidthMm: paperWidthMm,
-      );
-      return _pdfExporter.saveBytes(document, pdfBytes);
-    } catch (_) {
-      // Fallback to A4 layout if thermal rendering fails
-      return _pdfExporter.save(document);
-    }
+
+    final pdfBytes = await _pdfWriter.renderA4(
+      document,
+      paperWidthMm: paperWidthMm,
+    );
+
+    return _fileWriter.savePdfBytes(document, pdfBytes);
   }
 
   Future<File> sharePdf(String saleId, {int paperWidthMm = 80}) async {
@@ -198,8 +199,8 @@ class InvoicePrintResult {
 final invoiceOutputActionsProvider = Provider<InvoiceOutputActions>((ref) {
   return InvoiceOutputActions(
     documentBuilder: ref.watch(invoiceDocumentBuilderProvider),
-    pdfExporter: ref.watch(invoicePdfExporterProvider),
-    thermalPdfRenderer: const ThermalReceiptPdfRenderer(),
+    fileWriter: ref.watch(receiptFileWriterProvider),
+    pdfWriter: const ReceiptPdfWriter(),
     printQueue: ref.watch(printQueueProvider),
     printJobService: ref.watch(printJobServiceProvider),
     printJobProcessor: ref.watch(printJobProcessorProvider),

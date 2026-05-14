@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,6 +23,8 @@ import 'package:holol_POS/shared/presentation/widgets/key_value_row.dart';
 import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
+
+import 'package:holol_POS/core/services/receipts/receipt_raster_renderer.dart';
 
 final invoiceDocumentProvider = FutureProvider.autoDispose
     .family<InvoiceDocument, String>((ref, id) {
@@ -148,17 +151,9 @@ class _InvoicePreview extends ConsumerWidget {
         child: ListView(
           padding: AppSpacing.paddingLg,
           children: [
-            _Header(document: document),
+            _UnifiedReceiptImage(document: document),
             const SizedBox(height: AppSpacing.md),
             _Actions(document: document),
-            const SizedBox(height: AppSpacing.md),
-            _InfoGrid(document: document),
-            const SizedBox(height: AppSpacing.md),
-            _LinesTable(document: document),
-            const SizedBox(height: AppSpacing.md),
-            _Totals(document: document),
-            const SizedBox(height: AppSpacing.md),
-            _Payments(document: document),
             const SizedBox(height: AppSpacing.md),
             _AuditPanel(document: document),
             const SizedBox(height: AppSpacing.md),
@@ -170,6 +165,62 @@ class _InvoicePreview extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _UnifiedReceiptImage extends StatelessWidget {
+  final InvoiceDocument document;
+
+  const _UnifiedReceiptImage({required this.document});
+
+  Future<Uint8List> _render() {
+    return const ReceiptRasterRenderer().renderPng(document, paperWidthMm: 80);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AppPanel(
+      child: FutureBuilder<Uint8List>(
+        future: _render(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Padding(
+              padding: EdgeInsets.all(AppSpacing.xxl),
+              child: AppLoading(),
+            );
+          }
+
+          if (snapshot.hasError || snapshot.data == null) {
+            return AppInfoBanner.error(
+              message: 'تعذر إنشاء معاينة الفاتورة الموحدة.',
+            );
+          }
+
+          return Center(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: AppSpacing.borderRadiusSm,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: AppSpacing.borderRadiusSm,
+                child: Image.memory(
+                  snapshot.data!,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }

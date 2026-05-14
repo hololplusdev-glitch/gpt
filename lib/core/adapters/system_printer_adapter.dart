@@ -1,23 +1,22 @@
+import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:holol_POS/core/adapters/printer_adapter.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
-import 'package:holol_POS/core/services/invoices/thermal_receipt_pdf_renderer.dart';
+import 'package:holol_POS/core/services/receipts/receipt_pdf_writer.dart';
 import 'package:holol_POS/core/services/pos_devices/printer_profile_service.dart';
 import 'package:holol_POS/core/services/pos_devices/printer_test_document.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 
 /// System printer adapter.
 ///
-/// SSOT:
-/// - Invoice shape is owned by ThermalReceiptPdfRenderer.
-/// - This adapter is transport only: resolve configured OS printer + directPrintPdf.
-/// - It must stay visually aligned with the raster thermal receipt.
+/// Transport only. The printed PDF is the same unified receipt image placed
+/// inside an A4 page by ReceiptPdfWriter.
 class SystemPrinterAdapter implements PrinterAdapter {
-  final ThermalReceiptPdfRenderer _renderer;
+  final ReceiptPdfWriter _writer;
 
   const SystemPrinterAdapter({
-    ThermalReceiptPdfRenderer renderer = const ThermalReceiptPdfRenderer(),
-  }) : _renderer = renderer;
+    ReceiptPdfWriter writer = const ReceiptPdfWriter(),
+  }) : _writer = writer;
 
   @override
   bool isSupportedOnCurrentPlatform(PrinterProfile profile) {
@@ -47,16 +46,10 @@ class SystemPrinterAdapter implements PrinterAdapter {
       final printed = await Printing.directPrintPdf(
         printer: configuredPrinter,
         name: document.localInvoiceNo,
-        format: _renderer.pageFormatForWidth(
-          profile.paperWidthMm,
-          itemCount: document.lines.length,
-          paymentCount: document.payments.length,
-          hasNotes: document.notes?.trim().isNotEmpty == true,
-          hasNotice: document.arabicPrintNotice?.trim().isNotEmpty == true,
-        ),
+        format: PdfPageFormat.a4,
         usePrinterSettings: true,
         onLayout: (_) {
-          return _renderer.render(document, paperWidthMm: profile.paperWidthMm);
+          return _writer.renderA4(document, paperWidthMm: profile.paperWidthMm);
         },
       );
 
