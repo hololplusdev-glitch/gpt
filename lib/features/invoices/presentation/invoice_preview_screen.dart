@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,13 +8,11 @@ import 'package:holol_POS/core/design_system/layout.dart';
 import 'package:holol_POS/core/design_system/spacing.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/l10n/app_localizations.dart';
-import 'package:holol_POS/core/services/formatters/pos_formatters.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 import 'package:holol_POS/core/services/invoices/invoice_output_actions.dart';
 import 'package:holol_POS/core/services/invoices/invoice_print_history_entry.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/shared/presentation/presenters/printer_status_presenter.dart';
-import 'package:holol_POS/shared/presentation/presenters/sale_status_presenter.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_panel.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_status_chip.dart';
@@ -226,113 +223,6 @@ class _UnifiedReceiptImage extends StatelessWidget {
   }
 }
 
-class _Header extends StatelessWidget {
-  final InvoiceDocument document;
-
-  const _Header({required this.document});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: AppSpacing.paddingLg,
-      decoration: BoxDecoration(
-        gradient: AppColors.headerGradient,
-        borderRadius: AppSpacing.borderRadiusLg,
-      ),
-      child: Wrap(
-        spacing: AppSpacing.lg,
-        runSpacing: AppSpacing.md,
-        alignment: WrapAlignment.spaceBetween,
-        children: [
-          SizedBox(
-            width: 420,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  document.seller.name,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.onPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  document.branch.name,
-                  style: TextStyle(
-                    color: AppColors.onPrimary.withValues(alpha: 0.85),
-                  ),
-                ),
-                if (document.branch.taxNumber?.isNotEmpty == true)
-                  Text(
-                    'الرقم الضريبي: ${document.branch.taxNumber}',
-                    style: TextStyle(
-                      color: AppColors.onPrimary.withValues(alpha: 0.8),
-                    ),
-                  ),
-                if (document.branch.address?.isNotEmpty == true)
-                  Text(
-                    document.branch.address!,
-                    style: TextStyle(
-                      color: AppColors.onPrimary.withValues(alpha: 0.8),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          SizedBox(
-            width: 280,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  document.invoiceTypeLabel,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.onPrimary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                SelectableText(
-                  document.localInvoiceNo,
-                  style: TextStyle(
-                    color: AppColors.onPrimary.withValues(alpha: 0.9),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                AppStatusChip(
-                  label: document.statusCode.isEmpty
-                      ? document.statusLabel
-                      : SaleStatusPresenter.label(
-                          document.statusCode,
-                          AppLocalizations.of(context)!,
-                        ),
-                  color: document.statusCode.isEmpty
-                      ? AppColors.success
-                      : SaleStatusPresenter.color(document.statusCode),
-                  icon: document.statusCode.isEmpty
-                      ? null
-                      : SaleStatusPresenter.icon(document.statusCode),
-                ),
-                if (document.copyInfo.isCopy) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  AppStatusChip(
-                    label: document.copyInfo.label,
-                    color: AppColors.warning,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _Actions extends ConsumerWidget {
   final InvoiceDocument document;
 
@@ -441,146 +331,6 @@ class _Actions extends ConsumerWidget {
   }
 }
 
-class _InfoGrid extends StatelessWidget {
-  final InvoiceDocument document;
-
-  const _InfoGrid({required this.document});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppPanel(
-      child: Wrap(
-        spacing: AppSpacing.xl,
-        runSpacing: AppSpacing.md,
-        children: [
-          _InfoTile(
-            'التاريخ',
-            PosFormatters.dateTime(document.invoiceDateTime),
-          ),
-          _InfoTile('الكاشير', document.cashier.name),
-          _InfoTile('الجهاز', document.terminal.terminalId),
-          _InfoTile('نقطة التشغيل', document.terminal.machineNumber ?? '-'),
-          _InfoTile('العميل', document.customer?.name ?? '-'),
-          _InfoTile('حالة الطباعة', document.printStatusLabel ?? '-'),
-        ],
-      ),
-    );
-  }
-}
-
-class _LinesTable extends StatelessWidget {
-  final InvoiceDocument document;
-
-  const _LinesTable({required this.document});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppPanel(
-      title: 'الأصناف',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final line in document.lines) ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        line.itemName,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      Text(
-                        '${line.unitName ?? '-'}  ${line.display.quantity} x ${line.display.unitPrice}',
-                        style: const TextStyle(color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                ),
-                Text.rich(
-                  PosFormatters.amountRich(
-                    line.lineTotal,
-                    amountStyle: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: AppSpacing.xl),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _Totals extends StatelessWidget {
-  final InvoiceDocument document;
-
-  const _Totals({required this.document});
-
-  @override
-  Widget build(BuildContext context) {
-    final totals = document.totals;
-    return AppPanel(
-      title: 'الملخص',
-      child: Column(
-        children: [
-          KeyValueRow(
-            label: 'المجموع قبل الضريبة',
-            value: '${totals.displaySubtotal} ر.س',
-          ),
-          KeyValueRow(
-            label: 'الخصم',
-            value: '${totals.displayDiscountTotal} ر.س',
-          ),
-          KeyValueRow(label: 'الضريبة', value: '${totals.displayTaxTotal} ر.س'),
-          const Divider(),
-          KeyValueRow(
-            label: 'الإجمالي',
-            value: '${totals.displayNetTotal} ر.س',
-            strong: true,
-          ),
-          KeyValueRow(
-            label: 'المدفوع',
-            value: '${totals.displayPaidTotal} ر.س',
-          ),
-          KeyValueRow(
-            label: 'الباقي',
-            value: '${totals.displayChangeAmount} ر.س',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Payments extends StatelessWidget {
-  final InvoiceDocument document;
-
-  const _Payments({required this.document});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppPanel(
-      title: 'طرق الدفع',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final payment in document.payments)
-            KeyValueRow(
-              label: payment.referenceNo == null
-                  ? payment.displayMethod
-                  : '${payment.displayMethod} - مرجع ${payment.referenceNo}',
-              value: '${payment.displayAmount} ر.س',
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 class _AuditPanel extends StatelessWidget {
   final InvoiceDocument document;
 
@@ -673,24 +423,3 @@ class _PrintHistory extends ConsumerWidget {
 /// WHY: Vertical label-value tile for info grids. Kept private because
 /// the wider KeyValueRow covers the horizontal case. This is a specialized
 /// layout for the invoice info grid only.
-class _InfoTile extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _InfoTile(this.label, this.value);
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 190,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(color: AppColors.textSecondary)),
-          const SizedBox(height: AppSpacing.xxs),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
-}
