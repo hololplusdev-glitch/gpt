@@ -14,7 +14,7 @@ import 'package:holol_POS/core/persistence/daos/shift_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/persistence/pos_config_repository.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
-import 'package:holol_POS/core/services/sync/upload_queue.dart';
+import 'package:holol_POS/core/services/sync/outbox_event_factory.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
@@ -24,19 +24,19 @@ class ShiftService {
   final ShiftDao _shiftDao;
   final SalesDao _salesDao;
   final PosConfigRepository _config;
-  final UploadQueue _uploadQueue;
+  final OutboxEventFactory _outboxEventFactory;
   final Clock _clock;
 
   ShiftService({
     required ShiftDao shiftDao,
     required SalesDao salesDao,
     required PosConfigRepository config,
-    required UploadQueue uploadQueue,
+    required OutboxEventFactory outboxEventFactory,
     Clock clock = const SystemClock(),
   }) : _shiftDao = shiftDao,
        _salesDao = salesDao,
        _config = config,
-       _uploadQueue = uploadQueue,
+       _outboxEventFactory = outboxEventFactory,
        _clock = clock;
 
   static const _uuid = Uuid();
@@ -86,7 +86,7 @@ class ShiftService {
       idempotencyKey: idempotencyKey,
     );
 
-    final outboxEntry = _uploadQueue.shiftOpened(
+    final outboxEntry = _outboxEventFactory.shiftOpened(
       localId: localId,
       machineNo: session.activeMachineNo,
       cashierId: session.activeUserId,
@@ -159,7 +159,7 @@ class ShiftService {
     final difference = actualCash - expectedCash;
 
     final now = _clock.now();
-    final outboxEntry = _uploadQueue.shiftClosed(
+    final outboxEntry = _outboxEventFactory.shiftClosed(
       localId: localId,
       machineNo: session.activeMachineNo,
       cashierId: session.activeUserId,
@@ -238,7 +238,7 @@ class ShiftService {
     final newExpiry = currentExpiry.add(Duration(minutes: minutes));
 
     final now = _clock.now();
-    final outboxEntry = _uploadQueue.shiftExtended(
+    final outboxEntry = _outboxEventFactory.shiftExtended(
       localId: localId,
       extendedByMinutes: minutes,
       newExpiry: newExpiry,
@@ -286,7 +286,7 @@ final shiftServiceProvider = Provider<ShiftService>((ref) {
     shiftDao: ref.watch(shiftDaoProvider),
     salesDao: ref.watch(salesDaoProvider),
     config: ref.watch(posConfigProvider),
-    uploadQueue: ref.watch(uploadQueueProvider),
+    outboxEventFactory: ref.watch(outboxEventFactoryProvider),
     clock: ref.watch(clockProvider),
   );
 });

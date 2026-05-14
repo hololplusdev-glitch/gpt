@@ -6,8 +6,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:holol_POS/app/router.dart';
 import 'package:holol_POS/core/design_system/colors.dart';
 import 'package:holol_POS/core/design_system/spacing.dart';
 import 'package:holol_POS/core/l10n/app_localizations.dart';
@@ -105,6 +103,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   void initState() {
     super.initState();
 
+    // Listen to controller changes from BOTH physical keyboard and touch keypad
+    _userNumberController.addListener(_onUserNumberChanged);
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _shouldAutoFocusPosInput(context)) {
         _userNumberFocus.requestFocus();
@@ -112,26 +113,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
   }
 
+  void _onUserNumberChanged() {
+    final value = _userNumberController.text;
+    ref.read(posSessionControllerProvider.notifier).resolveUserNumber(value);
+  }
+
   @override
   void dispose() {
+    _userNumberController.removeListener(_onUserNumberChanged);
     _userNumberController.dispose();
     _userNumberFocus.dispose();
     super.dispose();
   }
 
-  bool _handleOwnerShortcut(String value) {
-    if (value.trim() != '1111') return false;
-
-    ref.read(posSessionControllerProvider.notifier).clearError();
-    _userNumberController.clear();
-    context.go(AppRoutes.ownerConsole);
-    return true;
-  }
 
   Future<void> _handleLoginPressed() async {
-    if (_handleOwnerShortcut(_userNumberController.text)) {
-      return;
-    }
 
     final controller = ref.read(posSessionControllerProvider.notifier);
     final state = ref.read(posSessionControllerProvider);
@@ -292,14 +288,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   color: AppColors.success,
                                 )
                               : null,
-                          onChanged: (value) {
-                            if (_handleOwnerShortcut(value)) return;
-                            ref
-                                .read(posSessionControllerProvider.notifier)
-                                .resolveUserNumber(value);
+                          onChanged: (_) {
+                            // Handled by _onUserNumberChanged listener
                           },
                           onSubmitted: (value) {
-                            if (_handleOwnerShortcut(value)) return;
                             if (sessionState.canLogin) _handleLoginPressed();
                           },
                         ),

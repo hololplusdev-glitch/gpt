@@ -9,12 +9,13 @@ import 'package:holol_POS/core/persistence/daos/shift_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/invoice_number_service.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document_builder.dart';
-import 'package:holol_POS/core/services/sync/upload_queue.dart';
+import 'package:holol_POS/core/services/sync/outbox_event_factory.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/models/sales_history.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
+import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
 
 /// Sales history/detail query owner plus post-sale correction commands.
 /// Sale completion remains owned by SaleCheckout.
@@ -23,7 +24,7 @@ class SalesHistoryService {
   final ShiftDao _shiftDao;
   final InvoiceNumberService _invoiceNumberService;
   final InvoiceDocumentBuilder _invoiceDocumentBuilder;
-  final UploadQueue _uploadQueue;
+  final OutboxEventFactory _outboxEventFactory;
   final ActivePosSession? _activeSession;
   final Clock _clock;
 
@@ -32,14 +33,14 @@ class SalesHistoryService {
     required ShiftDao shiftDao,
     required InvoiceNumberService invoiceNumberService,
     required InvoiceDocumentBuilder invoiceDocumentBuilder,
-    required UploadQueue uploadQueue,
+    required OutboxEventFactory outboxEventFactory,
     required ActivePosSession? activeSession,
     Clock clock = const SystemClock(),
   }) : _salesDao = salesDao,
        _shiftDao = shiftDao,
        _invoiceNumberService = invoiceNumberService,
        _invoiceDocumentBuilder = invoiceDocumentBuilder,
-       _uploadQueue = uploadQueue,
+       _outboxEventFactory = outboxEventFactory,
        _activeSession = activeSession,
        _clock = clock;
 
@@ -67,8 +68,15 @@ class SalesHistoryService {
   }
 
   Future<void> voidSale(String saleId) async {
-    final session = _requireSession();
-    final sale = await _requireCompletedNormalSale(saleId);
+    final session = PosBusinessGuards.requireActiveSession(
+      _activeSession,
+      message: 'Select a cashier and POS machine first.',
+      code: 'NO_ACTIVE_POS_SESSION',
+    );
+    final sale = await PosBusinessGuards.requireCompletedNormalSale(
+      salesDao: _salesDao,
+      saleId: saleId,
+    );
     final now = _clock.now();
 
     if (await _salesDao.hasCompletedReturnForSale(sale.id)) {
@@ -81,7 +89,7 @@ class SalesHistoryService {
     await _salesDao.voidSaleEnvelope(
       saleId: sale.id,
       voidedAt: now,
-      outboxEntry: _uploadQueue.saleVoided(
+      outboxEntry: _outboxEventFactory.saleVoided(
         saleId: sale.id,
         cashierId: session.activeUserId,
         cashierName: session.activeUserName,
@@ -107,9 +115,21 @@ class SalesHistoryService {
   }
 
   Future<String> returnSale(String saleId) async {
-    final session = _requireSession();
-    final shift = await _requireOpenShift(session);
-    final original = await _requireCompletedNormalSale(saleId);
+    final session = PosBusinessGuards.requireActiveSession(
+      _activeSession,
+      message: 'Select a cashier and POS machine first.',
+      code: 'NO_ACTIVE_POS_SESSION',
+    );
+    final shift = await PosBusinessGuards.requireOpenShift(
+      shiftDao: _shiftDao,
+      session: session,
+      message: 'Open a shift before creating a return.',
+      code: 'NO_OPEN_SHIFT',
+    );
+    final original = await PosBusinessGuards.requireCompletedNormalSale(
+      salesDao: _salesDao,
+      saleId: saleId,
+    );
 
     if (await _salesDao.hasCompletedReturnForSale(original.id)) {
       throw const BusinessException(
@@ -120,7 +140,10 @@ class SalesHistoryService {
 
     final now = _clock.now();
     final returnSaleId = 'RET_${_uuid.v4()}';
-    final sequenceType = _returnSequenceType(session);
+    final sequenceType = PosBusinessRules.sequenceType(
+      session.returnInvoiceSeries,
+      fallback: 'return',
+    );
     final localInvoiceNo = await _invoiceNumberService.generateNext(
       branchNo: session.activeBranchNo,
       machineNo: session.activeMachineNo,
@@ -236,7 +259,7 @@ class SalesHistoryService {
       items: lines,
       payments: payments,
       taxes: taxes,
-      outboxEntry: _uploadQueue.returnCreated(
+      outboxEntry: _outboxEventFactory.returnCreated(
         saleId: returnSaleId,
         originalSaleId: original.id,
         localInvoiceNo: localInvoiceNo,
@@ -273,50 +296,6 @@ class SalesHistoryService {
     return returnSaleId;
   }
 
-  Future<Sale> _requireCompletedNormalSale(String saleId) async {
-    final sale = await _salesDao.getById(saleId);
-    if (sale == null) {
-      throw const BusinessException('Sale not found.', code: 'SALE_NOT_FOUND');
-    }
-    if (sale.type != SaleType.sale.code ||
-        sale.status != SaleStatus.completed.code) {
-      throw const BusinessException(
-        'Only completed normal sales can be changed.',
-        code: 'SALE_NOT_MUTABLE',
-      );
-    }
-    return sale;
-  }
-
-  Future<Shift> _requireOpenShift(ActivePosSession session) async {
-    final shift = await _shiftDao.getOpenShift(
-      session.activeMachineNo,
-      cashierId: session.activeUserId,
-    );
-    if (shift == null || shift.status != ShiftStatus.open.code) {
-      throw const BusinessException(
-        'Open a shift before creating a return.',
-        code: 'NO_OPEN_SHIFT',
-      );
-    }
-    return shift;
-  }
-
-  ActivePosSession _requireSession() {
-    final session = _activeSession;
-    if (session == null) {
-      throw const BusinessException(
-        'Select a cashier and POS machine first.',
-        code: 'NO_ACTIVE_POS_SESSION',
-      );
-    }
-    return session;
-  }
-
-  String _returnSequenceType(ActivePosSession session) {
-    final series = session.returnInvoiceSeries?.trim();
-    return series == null || series.isEmpty ? 'return' : series;
-  }
 }
 
 class SaleDetail {
@@ -337,7 +316,7 @@ final salesHistoryServiceProvider = Provider<SalesHistoryService>((ref) {
     shiftDao: ref.watch(shiftDaoProvider),
     invoiceNumberService: ref.watch(invoiceNumberServiceProvider),
     invoiceDocumentBuilder: ref.watch(invoiceDocumentBuilderProvider),
-    uploadQueue: ref.watch(uploadQueueProvider),
+    outboxEventFactory: ref.watch(outboxEventFactoryProvider),
     activeSession: ref.watch(activePosSessionProvider).valueOrNull,
     clock: ref.watch(clockProvider),
   );

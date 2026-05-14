@@ -6,8 +6,8 @@ import 'package:holol_POS/core/services/master_data/master_data_download_helper.
 import 'package:holol_POS/core/services/master_data/master_data_sync_service.dart';
 import 'package:holol_POS/features/auth/application/pos_session_controller.dart';
 import 'package:holol_POS/features/shift/application/shift_controller.dart';
-import 'package:holol_POS/features/sync/application/master_data_provider_invalidation.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
+import 'package:holol_POS/shared/refactor/pos_runtime_state.dart';
 
 class SetupState {
   final bool isSetupComplete;
@@ -67,6 +67,11 @@ class SetupState {
 class SetupNotifier extends AsyncNotifier<SetupState> {
   MasterDataSyncCancelHandle? _cancelToken;
 
+  SetupState get _currentState => PosRuntimeStateInvalidator.requireAsyncValue(
+    state,
+    message: 'Setup state is not ready.',
+  );
+
   @override
   Future<SetupState> build() async {
     final repo = ref.read(runtimeConfigRepositoryProvider);
@@ -88,10 +93,11 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
           isComplete = false;
           await repo.setSetupComplete(false);
           await ref.read(activePosSessionDaoProvider).clearActive();
-          ref.invalidate(activePosSessionProvider);
-          ref.invalidate(posSessionControllerProvider);
-          ref.invalidate(shiftControllerProvider);
-          ref.invalidate(catalogReadinessProvider);
+          PosRuntimeStateInvalidator.invalidateSetupRuntime(
+            ref,
+            posSessionControllerProvider: posSessionControllerProvider,
+            shiftControllerProvider: shiftControllerProvider,
+          );
         }
       }
     } else if (isComplete) {
@@ -107,41 +113,58 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
   }
 
   Future<HealthCheckResult> saveConnection(SyncProfile profile) async {
-    state = AsyncData(state.value!.copyWith(isLoading: true, clearError: true));
     if (profile.custCode.trim().isEmpty) {
+      state = AsyncData(
+        _currentState.copyWith(
+          isLoading: false,
+          errorMessage: 'Customer code is required.',
+        ),
+      );
       throw StateError('Customer code is required.');
     }
 
-    final apiClient = ref.read(apiClientProvider);
-    apiClient.configure(profile);
-    final healthResult = await ref
-        .read(masterDataSyncServiceProvider)
-        .checkConnection(profile);
+    state = AsyncData(_currentState.copyWith(isLoading: true, clearError: true));
 
-    await ref.read(runtimeConfigRepositoryProvider).saveSyncProfile(profile);
-    ref.invalidate(syncProfileProvider);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      apiClient.configure(profile);
+      final healthResult = await ref
+          .read(masterDataSyncServiceProvider)
+          .checkConnection(profile);
 
-    state = AsyncData(
-      state.value!.copyWith(
-        isLoading: false,
-        syncProfile: profile.copyWith(
-          isValidated: healthResult.isHealthy,
-          lastValidatedAt: ref.read(clockProvider).now(),
+      await ref.read(runtimeConfigRepositoryProvider).saveSyncProfile(profile);
+      ref.invalidate(syncProfileProvider);
+
+      state = AsyncData(
+        _currentState.copyWith(
+          isLoading: false,
+          syncProfile: profile.copyWith(
+            isValidated: healthResult.isHealthy,
+            lastValidatedAt: ref.read(clockProvider).now(),
+          ),
+          lastHealthCheck: healthResult,
         ),
-        lastHealthCheck: healthResult,
-      ),
-    );
-    return healthResult;
+      );
+      return healthResult;
+    } catch (e) {
+      state = AsyncData(
+        _currentState.copyWith(
+          isLoading: false,
+          errorMessage: ErrorMapper.userMessage(e),
+        ),
+      );
+      rethrow;
+    }
   }
 
   Future<void> setLanguage(String lang) async {
     await ref.read(runtimeConfigRepositoryProvider).setLanguage(lang);
-    state = AsyncData(state.value!.copyWith(language: lang));
+    state = AsyncData(PosRuntimeStateInvalidator.requireAsyncValue(state, message: 'Setup state is not ready.').copyWith(language: lang));
   }
 
   Future<void> completeSetup() async {
     state = AsyncData(
-      state.value!.copyWith(
+      PosRuntimeStateInvalidator.requireAsyncValue(state, message: 'Setup state is not ready.').copyWith(
         isLoading: true,
         clearError: true,
         syncProgress: 0.0,
@@ -152,7 +175,7 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
     _cancelToken = MasterDataSyncCancelHandle();
 
     try {
-      final syncProfile = state.value!.syncProfile;
+      final syncProfile = PosRuntimeStateInvalidator.requireAsyncValue(state, message: 'Setup state is not ready.').syncProfile;
       if (syncProfile == null || syncProfile.custCode.trim().isEmpty) {
         throw StateError('Customer code is required.');
       }
@@ -186,7 +209,7 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
                   ? progress.typeLabel
                   : 'تحميل ${progress.typeCode}';
               state = AsyncData(
-                state.value!.copyWith(
+                PosRuntimeStateInvalidator.requireAsyncValue(state, message: 'Setup state is not ready.').copyWith(
                   syncProgress: overallProgress,
                   syncStatus: label,
                   syncPagination: paginationStr,
@@ -197,10 +220,10 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
 
       await _verifySetupUserExists(syncProfile.bootstrapUserId.trim());
       final warningSummary = download.operationalWarningSummary();
-      invalidateMasterDataDownloadProviders(ref);
+      PosRuntimeStateInvalidator.PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
       await ref.read(runtimeConfigRepositoryProvider).setSetupComplete(true);
       state = AsyncData(
-        state.value!.copyWith(
+        PosRuntimeStateInvalidator.requireAsyncValue(state, message: 'Setup state is not ready.').copyWith(
           isSetupComplete: true,
           isLoading: false,
           syncProgress: 1.0,
@@ -217,17 +240,18 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
       try {
         await ref.read(masterDataDaoProvider).clearMasterDataCache();
         await ref.read(activePosSessionDaoProvider).clearActive();
-        invalidateMasterDataDownloadProviders(ref);
-        ref.invalidate(activePosSessionProvider);
-        ref.invalidate(posSessionControllerProvider);
-        ref.invalidate(shiftControllerProvider);
-        ref.invalidate(catalogReadinessProvider);
+        PosRuntimeStateInvalidator.PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
+        PosRuntimeStateInvalidator.invalidateSetupRuntime(
+          ref,
+          posSessionControllerProvider: posSessionControllerProvider,
+          shiftControllerProvider: shiftControllerProvider,
+        );
       } catch (_) {
         // Keep the original setup error visible. Cache cleanup failure is secondary.
       }
 
       state = AsyncData(
-        state.value!.copyWith(
+        PosRuntimeStateInvalidator.requireAsyncValue(state, message: 'Setup state is not ready.').copyWith(
           isLoading: false,
           isSetupComplete: false,
           clearSync: true,
@@ -251,13 +275,15 @@ class SetupNotifier extends AsyncNotifier<SetupState> {
     final repo = ref.read(runtimeConfigRepositoryProvider);
     await repo.resetSetupStatus();
     await repo.clearSyncProfile();
+    await ref.read(masterDataDaoProvider).clearMasterDataCache(clearRunLogs: true);
     await ref.read(activePosSessionDaoProvider).clearActive();
     ref.read(apiClientProvider).clearConfiguration();
-    ref.invalidate(syncProfileProvider);
-    ref.invalidate(activePosSessionProvider);
-    ref.invalidate(posSessionControllerProvider);
-    ref.invalidate(shiftControllerProvider);
-    ref.invalidate(catalogReadinessProvider);
+    PosRuntimeStateInvalidator.invalidateSetupRuntime(
+      ref,
+      posSessionControllerProvider: posSessionControllerProvider,
+      shiftControllerProvider: shiftControllerProvider,
+      includeSyncProfile: true,
+    );
     state = AsyncData(
       SetupState(language: state.valueOrNull?.language ?? 'en'),
     );
@@ -278,6 +304,3 @@ final setupProvider = AsyncNotifierProvider<SetupNotifier, SetupState>(
   SetupNotifier.new,
 );
 
-final isSetupCompleteProvider = Provider<bool>((ref) {
-  return ref.watch(setupProvider).valueOrNull?.isSetupComplete ?? false;
-});

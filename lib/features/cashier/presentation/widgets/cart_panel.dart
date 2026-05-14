@@ -682,13 +682,42 @@ class _CartAmountRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isDiscount) {
-      return KeyValueRow.discount(
+      return KeyValueRow(
         label: label,
-        value: PosFormatters.amount(value),
+        valueColor: AppColors.success,
+        value: '-${PosFormatters.amount(value)}',
+        valueWidget: Text.rich(
+          TextSpan(
+            children: [
+              const TextSpan(text: '-'),
+              PosFormatters.amountRich(
+                value,
+                amountStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.success,
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
-    return KeyValueRow(label: label, value: PosFormatters.amount(value));
+    return KeyValueRow(
+      label: label,
+      value: PosFormatters.amount(value),
+      valueWidget: Text.rich(
+        PosFormatters.amountRich(
+          value,
+          amountStyle: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -739,6 +768,22 @@ class _PayButton extends StatelessWidget {
           label: quote == null
               ? l10n.pay
               : l10n.payAmount(PosFormatters.amount(quote.grandTotal)),
+          labelWidget: quote == null
+              ? null
+              : Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(text: '${l10n.pay} '),
+                      PosFormatters.amountRich(
+                        quote.grandTotal,
+                        amountStyle: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
         ),
       ),
     );

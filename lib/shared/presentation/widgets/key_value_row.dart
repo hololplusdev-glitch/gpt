@@ -19,6 +19,7 @@ import 'package:holol_POS/core/design_system/spacing.dart';
 class KeyValueRow extends StatelessWidget {
   final String label;
   final String value;
+  final Widget? valueWidget;
 
   /// Whether this row is emphasized (grand total, header amount).
   final bool strong;
@@ -36,6 +37,7 @@ class KeyValueRow extends StatelessWidget {
     super.key,
     required this.label,
     required this.value,
+    this.valueWidget,
     this.strong = false,
     this.valueColor,
     this.labelColor,
@@ -47,11 +49,13 @@ class KeyValueRow extends StatelessWidget {
     Key? key,
     required String label,
     required String value,
+    Widget? valueWidget,
   }) {
     return KeyValueRow(
       key: key,
       label: label,
       value: '-$value',
+      valueWidget: valueWidget,
       valueColor: AppColors.success,
     );
   }
@@ -78,7 +82,7 @@ class KeyValueRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(child: Text(label, style: labelStyle)),
-          Text(value, style: valueStyle),
+          valueWidget ?? Text(value, style: valueStyle),
         ],
       ),
     );

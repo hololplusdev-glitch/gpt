@@ -1,11 +1,18 @@
 // core/persistence/database.dart
 // WHY: Central Drift database declaration.
-// Uses DB filename pos_data_v4.sqlite. No old pos_data.sqlite data preserved.
-// No migration from old schema. PRAGMA foreign_keys = ON.
+// Production storage policy:
+// - Uses a stable DB filename: pos_data.sqlite
+// - Windows stores DB under C:\ProgramData\HololPlusPOS\data
+// - Android/iOS/macOS/Linux use application support directory
+// - PRAGMA foreign_keys = ON
+
+import 'dart:io';
 
 import 'package:drift/drift.dart';
-import 'package:drift_flutter/drift_flutter.dart';
+import 'package:drift/native.dart';
 import 'package:holol_POS/core/persistence/tables/all_tables.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 part 'database.g.dart';
 
@@ -20,6 +27,7 @@ part 'database.g.dart';
     ActivePosSessions,
     TerminalLocalSettings,
     InvoiceSequences,
+
     // -- Master Data --
     PosUsers,
     PosUserMachineAccess,
@@ -31,10 +39,13 @@ part 'database.g.dart';
     ItemPrices,
     ItemGroups,
     Customers,
+
     // -- Payment Methods --
     PaymentMethods,
+
     // -- Shifts --
     Shifts,
+
     // -- Sales --
     Sales,
     SaleLines,
@@ -42,19 +53,22 @@ part 'database.g.dart';
     SaleTaxSummary,
     InvoiceDocuments,
     HeldOrders,
+
     // -- Download Sync --
-    MasterSyncState,
     ScopedSyncState,
     MasterSyncRuns,
     MasterSyncTypeRuns,
     MasterSyncPageRuns,
+
     // -- Upload Sync / Outbox --
     OutboxEvents,
     SyncAttempts,
     ServerMappings,
+
     // -- Devices --
     PaymentDeviceProfiles,
     PrinterProfiles,
+
     // -- Audit & Print --
     AuditLog,
     PrintJobs,
@@ -70,21 +84,96 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (Migrator m) async {
-      await m.createAll();
-    },
-    onUpgrade: (Migrator m, int from, int to) async {
-      // Development-only schema cleanup. This project currently does not ship
-      // production migrations; existing dev DBs should be recreated.
-      // Keep this empty to avoid carrying removed columns forward.
-    },
-    beforeOpen: (details) async {
-      await customStatement('PRAGMA foreign_keys = ON');
-    },
-  );
+        onCreate: (Migrator m) async {
+          await m.createAll();
+        },
+        onUpgrade: (Migrator m, int from, int to) async {
+          // TODO: Add production migrations before shipping.
+          // Do not delete or recreate the database in production.
+        },
+        beforeOpen: (details) async {
+          await customStatement('PRAGMA foreign_keys = ON');
+
+          // Good defaults for local POS durability/performance.
+          await customStatement('PRAGMA journal_mode = WAL');
+          await customStatement('PRAGMA synchronous = NORMAL');
+          await customStatement('PRAGMA busy_timeout = 5000');
+        },
+      );
 
   static QueryExecutor _openConnection() {
-    // WHY: New filename ensures a clean DB after schema cleanup.
-    return driftDatabase(name: 'pos_data_v4');
+    return LazyDatabase(() async {
+      final dbFile = await _resolveDatabaseFile();
+      await dbFile.parent.create(recursive: true);
+
+      return NativeDatabase.createInBackground(dbFile);
+    });
+  }
+
+  static Future<File> _resolveDatabaseFile() async {
+    const dbFileName = 'pos_data.sqlite';
+
+    final dataDirectory = await _resolveDataDirectory();
+
+    return File(p.join(dataDirectory.path, dbFileName));
+  }
+
+  static Future<Directory> _resolveDataDirectory() async {
+    if (Platform.isWindows) {
+      return _windowsDataDirectory();
+    }
+
+    if (Platform.isLinux) {
+      return _linuxDataDirectory();
+    }
+
+    // Android / iOS / macOS:
+    // Uses application support directory, not temporary/cache.
+    final supportDirectory = await getApplicationSupportDirectory();
+
+    return Directory(
+      p.join(
+        supportDirectory.path,
+        'data',
+      ),
+    );
+  }
+
+  static Future<Directory> _windowsDataDirectory() async {
+    final programData = Platform.environment['PROGRAMDATA'];
+
+    if (programData != null && programData.trim().isNotEmpty) {
+      return Directory(
+        p.join(
+          programData,
+          'HololPlusPOS',
+          'data',
+        ),
+      );
+    }
+
+    // Fallback if PROGRAMDATA is unavailable.
+    final supportDirectory = await getApplicationSupportDirectory();
+
+    return Directory(
+      p.join(
+        supportDirectory.path,
+        'data',
+      ),
+    );
+  }
+
+  static Future<Directory> _linuxDataDirectory() async {
+    // Safer default for normal desktop apps without root/service install.
+    // If you package POS as a Linux service, move this to:
+    // /var/lib/hololplus-pos/data
+    final supportDirectory = await getApplicationSupportDirectory();
+
+    return Directory(
+      p.join(
+        supportDirectory.path,
+        'data',
+      ),
+    );
   }
 }

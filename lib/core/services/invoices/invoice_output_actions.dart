@@ -109,14 +109,14 @@ class InvoiceOutputActions {
     return _processJobs(jobs.map((job) => job.id.value).toList());
   }
 
-  /// Saves the unified thermal receipt PDF.
+  /// Saves the unified receipt as a PDF file.
   ///
-  /// The saved file uses the same thermal-roll receipt design used for preview
-  /// and printing. No secondary invoice layout is allowed.
+  /// The PDF is only a save/share container. The receipt visual itself is still
+  /// produced by ReceiptRasterRenderer. No secondary invoice layout is allowed.
   Future<File> savePdf(String saleId, {int paperWidthMm = 80}) async {
     final document = await getOrCreateOriginal(saleId);
 
-    final pdfBytes = await _pdfWriter.renderThermalRoll(
+    final pdfBytes = await _pdfWriter.renderSharePdf(
       document,
       paperWidthMm: paperWidthMm,
     );

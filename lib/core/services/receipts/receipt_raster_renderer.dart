@@ -1,8 +1,11 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:qr_flutter/qr_flutter.dart';
+
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 import 'package:holol_POS/core/services/invoices/receipt_template_labels.dart';
 import 'package:holol_POS/core/services/receipts/receipt_render_profile.dart';
@@ -24,23 +27,39 @@ class ReceiptRasterImage {
 }
 
 /// Single visual source of truth for POS receipts.
-///
-/// This renderer owns the receipt visual contract only.
-/// It does not save files, does not talk to printers, and does not decide output format.
 class ReceiptRasterRenderer {
-  final ReceiptTemplateLabels labels;
+  static const String _defaultSideLogoAsset =
+      'assets/images/receipt_powered_by.png';
 
-  const ReceiptRasterRenderer({this.labels = const ReceiptTemplateLabels.ar()});
+  final ReceiptTemplateLabels labels;
+  final String sideLogoAsset;
+  final String sideBrandName;
+  final String sideBrandPhone;
+  final String sideBrandWebsite;
+
+  const ReceiptRasterRenderer({
+    this.labels = const ReceiptTemplateLabels.ar(),
+    this.sideLogoAsset = _defaultSideLogoAsset,
+    this.sideBrandName = 'نظام hololErp المحاسبي السحابي',
+    this.sideBrandPhone = '966565561972',
+    this.sideBrandWebsite = 'hololerp.com',
+  });
 
   Future<ReceiptRasterImage> renderImage(
     InvoiceDocument document, {
     required int paperWidthMm,
   }) async {
     final profile = ReceiptRenderProfile.thermal(paperWidthMm: paperWidthMm);
+    final sideLogo = await _loadImageAsset(sideLogoAsset);
+
     final painter = _ReceiptPainter(
       document: document,
       labels: labels,
       profile: profile,
+      sideLogo: sideLogo,
+      sideBrandName: sideBrandName,
+      sideBrandPhone: sideBrandPhone,
+      sideBrandWebsite: sideBrandWebsite,
     );
 
     final heightPx = painter.measureHeightPx();
@@ -92,6 +111,17 @@ class ReceiptRasterRenderer {
     return _encodeRasterBands(image);
   }
 
+  static Future<ui.Image?> _loadImageAsset(String assetPath) async {
+    try {
+      final data = await rootBundle.load(assetPath);
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final frame = await codec.getNextFrame();
+      return frame.image;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Uint8List _copyBytes(ByteData data) {
     return Uint8List.fromList(
       data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
@@ -101,6 +131,7 @@ class ReceiptRasterRenderer {
   List<int> _encodeRasterBands(ReceiptRasterImage image) {
     final widthBytes = (image.widthPx + 7) ~/ 8;
     final output = <int>[];
+
     final profile = ReceiptRenderProfile.thermal(
       paperWidthMm: image.paperWidthMm,
     );
@@ -151,22 +182,36 @@ class _ReceiptPainter {
   final InvoiceDocument document;
   final ReceiptTemplateLabels labels;
   final ReceiptRenderProfile profile;
+  final ui.Image? sideLogo;
+  final String sideBrandName;
+  final String sideBrandPhone;
+  final String sideBrandWebsite;
+
   final _ReceiptText text = const _ReceiptText();
 
   _ReceiptPainter({
     required this.document,
     required this.labels,
     required this.profile,
+    required this.sideLogo,
+    required this.sideBrandName,
+    required this.sideBrandPhone,
+    required this.sideBrandWebsite,
   });
 
+  double get _sideRailWidth => profile.paperWidthMm <= 58 ? 18 : 24;
+
   double get width => profile.widthPx.toDouble();
-  double get contentLeft => profile.margin;
-  double get contentWidth => width - (profile.margin * 2);
-  double get contentRight => contentLeft + contentWidth;
+
+  double get contentLeft => profile.margin + _sideRailWidth;
+
+  double get contentRight => width - profile.margin;
+
+  double get contentWidth => contentRight - contentLeft;
 
   int measureHeightPx() {
     final measured = _layout(null) + profile.margin;
-    return measured.ceil().clamp(640, 30000).toInt();
+    return measured.ceil().clamp(560, 30000).toInt();
   }
 
   void paint(Canvas canvas) {
@@ -174,54 +219,36 @@ class _ReceiptPainter {
   }
 
   double _layout(Canvas? canvas) {
-    var y = profile.margin;
+    final startY = profile.margin;
+    var y = startY;
 
     y = _storeHeader(canvas, y);
-    y = _divider(canvas, y + profile.gap, heavy: true);
-    y = _receiptTitle(canvas, y + profile.gap);
-    y = _meta(canvas, y + profile.gap);
-    y = _customer(canvas, y + profile.gap);
-    y = _items(canvas, y + profile.gap);
-    y = _totals(canvas, y + profile.gap);
-    y = _taxSummary(canvas, y + profile.gap);
-    y = _payments(canvas, y + profile.gap);
-    y = _qr(canvas, y + profile.gap);
-    y = _footer(canvas, y + profile.gap);
+    y = _receiptTitle(canvas, y + 5);
+    y = _meta(canvas, y + 5);
+    y = _customer(canvas, y + 4);
+    y = _items(canvas, y + 6);
+    y = _totals(canvas, y + 6);
+    y = _taxSummary(canvas, y + 4);
+    y = _payments(canvas, y + 6);
+    y = _qr(canvas, y + 7);
+    y = _footer(canvas, y + 5);
+
+    if (canvas != null) {
+      _sideBrand(canvas, startY, y);
+    }
 
     return y;
   }
 
   double _storeHeader(Canvas? canvas, double y) {
-    y = _centerText(
-      canvas,
-      y,
-      document.seller.name,
-      size: profile.titleFont,
-      bold: true,
-      maxLines: 3,
-    );
-
-    if (_visible(document.branch.name) &&
-        document.branch.name.trim() != document.seller.name.trim()) {
-      y = _centerText(
-        canvas,
-        y + 2,
-        document.branch.name,
-        size: profile.font,
+    final lines = <_HeaderLine>[
+      _HeaderLine(
+        document.seller.name,
+        size: profile.titleFont,
         bold: true,
         maxLines: 2,
-      );
-    }
-
-    if (_visible(document.seller.phone)) {
-      y = _centerText(
-        canvas,
-        y + 2,
-        document.seller.phone!,
-        size: profile.smallFont,
-        dir: TextDirection.ltr,
-      );
-    }
+      ),
+    ];
 
     final address = _firstVisible([
       document.branch.address,
@@ -230,12 +257,20 @@ class _ReceiptPainter {
     ]);
 
     if (_visible(address)) {
-      y = _centerText(
-        canvas,
-        y + 2,
-        address!,
-        size: profile.smallFont,
-        maxLines: 3,
+      lines.add(
+        _HeaderLine(
+        ': $address', size: profile.smallFont, maxLines: 2),
+                  //_HeaderLine('العنوان: $address', size: profile.smallFont, maxLines: 2),
+      );
+    }
+
+    if (_visible(document.seller.phone)) {
+      lines.add(
+        _HeaderLine(
+          'الهاتف: ${document.seller.phone}',
+          size: profile.smallFont,
+          maxLines: 1,
+        ),
       );
     }
 
@@ -245,13 +280,13 @@ class _ReceiptPainter {
     ]);
 
     if (_visible(taxNo)) {
-      y = _centerText(
-        canvas,
-        y + 4,
-        '${labels.taxNumber}: $taxNo',
-        size: profile.smallFont,
-        bold: true,
-        maxLines: 2,
+      lines.add(
+        _HeaderLine(
+          '${labels.taxNumber}: $taxNo',
+          size: profile.smallFont,
+          bold: true,
+          maxLines: 1,
+        ),
       );
     }
 
@@ -261,16 +296,76 @@ class _ReceiptPainter {
     ]);
 
     if (_visible(cr)) {
-      y = _centerText(
-        canvas,
-        y + 2,
-        'السجل التجاري: $cr',
-        size: profile.smallFont,
-        maxLines: 2,
+      lines.add(
+        _HeaderLine('السجل التجاري: $cr', size: profile.smallFont, maxLines: 1),
       );
     }
 
-    return y;
+    return _headerCard(canvas, y, lines);
+  }
+
+  double _headerCard(Canvas? canvas, double y, List<_HeaderLine> lines) {
+    const horizontalPadding = 7.0;
+    const verticalPadding = 6.0;
+    const lineGap = 1.0;
+
+    var contentH = 0.0;
+
+    for (final line in lines) {
+      contentH += text.measure(
+        line.value,
+        width: contentWidth - (horizontalPadding * 2),
+        size: line.size,
+        bold: line.bold,
+        align: TextAlign.center,
+        dir: line.dir,
+        maxLines: line.maxLines,
+      );
+      contentH += lineGap;
+    }
+
+    if (contentH > 0) contentH -= lineGap;
+
+    final boxH = contentH + (verticalPadding * 2);
+    final rect = Rect.fromLTWH(contentLeft, y, contentWidth, boxH);
+
+    if (canvas != null) {
+      _roundBox(canvas, rect, radius: 8, strokeWidth: 0.85);
+
+      var lineY = y + verticalPadding;
+
+      for (final line in lines) {
+        final lineH = text.measure(
+          line.value,
+          width: contentWidth - (horizontalPadding * 2),
+          size: line.size,
+          bold: line.bold,
+          align: TextAlign.center,
+          dir: line.dir,
+          maxLines: line.maxLines,
+        );
+
+        text.draw(
+          canvas,
+          line.value,
+          Rect.fromLTWH(
+            contentLeft + horizontalPadding,
+            lineY,
+            contentWidth - (horizontalPadding * 2),
+            lineH,
+          ),
+          size: line.size,
+          bold: line.bold,
+          align: TextAlign.center,
+          dir: line.dir,
+          maxLines: line.maxLines,
+        );
+
+        lineY += lineH + lineGap;
+      }
+    }
+
+    return y + boxH;
   }
 
   double _receiptTitle(Canvas? canvas, double y) {
@@ -281,26 +376,27 @@ class _ReceiptPainter {
     final h =
         text.measure(
           title,
-          width: contentWidth - 16,
+          width: contentWidth - 14,
           size: profile.font,
           bold: true,
           align: TextAlign.center,
-          maxLines: 3,
+          maxLines: 2,
         ) +
-        16;
+        10;
 
     final rect = Rect.fromLTWH(contentLeft, y, contentWidth, h);
 
     if (canvas != null) {
-      _roundBox(canvas, rect);
+      _roundBox(canvas, rect, radius: 7, strokeWidth: 1.0);
+
       text.draw(
         canvas,
         title,
-        rect.deflate(8),
+        rect.deflate(6),
         size: profile.font,
         bold: true,
         align: TextAlign.center,
-        maxLines: 3,
+        maxLines: 2,
       );
     }
 
@@ -308,7 +404,7 @@ class _ReceiptPainter {
   }
 
   double _meta(Canvas? canvas, double y) {
-    final rows = <_KeyValue>[
+    return _keyValueTable(canvas, y, [
       _KeyValue('رقم الفاتورة', document.localInvoiceNo, TextDirection.ltr),
       _KeyValue(
         labels.date,
@@ -321,9 +417,7 @@ class _ReceiptPainter {
         document.terminal.terminalId,
         TextDirection.ltr,
       ),
-    ];
-
-    return _keyValueSection(canvas, y, rows);
+    ], compact: true);
   }
 
   double _customer(Canvas? canvas, double y) {
@@ -345,251 +439,536 @@ class _ReceiptPainter {
       );
     }
 
-    if (rows.isEmpty) return y - profile.gap;
+    if (rows.isEmpty) return y - 4;
 
-    return _keyValueSection(canvas, y, rows);
+    return _keyValueTable(canvas, y, rows, compact: true);
   }
 
   double _items(Canvas? canvas, double y) {
-    y = _sectionTitle(canvas, y, 'الأصناف');
+    final columns = _itemColumns();
 
-    for (final line in document.lines) {
-      final itemNameHeight = text.measure(
-        line.itemName,
-        width: contentWidth,
-        size: profile.font,
-        bold: true,
-        maxLines: null,
-      );
+    final rows = <_TableRow>[
+      _TableRow.header([
+        'الصنف',
+        'الوحدة',
+        'السعر',
+        'كمية',
+        'خصم',
+        'ضريبة',
+        'الإجمالي',
+      ]),
+      ...document.lines.map((line) {
+        return _TableRow.body([
+          line.itemName.trim(),
+          _visible(line.unitName) ? line.unitName!.trim() : '-',
+          text.amount(line.display.unitPrice),
+          line.display.quantity,
+          line.discountAmount > 0
+              ? text.amount(line.display.discountAmount)
+              : '0',
+          line.taxAmount > 0 ? text.amount(line.display.taxAmount) : '0',
+          text.money(line.display.lineTotal),
+        ]);
+      }),
+    ];
 
-      final itemMetaLines = <String>[];
+    return _gridTable(
+      canvas,
+      y,
+      columns: columns,
+      rows: rows,
+      fontSize: profile.paperWidthMm <= 58 ? 7.8 : 10.0,
+      headerFontSize: profile.paperWidthMm <= 58 ? 7.3 : 9.4,
+      padY: profile.paperWidthMm <= 58 ? 2.0 : 2.8,
+      radius: 6,
+    );
+  }
 
-      if (_visible(line.unitName)) {
-        itemMetaLines.add(line.unitName!);
-      }
+  List<_TableColumn> _itemColumns() {
+    final ratios = profile.paperWidthMm <= 58
+        ? <double>[0.27, 0.10, 0.12, 0.08, 0.10, 0.11, 0.22]
+        : <double>[0.30, 0.10, 0.12, 0.08, 0.10, 0.11, 0.19];
 
-      if (_visible(line.barcode)) {
-        itemMetaLines.add(line.barcode!);
-      }
-
-      final metaText = itemMetaLines.join(' • ');
-      final hasMeta = metaText.isNotEmpty;
-
-      final metaHeight = hasMeta
-          ? text.measure(
-              metaText,
-              width: contentWidth,
-              size: profile.smallFont,
-              maxLines: null,
-            )
-          : 0.0;
-
-      final line2H = text.measure(
-        '${line.display.quantity} × ${line.display.unitPrice}',
-        width: contentWidth * 0.56,
-        size: profile.font,
-        bold: true,
+    return [
+      _TableColumn(
+        ratio: ratios[0],
+        align: TextAlign.right,
+        dir: TextDirection.rtl,
+        maxLines: 2,
+      ),
+      _TableColumn(
+        ratio: ratios[1],
+        align: TextAlign.center,
+        dir: TextDirection.rtl,
+      ),
+      _TableColumn(
+        ratio: ratios[2],
+        align: TextAlign.center,
         dir: TextDirection.ltr,
-      );
-
-      final detailParts = <String>[];
-
-      if (line.discountAmount > 0) {
-        detailParts.add('${labels.discount}: ${line.display.discountAmount}');
-      }
-
-      if (line.taxAmount > 0) {
-        detailParts.add('${labels.tax}: ${line.display.taxAmount}');
-      }
-
-      final details = detailParts.join('  |  ');
-
-      final detailsHeight = details.isEmpty
-          ? 0.0
-          : text.measure(
-              details,
-              width: contentWidth,
-              size: profile.smallFont,
-              maxLines: null,
-            );
-
-      final blockHeight =
-          itemNameHeight +
-          (hasMeta ? metaHeight + 2 : 0) +
-          line2H +
-          (details.isEmpty ? 0 : detailsHeight + 2) +
-          14;
-
-      if (canvas != null) {
-        final top = y;
-
-        text.draw(
-          canvas,
-          line.itemName,
-          Rect.fromLTWH(contentLeft, y, contentWidth, itemNameHeight),
-          size: profile.font,
-          bold: true,
-          align: TextAlign.right,
-          maxLines: null,
-        );
-
-        y += itemNameHeight;
-
-        if (hasMeta) {
-          text.draw(
-            canvas,
-            metaText,
-            Rect.fromLTWH(contentLeft, y + 2, contentWidth, metaHeight),
-            size: profile.smallFont,
-            align: TextAlign.right,
-            maxLines: null,
-          );
-
-          y += metaHeight + 2;
-        }
-
-        final rowH = line2H + 4;
-        final rightW = contentWidth * 0.56;
-        final leftW = contentWidth - rightW;
-
-        text.draw(
-          canvas,
-          '${line.display.quantity} × ${line.display.unitPrice}',
-          Rect.fromLTWH(contentRight - rightW, y + 2, rightW, rowH),
-          size: profile.font,
-          bold: true,
-          align: TextAlign.right,
-          dir: TextDirection.ltr,
-        );
-
-        text.draw(
-          canvas,
-          line.display.lineTotal,
-          Rect.fromLTWH(contentLeft, y + 2, leftW, rowH),
-          size: profile.font,
-          bold: true,
-          align: TextAlign.left,
-          dir: TextDirection.ltr,
-        );
-
-        y += rowH;
-
-        if (details.isNotEmpty) {
-          text.draw(
-            canvas,
-            details,
-            Rect.fromLTWH(contentLeft, y + 2, contentWidth, detailsHeight),
-            size: profile.smallFont,
-            align: TextAlign.right,
-            maxLines: null,
-          );
-
-          y += detailsHeight + 2;
-        }
-
-        _dashLine(canvas, y + 6);
-        y = top + blockHeight;
-      } else {
-        y += blockHeight;
-      }
-    }
-
-    return y;
+      ),
+      _TableColumn(
+        ratio: ratios[3],
+        align: TextAlign.center,
+        dir: TextDirection.ltr,
+      ),
+      _TableColumn(
+        ratio: ratios[4],
+        align: TextAlign.center,
+        dir: TextDirection.ltr,
+      ),
+      _TableColumn(
+        ratio: ratios[5],
+        align: TextAlign.center,
+        dir: TextDirection.ltr,
+      ),
+      _TableColumn(
+        ratio: ratios[6],
+        align: TextAlign.center,
+        dir: TextDirection.ltr,
+        bold: true,
+      ),
+    ];
   }
 
   double _totals(Canvas? canvas, double y) {
     final t = document.totals;
 
-    final rows = <_KeyValue>[
-      _KeyValue(labels.subtotal, t.displaySubtotal, TextDirection.ltr),
-      if (t.discountTotal > 0)
-        _KeyValue(labels.discount, t.displayDiscountTotal, TextDirection.ltr),
-      _KeyValue(labels.tax, t.displayTaxTotal, TextDirection.ltr),
-      _KeyValue(labels.total, t.displayNetTotal, TextDirection.ltr, bold: true),
-      _KeyValue('المدفوع', t.displayPaidTotal, TextDirection.ltr),
-      if (t.remainingTotal > 0)
-        _KeyValue(
-          'المتبقي',
-          t.displayRemainingTotal,
-          TextDirection.ltr,
-          bold: true,
-        ),
+    return _keyValueTable(canvas, y, [
+      _KeyValue(
+        'الإجمالي شامل الضريبة',
+        text.money(t.displayNetTotal),
+        TextDirection.ltr,
+      ),
+      _KeyValue(
+        'مجموع الخصومات',
+        text.money(t.displayDiscountTotal),
+        TextDirection.ltr,
+      ),
+      _KeyValue(
+        'المجموع قبل الضريبة',
+        text.money(t.displaySubtotal),
+        TextDirection.ltr,
+      ),
+      _KeyValue(
+        'مجموع ضريبة القيمة المضافة',
+        text.money(t.displayTaxTotal),
+        TextDirection.ltr,
+      ),
+      _KeyValue(
+        'الإجمالي',
+        text.money(t.displayNetTotal),
+        TextDirection.ltr,
+        bold: true,
+      ),
+      _KeyValue(
+        'المبلغ المدفوع',
+        text.money(t.displayPaidTotal),
+        TextDirection.ltr,
+      ),
+      _KeyValue(
+        'المبلغ المتبقي',
+        text.money(t.displayRemainingTotal),
+        TextDirection.ltr,
+        bold: t.remainingTotal > 0,
+      ),
       if (t.changeAmount > 0)
         _KeyValue(
           labels.change,
-          t.displayChangeAmount,
+          text.money(t.displayChangeAmount),
           TextDirection.ltr,
           bold: true,
         ),
-    ];
-
-    return _keyValueSection(canvas, y, rows);
+    ]);
   }
 
   double _taxSummary(Canvas? canvas, double y) {
-    if (document.taxSummary.length <= 1) return y - profile.gap;
+    if (document.taxSummary.length <= 1) return y - 4;
 
-    y = _sectionTitle(canvas, y, 'ملخص الضريبة');
-
-    for (final tax in document.taxSummary) {
-      final label = '${labels.tax} ${tax.displayRate}';
-      final value = '${tax.displayTaxableAmount} / ${tax.displayTaxAmount}';
-
-      y = _keyValueRow(canvas, y, _KeyValue(label, value, TextDirection.ltr));
-    }
-
-    return y;
+    return _keyValueTable(
+      canvas,
+      y,
+      document.taxSummary.map((tax) {
+        return _KeyValue(
+          '${labels.tax} ${tax.displayRate}',
+          '${text.money(tax.displayTaxableAmount)} / ${text.money(tax.displayTaxAmount)}',
+          TextDirection.ltr,
+        );
+      }).toList(),
+    );
   }
 
   double _payments(Canvas? canvas, double y) {
-    if (document.payments.isEmpty) return y - profile.gap;
+    final hasPayments = document.payments.isNotEmpty;
+    final hasRemaining = document.totals.remainingTotal > 0;
 
-    y = _sectionTitle(canvas, y, 'طرق الدفع');
+    if (!hasPayments && !hasRemaining) return y - 6;
 
-    for (final payment in document.payments) {
-      y = _keyValueRow(
-        canvas,
-        y,
+    final rows = <_KeyValue>[];
+
+    if (!hasPayments && hasRemaining) {
+      rows.add(
+        const _KeyValue('طريقة الدفع', 'آجل', TextDirection.rtl, bold: true),
+      );
+      rows.add(
         _KeyValue(
-          payment.displayMethod,
-          payment.displayAmount,
+          'المبلغ المتبقي',
+          text.money(document.totals.displayRemainingTotal),
           TextDirection.ltr,
+          bold: true,
         ),
       );
-
-      if (_visible(payment.referenceNo)) {
-        y = _keyValueRow(
-          canvas,
-          y,
-          _KeyValue(labels.reference, payment.referenceNo!, TextDirection.ltr),
-          compact: true,
+    } else {
+      for (final payment in document.payments) {
+        rows.add(
+          _KeyValue(
+            'طريقة الدفع',
+            _paymentMethodLabel(payment),
+            TextDirection.rtl,
+            bold: true,
+          ),
         );
+
+        rows.add(
+          _KeyValue(
+            'المبلغ',
+            text.money(payment.displayAmount),
+            TextDirection.ltr,
+          ),
+        );
+
+        if (_visible(payment.referenceNo)) {
+          rows.add(
+            _KeyValue(
+              labels.reference,
+              payment.referenceNo!,
+              TextDirection.ltr,
+            ),
+          );
+        }
       }
     }
 
-    return y;
+    return _keyValueTable(canvas, y, rows);
+  }
+
+  double _gridTable(
+    Canvas? canvas,
+    double y, {
+    required List<_TableColumn> columns,
+    required List<_TableRow> rows,
+    required double fontSize,
+    required double headerFontSize,
+    required double padY,
+    required double radius,
+  }) {
+    final widths = columns
+        .map((column) => contentWidth * column.ratio)
+        .toList();
+
+    final heights = rows.map((row) {
+      final size = row.header ? headerFontSize : fontSize;
+      return _tableRowHeight(
+        row,
+        columns: columns,
+        widths: widths,
+        fontSize: size,
+        padY: padY,
+      );
+    }).toList();
+
+    final tableH = heights.fold<double>(0, (sum, h) => sum + h);
+
+    if (canvas != null) {
+      final rect = Rect.fromLTWH(contentLeft, y, contentWidth, tableH);
+      final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
+
+      final gridPaint = Paint()
+        ..color = Colors.black
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.4;
+
+      final outerPaint = Paint()
+        ..color = Colors.black
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.75;
+
+      var rowY = y;
+
+      for (var rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+        final row = rows[rowIndex];
+        final rowH = heights[rowIndex];
+        final size = row.header ? headerFontSize : fontSize;
+
+        _paintTableRow(
+          canvas,
+          rowY,
+          rowH,
+          row,
+          columns: columns,
+          widths: widths,
+          fontSize: size,
+        );
+
+        rowY += rowH;
+
+        if (rowIndex < rows.length - 1) {
+          canvas.drawLine(
+            Offset(contentLeft, rowY),
+            Offset(contentRight, rowY),
+            gridPaint,
+          );
+        }
+      }
+
+      var x = contentRight;
+
+      for (var i = 0; i < widths.length - 1; i++) {
+        x -= widths[i];
+
+        canvas.drawLine(Offset(x, y), Offset(x, y + tableH), gridPaint);
+      }
+
+      canvas.drawRRect(rrect, outerPaint);
+    }
+
+    return y + tableH;
+  }
+
+  double _tableRowHeight(
+    _TableRow row, {
+    required List<_TableColumn> columns,
+    required List<double> widths,
+    required double fontSize,
+    required double padY,
+  }) {
+    var h = 0.0;
+
+    for (var i = 0; i < row.cells.length; i++) {
+      final column = columns[i];
+
+      final cellH = text.measure(
+        row.cells[i],
+        width: widths[i] - 4,
+        size: fontSize,
+        bold: row.header || column.bold,
+        align: column.align,
+        dir: column.dir,
+        maxLines: column.maxLines,
+      );
+
+      if (cellH > h) h = cellH;
+    }
+
+    return h + (padY * 2);
+  }
+
+  void _paintTableRow(
+    Canvas canvas,
+    double y,
+    double h,
+    _TableRow row, {
+    required List<_TableColumn> columns,
+    required List<double> widths,
+    required double fontSize,
+  }) {
+    var right = contentRight;
+
+    for (var i = 0; i < row.cells.length; i++) {
+      final column = columns[i];
+      final w = widths[i];
+      final rect = Rect.fromLTWH(right - w, y, w, h).deflate(2);
+
+      text.draw(
+        canvas,
+        row.cells[i],
+        rect,
+        size: fontSize,
+        bold: row.header || column.bold,
+        align: column.align,
+        dir: column.dir,
+        maxLines: column.maxLines,
+      );
+
+      right -= w;
+    }
+  }
+
+  double _keyValueTable(
+    Canvas? canvas,
+    double y,
+    List<_KeyValue> rows, {
+    bool compact = false,
+  }) {
+    if (rows.isEmpty) return y;
+
+    final valueW = contentWidth * 0.34;
+    final labelW = contentWidth - valueW;
+    final pad = compact ? 2.5 : 3.4;
+
+    final heights = rows.map((row) {
+      final size = row.bold ? profile.font : profile.smallFont;
+
+      final labelH = text.measure(
+        row.label,
+        width: labelW - 8,
+        size: size,
+        bold: row.bold,
+        align: TextAlign.right,
+        dir: TextDirection.rtl,
+        maxLines: null,
+      );
+
+      final valueH = text.measure(
+        row.value,
+        width: valueW - 8,
+        size: size,
+        bold: row.bold,
+        align: TextAlign.right,
+        dir: row.valueDirection,
+        maxLines: null,
+      );
+
+      return _max(labelH, valueH) + (pad * 2);
+    }).toList();
+
+    final tableH = heights.fold<double>(0, (sum, h) => sum + h);
+
+    if (canvas != null) {
+      final rect = Rect.fromLTWH(contentLeft, y, contentWidth, tableH);
+      final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(6));
+
+      final gridPaint = Paint()
+        ..color = Colors.black
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.4;
+
+      final outerPaint = Paint()
+        ..color = Colors.black
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.75;
+
+      final dividerX = contentLeft + valueW;
+
+      canvas.drawLine(
+        Offset(dividerX, y),
+        Offset(dividerX, y + tableH),
+        gridPaint,
+      );
+
+      var rowY = y;
+
+      for (var i = 0; i < rows.length; i++) {
+        final row = rows[i];
+        final h = heights[i];
+        final size = row.bold ? profile.font : profile.smallFont;
+
+        final valueRect = Rect.fromLTWH(
+          contentLeft,
+          rowY,
+          valueW,
+          h,
+        ).deflate(4);
+        final labelRect = Rect.fromLTWH(dividerX, rowY, labelW, h).deflate(4);
+
+        text.draw(
+          canvas,
+          row.label,
+          labelRect,
+          size: size,
+          bold: row.bold,
+          align: TextAlign.right,
+          dir: TextDirection.rtl,
+          maxLines: null,
+        );
+
+        text.draw(
+          canvas,
+          row.value,
+          valueRect,
+          size: size,
+          bold: row.bold,
+          align: TextAlign.right,
+          dir: row.valueDirection,
+          maxLines: null,
+        );
+
+        rowY += h;
+
+        if (i < rows.length - 1) {
+          canvas.drawLine(
+            Offset(contentLeft, rowY),
+            Offset(contentRight, rowY),
+            gridPaint,
+          );
+        }
+      }
+
+      canvas.drawRRect(rrect, outerPaint);
+    }
+
+    return y + tableH;
+  }
+
+  String _paymentMethodLabel(InvoicePaymentDocument payment) {
+    final raw = [
+      payment.paymentMethodCode,
+      payment.methodName,
+      payment.displayMethod,
+    ].where((value) => value.trim().isNotEmpty).join(' ').toLowerCase();
+
+    if (raw.contains('cash') || raw.contains('نقد') || raw.contains('صندوق')) {
+      return 'كاش';
+    }
+
+    if (raw.contains('mada') ||
+        raw.contains('مدى') ||
+        raw.contains('card') ||
+        raw.contains('visa') ||
+        raw.contains('master') ||
+        raw.contains('network') ||
+        raw.contains('شبكة') ||
+        raw.contains('بطاقة')) {
+      return 'شبكة';
+    }
+
+    if (raw.contains('credit') ||
+        raw.contains('deferred') ||
+        raw.contains('postpaid') ||
+        raw.contains('آجل') ||
+        raw.contains('اجل')) {
+      return 'آجل';
+    }
+
+    if (payment.displayMethod.trim().isNotEmpty) {
+      return payment.displayMethod.trim();
+    }
+
+    if (payment.methodName.trim().isNotEmpty) {
+      return payment.methodName.trim();
+    }
+
+    return 'كاش';
   }
 
   double _qr(Canvas? canvas, double y) {
     final payload = document.qrPayload?.trim();
 
-    if (payload == null || payload.isEmpty) return y - profile.gap;
+    if (payload == null || payload.isEmpty) return y - 7;
 
-    y = _sectionTitle(canvas, y, 'رمز الاستجابة السريعة');
-
-    final qrSize = profile.paperWidthMm <= 58 ? 138.0 : 168.0;
+    final qrSize = profile.paperWidthMm <= 58 ? 126.0 : 152.0;
+    final quietZone = 7.0;
     final left = contentLeft + ((contentWidth - qrSize) / 2);
 
     if (canvas != null) {
-      final quietZone = 10.0;
-      final quietRect = Rect.fromLTWH(
-        left - quietZone,
-        y,
-        qrSize + quietZone * 2,
-        qrSize + quietZone * 2,
+      canvas.drawRect(
+        Rect.fromLTWH(
+          left - quietZone,
+          y,
+          qrSize + quietZone * 2,
+          qrSize + quietZone * 2,
+        ),
+        Paint()..color = Colors.white,
       );
-
-      canvas.drawRect(quietRect, Paint()..color = Colors.white);
 
       final painter = QrPainter(
         data: payload,
@@ -611,7 +990,7 @@ class _ReceiptPainter {
       canvas.restore();
     }
 
-    return y + qrSize + 24;
+    return y + qrSize + (quietZone * 2);
   }
 
   double _footer(Canvas? canvas, double y) {
@@ -624,20 +1003,7 @@ class _ReceiptPainter {
         bold: true,
         maxLines: null,
       );
-
-      y += profile.gap;
-    }
-
-    if (_visible(document.arabicPrintNotice)) {
-      y = _centerText(
-        canvas,
-        y,
-        document.arabicPrintNotice!,
-        size: profile.smallFont,
-        maxLines: null,
-      );
-
-      y += profile.gap;
+      y += 4;
     }
 
     final footer = [
@@ -653,119 +1019,118 @@ class _ReceiptPainter {
         footer,
         size: profile.smallFont,
         bold: true,
-        maxLines: 3,
+        maxLines: 2,
       );
+      y += 2;
     }
 
-    y = _centerText(
+    return _centerText(
       canvas,
-      y + profile.gap,
+      y,
       'شكراً لتعاملكم معنا',
       size: profile.smallFont,
       bold: true,
-      maxLines: 2,
+      maxLines: 1,
     );
-
-    return y;
   }
 
-  double _keyValueSection(Canvas? canvas, double y, List<_KeyValue> rows) {
-    for (final row in rows) {
-      y = _keyValueRow(canvas, y, row);
+  void _sideBrand(Canvas canvas, double top, double bottom) {
+    final railLeft = 2.0;
+    final railWidth = _sideRailWidth - 4;
+    final available = (bottom - top).clamp(120.0, double.infinity);
+    final logoSize = profile.paperWidthMm <= 58 ? 12.0 : 15.0;
+    final maxTextWidth = available - logoSize - 8;
+    const segmentGap = 4.0;
+
+    final segments = <_SideBrandSegment>[
+      const _SideBrandSegment('نظام', TextDirection.rtl, bold: true),
+      const _SideBrandSegment('hololErp', TextDirection.ltr, bold: true),
+      const _SideBrandSegment('المحاسبي السحابي', TextDirection.rtl, bold: true),
+      _SideBrandSegment(sideBrandWebsite, TextDirection.ltr),
+      _SideBrandSegment(sideBrandPhone, TextDirection.ltr),
+    ];
+
+    var fontSize = profile.paperWidthMm <= 58 ? 6.8 : 8.6;
+    const minFontSize = 5.2;
+
+    double totalWidthFor(double size) {
+      var total = 0.0;
+
+      for (var i = 0; i < segments.length; i++) {
+        final painter = _sideTextPainter(segments[i], size: size)..layout();
+        total += painter.width;
+
+        if (i < segments.length - 1) {
+          total += segmentGap;
+        }
+      }
+
+      return total;
     }
 
-    return y;
+    while (fontSize > minFontSize && totalWidthFor(fontSize) > maxTextWidth) {
+      fontSize -= 0.3;
+    }
+
+    final centerY = top + (available / 2);
+
+    canvas.save();
+    canvas.translate(railLeft, centerY + (available / 2));
+    canvas.rotate(-math.pi / 2);
+
+    if (sideLogo != null) {
+      final logoRect = Rect.fromLTWH(0, 1, logoSize, logoSize);
+      _drawImageCover(canvas, sideLogo!, logoRect);
+    }
+
+    var x = logoSize + 4.0;
+
+    for (final segment in segments) {
+      final painter = _sideTextPainter(segment, size: fontSize)..layout();
+      final y = 1 + ((railWidth - painter.height) / 2);
+
+      painter.paint(canvas, Offset(x, y));
+      x += painter.width + segmentGap;
+    }
+
+    canvas.restore();
   }
 
-  double _keyValueRow(
-    Canvas? canvas,
-    double y,
-    _KeyValue row, {
-    bool compact = false,
+  TextPainter _sideTextPainter(
+    _SideBrandSegment segment, {
+    required double size,
   }) {
-    final paddingY = compact ? 3.0 : 5.0;
-    final labelW = contentWidth * 0.44;
-    final valueW = contentWidth - labelW - 8;
-    final size = row.bold ? profile.font : profile.smallFont;
-
-    final labelH = text.measure(
-      row.label,
-      width: labelW,
-      size: size,
-      bold: row.bold,
-      align: TextAlign.right,
-      maxLines: null,
+    return TextPainter(
+      text: TextSpan(
+        text: segment.text,
+        style: TextStyle(
+          color: Colors.black,
+          fontSize: size,
+          fontWeight: segment.bold ? FontWeight.w800 : FontWeight.w600,
+          height: 1.0,
+          fontFamily: _sideHasArabic(segment.text) ? null : 'monospace',
+        ),
+      ),
+      textDirection: segment.direction,
+      textAlign: TextAlign.left,
+      maxLines: 1,
+      textWidthBasis: TextWidthBasis.longestLine,
     );
-
-    final valueH = text.measure(
-      row.value,
-      width: valueW,
-      size: row.bold ? profile.font : profile.smallFont,
-      bold: row.bold,
-      align: TextAlign.left,
-      dir: row.valueDirection,
-      maxLines: null,
-    );
-
-    final h = _max(labelH, valueH) + (paddingY * 2);
-
-    if (canvas != null) {
-      final top = y + paddingY;
-
-      text.draw(
-        canvas,
-        row.label,
-        Rect.fromLTWH(contentRight - labelW, top, labelW, h),
-        size: size,
-        bold: row.bold,
-        align: TextAlign.right,
-        maxLines: null,
-      );
-
-      text.draw(
-        canvas,
-        row.value,
-        Rect.fromLTWH(contentLeft, top, valueW, h),
-        size: row.bold ? profile.font : profile.smallFont,
-        bold: row.bold,
-        align: TextAlign.left,
-        dir: row.valueDirection,
-        maxLines: null,
-      );
-
-      _thinLine(canvas, y + h);
-    }
-
-    return y + h;
   }
 
-  double _sectionTitle(Canvas? canvas, double y, String title) {
-    y = _divider(canvas, y, heavy: true);
+  bool _sideHasArabic(String value) {
+    return RegExp(r'[\u0600-\u06FF]').hasMatch(value);
+  }
 
-    final h =
-        text.measure(
-          title,
-          width: contentWidth,
-          size: profile.smallFont,
-          bold: true,
-          align: TextAlign.center,
-          maxLines: 2,
-        ) +
-        8;
+void _drawImageCover(Canvas canvas, ui.Image image, Rect dst) {
+    final src = Rect.fromLTWH(
+      0,
+      0,
+      image.width.toDouble(),
+      image.height.toDouble(),
+    );
 
-    if (canvas != null) {
-      text.draw(
-        canvas,
-        title,
-        Rect.fromLTWH(contentLeft, y + 4, contentWidth, h),
-        size: profile.smallFont,
-        bold: true,
-        align: TextAlign.center,
-        maxLines: 2,
-      );
-    }
-
-    return y + h;
+    canvas.drawImageRect(image, src, dst, Paint());
   }
 
   double _centerText(
@@ -803,20 +1168,13 @@ class _ReceiptPainter {
     return y + h;
   }
 
-  double _divider(Canvas? canvas, double y, {bool heavy = false}) {
-    if (canvas != null) {
-      final paint = Paint()
-        ..color = Colors.black
-        ..strokeWidth = heavy ? 1.6 : 1.0;
-
-      canvas.drawLine(Offset(contentLeft, y), Offset(contentRight, y), paint);
-    }
-
-    return y + (heavy ? 8 : 6);
-  }
-
-  void _roundBox(Canvas canvas, Rect rect) {
-    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(8));
+  void _roundBox(
+    Canvas canvas,
+    Rect rect, {
+    double radius = 7,
+    double strokeWidth = 1.0,
+  }) {
+    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
 
     canvas.drawRRect(
       rrect,
@@ -830,37 +1188,8 @@ class _ReceiptPainter {
       Paint()
         ..color = Colors.black
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2,
+        ..strokeWidth = strokeWidth,
     );
-  }
-
-  void _thinLine(Canvas canvas, double y) {
-    canvas.drawLine(
-      Offset(contentLeft, y),
-      Offset(contentRight, y),
-      Paint()
-        ..color = Colors.black
-        ..strokeWidth = 0.55,
-    );
-  }
-
-  void _dashLine(Canvas canvas, double y) {
-    const dash = 7.0;
-    const gap = 5.0;
-
-    var x = contentLeft;
-
-    final paint = Paint()
-      ..color = Colors.black
-      ..strokeWidth = 0.8;
-
-    while (x < contentRight) {
-      final x2 = x + dash > contentRight ? contentRight : x + dash;
-
-      canvas.drawLine(Offset(x, y), Offset(x2, y), paint);
-
-      x += dash + gap;
-    }
   }
 
   String _date(DateTime value) {
@@ -868,7 +1197,6 @@ class _ReceiptPainter {
     final year = local.year.toString().padLeft(4, '0');
     final month = local.month.toString().padLeft(2, '0');
     final day = local.day.toString().padLeft(2, '0');
-
     return '$year/$month/$day';
   }
 
@@ -876,7 +1204,6 @@ class _ReceiptPainter {
     final local = value.toLocal();
     final hour = local.hour.toString().padLeft(2, '0');
     final minute = local.minute.toString().padLeft(2, '0');
-
     return '$hour:$minute';
   }
 
@@ -893,6 +1220,66 @@ class _ReceiptPainter {
   double _max(double a, double b) => a > b ? a : b;
 }
 
+
+class _SideBrandSegment {
+  final String text;
+  final TextDirection direction;
+  final bool bold;
+
+  const _SideBrandSegment(
+    this.text,
+    this.direction, {
+    this.bold = false,
+  });
+}
+
+class _HeaderLine {
+  final String value;
+  final double size;
+  final bool bold;
+  final TextDirection dir;
+  final int? maxLines;
+
+  const _HeaderLine(
+    this.value, {
+    required this.size,
+    this.bold = false,
+    this.dir = TextDirection.rtl,
+    this.maxLines = 1,
+  });
+}
+
+class _TableColumn {
+  final double ratio;
+  final TextAlign align;
+  final TextDirection dir;
+  final int? maxLines;
+  final bool bold;
+
+  const _TableColumn({
+    required this.ratio,
+    required this.align,
+    required this.dir,
+    this.maxLines = 1,
+    this.bold = false,
+  });
+}
+
+class _TableRow {
+  final List<String> cells;
+  final bool header;
+
+  const _TableRow._(this.cells, {required this.header});
+
+  factory _TableRow.header(List<String> cells) {
+    return _TableRow._(cells, header: true);
+  }
+
+  factory _TableRow.body(List<String> cells) {
+    return _TableRow._(cells, header: false);
+  }
+}
+
 class _KeyValue {
   final String label;
   final String value;
@@ -907,8 +1294,44 @@ class _KeyValue {
   });
 }
 
+
+
 class _ReceiptText {
+  static const String _riyalSymbol = '\uE900';
+  static const String _riyalFontFamily = 'saudi-riyal';
+
   const _ReceiptText();
+
+  String amount(String value) {
+    var clean = value
+        .replaceAll('\u2066', '')
+        .replaceAll('\u2067', '')
+        .replaceAll('\u2068', '')
+        .replaceAll('\u2069', '')
+        .replaceAll('\u200E', '')
+        .replaceAll('\u200F', '')
+        .replaceAll(_riyalSymbol, '')
+        .replaceAll('ر.س.', '')
+        .replaceAll('ر.س', '')
+        .replaceAll('SAR', '')
+        .replaceAll('sar', '')
+        .replaceAll(',', '')
+        .trim();
+
+    if (clean.isEmpty) return '0';
+
+    final parsed = double.tryParse(clean);
+
+    if (parsed == null) return clean;
+
+    return parsed == parsed.roundToDouble()
+        ? parsed.toInt().toString()
+        : parsed.toStringAsFixed(2);
+  }
+
+  String money(String value) {
+    return '${amount(value)} $_riyalSymbol';
+  }
 
   double measure(
     String value, {
@@ -919,6 +1342,14 @@ class _ReceiptText {
     TextDirection dir = TextDirection.rtl,
     int? maxLines = 2,
   }) {
+    if (_isSingleMoney(value)) {
+      return _measureMoney(
+        value,
+        size: size,
+        bold: bold,
+      );
+    }
+
     final painter = _painter(
       value,
       size: size,
@@ -941,6 +1372,18 @@ class _ReceiptText {
     TextDirection dir = TextDirection.rtl,
     int? maxLines = 2,
   }) {
+    if (_isSingleMoney(value)) {
+      _drawMoney(
+        canvas,
+        value,
+        rect,
+        size: size,
+        bold: bold,
+        align: align,
+      );
+      return;
+    }
+
     final painter = _painter(
       value,
       size: size,
@@ -950,7 +1393,140 @@ class _ReceiptText {
       maxLines: maxLines,
     )..layout(maxWidth: rect.width);
 
-    painter.paint(canvas, Offset(rect.left, rect.top));
+    final dx = _dxFor(rect, painter.width, align);
+    painter.paint(canvas, Offset(dx, rect.top));
+  }
+
+  bool _isSingleMoney(String value) {
+    final normalized = _stripDirectionMarks(value);
+
+    if (!normalized.contains(_riyalSymbol) &&
+        !normalized.contains('ر.س') &&
+        !normalized.toUpperCase().contains('SAR')) {
+      return false;
+    }
+
+    return double.tryParse(amount(normalized)) != null;
+  }
+
+  String _stripDirectionMarks(String value) {
+    return value
+        .replaceAll('\u2066', '')
+        .replaceAll('\u2067', '')
+        .replaceAll('\u2068', '')
+        .replaceAll('\u2069', '')
+        .replaceAll('\u200E', '')
+        .replaceAll('\u200F', '')
+        .trim();
+  }
+
+  double _measureMoney(
+    String value, {
+    required double size,
+    required bool bold,
+  }) {
+    final amountPainter = _plainPainter(
+      amount(value),
+      size: size,
+      bold: bold,
+      fontFamily: 'monospace',
+    )..layout();
+
+    final symbolPainter = _plainPainter(
+      _riyalSymbol,
+      size: size,
+      bold: bold,
+      fontFamily: _riyalFontFamily,
+    )..layout();
+
+    return amountPainter.height > symbolPainter.height
+        ? amountPainter.height
+        : symbolPainter.height;
+  }
+
+  void _drawMoney(
+    Canvas canvas,
+    String value,
+    Rect rect, {
+    required double size,
+    required bool bold,
+    required TextAlign align,
+  }) {
+    final amountText = amount(value);
+    final gap = size * 0.18;
+
+    final amountPainter = _plainPainter(
+      amountText,
+      size: size,
+      bold: bold,
+      fontFamily: 'monospace',
+    )..layout();
+
+    final symbolPainter = _plainPainter(
+      _riyalSymbol,
+      size: size,
+      bold: bold,
+      fontFamily: _riyalFontFamily,
+    )..layout();
+
+    final totalWidth = symbolPainter.width + gap + amountPainter.width;
+    final totalHeight = amountPainter.height > symbolPainter.height
+        ? amountPainter.height
+        : symbolPainter.height;
+
+    final x = _dxFor(rect, totalWidth, align);
+    final y =
+        rect.top + ((rect.height - totalHeight) / 2).clamp(0.0, rect.height);
+
+    // In RTL visual layout:
+    // amount stays on the right, currency symbol stays after it on the left.
+    final symbolX = x;
+    final amountX = x + symbolPainter.width + gap;
+
+    symbolPainter.paint(
+      canvas,
+      Offset(
+        symbolX,
+        y + ((amountPainter.height - symbolPainter.height) / 2),
+      ),
+    );
+
+    amountPainter.paint(canvas, Offset(amountX, y));
+  }
+
+  TextPainter _plainPainter(
+    String value, {
+    required double size,
+    required bool bold,
+    required String fontFamily,
+  }) {
+    return TextPainter(
+      text: TextSpan(
+        text: value,
+        style: TextStyle(
+          color: Colors.black,
+          fontSize: size,
+          fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
+          height: 1.08,
+          fontFamily: fontFamily,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.left,
+      textWidthBasis: TextWidthBasis.longestLine,
+    );
+  }
+
+  double _dxFor(Rect rect, double width, TextAlign align) {
+    if (align == TextAlign.right || align == TextAlign.end) {
+      return rect.right - width;
+    }
+
+    if (align == TextAlign.center || align == TextAlign.justify) {
+      return rect.left + ((rect.width - width) / 2);
+    }
+
+    return rect.left;
   }
 
   TextPainter _painter(
@@ -961,7 +1537,11 @@ class _ReceiptText {
     required TextDirection dir,
     required int? maxLines,
   }) {
-    final normalized = value.replaceAll('\uE900', 'ر.س');
+    final normalized = value
+        .replaceAll('ر.س.', _riyalSymbol)
+        .replaceAll('ر.س', _riyalSymbol)
+        .replaceAll('SAR', _riyalSymbol)
+        .replaceAll('sar', _riyalSymbol);
 
     return TextPainter(
       text: TextSpan(
@@ -970,15 +1550,22 @@ class _ReceiptText {
           color: Colors.black,
           fontSize: size,
           fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
-          height: 1.13,
-          fontFamily: _hasArabic(normalized) ? null : 'monospace',
+          height: 1.08,
+          fontFamily: _plainFontFamily(normalized),
+          fontFamilyFallback: const [_riyalFontFamily],
         ),
       ),
       maxLines: maxLines,
       textAlign: align,
       textDirection: dir,
+      textWidthBasis: TextWidthBasis.longestLine,
       ellipsis: maxLines == null ? null : '…',
     );
+  }
+
+  String? _plainFontFamily(String value) {
+    if (_hasArabic(value)) return null;
+    return 'monospace';
   }
 
   bool _hasArabic(String value) => RegExp(r'[\u0600-\u06FF]').hasMatch(value);

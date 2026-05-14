@@ -1,18 +1,37 @@
 import 'dart:convert';
 
-import 'package:drift/drift.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:uuid/uuid.dart';
 
-/// Final upload owner.
-/// Backing storage: existing OutboxEvents table.
-/// Payload here is only pointer metadata. Full upload payload must be built
-/// from Sales/SaleLines/SalePayments/SaleTaxSummary when upload runs.
-class UploadQueue {
+/// Builds local outbox events for future upload.
+///
+/// This class does not process the queue. Upload execution remains owned by
+/// DbSyncService / SyncDao.
+class OutboxEventFactory {
   static const _uuid = Uuid();
 
-  const UploadQueue();
+  const OutboxEventFactory();
+
+  OutboxEventsCompanion _event({
+    required OutboxEventType eventType,
+    required OutboxEntityType entityType,
+    required String entityId,
+    required Map<String, dynamic> payload,
+    required DateTime createdAt,
+    required String idempotencyKey,
+  }) {
+    return OutboxEventsCompanion.insert(
+      id: 'OBX_${_uuid.v4()}',
+      eventType: eventType.code,
+      entityType: entityType.code,
+      entityId: entityId,
+      payloadJson: jsonEncode(payload),
+      status: OutboxStatus.pending.code,
+      createdAt: createdAt,
+      idempotencyKey: idempotencyKey,
+    );
+  }
 
   OutboxEventsCompanion saleCreated({
     required String saleId,
@@ -25,26 +44,22 @@ class UploadQueue {
     required DateTime completedAt,
     required String idempotencyKey,
   }) {
-    return OutboxEventsCompanion(
-      id: Value('OBX_${_uuid.v4()}'),
-      eventType: Value(OutboxEventType.saleCreated.code),
-      entityType: Value(OutboxEntityType.sale.code),
-      entityId: Value(saleId),
-      payloadJson: Value(
-        jsonEncode({
-          'saleId': saleId,
-          'localSaleNo': localInvoiceNo,
-          'machineNo': machineNo,
-          'branchNo': branchNo,
-          'shiftId': shiftId,
-          'cashierId': cashierId,
-          'grandTotal': grandTotal,
-          'completedAt': completedAt.toIso8601String(),
-        }),
-      ),
-      status: Value(OutboxStatus.pending.code),
-      createdAt: Value(completedAt),
-      idempotencyKey: Value(idempotencyKey),
+    return _event(
+      eventType: OutboxEventType.saleCreated,
+      entityType: OutboxEntityType.sale,
+      entityId: saleId,
+      createdAt: completedAt,
+      idempotencyKey: idempotencyKey,
+      payload: {
+        'saleId': saleId,
+        'localSaleNo': localInvoiceNo,
+        'machineNo': machineNo,
+        'branchNo': branchNo,
+        'shiftId': shiftId,
+        'cashierId': cashierId,
+        'grandTotal': grandTotal,
+        'completedAt': completedAt.toIso8601String(),
+      },
     );
   }
 
@@ -54,22 +69,18 @@ class UploadQueue {
     required String cashierName,
     required DateTime voidedAt,
   }) {
-    return OutboxEventsCompanion(
-      id: Value('OBX_${_uuid.v4()}'),
-      eventType: Value(OutboxEventType.saleVoided.code),
-      entityType: Value(OutboxEntityType.sale.code),
-      entityId: Value(saleId),
-      payloadJson: Value(
-        jsonEncode({
-          'saleId': saleId,
-          'cashierId': cashierId,
-          'cashierName': cashierName,
-          'voidedAt': voidedAt.toIso8601String(),
-        }),
-      ),
-      status: Value(OutboxStatus.pending.code),
-      createdAt: Value(voidedAt),
-      idempotencyKey: Value('void_$saleId'),
+    return _event(
+      eventType: OutboxEventType.saleVoided,
+      entityType: OutboxEntityType.sale,
+      entityId: saleId,
+      createdAt: voidedAt,
+      idempotencyKey: 'void_$saleId',
+      payload: {
+        'saleId': saleId,
+        'cashierId': cashierId,
+        'cashierName': cashierName,
+        'voidedAt': voidedAt.toIso8601String(),
+      },
     );
   }
 
@@ -85,27 +96,23 @@ class UploadQueue {
     required DateTime completedAt,
     required String idempotencyKey,
   }) {
-    return OutboxEventsCompanion(
-      id: Value('OBX_${_uuid.v4()}'),
-      eventType: Value(OutboxEventType.returnCreated.code),
-      entityType: Value(OutboxEntityType.returnSale.code),
-      entityId: Value(saleId),
-      payloadJson: Value(
-        jsonEncode({
-          'saleId': saleId,
-          'originalSaleId': originalSaleId,
-          'localSaleNo': localInvoiceNo,
-          'machineNo': machineNo,
-          'branchNo': branchNo,
-          'shiftId': shiftId,
-          'cashierId': cashierId,
-          'grandTotal': grandTotal,
-          'completedAt': completedAt.toIso8601String(),
-        }),
-      ),
-      status: Value(OutboxStatus.pending.code),
-      createdAt: Value(completedAt),
-      idempotencyKey: Value(idempotencyKey),
+    return _event(
+      eventType: OutboxEventType.returnCreated,
+      entityType: OutboxEntityType.returnSale,
+      entityId: saleId,
+      createdAt: completedAt,
+      idempotencyKey: idempotencyKey,
+      payload: {
+        'saleId': saleId,
+        'originalSaleId': originalSaleId,
+        'localSaleNo': localInvoiceNo,
+        'machineNo': machineNo,
+        'branchNo': branchNo,
+        'shiftId': shiftId,
+        'cashierId': cashierId,
+        'grandTotal': grandTotal,
+        'completedAt': completedAt.toIso8601String(),
+      },
     );
   }
 
@@ -119,12 +126,13 @@ class UploadQueue {
     required DateTime expiresAt,
     required String idempotencyKey,
   }) {
-    return OutboxEventsCompanion.insert(
-      id: 'OBX_${_uuid.v4()}',
-      eventType: OutboxEventType.shiftOpened.code,
-      entityType: OutboxEntityType.shift.code,
+    return _event(
+      eventType: OutboxEventType.shiftOpened,
+      entityType: OutboxEntityType.shift,
       entityId: localId,
-      payloadJson: jsonEncode({
+      createdAt: openedAt,
+      idempotencyKey: idempotencyKey,
+      payload: {
         'localId': localId,
         'machineNo': machineNo,
         'cashierId': cashierId,
@@ -132,10 +140,7 @@ class UploadQueue {
         'openingCash': openingCash,
         'openedAt': openedAt.toIso8601String(),
         'expiresAt': expiresAt.toIso8601String(),
-      }),
-      status: OutboxStatus.pending.code,
-      createdAt: openedAt,
-      idempotencyKey: idempotencyKey,
+      },
     );
   }
 
@@ -160,12 +165,13 @@ class UploadQueue {
     required int saleCount,
     required DateTime closedAt,
   }) {
-    return OutboxEventsCompanion.insert(
-      id: 'OBX_${_uuid.v4()}',
-      eventType: OutboxEventType.shiftClosed.code,
-      entityType: OutboxEntityType.shift.code,
+    return _event(
+      eventType: OutboxEventType.shiftClosed,
+      entityType: OutboxEntityType.shift,
       entityId: localId,
-      payloadJson: jsonEncode({
+      createdAt: closedAt,
+      idempotencyKey: 'shift_close_$localId',
+      payload: {
         'localId': localId,
         'machineNo': machineNo,
         'cashierId': cashierId,
@@ -185,10 +191,7 @@ class UploadQueue {
         'totalVoids': totalVoids,
         'saleCount': saleCount,
         'closedAt': closedAt.toIso8601String(),
-      }),
-      status: OutboxStatus.pending.code,
-      createdAt: closedAt,
-      idempotencyKey: 'shift_close_$localId',
+      },
     );
   }
 
@@ -198,20 +201,18 @@ class UploadQueue {
     required DateTime newExpiry,
     required DateTime extendedAt,
   }) {
-    return OutboxEventsCompanion.insert(
-      id: 'OBX_${_uuid.v4()}',
-      eventType: OutboxEventType.shiftExtended.code,
-      entityType: OutboxEntityType.shift.code,
+    return _event(
+      eventType: OutboxEventType.shiftExtended,
+      entityType: OutboxEntityType.shift,
       entityId: localId,
-      payloadJson: jsonEncode({
+      createdAt: extendedAt,
+      idempotencyKey: 'shift_extend_$localId',
+      payload: {
         'localId': localId,
         'extendedByMinutes': extendedByMinutes,
         'newExpiry': newExpiry.toIso8601String(),
         'extendedAt': extendedAt.toIso8601String(),
-      }),
-      status: OutboxStatus.pending.code,
-      createdAt: extendedAt,
-      idempotencyKey: 'shift_extend_$localId',
+      },
     );
   }
 }

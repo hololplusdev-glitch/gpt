@@ -15,10 +15,9 @@ class AppInstallationService {
 
   Future<void> ensureInitialized() async {
     final existing =
-        await (_db.select(_db.appInstallation)
-              ..orderBy([(row) => OrderingTerm.asc(row.firstInstalledAt)])
-              ..limit(1))
-            .getSingleOrNull();
+        await (_db.select(
+          _db.appInstallation,
+        )..where((row) => row.id.equals(_localRowId))).getSingleOrNull();
 
     final now = DateTime.now();
     final snapshot = await _buildSnapshot();
@@ -46,7 +45,7 @@ class AppInstallationService {
 
     await (_db.update(
       _db.appInstallation,
-    )..where((row) => row.id.equals(existing.id))).write(
+    )..where((row) => row.id.equals(_localRowId))).write(
       AppInstallationCompanion(
         platform: Value(snapshot.platform),
         deviceName: Value(snapshot.deviceName),

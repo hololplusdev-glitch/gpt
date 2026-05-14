@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:pdf/pdf.dart';
@@ -5,11 +6,11 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 import 'package:holol_POS/core/services/receipts/receipt_raster_renderer.dart';
 
-class ReceiptThermalPdf {
+class ReceiptPdfDocument {
   final Uint8List bytes;
   final PdfPageFormat pageFormat;
 
-  const ReceiptThermalPdf({
+  const ReceiptPdfDocument({
     required this.bytes,
     required this.pageFormat,
   });
@@ -22,22 +23,84 @@ class ReceiptPdfWriter {
     this.rasterRenderer = const ReceiptRasterRenderer(),
   });
 
-  /// Renders the unified receipt as a thermal-roll PDF.
+  /// Builds a PDF for saving/sharing.
   ///
-  /// This is not a report layout and not a page-container layout.
-  /// The PDF page size follows the receipt width and rendered receipt height.
-  Future<Uint8List> renderThermalRoll(
+  /// This PDF is only a file container. It does not own any invoice layout.
+  /// The receipt visual is still produced only by ReceiptRasterRenderer.
+  Future<Uint8List> renderSharePdf(
     InvoiceDocument document, {
     required int paperWidthMm,
   }) async {
-    return (await renderThermalRollDocument(
+    return (await renderShareDocument(
       document,
       paperWidthMm: paperWidthMm,
     ))
         .bytes;
   }
 
-  Future<ReceiptThermalPdf> renderThermalRollDocument(
+  Future<ReceiptPdfDocument> renderShareDocument(
+    InvoiceDocument document, {
+    required int paperWidthMm,
+  }) async {
+    final receipt = await rasterRenderer.renderImage(
+      document,
+      paperWidthMm: paperWidthMm,
+    );
+
+    if (receipt.pngBytes.isEmpty) {
+      throw StateError('Receipt image is empty.');
+    }
+
+    final pdf = pw.Document(
+      title: document.localInvoiceNo,
+      author: document.seller.name,
+      subject: 'POS Receipt',
+    );
+
+    final pageFormat = PdfPageFormat.a4;
+    const margin = 24.0;
+
+    final maxW = pageFormat.width - (margin * 2);
+    final maxH = pageFormat.height - (margin * 2);
+
+    final naturalW = receipt.paperWidthMm * PdfPageFormat.mm;
+    final naturalH = naturalW * receipt.heightPx / receipt.widthPx;
+
+    final scale = math.min(1.0, math.min(maxW / naturalW, maxH / naturalH));
+    final targetW = naturalW * scale;
+    final targetH = naturalH * scale;
+
+    final imageProvider = pw.MemoryImage(receipt.pngBytes);
+
+    pdf.addPage(
+      pw.Page(
+        pageFormat: pageFormat,
+        margin: const pw.EdgeInsets.all(margin),
+        build: (_) {
+          return pw.Align(
+            alignment: pw.Alignment.topCenter,
+            child: pw.Image(
+              imageProvider,
+              width: targetW,
+              height: targetH,
+              fit: pw.BoxFit.fill,
+            ),
+          );
+        },
+      ),
+    );
+
+    return ReceiptPdfDocument(
+      bytes: await pdf.save(),
+      pageFormat: pageFormat,
+    );
+  }
+
+  /// Builds a PDF for OS-defined thermal receipt printers.
+  ///
+  /// This is used only by SystemPrinterAdapter.
+  /// The page size follows the receipt width and rendered receipt height.
+  Future<ReceiptPdfDocument> renderSystemPrintDocument(
     InvoiceDocument document, {
     required int paperWidthMm,
   }) async {
@@ -52,13 +115,12 @@ class ReceiptPdfWriter {
 
     final pageWidth = receipt.paperWidthMm * PdfPageFormat.mm;
     final pageHeight = pageWidth * receipt.heightPx / receipt.widthPx;
-
     final pageFormat = PdfPageFormat(pageWidth, pageHeight);
 
     final pdf = pw.Document(
       title: document.localInvoiceNo,
       author: document.seller.name,
-      subject: 'Thermal POS Receipt',
+      subject: 'Thermal POS Receipt Print',
     );
 
     final imageProvider = pw.MemoryImage(receipt.pngBytes);
@@ -78,7 +140,7 @@ class ReceiptPdfWriter {
       ),
     );
 
-    return ReceiptThermalPdf(
+    return ReceiptPdfDocument(
       bytes: await pdf.save(),
       pageFormat: pageFormat,
     );

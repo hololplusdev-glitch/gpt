@@ -12,6 +12,7 @@ enum AppButtonType { primary, secondary, outlined, text }
 class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final String label;
+  final Widget? labelWidget;
   final IconData? icon;
   final bool isLoading;
   final AppButtonType type;
@@ -21,6 +22,7 @@ class AppButton extends StatelessWidget {
     super.key,
     required this.onPressed,
     required this.label,
+    this.labelWidget,
     this.icon,
     this.isLoading = false,
     this.customColor,
@@ -30,6 +32,7 @@ class AppButton extends StatelessWidget {
     super.key,
     required this.onPressed,
     required this.label,
+    this.labelWidget,
     this.icon,
     this.isLoading = false,
     this.customColor,
@@ -39,6 +42,7 @@ class AppButton extends StatelessWidget {
     super.key,
     required this.onPressed,
     required this.label,
+    this.labelWidget,
     this.icon,
     this.isLoading = false,
     this.customColor,
@@ -48,6 +52,7 @@ class AppButton extends StatelessWidget {
     super.key,
     required this.onPressed,
     required this.label,
+    this.labelWidget,
     this.icon,
     this.isLoading = false,
     this.customColor,
@@ -62,6 +67,7 @@ class AppButton extends StatelessWidget {
     super.key,
     required this.onPressed,
     required this.label,
+    this.labelWidget,
     this.icon,
     this.isLoading = false,
   }) : type = AppButtonType.primary,
@@ -72,6 +78,7 @@ class AppButton extends StatelessWidget {
     super.key,
     required this.onPressed,
     required this.label,
+    this.labelWidget,
     this.icon,
     this.isLoading = false,
   }) : type = AppButtonType.primary,
@@ -82,6 +89,7 @@ class AppButton extends StatelessWidget {
     super.key,
     required this.onPressed,
     required this.label,
+    this.labelWidget,
     this.icon,
     this.isLoading = false,
   }) : type = AppButtonType.primary,
@@ -92,6 +100,7 @@ class AppButton extends StatelessWidget {
     final isEnabled = onPressed != null && !isLoading;
     final child = _ButtonContent(
       label: label,
+      labelWidget: labelWidget,
       icon: icon,
       isLoading: isLoading,
       type: type,
@@ -203,12 +212,14 @@ class _PressableWrapperState extends State<_PressableWrapper>
 
 class _ButtonContent extends StatelessWidget {
   final String label;
+  final Widget? labelWidget;
   final IconData? icon;
   final bool isLoading;
   final AppButtonType type;
 
   const _ButtonContent({
     required this.label,
+    this.labelWidget,
     required this.icon,
     required this.isLoading,
     required this.type,
@@ -234,15 +245,16 @@ class _ButtonContent extends StatelessWidget {
         final hasBoundedWidth = constraints.hasBoundedWidth;
 
         if (icon == null) {
-          return Text(
-            label,
-            maxLines: 1,
-            overflow: hasBoundedWidth
-                ? TextOverflow.ellipsis
-                : TextOverflow.visible,
-            softWrap: false,
-            textAlign: TextAlign.center,
-          );
+          return labelWidget ??
+              Text(
+                label,
+                maxLines: 1,
+                overflow: hasBoundedWidth
+                    ? TextOverflow.ellipsis
+                    : TextOverflow.visible,
+                softWrap: false,
+                textAlign: TextAlign.center,
+              );
         }
 
         if (hasBoundedWidth) {
@@ -253,13 +265,14 @@ class _ButtonContent extends StatelessWidget {
               Icon(icon, size: 20),
               const SizedBox(width: AppSpacing.sm),
               Flexible(
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  softWrap: false,
-                  textAlign: TextAlign.center,
-                ),
+                child: labelWidget ??
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                      textAlign: TextAlign.center,
+                    ),
               ),
             ],
           );
@@ -271,13 +284,14 @@ class _ButtonContent extends StatelessWidget {
           children: [
             Icon(icon, size: 20),
             const SizedBox(width: AppSpacing.sm),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.visible,
-              softWrap: false,
-              textAlign: TextAlign.center,
-            ),
+            labelWidget ??
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  softWrap: false,
+                  textAlign: TextAlign.center,
+                ),
           ],
         );
       },

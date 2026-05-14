@@ -70,9 +70,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isBootRoute = state.matchedLocation == AppRoutes.boot;
       final isLoginRoute = state.matchedLocation == AppRoutes.login;
       final isSetupRoute = state.matchedLocation == AppRoutes.setup;
-      final isOwnerConsoleRoute =
-          state.matchedLocation == AppRoutes.ownerConsole;
-
       if (setupAsync.hasError) {
         return isSetupRoute ? null : AppRoutes.setup;
       }
@@ -92,9 +89,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         return target;
       }
 
-      if (isOwnerConsoleRoute) {
-        return null;
-      }
 
       if (!isSetupComplete && !isSetupRoute) {
         return AppRoutes.setup;
@@ -136,8 +130,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // WHY: Readiness gate. Prevent selling when local catalog is incomplete.
       if (isAuthenticated && state.matchedLocation == AppRoutes.cashier) {
-        final readiness = ref.read(catalogReadinessProvider).valueOrNull;
-        if (readiness != null && !readiness.isReady) {
+        final readinessAsync = ref.read(catalogReadinessProvider);
+        final readiness = readinessAsync.valueOrNull;
+        if (!readinessAsync.hasValue || readiness == null || !readiness.isReady) {
           return AppRoutes.syncMonitor;
         }
       }

@@ -14,10 +14,6 @@ class SyncDao {
 
   SyncDao(this._db, {Clock clock = const SystemClock()}) : _clock = clock;
 
-  /// Enqueue a sync event.
-  Future<void> enqueue(OutboxEventsCompanion entry) async {
-    await _db.into(_db.outboxEvents).insert(entry);
-  }
 
   /// Get all pending sync entries, ordered by creation time.
   Future<List<OutboxEvent>> getPending({int limit = 50}) async {
@@ -226,8 +222,8 @@ class SyncDao {
     );
   }
 
-  /// Get count of failed entries.
-  Future<int> getFailedCount() async {
+  /// Get count of failed or blocked entries.
+  Future<int> getProblemCount() async {
     return _countWhere(
       _db.outboxEvents.status.equals(OutboxStatus.failed.code) |
           _db.outboxEvents.status.equals(OutboxStatus.blocked.code),

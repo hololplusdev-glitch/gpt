@@ -9,8 +9,16 @@ abstract final class BackendValueReader {
     if (value == null) return fallback;
     if (value is bool) return value;
     if (value is num) return value != 0;
+
     final text = value.toString().trim().toUpperCase();
-    return text == 'Y' || text == 'YES' || text == 'TRUE' || text == '1';
+    if (text.isEmpty) return fallback;
+
+    const truthy = {'Y', 'YES', 'TRUE', 'T', '1', 'ACTIVE', 'ENABLED'};
+    const falsy = {'N', 'NO', 'FALSE', 'F', '0', 'INACTIVE', 'DISABLED'};
+
+    if (truthy.contains(text)) return true;
+    if (falsy.contains(text)) return false;
+    return fallback;
   }
 
   static int? parseInt(Object? value) {

@@ -1499,19 +1499,19 @@ abstract class AppLocalizations {
   /// No description provided for @networkPrinter.
   ///
   /// In en, this message translates to:
-  /// **'Network/IP ESC-POS'**
+  /// **'Network thermal printer (IP)'**
   String get networkPrinter;
 
   /// No description provided for @systemPrinter.
   ///
   /// In en, this message translates to:
-  /// **'System Printer'**
+  /// **'System-defined thermal printer'**
   String get systemPrinter;
 
   /// No description provided for @bluetoothPrinter.
   ///
   /// In en, this message translates to:
-  /// **'Bluetooth ESC-POS'**
+  /// **'Bluetooth thermal printer'**
   String get bluetoothPrinter;
 
   /// No description provided for @enableCardPayment.

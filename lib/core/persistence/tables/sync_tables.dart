@@ -8,19 +8,6 @@ import 'package:drift/drift.dart';
 // DOWNLOAD SYNC — master data sync tracking
 // =============================================================================
 
-/// Per-master-type high-water mark and last status.
-class MasterSyncState extends Table {
-  TextColumn get syncType => text()();
-  TextColumn get lastSuccessTime => text().nullable()();
-  TextColumn get lastServerTime => text().nullable()();
-  TextColumn get lastStatus => text().withDefault(const Constant('never'))();
-  TextColumn get lastError => text().nullable()();
-  TextColumn get updatedAt => text()();
-
-  @override
-  Set<Column> get primaryKey => {syncType};
-}
-
 class ScopedSyncState extends Table {
   TextColumn get syncKey => text()();
   TextColumn get type => text()();

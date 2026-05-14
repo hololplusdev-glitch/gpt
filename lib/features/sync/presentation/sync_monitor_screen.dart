@@ -12,7 +12,6 @@ import 'package:holol_POS/core/services/master_data/master_data_contract.dart';
 import 'package:holol_POS/core/services/master_data/master_data_download_helper.dart';
 import 'package:holol_POS/core/services/master_data/master_data_sync_service.dart';
 import 'package:holol_POS/features/setup/application/setup_notifier.dart';
-import 'package:holol_POS/features/sync/application/master_data_provider_invalidation.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_metric_card.dart';
@@ -20,18 +19,19 @@ import 'package:holol_POS/shared/presentation/widgets/app_section_card.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/responsive_row.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
+import 'package:holol_POS/shared/refactor/pos_runtime_state.dart';
 
 final syncCountsProvider = FutureProvider.autoDispose<_SyncCounts>((ref) async {
   final syncDao = ref.watch(syncDaoProvider);
   final pending = await syncDao.getPendingCount();
-  final failed = await syncDao.getFailedCount();
+  final failed = await syncDao.getProblemCount();
   final synced = await syncDao.getUploadedCount();
   return _SyncCounts(pending: pending, failed: failed, synced: synced);
 });
 
-final masterSyncStateProvider =
-    FutureProvider.autoDispose<List<MasterSyncStateView>>((ref) async {
-      return ref.watch(masterDataDaoProvider).getMasterSyncStates();
+final scopedSyncStateProvider =
+    FutureProvider.autoDispose<List<ScopedSyncStateView>>((ref) async {
+      return ref.watch(masterDataDaoProvider).getScopedSyncStates();
     });
 
 class _SyncCounts {
@@ -46,29 +46,6 @@ class _SyncCounts {
   });
 }
 
-class _SyncProgress {
-  final MasterDataType type;
-  final int currentSection;
-  final int totalSections;
-  final double sectionProgress;
-  final int currentPage;
-  final int totalPages;
-
-  const _SyncProgress({
-    required this.type,
-    required this.currentSection,
-    required this.totalSections,
-    required this.sectionProgress,
-    required this.currentPage,
-    required this.totalPages,
-  });
-
-  double get totalProgress {
-    if (totalSections <= 0) return 0;
-    return ((currentSection + sectionProgress) / totalSections).clamp(0.0, 1.0);
-  }
-}
-
 class SyncMonitorScreen extends ConsumerStatefulWidget {
   const SyncMonitorScreen({super.key});
 
@@ -81,7 +58,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
   String? _lastResult;
   bool _lastResultIsError = false;
   MasterDataSyncSummary? _lastSummary;
-  _SyncProgress? _progress;
+  MasterDataSyncProgress? _progress;
   MasterDataSyncCancelHandle? _cancelToken;
 
   Future<void> _downloadMasterData() async {
@@ -117,20 +94,14 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
             onProgress: (progress) {
               if (!mounted) return;
               setState(() {
-                _progress = _SyncProgress(
-                  type: MasterDataType.values.firstWhere(
-                    (t) => t.code == progress.typeCode,
-                    orElse: () => MasterDataType.posMachine,
-                  ),
-                  currentSection: progress.currentSection,
-                  totalSections: progress.totalSections,
-                  sectionProgress: progress.sectionProgress,
-                  currentPage: progress.currentPage,
-                  totalPages: progress.totalPages,
-                );
+                _progress = progress;
               });
             },
           );
+
+      if (!mounted) return;
+
+      if (!mounted) return;
 
       final result = download.summary;
       final failed = download.fatalFailures;
@@ -150,9 +121,10 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
         _progress = null;
         _cancelToken = null;
       });
-      ref.invalidate(masterSyncStateProvider);
-      invalidateMasterDataDownloadProviders(ref);
+      ref.invalidate(scopedSyncStateProvider);
+      PosRuntimeStateInvalidator.PosRuntimeStateInvalidator.invalidateMasterDataDownloadProviders(ref);
     } catch (e) {
+      if (!mounted) return;
       final isCancelled = e is AppException && e.code == 'CANCELLED';
       setState(() {
         _isSyncing = false;
@@ -163,7 +135,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
         _progress = null;
         _cancelToken = null;
       });
-      ref.invalidate(masterSyncStateProvider);
+      ref.invalidate(scopedSyncStateProvider);
     }
   }
 
@@ -181,7 +153,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final countsAsync = ref.watch(syncCountsProvider);
-    final stateAsync = ref.watch(masterSyncStateProvider);
+    final stateAsync = ref.watch(scopedSyncStateProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -287,9 +259,9 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
         children: [
           if (progress != null) ...[
             Text(
-              progress.type == MasterDataType.devicePrivilege
-                  ? 'صلاحيات نقاط التشغيل'
-                  : 'تحميل ${progress.type.code}${progress.totalPages > 1 ? ' — صفحة ${progress.currentPage}/${progress.totalPages}' : ''}',
+              progress.typeCode == MasterDataType.devicePrivilege.code
+                  ? progress.typeLabel
+                  : 'تحميل ${progress.typeCode}${progress.totalPages > 1 ? ' — صفحة ${progress.currentPage}/${progress.totalPages}' : ''}',
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -416,7 +388,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
     );
   }
 
-  Widget _buildStateSection(AsyncValue<List<MasterSyncStateView>> stateAsync) {
+  Widget _buildStateSection(AsyncValue<List<ScopedSyncStateView>> stateAsync) {
     return AppSectionCard(
       title: 'حالة تحديث بيانات التشغيل',
       icon: Icons.history,

@@ -5,11 +5,10 @@ import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
 import 'package:holol_POS/core/persistence/daos/auth_dao.dart';
 import 'package:holol_POS/core/persistence/daos/shift_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart';
-import 'package:holol_POS/features/cashier/application/product_providers.dart';
-import 'package:holol_POS/features/cashier/domain/models/cart.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:uuid/uuid.dart';
+import 'package:holol_POS/shared/refactor/pos_runtime_state.dart';
 
 /// Command controller for POS runtime session.
 ///
@@ -222,15 +221,11 @@ class PosSessionController extends StateNotifier<PosSessionState> {
         user: user,
         machine: machine,
       );
+void _clearCashierState() {
+    PosRuntimeStateInvalidator.clearCashierState(_ref);
+  }
 
-      _clearCashierState();
-      await _refreshActiveSession();
-
-      final refreshedSession = await _sessionDao.getActive();
-      final effectiveSession = refreshedSession ?? session;
-
-      await _auditDao.log(
-        id: 'AUD_${_uuid.v4()}',
+',
         action: AuditAction.login,
         actorId: effectiveSession.activeUserId,
         actorName: effectiveSession.activeUserName,
@@ -271,22 +266,15 @@ class PosSessionController extends StateNotifier<PosSessionState> {
     }
   }
 
-  Future<void> _refreshActiveSession() async {
-    _ref.invalidate(activePosSessionProvider);
-    _ref.invalidate(activePaymentProfileProvider);
-    _ref.invalidate(manualPaymentProfileProvider);
-    await _ref.read(activePosSessionProvider.future);
-  }
+Future<void> _refreshActiveSession() async {
+  PosRuntimeStateInvalidator.invalidateActiveSessionRuntime(_ref);
+  await _ref.read(activePosSessionProvider.future);
+}
 
-  void _clearCashierState() {
-    _ref.read(cartProvider.notifier).clearCart();
-    _ref.read(searchQueryProvider.notifier).state = '';
-    _ref.read(selectedCategoryProvider.notifier).state = null;
-    _ref.read(customerSearchQueryProvider.notifier).state = '';
-    _ref.invalidate(cashierProductCardsProvider);
-    _ref.invalidate(customerSearchResultsProvider);
-    _ref.invalidate(categoryListProvider);
-  }
+void _clearCashierState() {
+  PosRuntimeStateInvalidator.clearCashierState(_ref);
+}
+
 }
 
 final posSessionControllerProvider =

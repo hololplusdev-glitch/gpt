@@ -38,6 +38,11 @@ class MasterDataSyncProgress {
     required this.currentPage,
     required this.totalPages,
   });
+
+  double get totalProgress {
+    if (totalSections <= 0) return 0;
+    return ((currentSection + sectionProgress) / totalSections).clamp(0.0, 1.0);
+  }
 }
 
 class MasterDataSyncService {

@@ -290,21 +290,32 @@ class MasterDataDao {
       return false;
     }
 
-    final machine = await (_db.select(
-      _db.posMachines,
-    )..limit(1)).getSingleOrNull();
-
-    if (machine == null) {
-      return false;
-    }
+    final setupUserIds = <String>{
+      setupUser.id.trim(),
+      if (setupUser.sourceUserId != null) setupUser.sourceUserId!.trim(),
+    }..removeWhere((value) => value.isEmpty);
 
     final devicePrivilege =
         await (_db.select(_db.posUserMachineAccess)
-              ..where((row) => row.canUseMachine.equals(true))
+              ..where(
+                (row) =>
+                    row.canUseMachine.equals(true) &
+                    row.userId.isIn(setupUserIds.toList()),
+              )
               ..limit(1))
             .getSingleOrNull();
 
-    return devicePrivilege != null;
+    if (devicePrivilege == null) {
+      return false;
+    }
+
+    final machine =
+        await (_db.select(_db.posMachines)..where(
+              (machine) => machine.machineNo.equals(devicePrivilege.machineNo),
+            ))
+            .getSingleOrNull();
+
+    return machine != null;
   }
 
   Future<int> countCustomers() async {
@@ -329,8 +340,13 @@ class MasterDataDao {
     )..where((row) => row.userId.equals(userId))).go();
   }
 
-  Future<void> clearMasterDataCache() async {
+  Future<void> clearMasterDataCache({bool clearRunLogs = false}) async {
     await _db.transaction(() async {
+      if (clearRunLogs) {
+        await _db.delete(_db.masterSyncPageRuns).go();
+        await _db.delete(_db.masterSyncTypeRuns).go();
+        await _db.delete(_db.masterSyncRuns).go();
+      }
       await _db.delete(_db.scopedSyncState).go();
       await _db.delete(_db.posMachines).go();
       await _db.delete(_db.posUserMachineAccess).go();
@@ -377,13 +393,13 @@ class MasterDataDao {
     }
   }
 
-  Future<List<MasterSyncStateView>> getMasterSyncStates() async {
+  Future<List<ScopedSyncStateView>> getScopedSyncStates() async {
     final rows = await (_db.select(
       _db.scopedSyncState,
     )..orderBy([(state) => OrderingTerm.asc(state.type)])).get();
     return rows
         .map(
-          (row) => MasterSyncStateView(
+          (row) => ScopedSyncStateView(
             syncType: row.type,
             scopeLabel: _syncStateScopeLabel(row.type, row.scopeJson),
             lastSuccessTime: row.lastSuccessTime,

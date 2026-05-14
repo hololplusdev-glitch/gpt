@@ -32,7 +32,7 @@ import 'package:holol_POS/core/services/invoices/invoice_document_builder.dart';
 import 'package:holol_POS/core/services/receipts/receipt_file_writer.dart';
 import 'package:holol_POS/core/services/installation/app_installation_service.dart';
 import 'package:holol_POS/core/services/sync/db_sync_service.dart';
-import 'package:holol_POS/core/services/sync/upload_queue.dart';
+import 'package:holol_POS/core/services/sync/outbox_event_factory.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -135,8 +135,8 @@ final invoiceNumberServiceProvider = Provider<InvoiceNumberService>((ref) {
   return InvoiceNumberService(ref.watch(salesDaoProvider));
 });
 
-final uploadQueueProvider = Provider<UploadQueue>((ref) {
-  return const UploadQueue();
+final outboxEventFactoryProvider = Provider<OutboxEventFactory>((ref) {
+  return const OutboxEventFactory();
 });
 
 final dbSyncServiceProvider = Provider<DbSyncService>((ref) {

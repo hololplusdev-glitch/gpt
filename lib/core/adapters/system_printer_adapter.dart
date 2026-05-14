@@ -10,8 +10,8 @@ import 'package:holol_POS/shared/models/enums.dart';
 ///
 /// Transport only:
 /// - no receipt layout decisions
-/// - no page/report layout
 /// - no content injection
+/// - no save/share PDF behavior
 class SystemPrinterAdapter implements PrinterAdapter {
   final ReceiptPdfWriter _writer;
 
@@ -44,7 +44,7 @@ class SystemPrinterAdapter implements PrinterAdapter {
     }
 
     try {
-      final thermalPdf = await _writer.renderThermalRollDocument(
+      final printPdf = await _writer.renderSystemPrintDocument(
         document,
         paperWidthMm: profile.paperWidthMm,
       );
@@ -52,9 +52,9 @@ class SystemPrinterAdapter implements PrinterAdapter {
       final printed = await Printing.directPrintPdf(
         printer: configuredPrinter,
         name: document.localInvoiceNo,
-        format: thermalPdf.pageFormat,
+        format: printPdf.pageFormat,
         usePrinterSettings: true,
-        onLayout: (_) async => thermalPdf.bytes,
+        onLayout: (_) async => printPdf.bytes,
       );
 
       if (!printed) {

@@ -6,6 +6,7 @@ import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
+import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
 
 class AddToCartResult {
   final String itemName;
@@ -119,7 +120,7 @@ class Cart {
     final existing = findLine(snapshot.itemId, snapshot.unitId);
 
     if (existing == null) {
-      _validateQuantityForSnapshot(snapshot, 1.0);
+      SaleLineValidator.validateQuantityForSnapshot(snapshot, 1.0);
       return Cart(
         items: [
           ...items,
@@ -153,7 +154,10 @@ class Cart {
     final current = findLine(itemId, unitId);
     if (current == null) return this;
 
-    _validateQuantityForSnapshot(current.sellableItem, newQuantity);
+    SaleLineValidator.validateQuantityForSnapshot(
+      current.sellableItem,
+      newQuantity,
+    );
 
     return replaceLine(current.copyWith(quantity: newQuantity));
   }
@@ -179,19 +183,11 @@ class Cart {
       items: items.map((item) {
         if (!_sameLine(item, itemId, unitId)) return item;
 
-        if (!item.allowDiscount && value > 0) {
-          throw BusinessException(
-            'Discount is not allowed for ${item.productName}.',
-            code: 'DISCOUNT_NOT_ALLOWED',
-          );
-        }
-
-        if (value < 0) {
-          throw BusinessException(
-            'Discount cannot be negative.',
-            code: 'INVALID_DISCOUNT',
-          );
-        }
+        SaleLineValidator.validateDiscount(
+          allowDiscount: item.allowDiscount,
+          itemName: item.productName,
+          value: value,
+        );
 
         return item.copyWith(discountType: type, discountValue: value);
       }).toList(),
@@ -222,21 +218,20 @@ class Cart {
   List<Map<String, dynamic>> toHeldOrderSnapshotJson() {
     return items.map((item) => item.toHeldOrderSnapshotJson()).toList();
   }
-
-  CheckoutQuote previewQuote({
+CheckoutQuote previewQuote({
     required PricingEngine pricingEngine,
     required bool useTax,
     required bool priceIncludesTax,
   }) {
-    return pricingEngine.calculateQuote(
-      lines: toSaleLineInputs().toPricingLineInputs(),
-      taxRate: 0,
+    return PosSaleQuoteRules.quote(
+      pricingEngine: pricingEngine,
+      lines: toSaleLineInputs(),
       useTax: useTax,
       priceIncludesTax: priceIncludesTax,
     );
   }
 
-  static Cart fromSaleLineInputs(List<SaleLineInput> lines) {
+static Cart fromSaleLineInputs(List<SaleLineInput> lines) {
     final items = <CartItem>[];
 
     for (final line in lines) {
@@ -281,24 +276,6 @@ class Cart {
   bool _sameLine(CartItem item, String itemId, String? unitId) {
     return item.itemId == itemId && item.unitId == unitId;
   }
-}
-
-void _validateQuantityForSnapshot(
-  SellableItemSnapshot snapshot,
-  double quantity,
-) {
-  if (quantity <= 0) return;
-
-  if (!snapshot.useQtyFraction && !_isWholeQuantity(quantity)) {
-    throw BusinessException(
-      'Fraction quantity is not allowed for ${snapshot.itemName}.',
-      code: 'QUANTITY_FRACTION_NOT_ALLOWED',
-    );
-  }
-}
-
-bool _isWholeQuantity(double value) {
-  return (value - value.roundToDouble()).abs() < 0.000001;
 }
 
 typedef CartPriceResolver =

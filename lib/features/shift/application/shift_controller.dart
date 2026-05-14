@@ -11,6 +11,7 @@ import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/features/shift/application/shift_service.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
+import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
 
 typedef ActiveSessionReader = ActivePosSession? Function();
 
@@ -107,7 +108,11 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
 
     try {
       await _shiftService.openShift(
-        session: _requireSession(),
+        session: PosBusinessGuards.requireActiveSession(
+          _readSession(),
+          message: 'Select a cashier and POS machine before shift operations.',
+          code: 'NO_ACTIVE_POS_SESSION',
+        ),
         openingCash: openingCash,
         shiftTypeId: shiftTypeId,
       );
@@ -149,7 +154,11 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
 
     try {
       await _shiftService.closeShift(
-        session: _requireSession(),
+        session: PosBusinessGuards.requireActiveSession(
+          _readSession(),
+          message: 'Select a cashier and POS machine before shift operations.',
+          code: 'NO_ACTIVE_POS_SESSION',
+        ),
         localId: normalizedShiftId,
         actualCash: actualCash,
         closingNotes: closingNotes,
@@ -187,7 +196,11 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
 
     try {
       await _shiftService.extendShift(
-        session: _requireSession(),
+        session: PosBusinessGuards.requireActiveSession(
+          _readSession(),
+          message: 'Select a cashier and POS machine before shift operations.',
+          code: 'NO_ACTIVE_POS_SESSION',
+        ),
         localId: normalizedShiftId,
         overrideMinutes: overrideMinutes,
       );
@@ -230,18 +243,6 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
     return '$mapped\n$raw';
   }
 
-  ActivePosSession _requireSession() {
-    final session = _readSession();
-
-    if (session == null) {
-      throw const BusinessException(
-        'Select a cashier and POS machine before shift operations.',
-        code: 'NO_ACTIVE_POS_SESSION',
-      );
-    }
-
-    return session;
-  }
 }
 
 final shiftControllerProvider =

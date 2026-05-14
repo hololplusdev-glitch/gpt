@@ -57,7 +57,6 @@ enum MasterDataType {
 
   bool get isMandatory => mandatoryTypes.contains(this);
 
-  bool get isSetupWarning => setupWarningTypes.contains(this);
 
   bool get isHeavyPayload {
     switch (this) {
@@ -299,7 +298,7 @@ class MasterDataContextException extends SyncException {
 }
 
 /// View model for master sync state displayed in UI.
-class MasterSyncStateView {
+class ScopedSyncStateView {
   final String syncType;
   final String? scopeLabel;
   final String? lastSuccessTime;
@@ -307,7 +306,7 @@ class MasterSyncStateView {
   final String lastStatus;
   final String? lastError;
 
-  const MasterSyncStateView({
+  const ScopedSyncStateView({
     required this.syncType,
     required this.scopeLabel,
     required this.lastSuccessTime,
