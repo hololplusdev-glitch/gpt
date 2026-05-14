@@ -143,13 +143,15 @@ class ReceiptRasterRenderer {
     );
   }
 
-  List<int> _encodeRasterBands(
-    ReceiptRasterImage image,
-    ReceiptRenderProfile profile,
-  ) {
+  List<int> _encodeRasterBands(ReceiptRasterImage image) {
     final widthBytes = (image.widthPx + 7) ~/ 8;
     final output = <int>[];
-for (var y0 = 0; y0 < image.heightPx; y0 += profile.rasterBandHeight) {
+
+    final profile = ReceiptRenderProfile.thermal(
+      paperWidthMm: image.paperWidthMm,
+    );
+
+    for (var y0 = 0; y0 < image.heightPx; y0 += profile.rasterBandHeight) {
       final h = (image.heightPx - y0) < profile.rasterBandHeight
           ? (image.heightPx - y0)
           : profile.rasterBandHeight;
@@ -167,7 +169,7 @@ for (var y0 = 0; y0 < image.heightPx; y0 += profile.rasterBandHeight) {
 
           final luminance = (r * 0.299 + g * 0.587 + b * 0.114).round();
 
-          if (luminance < profile.rasterThreshold) {
+          if (luminance < 190) {
             data[y * widthBytes + (x ~/ 8)] |= 0x80 >> (x % 8);
           }
         }

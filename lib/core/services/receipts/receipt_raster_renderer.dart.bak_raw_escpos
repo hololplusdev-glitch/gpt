@@ -47,17 +47,15 @@ class ReceiptRasterRenderer {
 
   Future<ReceiptRasterImage> renderImage(
     InvoiceDocument document, {
-    int? paperWidthMm,
-    ReceiptRenderProfile? profile,
+    required int paperWidthMm,
   }) async {
-    final effectiveProfile =
-        profile ?? ReceiptRenderProfile.thermal(paperWidthMm: paperWidthMm ?? 80);
+    final profile = ReceiptRenderProfile.thermal(paperWidthMm: paperWidthMm);
     final sideLogo = await _loadImageAsset(sideLogoAsset);
 
     final painter = _ReceiptPainter(
       document: document,
       labels: labels,
-      profile: effectiveProfile,
+      profile: profile,
       sideLogo: sideLogo,
       sideBrandName: sideBrandName,
       sideBrandPhone: sideBrandPhone,
@@ -69,19 +67,14 @@ class ReceiptRasterRenderer {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder)
       ..drawRect(
-        Rect.fromLTWH(
-          0,
-          0,
-          effectiveProfile.widthPx.toDouble(),
-          heightPx.toDouble(),
-        ),
+        Rect.fromLTWH(0, 0, profile.widthPx.toDouble(), heightPx.toDouble()),
         Paint()..color = Colors.white,
       );
 
     painter.paint(canvas);
 
     final image = await recorder.endRecording().toImage(
-      effectiveProfile.widthPx,
+      profile.widthPx,
       heightPx,
     );
 
@@ -95,9 +88,9 @@ class ReceiptRasterRenderer {
     }
 
     return ReceiptRasterImage(
-      widthPx: effectiveProfile.widthPx,
+      widthPx: profile.widthPx,
       heightPx: image.height,
-      paperWidthMm: effectiveProfile.paperWidthMm,
+      paperWidthMm: profile.paperWidthMm,
       pngBytes: _copyBytes(pngBytes),
       rgbaBytes: _copyBytes(rgbaBytes),
     );
@@ -105,25 +98,17 @@ class ReceiptRasterRenderer {
 
   Future<Uint8List> renderPng(
     InvoiceDocument document, {
-    int? paperWidthMm,
-    ReceiptRenderProfile? profile,
+    required int paperWidthMm,
   }) async {
-    return (await renderImage(
-      document,
-      paperWidthMm: paperWidthMm,
-      profile: profile,
-    )).pngBytes;
+    return (await renderImage(document, paperWidthMm: paperWidthMm)).pngBytes;
   }
 
   Future<List<int>> renderEscPosRaster(
     InvoiceDocument document, {
-    int? paperWidthMm,
-    ReceiptRenderProfile? profile,
+    required int paperWidthMm,
   }) async {
-    final effectiveProfile =
-        profile ?? ReceiptRenderProfile.thermal(paperWidthMm: paperWidthMm ?? 80);
-    final image = await renderImage(document, profile: effectiveProfile);
-    return _encodeRasterBands(image, effectiveProfile);
+    final image = await renderImage(document, paperWidthMm: paperWidthMm);
+    return _encodeRasterBands(image);
   }
 
   static Future<ui.Image?> _loadImageAsset(String assetPath) async {
@@ -143,13 +128,15 @@ class ReceiptRasterRenderer {
     );
   }
 
-  List<int> _encodeRasterBands(
-    ReceiptRasterImage image,
-    ReceiptRenderProfile profile,
-  ) {
+  List<int> _encodeRasterBands(ReceiptRasterImage image) {
     final widthBytes = (image.widthPx + 7) ~/ 8;
     final output = <int>[];
-for (var y0 = 0; y0 < image.heightPx; y0 += profile.rasterBandHeight) {
+
+    final profile = ReceiptRenderProfile.thermal(
+      paperWidthMm: image.paperWidthMm,
+    );
+
+    for (var y0 = 0; y0 < image.heightPx; y0 += profile.rasterBandHeight) {
       final h = (image.heightPx - y0) < profile.rasterBandHeight
           ? (image.heightPx - y0)
           : profile.rasterBandHeight;
@@ -167,7 +154,7 @@ for (var y0 = 0; y0 < image.heightPx; y0 += profile.rasterBandHeight) {
 
           final luminance = (r * 0.299 + g * 0.587 + b * 0.114).round();
 
-          if (luminance < profile.rasterThreshold) {
+          if (luminance < 190) {
             data[y * widthBytes + (x ~/ 8)] |= 0x80 >> (x % 8);
           }
         }

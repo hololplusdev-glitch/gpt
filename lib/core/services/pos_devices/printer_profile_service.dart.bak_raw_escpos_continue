@@ -22,24 +22,6 @@ extension PrinterProfileSettings on PrinterProfile {
   String? get systemPrinterName => settings['systemPrinterName'] as String?;
   String? get systemPrinterUrl => settings['systemPrinterUrl'] as String?;
   String? get bluetoothAddress => settings['bluetoothAddress'] as String?;
-
-  int? get printableWidthDots => _intSetting('printableWidthDots');
-  int? get leftMarginDots => _intSetting('leftMarginDots');
-  int? get rightMarginDots => _intSetting('rightMarginDots');
-  int? get rasterThreshold => _intSetting('rasterThreshold');
-
-  double get fontScale {
-    final value = settings['fontScale'];
-    if (value is num) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '') ?? 1.0;
-  }
-
-  int? _intSetting(String key) {
-    final value = settings[key];
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    return int.tryParse(value?.toString() ?? '');
-  }
 }
 
 class PrinterProfileService {
@@ -218,8 +200,7 @@ class PrinterProfileService {
         existing?.lastTestStatus == 'ready' &&
         existing?.role == role.code &&
         existing?.connectionType == PrinterConnectionType.systemPrinter.code &&
-        (existing?.driverType == PrinterDriverType.escpos.code ||
-            existing?.driverType == PrinterDriverType.systemPrinter.code) &&
+        existing?.driverType == PrinterDriverType.systemPrinter.code &&
         existing?.systemPrinterUrl == systemPrinterUrl.trim() &&
         existing?.systemPrinterName == systemPrinterName.trim() &&
         existing?.paperWidthMm == paperWidthMm;
@@ -288,15 +269,10 @@ class PrinterProfileService {
       role: role.code,
       enabled: enabled,
       connectionType: PrinterConnectionType.systemPrinter.code,
-      driverType: PrinterDriverType.escpos.code,
+      driverType: PrinterDriverType.systemPrinter.code,
       settingsJson: jsonEncode({
         'systemPrinterName': systemPrinterName.trim(),
         'systemPrinterUrl': systemPrinterUrl.trim(),
-        'printableWidthDots': paperWidthMm <= 58 ? 360 : 512,
-        'leftMarginDots': paperWidthMm <= 58 ? 20 : 24,
-        'rightMarginDots': paperWidthMm <= 58 ? 28 : 32,
-        'rasterThreshold': 220,
-        'fontScale': 1.0,
       }),
       paperWidthMm: paperWidthMm,
       arabicMode: ArabicPrintMode.raster.code,
@@ -463,16 +439,11 @@ class PrinterProfileService {
       role: Value(role.code),
       enabled: Value(enabled),
       connectionType: Value(PrinterConnectionType.systemPrinter.code),
-      driverType: Value(PrinterDriverType.escpos.code),
+      driverType: Value(PrinterDriverType.systemPrinter.code),
       settingsJson: Value(
         jsonEncode({
           'systemPrinterName': systemPrinterName.trim(),
           'systemPrinterUrl': systemPrinterUrl.trim(),
-          'printableWidthDots': paperWidthMm <= 58 ? 360 : 512,
-          'leftMarginDots': paperWidthMm <= 58 ? 20 : 24,
-          'rightMarginDots': paperWidthMm <= 58 ? 28 : 32,
-          'rasterThreshold': 220,
-          'fontScale': 1.0,
         }),
       ),
       paperWidthMm: Value(paperWidthMm),

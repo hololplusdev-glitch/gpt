@@ -6,7 +6,6 @@ import 'package:holol_POS/core/services/receipts/receipt_raster_renderer.dart';
 import 'package:holol_POS/core/services/pos_devices/printer_profile_service.dart';
 import 'package:holol_POS/core/services/pos_devices/printer_test_document.dart';
 import 'package:holol_POS/shared/models/enums.dart';
-import 'package:holol_POS/core/services/receipts/receipt_render_profile.dart';
 
 /// Network ESC/POS printer adapter.
 ///
@@ -77,14 +76,7 @@ class NetworkEscPosPrinterAdapter implements PrinterAdapter {
       ..._initializePrinter(),
       ...await _renderer.renderEscPosRaster(
         document,
-        profile: ReceiptRenderProfile.thermal(
-          paperWidthMm: profile.paperWidthMm,
-          printableWidthDots: profile.printableWidthDots,
-          leftMarginDots: profile.leftMarginDots,
-          rightMarginDots: profile.rightMarginDots,
-          fontScale: profile.fontScale,
-          rasterThreshold: profile.rasterThreshold,
-        ),
+        paperWidthMm: profile.paperWidthMm,
       ),
       ..._lineFeed(3),
       ..._cutPaper(),

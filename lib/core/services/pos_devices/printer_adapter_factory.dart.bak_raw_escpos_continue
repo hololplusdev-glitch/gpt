@@ -4,10 +4,10 @@
 
 import 'package:holol_POS/core/adapters/network_escpos_printer_adapter.dart';
 import 'package:holol_POS/core/adapters/printer_adapter.dart';
+import 'package:holol_POS/core/adapters/system_printer_adapter.dart';
 import 'package:holol_POS/core/adapters/unsupported_printer_adapter.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/shared/models/enums.dart';
-import 'package:holol_POS/core/adapters/raw_system_escpos_printer_adapter.dart';
 
 class PrinterConnectionOption {
   final PrinterConnectionType type;
@@ -43,9 +43,8 @@ class PrinterAdapterFactory {
     }
 
     if (ct == PrinterConnectionType.systemPrinter.code &&
-        (dt == PrinterDriverType.escpos.code ||
-            dt == PrinterDriverType.systemPrinter.code)) {
-      return const RawSystemEscPosPrinterAdapter();
+        dt == PrinterDriverType.systemPrinter.code) {
+      return const SystemPrinterAdapter();
     }
 
     // Bluetooth ESC-POS — unsupported until a real Bluetooth adapter exists.
@@ -79,7 +78,7 @@ class PrinterAdapterFactory {
         PrinterConnectionOption(
           type: PrinterConnectionType.systemPrinter,
           available: true,
-          label: 'System Printer RAW ESC/POS',
+          label: 'System Printer',
         ),
         PrinterConnectionOption(
           type: PrinterConnectionType.bluetooth,
