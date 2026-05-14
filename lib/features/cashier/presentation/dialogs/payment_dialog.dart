@@ -40,10 +40,12 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   Timer? _customerSearchDebounce;
 
   final String _checkoutAttemptId = 'CHK_${const Uuid().v4()}';
-  final List<PaymentDraftLine> _paymentLines = [];
-  SaleTenderKind? _activeLineKind;
-  String? _editingLineId;
-  String? _lineInputError;
+  final PaymentDraftController _paymentDraft = PaymentDraftController();
+
+  List<PaymentDraftLine> get _paymentLines => _paymentDraft.lines;
+  SaleTenderKind? get _activeLineKind => _paymentDraft.activeLineKind;
+  String? get _editingLineId => _paymentDraft.editingLineId;
+  String? get _lineInputError => _paymentDraft.lineInputError;
 
   String? _selectedCustomerId;
   String? _selectedCustomerName;
@@ -62,10 +64,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
   double get _totalAmount => _quote?.grandTotal ?? 0.0;
 
-  PaymentDraftTotals get _paymentTotals => PaymentDraftRules.calculateTotals(
-    totalAmount: _totalAmount,
-    lines: _paymentLines,
-  );
+  PaymentDraftTotals get _paymentTotals => _paymentDraft.totals(_totalAmount);
 
   double get _actualPaidAmount => _paymentTotals.actualPaidAmount;
   double get _creditAmount => _paymentTotals.creditAmount;
@@ -116,17 +115,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     super.dispose();
   }
 
-  double _parseMoney(String text) => PaymentDraftRules.parseMoney(text);
-
-  void _scheduleCustomerSearch(String value) {
-    _customerSearchDebounce?.cancel();
-    _customerSearchDebounce = Timer(const Duration(milliseconds: 250), () {
-      if (!mounted) return;
-      ref.read(customerSearchQueryProvider.notifier).state = value.trim();
-    });
-  }
-
-  void _selectCustomer(Customer customer) {
+void _selectCustomer(Customer customer) {
     setState(() {
       _selectedCustomerId = customer.id;
       _selectedCustomerName = customer.name;
@@ -136,64 +125,84 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     });
   }
 
-  void _removeLine(String id) {
+void _removeLine(String id) {
     setState(() {
-      _paymentLines.removeWhere((line) => line.id == id);
-      if (_editingLineId == id) {
-        _activeLineKind = null;
-        _editingLineId = null;
-        _lineAmountController.clear();
-        _lineInputError = null;
-      }
+      _paymentDraft.removeLine(id);
       _errorMessage = null;
     });
   }
 
-  void _selectLineKind(SaleTenderKind kind, [PaymentDraftLine? existing]) {
-    final available = _availableFor(existing);
-    if (available <= 0) return;
+
+void _selectLineKind(SaleTenderKind kind, [PaymentDraftLine? existing]) {
+    final selection = _paymentDraft.selectLineKind(
+      kind: kind,
+      totalAmount: _totalAmount,
+      existing: existing,
+    );
+
+    if (!selection.canSelect) return;
 
     setState(() {
-      _activeLineKind = kind;
-      _editingLineId = existing?.id;
-      _lineInputError = null;
-      _lineAmountController.text =
-          (kind == SaleTenderKind.cash
-                  ? existing?.tenderedAmount ?? available
-                  : existing?.amount ?? available)
-              .toStringAsFixed(2);
+      _lineAmountController.text = selection.amountText;
+      _errorMessage = null;
     });
 
-    if (existing == null && kind != SaleTenderKind.cash) {
+    if (selection.autoSubmit) {
       _submitInlineLine(showErrors: false, updateText: true);
     }
   }
 
   double _availableFor(PaymentDraftLine? existing) {
-    return PaymentDraftRules.availableFor(
+    return _paymentDraft.availableFor(
       totalAmount: _totalAmount,
-      lines: _paymentLines,
       existing: existing,
     );
   }
 
   void _upsertLine(PaymentDraftLine line, PaymentDraftLine? existing) {
     setState(() {
-      if (existing == null) {
-        _paymentLines.add(line);
-      } else {
-        final index = _paymentLines.indexWhere(
-          (item) => item.id == existing.id,
-        );
-        if (index >= 0) {
-          _paymentLines[index] = line.copyWith(id: existing.id);
-        }
-      }
+      _paymentDraft.upsertLine(line, existing);
       _errorMessage = null;
     });
   }
 
   bool _submitInlineLine({bool showErrors = true, bool updateText = false}) {
+    final result = _paymentDraft.submitInlineLine(
+      rawInputText: _lineAmountController.text,
+      totalAmount: _totalAmount,
+      showErrors: showErrors,
+      updateText: updateText,
+    );
+
+    setState(() {
+      if (result.amountText != null) {
+        _lineAmountController.text = result.amountText!;
+      }
+      if (result.success) {
+        _errorMessage = null;
+      }
+    });
+
+    return result.success;
+  }
+
+  List<SalePaymentIntent> _buildPaymentIntents() {
+    return _paymentDraft.buildPaymentIntents();
+  }
+
+  String? _validatePaymentBeforeSubmit() {
+    return _paymentDraft.validateBeforeSubmit(
+      quoteReady: _quote != null,
+      totalAmount: _totalAmount,
+      selectedCustomerId: _selectedCustomerId,
+      quoteNotReadyMessage: AppLocalizations.of(context)!.unableToPrepareCheckoutTotal,
+      emptyPaymentMessage: 'أدخل طريقة دفع واحدة على الأقل.',
+      remainingNotCoveredMessage: 'المبلغ المتبقي غير مغطى.',
+      creditRequiresCustomerMessage: 'البيع الآجل يتطلب اختيار عميل.',
+    );
+  }
+
+) {
     final kind = _activeLineKind;
     if (kind == null) return false;
 
@@ -238,25 +247,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     return true;
   }
 
-  List<SalePaymentIntent> _buildPaymentIntents() {
-    return PaymentDraftRules.toPaymentIntents(_paymentLines);
-  }
-
-  String? _validatePaymentBeforeSubmit() {
-    return PaymentDraftRules.validateBeforeSubmit(
-      quoteReady: _quote != null,
-      hasPaymentLines: _paymentLines.isNotEmpty,
-      remainingAmount: _remainingAmount,
-      hasCreditLine: _hasCreditLine,
-      selectedCustomerId: _selectedCustomerId,
-      quoteNotReadyMessage: AppLocalizations.of(context)!.unableToPrepareCheckoutTotal,
-      emptyPaymentMessage: 'أدخل طريقة دفع واحدة على الأقل.',
-      remainingNotCoveredMessage: 'المبلغ المتبقي غير مغطى.',
-      creditRequiresCustomerMessage: 'البيع الآجل يتطلب اختيار عميل.',
-    );
-  }
-
-  Future<void> _processPayment() async {
+Future<void> _processPayment() async {
     final l10n = AppLocalizations.of(context)!;
     final validationMessage = _validatePaymentBeforeSubmit();
 

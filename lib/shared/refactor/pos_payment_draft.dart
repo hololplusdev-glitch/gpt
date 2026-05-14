@@ -8,6 +8,7 @@ import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
 import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
+import 'package:uuid/uuid.dart';
 
 typedef PaymentRuleExceptionFactory = BusinessException Function(String message);
 
@@ -168,6 +169,211 @@ abstract final class PaymentDraftRules {
       return creditRequiresCustomerMessage;
     }
     return null;
+  }
+}
+
+class PaymentDraftSelection {
+  final bool canSelect;
+  final String amountText;
+  final bool autoSubmit;
+
+  const PaymentDraftSelection({
+    required this.canSelect,
+    required this.amountText,
+    required this.autoSubmit,
+  });
+
+  const PaymentDraftSelection.rejected()
+      : canSelect = false,
+        amountText = '',
+        autoSubmit = false;
+}
+
+class PaymentDraftSubmitResult {
+  final bool success;
+  final PaymentDraftLine? line;
+  final PaymentDraftLineError? error;
+  final String? amountText;
+
+  const PaymentDraftSubmitResult({
+    required this.success,
+    this.line,
+    this.error,
+    this.amountText,
+  });
+}
+
+class PaymentDraftController {
+  static const _uuid = Uuid();
+
+  final List<PaymentDraftLine> _lines = [];
+
+  SaleTenderKind? activeLineKind;
+  String? editingLineId;
+  String? lineInputError;
+
+  List<PaymentDraftLine> get lines => List.unmodifiable(_lines);
+
+  bool get hasLines => _lines.isNotEmpty;
+
+  PaymentDraftTotals totals(double totalAmount) {
+    return PaymentDraftRules.calculateTotals(
+      totalAmount: totalAmount,
+      lines: _lines,
+    );
+  }
+
+  PaymentDraftLine? lineById(String? id) {
+    if (id == null) return null;
+    for (final line in _lines) {
+      if (line.id == id) return line;
+    }
+    return null;
+  }
+
+  double availableFor({
+    required double totalAmount,
+    PaymentDraftLine? existing,
+  }) {
+    return PaymentDraftRules.availableFor(
+      totalAmount: totalAmount,
+      lines: _lines,
+      existing: existing,
+    );
+  }
+
+  void removeLine(String id) {
+    _lines.removeWhere((line) => line.id == id);
+
+    if (editingLineId == id) {
+      activeLineKind = null;
+      editingLineId = null;
+      lineInputError = null;
+    }
+  }
+
+  PaymentDraftSelection selectLineKind({
+    required SaleTenderKind kind,
+    required double totalAmount,
+    PaymentDraftLine? existing,
+  }) {
+    final available = availableFor(
+      totalAmount: totalAmount,
+      existing: existing,
+    );
+
+    if (available <= 0) {
+      return const PaymentDraftSelection.rejected();
+    }
+
+    activeLineKind = kind;
+    editingLineId = existing?.id;
+    lineInputError = null;
+
+    final value = kind == SaleTenderKind.cash
+        ? existing?.tenderedAmount ?? available
+        : existing?.amount ?? available;
+
+    return PaymentDraftSelection(
+      canSelect: true,
+      amountText: value.toStringAsFixed(2),
+      autoSubmit: existing == null && kind != SaleTenderKind.cash,
+    );
+  }
+
+  PaymentDraftSubmitResult submitInlineLine({
+    required String rawInputText,
+    required double totalAmount,
+    bool showErrors = true,
+    bool updateText = false,
+    String invalidAmountMessage = 'أدخل مبلغًا صحيحًا أكبر من صفر.',
+    String exceedsRemainingMessage = 'المبلغ لا يمكن أن يتجاوز المتبقي.',
+  }) {
+    final kind = activeLineKind;
+
+    if (kind == null) {
+      return const PaymentDraftSubmitResult(success: false);
+    }
+
+    final existing = lineById(editingLineId);
+
+    final result = PaymentDraftRules.buildDraftLine(
+      id: existing?.id ?? _uuid.v4(),
+      kind: kind,
+      rawInputAmount: PaymentDraftRules.parseMoney(rawInputText),
+      availableAmount: availableFor(
+        totalAmount: totalAmount,
+        existing: existing,
+      ),
+    );
+
+    if (!result.isSuccess) {
+      lineInputError = showErrors
+          ? switch (result.error) {
+              PaymentDraftLineError.invalidAmount => invalidAmountMessage,
+              PaymentDraftLineError.exceedsRemaining => exceedsRemainingMessage,
+              null => invalidAmountMessage,
+            }
+          : null;
+
+      return PaymentDraftSubmitResult(
+        success: false,
+        error: result.error,
+      );
+    }
+
+    final line = result.line!;
+    upsertLine(line, existing);
+
+    activeLineKind = kind;
+    editingLineId = line.id;
+    lineInputError = null;
+
+    return PaymentDraftSubmitResult(
+      success: true,
+      line: line,
+      amountText: updateText ? line.tenderedAmount.toStringAsFixed(2) : null,
+    );
+  }
+
+  void upsertLine(PaymentDraftLine line, PaymentDraftLine? existing) {
+    if (existing == null) {
+      _lines.add(line);
+      return;
+    }
+
+    final index = _lines.indexWhere((item) => item.id == existing.id);
+    if (index >= 0) {
+      _lines[index] = line.copyWith(id: existing.id);
+    }
+  }
+
+  List<SalePaymentIntent> buildPaymentIntents() {
+    return PaymentDraftRules.toPaymentIntents(_lines);
+  }
+
+  String? validateBeforeSubmit({
+    required bool quoteReady,
+    required double totalAmount,
+    required String? selectedCustomerId,
+    required String quoteNotReadyMessage,
+    required String emptyPaymentMessage,
+    required String remainingNotCoveredMessage,
+    required String creditRequiresCustomerMessage,
+  }) {
+    final currentTotals = totals(totalAmount);
+
+    return PaymentDraftRules.validateBeforeSubmit(
+      quoteReady: quoteReady,
+      hasPaymentLines: _lines.isNotEmpty,
+      remainingAmount: currentTotals.remainingAmount,
+      hasCreditLine: currentTotals.hasCreditLine,
+      selectedCustomerId: selectedCustomerId,
+      quoteNotReadyMessage: quoteNotReadyMessage,
+      emptyPaymentMessage: emptyPaymentMessage,
+      remainingNotCoveredMessage: remainingNotCoveredMessage,
+      creditRequiresCustomerMessage: creditRequiresCustomerMessage,
+    );
   }
 }
 
