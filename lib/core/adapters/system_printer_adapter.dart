@@ -1,4 +1,3 @@
-import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
 import 'package:holol_POS/core/adapters/printer_adapter.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
@@ -7,10 +6,12 @@ import 'package:holol_POS/core/services/pos_devices/printer_profile_service.dart
 import 'package:holol_POS/core/services/pos_devices/printer_test_document.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 
-/// System printer adapter.
+/// Adapter for thermal receipt printers installed in the operating system.
 ///
-/// Transport only. The printed PDF is the same unified receipt image placed
-/// inside an A4 page by ReceiptPdfWriter.
+/// Transport only:
+/// - no receipt layout decisions
+/// - no page/report layout
+/// - no content injection
 class SystemPrinterAdapter implements PrinterAdapter {
   final ReceiptPdfWriter _writer;
 
@@ -38,19 +39,22 @@ class SystemPrinterAdapter implements PrinterAdapter {
 
     if (configuredPrinter == null) {
       return const PrinterAdapterResult.failure(
-        'Configured system printer is not available.',
+        'Configured system thermal printer is not available.',
       );
     }
 
     try {
+      final thermalPdf = await _writer.renderThermalRollDocument(
+        document,
+        paperWidthMm: profile.paperWidthMm,
+      );
+
       final printed = await Printing.directPrintPdf(
         printer: configuredPrinter,
         name: document.localInvoiceNo,
-        format: PdfPageFormat.a4,
+        format: thermalPdf.pageFormat,
         usePrinterSettings: true,
-        onLayout: (_) {
-          return _writer.renderA4(document, paperWidthMm: profile.paperWidthMm);
-        },
+        onLayout: (_) async => thermalPdf.bytes,
       );
 
       if (!printed) {
@@ -60,7 +64,7 @@ class SystemPrinterAdapter implements PrinterAdapter {
       return const PrinterAdapterResult.success();
     } catch (_) {
       return const PrinterAdapterResult.failure(
-        'Unable to print using the configured system printer.',
+        'Unable to print using the configured system thermal printer.',
       );
     }
   }

@@ -754,13 +754,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get printerSaveFailed => 'Unable to save printer.';
 
   @override
-  String get networkPrinter => 'Network/IP ESC-POS';
+  String get networkPrinter => 'Network thermal printer (IP)';
 
   @override
-  String get systemPrinter => 'System Printer';
+  String get systemPrinter => 'System-defined thermal printer';
 
   @override
-  String get bluetoothPrinter => 'Bluetooth ESC-POS';
+  String get bluetoothPrinter => 'Bluetooth thermal printer';
 
   @override
   String get enableCardPayment => 'Enable card/network payment';

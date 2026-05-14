@@ -752,13 +752,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get printerSaveFailed => 'تعذر حفظ الطابعة.';
 
   @override
-  String get networkPrinter => 'طابعة شبكة (IP)';
+  String get networkPrinter => 'طابعة حرارية عبر الشبكة (IP)';
 
   @override
-  String get systemPrinter => 'طابعة النظام';
+  String get systemPrinter => 'طابعة حرارية معرفة في النظام';
 
   @override
-  String get bluetoothPrinter => 'طابعة بلوتوث';
+  String get bluetoothPrinter => 'طابعة حرارية بلوتوث';
 
   @override
   String get enableCardPayment => 'تفعيل الدفع بالبطاقة/الشبكة';

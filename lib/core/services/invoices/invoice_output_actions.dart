@@ -109,14 +109,14 @@ class InvoiceOutputActions {
     return _processJobs(jobs.map((job) => job.id.value).toList());
   }
 
-  /// Saves the unified receipt design inside an A4 PDF container.
+  /// Saves the unified thermal receipt PDF.
   ///
-  /// No fallback to a second A4 invoice layout is allowed.
-  /// If rendering fails, the failure must be visible because silent fallback breaks SSOT.
+  /// The saved file uses the same thermal-roll receipt design used for preview
+  /// and printing. No secondary invoice layout is allowed.
   Future<File> savePdf(String saleId, {int paperWidthMm = 80}) async {
     final document = await getOrCreateOriginal(saleId);
 
-    final pdfBytes = await _pdfWriter.renderA4(
+    final pdfBytes = await _pdfWriter.renderThermalRoll(
       document,
       paperWidthMm: paperWidthMm,
     );
