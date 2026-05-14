@@ -21,7 +21,6 @@ import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 
-import 'package:holol_POS/core/services/receipts/receipt_raster_renderer.dart';
 import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 
 final invoiceDocumentProvider = FutureProvider.autoDispose
@@ -168,20 +167,18 @@ class _InvoicePreview extends ConsumerWidget {
   }
 }
 
-class _UnifiedReceiptImage extends StatelessWidget {
+class _UnifiedReceiptImage extends ConsumerWidget {
   final InvoiceDocument document;
 
   const _UnifiedReceiptImage({required this.document});
 
-  Future<Uint8List> _render() {
-    return const ReceiptRasterRenderer().renderPng(document, paperWidthMm: 80);
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final outputActions = ref.read(invoiceOutputActionsProvider);
+
     return AppPanel(
       child: FutureBuilder<Uint8List>(
-        future: _render(),
+        future: outputActions.renderReceiptPng(document, paperWidthMm: 80),
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Padding(
@@ -196,7 +193,28 @@ class _UnifiedReceiptImage extends StatelessWidget {
             );
           }
 
-          return AppReceiptImageFrame(bytes: snapshot.data!);
+          return Center(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: AppSpacing.borderRadiusSm,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: AppSpacing.borderRadiusSm,
+                child: Image.memory(
+                  snapshot.data!,
+                  filterQuality: FilterQuality.high,
+                ),
+              ),
+            ),
+          );
         },
       ),
     );

@@ -1891,3 +1891,222 @@ class AppReceiptImageFrame extends StatelessWidget {
     );
   }
 }
+
+class AppHeaderCountBadge extends StatelessWidget {
+  final int count;
+  final String? tooltip;
+
+  const AppHeaderCountBadge({super.key, required this.count, this.tooltip});
+
+  @override
+  Widget build(BuildContext context) {
+    final badge = Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xxs,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.15),
+        borderRadius: AppSpacing.borderRadiusSm,
+      ),
+      child: Text(
+        '$count',
+        style: const TextStyle(
+          color: AppColors.onPrimary,
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+        ),
+      ),
+    );
+
+    if (tooltip == null || tooltip!.trim().isEmpty) {
+      return badge;
+    }
+
+    return Tooltip(message: tooltip!, child: badge);
+  }
+}
+
+class AppBottomSheetHandle extends StatelessWidget {
+  final Color color;
+  final double width;
+  final double height;
+
+  const AppBottomSheetHandle({
+    super.key,
+    this.color = AppColors.border,
+    this.width = 44,
+    this.height = 5,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(999),
+        ),
+      ),
+    );
+  }
+}
+
+class AppRoundedBottomSheetFrame extends StatelessWidget {
+  final Widget child;
+  final double topRadius;
+  final Color backgroundColor;
+  final EdgeInsetsGeometry handlePadding;
+
+  const AppRoundedBottomSheetFrame({
+    super.key,
+    required this.child,
+    this.topRadius = AppSpacing.lg,
+    this.backgroundColor = AppColors.surface,
+    this.handlePadding = const EdgeInsets.only(top: AppSpacing.sm),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(topRadius)),
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            color: backgroundColor,
+            padding: handlePadding,
+            child: const AppBottomSheetHandle(),
+          ),
+          Expanded(child: child),
+        ],
+      ),
+    );
+  }
+}
+
+class AppDialogHeaderWithAmount extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final double amount;
+  final VoidCallback? onClose;
+  final EdgeInsetsGeometry padding;
+
+  const AppDialogHeaderWithAmount({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.amount,
+    this.onClose,
+    this.padding = const EdgeInsets.all(AppSpacing.xl),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: padding,
+      decoration: const BoxDecoration(gradient: AppColors.headerGradient),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.onPrimary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: AppColors.onPrimary),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Text(
+            title,
+            style: const TextStyle(
+              color: AppColors.onPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const Spacer(),
+          Text.rich(
+            PosFormatters.amountRich(
+              amount,
+              amountStyle: TextStyle(
+                color: AppColors.onPrimary.withValues(alpha: 0.9),
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          if (onClose != null) ...[
+            const SizedBox(width: AppSpacing.md),
+            IconButton(
+              tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+              icon: const Icon(Icons.close, color: AppColors.onPrimary),
+              onPressed: onClose,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class AppChangeNoticeBox extends StatelessWidget {
+  final String label;
+  final double value;
+  final IconData icon;
+  final Color color;
+
+  const AppChangeNoticeBox({
+    super.key,
+    required this.label,
+    required this.value,
+    this.icon = Icons.currency_exchange,
+    this.color = AppColors.info,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: AppSpacing.borderRadiusMd,
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: AppSpacing.sm),
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: '$label: '),
+                PosFormatters.amountRich(
+                  value,
+                  amountStyle: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

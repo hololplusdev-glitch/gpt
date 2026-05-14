@@ -13,11 +13,14 @@ import 'package:holol_POS/core/services/time/clock.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:share_plus/share_plus.dart';
+import 'dart:typed_data';
+import 'package:holol_POS/core/services/receipts/receipt_raster_renderer.dart';
 
 class InvoiceOutputActions {
   final InvoiceDocumentBuilder _documentBuilder;
   final ReceiptFileWriter _fileWriter;
   final ReceiptPdfWriter _pdfWriter;
+  final ReceiptRasterRenderer _rasterRenderer;
   final PrintQueue _printQueue;
   final PrintJobService _printJobService;
   final PrintJobProcessor _printJobProcessor;
@@ -28,6 +31,7 @@ class InvoiceOutputActions {
     required InvoiceDocumentBuilder documentBuilder,
     required ReceiptFileWriter fileWriter,
     required ReceiptPdfWriter pdfWriter,
+    ReceiptRasterRenderer rasterRenderer = const ReceiptRasterRenderer(),
     required PrintQueue printQueue,
     required PrintJobService printJobService,
     required PrintJobProcessor printJobProcessor,
@@ -36,6 +40,7 @@ class InvoiceOutputActions {
   }) : _documentBuilder = documentBuilder,
        _fileWriter = fileWriter,
        _pdfWriter = pdfWriter,
+       _rasterRenderer = rasterRenderer,
        _printQueue = printQueue,
        _printJobService = printJobService,
        _printJobProcessor = printJobProcessor,
@@ -44,6 +49,21 @@ class InvoiceOutputActions {
 
   Future<InvoiceDocument> getOrCreateOriginal(String saleId) {
     return _documentBuilder.getOrCreateOriginal(saleId);
+  }
+
+  Future<Uint8List> renderOriginalReceiptPng(
+    String saleId, {
+    int paperWidthMm = 80,
+  }) async {
+    final document = await getOrCreateOriginal(saleId);
+    return renderReceiptPng(document, paperWidthMm: paperWidthMm);
+  }
+
+  Future<Uint8List> renderReceiptPng(
+    InvoiceDocument document, {
+    int paperWidthMm = 80,
+  }) {
+    return _rasterRenderer.renderPng(document, paperWidthMm: paperWidthMm);
   }
 
   Future<InvoicePrintResult> printOriginal(

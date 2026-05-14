@@ -10,7 +10,6 @@ import 'package:holol_POS/app/router.dart';
 import 'package:holol_POS/core/design_system/colors.dart';
 import 'package:holol_POS/core/design_system/spacing.dart';
 import 'package:holol_POS/core/services/invoices/invoice_output_actions.dart';
-import 'package:holol_POS/core/services/receipts/receipt_raster_renderer.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
@@ -18,7 +17,7 @@ import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 /// Shows a thermal receipt image preview in a dialog.
 ///
 /// [saleId] is used to build the InvoiceDocument via [InvoiceOutputActions].
-/// The receipt is rendered as a PNG image using [ReceiptRasterRenderer].
+/// The receipt PNG is rendered through [InvoiceOutputActions].
 Future<void> showThermalReceiptPreview({
   required BuildContext context,
   required String saleId,
@@ -58,12 +57,10 @@ class _ThermalReceiptDialogState extends State<_ThermalReceiptDialog> {
 
   Future<void> _renderReceipt() async {
     try {
-      final document = await widget.outputActions.getOrCreateOriginal(
+      final pngBytes = await widget.outputActions.renderOriginalReceiptPng(
         widget.saleId,
+        paperWidthMm: 80,
       );
-      final renderer = const ReceiptRasterRenderer();
-      // Use 80mm paper for a good preview resolution
-      final pngBytes = await renderer.renderPng(document, paperWidthMm: 80);
 
       if (!mounted) return;
       setState(() {

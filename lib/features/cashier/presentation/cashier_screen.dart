@@ -28,7 +28,7 @@ import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
-import 'package:holol_POS/shared/refactor/pos_scan_flow.dart';
+import 'package:holol_POS/shared/refactor/pos_runtime_state.dart';
 import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 
 enum _BarcodeSubmitIntent { manualSearch, scannerLikeInput }
@@ -245,16 +245,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
               children: [
                 // ── Drag Handle ──
                 const SizedBox(height: AppSpacing.sm),
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: AppColors.border,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                ),
+                const AppBottomSheetHandle(),
                 // ── Header ──
                 Container(
                   width: double.infinity,
@@ -784,31 +775,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
       builder: (context) {
         return FractionallySizedBox(
           heightFactor: MediaQuery.sizeOf(context).height < 720 ? 0.96 : 0.92,
-          child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(AppSpacing.lg),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: double.infinity,
-                  color: AppColors.surface,
-                  padding: const EdgeInsets.only(top: AppSpacing.sm),
-                  child: Center(
-                    child: Container(
-                      width: 44,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: AppColors.border,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                  ),
-                ),
-                const Expanded(child: CartPanel()),
-              ],
-            ),
-          ),
+          child: const AppRoundedBottomSheetFrame(child: CartPanel()),
         );
       },
     );

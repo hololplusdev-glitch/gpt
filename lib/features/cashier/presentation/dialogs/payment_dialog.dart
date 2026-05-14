@@ -309,52 +309,16 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
+        AppDialogHeaderWithAmount(
+          title: l10n.payment,
+          icon: Icons.payment,
+          amount: _totalAmount,
           padding: EdgeInsets.all(
             MediaQuery.sizeOf(context).width < 600
                 ? AppSpacing.lg
                 : AppSpacing.xl,
           ),
-          decoration: const BoxDecoration(gradient: AppColors.headerGradient),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.onPrimary.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.payment, color: AppColors.onPrimary),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Text(
-                l10n.payment,
-                style: const TextStyle(
-                  color: AppColors.onPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Spacer(),
-              Text.rich(
-                PosFormatters.amountRich(
-                  _totalAmount,
-                  amountStyle: TextStyle(
-                    color: AppColors.onPrimary.withValues(alpha: 0.9),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              IconButton(
-                tooltip: l10n.cancel,
-                icon: const Icon(Icons.close, color: AppColors.onPrimary),
-                onPressed: _isProcessing ? null : _cancelBeforeCompletion,
-              ),
-            ],
-          ),
+          onClose: _isProcessing ? null : _cancelBeforeCompletion,
         ),
         Flexible(
           child: SingleChildScrollView(
@@ -747,47 +711,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
           ],
           const SizedBox(height: AppSpacing.lg),
           if (_change > 0) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.info.withValues(alpha: 0.08),
-                borderRadius: AppSpacing.borderRadiusMd,
-                border: Border.all(
-                  color: AppColors.info.withValues(alpha: 0.25),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.currency_exchange, color: AppColors.info),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(text: '${l10n.change}: '),
-                        PosFormatters.amountRich(
-                          _change,
-                          amountStyle: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.info,
-                          ),
-                        ),
-                      ],
-                    ),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.info,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            AppChangeNoticeBox(label: l10n.change, value: _change),
             const SizedBox(height: AppSpacing.lg),
           ],
           Wrap(
