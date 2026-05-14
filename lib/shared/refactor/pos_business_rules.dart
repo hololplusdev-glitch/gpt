@@ -21,6 +21,7 @@ import 'package:holol_POS/core/services/pos_devices/print_queue.dart';
 import 'package:holol_POS/core/services/sync/outbox_event_factory.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
 import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
+import 'package:holol_POS/core/constants/pos_config_keys.dart';
 
 typedef BusinessRuleExceptionFactory =
     BusinessException Function(String message);
@@ -28,6 +29,243 @@ typedef BusinessRuleExceptionFactory =
 abstract final class PosDomainTolerances {
   static const double money = 0.01;
   static const double quantity = 0.000001;
+}
+
+/// Shift-specific exception.
+class ShiftException extends BusinessException {
+  const ShiftException(super.message) : super(code: 'shift_error');
+}
+
+class PosShiftWorkflow {
+  static const _uuid = Uuid();
+
+  final ShiftDao shiftDao;
+  final SalesDao salesDao;
+  final PosConfigRepository config;
+  final OutboxEventFactory outboxEventFactory;
+  final Clock clock;
+
+  const PosShiftWorkflow({
+    required this.shiftDao,
+    required this.salesDao,
+    required this.config,
+    required this.outboxEventFactory,
+    this.clock = const SystemClock(),
+  });
+
+  Future<Shift> openShift({
+    required ActivePosSession session,
+    required double openingCash,
+    String? shiftTypeId,
+  }) async {
+    if (openingCash < 0 || openingCash.isNaN) {
+      throw const ShiftException('Opening cash cannot be negative.');
+    }
+
+    final existing = await shiftDao.getOpenShift(session.activeMachineNo);
+    if (existing != null) {
+      throw ShiftException(
+        'A shift is already open on this terminal (${existing.id})',
+      );
+    }
+
+    final localId = 'SH_${_uuid.v4()}';
+    final now = clock.now();
+    final idempotencyKey = 'shift_open_$localId';
+    final defaultDuration = config.getInt(
+      PosConfigKeys.shiftDefaultDurationMinutes,
+      fallback: 480,
+    );
+    final expiresAt = now.add(Duration(minutes: defaultDuration));
+
+    final shiftEntry = ShiftsCompanion.insert(
+      id: localId,
+      branchNo: Value(session.activeBranchNo),
+      branchYear: Value(session.activeBranchYear),
+      machineNo: Value(session.activeMachineNo),
+      storeId: Value(session.activeStoreId),
+      priceLevelId: Value(session.activePriceLevelId),
+      cashierId: session.activeUserId,
+      shiftTypeId: Value(shiftTypeId),
+      openingCash: openingCash,
+      status: ShiftStatus.open.code,
+      openedAt: now,
+      expiresAt: Value(expiresAt),
+      idempotencyKey: idempotencyKey,
+    );
+
+    final outboxEntry = outboxEventFactory.shiftOpened(
+      localId: localId,
+      machineNo: session.activeMachineNo,
+      cashierId: session.activeUserId,
+      cashierName: session.activeUserName,
+      openingCash: openingCash,
+      openedAt: now,
+      expiresAt: expiresAt,
+      idempotencyKey: idempotencyKey,
+    );
+
+    final auditLogEntry = AuditLogCompanion.insert(
+      id: 'AUD_${_uuid.v4()}',
+      action: AuditAction.shiftOpened.code,
+      actorId: session.activeUserId,
+      actorName: Value(session.activeUserName),
+      targetType: Value(OutboxEntityType.shift.code),
+      targetId: Value(localId),
+      terminalId: session.activeMachineNo,
+      createdAt: now,
+    );
+
+    await shiftDao.createShiftEnvelope(
+      shift: shiftEntry,
+      outboxEntry: outboxEntry,
+      auditLogEntry: auditLogEntry,
+    );
+
+    return (await shiftDao.getById(localId))!;
+  }
+
+  Future<void> closeShift({
+    required ActivePosSession session,
+    required String localId,
+    required double actualCash,
+    String? closingNotes,
+  }) async {
+    if (actualCash < 0 || actualCash.isNaN) {
+      throw const ShiftException('Actual cash cannot be negative.');
+    }
+
+    final shift = await shiftDao.getById(localId);
+    if (shift == null) throw ShiftException('Shift not found: $localId');
+
+    final isOpen =
+        shift.status == ShiftStatus.open.code ||
+        shift.status == ShiftStatus.closing.code;
+
+    if (!isOpen) {
+      throw const ShiftException('Shift is not open');
+    }
+
+    if (config.blockShiftCloseWithHeldInvoices) {
+      final heldCount = await salesDao.countActiveHeldOrders(localId);
+      if (heldCount > 0) {
+        throw ShiftException(
+          'Cannot close shift: $heldCount held order(s) remain. Complete or cancel them first.',
+        );
+      }
+    }
+
+    final totals = await salesDao.getShiftSalesTotals(localId);
+
+    final expectedCash =
+        shift.openingCash + totals.cashSales - totals.cashReturns;
+    final difference = actualCash - expectedCash;
+
+    final now = clock.now();
+
+    final outboxEntry = outboxEventFactory.shiftClosed(
+      localId: localId,
+      machineNo: session.activeMachineNo,
+      cashierId: session.activeUserId,
+      cashierName: session.activeUserName,
+      expectedCash: expectedCash,
+      actualCash: actualCash,
+      difference: difference,
+      grossSales: totals.grossSales,
+      netSales: totals.netSales,
+      cashSales: totals.cashSales,
+      cardSales: totals.cardSales,
+      otherSales: totals.otherSales,
+      cashReturns: totals.cashReturns,
+      totalDiscounts: totals.totalDiscounts,
+      totalTaxes: totals.totalTaxes,
+      totalReturns: totals.totalReturns,
+      totalVoids: totals.totalVoids,
+      saleCount: totals.saleCount,
+      closedAt: now,
+    );
+
+    final auditLogEntry = AuditLogCompanion.insert(
+      id: 'AUD_${_uuid.v4()}',
+      action: AuditAction.shiftClosed.code,
+      actorId: session.activeUserId,
+      actorName: Value(session.activeUserName),
+      targetType: Value(OutboxEntityType.shift.code),
+      targetId: Value(localId),
+      detailsJson: Value(
+        jsonEncode({
+          'expectedCash': expectedCash,
+          'actualCash': actualCash,
+          'difference': difference,
+        }),
+      ),
+      terminalId: session.activeMachineNo,
+      createdAt: now,
+    );
+
+    await shiftDao.closeShiftEnvelope(
+      localId: localId,
+      expectedCash: expectedCash,
+      actualCash: actualCash,
+      difference: difference,
+      grossSales: totals.grossSales,
+      netSales: totals.netSales,
+      cashSales: totals.cashSales,
+      cardSales: totals.cardSales,
+      otherSales: totals.otherSales,
+      cashReturns: totals.cashReturns,
+      totalDiscounts: totals.totalDiscounts,
+      totalTaxes: totals.totalTaxes,
+      totalReturns: totals.totalReturns,
+      totalVoids: totals.totalVoids,
+      saleCount: totals.saleCount,
+      closingNotes: closingNotes,
+      outboxEntry: outboxEntry,
+      auditLogEntry: auditLogEntry,
+    );
+  }
+
+  Future<Shift> extendShift({
+    required ActivePosSession session,
+    required String localId,
+    int? overrideMinutes,
+  }) async {
+    final shift = await shiftDao.getById(localId);
+    if (shift == null) throw const ShiftException('Shift not found');
+
+    final minutes = overrideMinutes ?? config.shiftExtendMinutes;
+    final currentExpiry = shift.expiresAt ?? clock.now();
+    final newExpiry = currentExpiry.add(Duration(minutes: minutes));
+
+    final now = clock.now();
+
+    final outboxEntry = outboxEventFactory.shiftExtended(
+      localId: localId,
+      extendedByMinutes: minutes,
+      newExpiry: newExpiry,
+      extendedAt: now,
+    );
+
+    final auditLogEntry = AuditLogCompanion.insert(
+      id: 'AUD_${_uuid.v4()}',
+      action: AuditAction.shiftExtended.code,
+      actorId: session.activeUserId,
+      targetType: Value(OutboxEntityType.shift.code),
+      targetId: Value(localId),
+      detailsJson: Value(jsonEncode({'extendedByMinutes': minutes})),
+      terminalId: session.activeMachineNo,
+      createdAt: now,
+    );
+
+    await shiftDao.extendShiftEnvelope(
+      localId: localId,
+      newExpiry: newExpiry,
+      outboxEntry: outboxEntry,
+      auditLogEntry: auditLogEntry,
+    );
+
+    return (await shiftDao.getById(localId))!;
+  }
 }
 
 abstract final class PosBusinessRules {

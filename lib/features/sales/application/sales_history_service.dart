@@ -1,4 +1,3 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
@@ -39,7 +38,7 @@ class SalesHistoryService {
        _activeSession = activeSession,
        _clock = clock;
 
-PosSalesHistoryWorkflow get _workflow => PosSalesHistoryWorkflow(
+  PosSalesHistoryWorkflow get _workflow => PosSalesHistoryWorkflow(
     salesDao: _salesDao,
     shiftDao: _shiftDao,
     invoiceNumberService: _invoiceNumberService,
@@ -70,14 +69,13 @@ PosSalesHistoryWorkflow get _workflow => PosSalesHistoryWorkflow(
     return SaleDetail(sale: sale, items: items, payments: payments);
   }
 
-Future<void> voidSale(String saleId) {
+  Future<void> voidSale(String saleId) {
     return _workflow.voidSale(saleId);
   }
 
-Future<String> returnSale(String saleId) {
+  Future<String> returnSale(String saleId) {
     return _workflow.returnSale(saleId);
   }
-
 }
 
 class SaleDetail {
