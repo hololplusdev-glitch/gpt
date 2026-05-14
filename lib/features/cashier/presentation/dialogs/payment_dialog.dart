@@ -115,7 +115,15 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     super.dispose();
   }
 
-void _selectCustomer(Customer customer) {
+  void _scheduleCustomerSearch(String value) {
+    _customerSearchDebounce?.cancel();
+    _customerSearchDebounce = Timer(const Duration(milliseconds: 250), () {
+      if (!mounted) return;
+      ref.read(customerSearchQueryProvider.notifier).state = value.trim();
+    });
+  }
+
+  void _selectCustomer(Customer customer) {
     setState(() {
       _selectedCustomerId = customer.id;
       _selectedCustomerName = customer.name;
@@ -125,7 +133,7 @@ void _selectCustomer(Customer customer) {
     });
   }
 
-void _removeLine(String id) {
+  void _removeLine(String id) {
     setState(() {
       _paymentDraft.removeLine(id);
       _errorMessage = null;
@@ -133,7 +141,7 @@ void _removeLine(String id) {
   }
 
 
-void _selectLineKind(SaleTenderKind kind, [PaymentDraftLine? existing]) {
+  void _selectLineKind(SaleTenderKind kind, [PaymentDraftLine? existing]) {
     final selection = _paymentDraft.selectLineKind(
       kind: kind,
       totalAmount: _totalAmount,
@@ -159,12 +167,7 @@ void _selectLineKind(SaleTenderKind kind, [PaymentDraftLine? existing]) {
     );
   }
 
-  void _upsertLine(PaymentDraftLine line, PaymentDraftLine? existing) {
-    setState(() {
-      _paymentDraft.upsertLine(line, existing);
-      _errorMessage = null;
-    });
-  }
+
 
   bool _submitInlineLine({bool showErrors = true, bool updateText = false}) {
     final result = _paymentDraft.submitInlineLine(
@@ -202,52 +205,8 @@ void _selectLineKind(SaleTenderKind kind, [PaymentDraftLine? existing]) {
     );
   }
 
-) {
-    final kind = _activeLineKind;
-    if (kind == null) return false;
 
-    final existing = _editingLineId == null
-        ? null
-        : _paymentLines.where((line) => line.id == _editingLineId).firstOrNull;
-
-    final result = PaymentDraftRules.buildDraftLine(
-      id: existing?.id ?? const Uuid().v4(),
-      kind: kind,
-      rawInputAmount: _parseMoney(_lineAmountController.text),
-      availableAmount: _availableFor(existing),
-    );
-
-    if (!result.isSuccess) {
-      if (showErrors) {
-        setState(() {
-          _lineInputError = switch (result.error) {
-            PaymentDraftLineError.invalidAmount => 'أدخل مبلغًا صحيحًا أكبر من صفر.',
-            PaymentDraftLineError.exceedsRemaining => 'المبلغ لا يمكن أن يتجاوز المتبقي.',
-            null => 'أدخل مبلغًا صحيحًا أكبر من صفر.',
-          };
-        });
-      } else {
-        setState(() => _lineInputError = null);
-      }
-      return false;
-    }
-
-    final line = result.line!;
-    _upsertLine(line, existing);
-
-    setState(() {
-      _activeLineKind = kind;
-      _editingLineId = line.id;
-      _lineInputError = null;
-      if (updateText) {
-        _lineAmountController.text = line.tenderedAmount.toStringAsFixed(2);
-      }
-    });
-
-    return true;
-  }
-
-Future<void> _processPayment() async {
+  Future<void> _processPayment() async {
     final l10n = AppLocalizations.of(context)!;
     final validationMessage = _validatePaymentBeforeSubmit();
 
