@@ -13,6 +13,7 @@ import 'package:holol_POS/core/services/invoices/invoice_output_actions.dart';
 import 'package:holol_POS/core/services/receipts/receipt_raster_renderer.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
+import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 
 /// Shows a thermal receipt image preview in a dialog.
 ///
@@ -96,48 +97,13 @@ class _ThermalReceiptDialogState extends State<_ThermalReceiptDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Header ──
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.md,
-              ),
-              decoration: const BoxDecoration(
-                gradient: AppColors.headerGradient,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(AppSpacing.lg),
-                  topRight: Radius.circular(AppSpacing.lg),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.receipt_long,
-                    color: AppColors.onPrimary,
-                    size: 22,
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  const Text(
-                    'معاينة الفاتورة',
-                    style: TextStyle(
-                      color: AppColors.onPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      color: AppColors.onPrimary,
-                      size: 20,
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
+            AppDialogHeader(
+              title: 'معاينة الفاتورة',
+              icon: Icons.receipt_long,
+              onClose: () => Navigator.of(context).pop(),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(AppSpacing.lg),
+                topRight: Radius.circular(AppSpacing.lg),
               ),
             ),
             // ── Body ──
@@ -161,28 +127,7 @@ class _ThermalReceiptDialogState extends State<_ThermalReceiptDialog> {
                         horizontal: AppSpacing.md,
                         vertical: AppSpacing.lg,
                       ),
-                      child: Center(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: AppSpacing.borderRadiusSm,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: AppSpacing.borderRadiusSm,
-                            child: Image.memory(
-                              _pngBytes!,
-                              filterQuality: FilterQuality.high,
-                            ),
-                          ),
-                        ),
-                      ),
+                      child: AppReceiptImageFrame(bytes: _pngBytes!),
                     ),
             ),
             // ── Actions ──

@@ -23,6 +23,7 @@ import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
 import 'package:uuid/uuid.dart';
 import 'package:holol_POS/shared/refactor/pos_payment_draft.dart';
 import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
+import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final Cart cart;
@@ -392,7 +393,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                   ),
                 ],
                 const SizedBox(height: AppSpacing.xl),
-                _CompleteButton(
+                AppCompleteButton(
                   isProcessing: _isProcessing,
                   enabled: _canConfirm,
                   label: 'إتمام الدفع',
@@ -437,13 +438,16 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
               ],
             ),
             const Divider(height: AppSpacing.xl),
-            _SummaryRow(label: 'المدفوع فعليًا', value: _actualPaidAmount),
+            AppPaymentSummaryRow(
+              label: 'المدفوع فعليًا',
+              value: _actualPaidAmount,
+            ),
             const SizedBox(height: AppSpacing.xs),
-            _SummaryRow(label: 'الآجل', value: _creditAmount),
+            AppPaymentSummaryRow(label: 'الآجل', value: _creditAmount),
             const SizedBox(height: AppSpacing.xs),
-            _SummaryRow(label: 'المتبقي', value: _remainingAmount),
+            AppPaymentSummaryRow(label: 'المتبقي', value: _remainingAmount),
             const SizedBox(height: AppSpacing.xs),
-            _SummaryRow(label: 'الراجع', value: _change),
+            AppPaymentSummaryRow(label: 'الراجع', value: _change),
           ],
         ),
       ),
@@ -461,7 +465,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     return Column(
       children: [
         for (final line in _paymentLines) ...[
-          _PaymentLineTile(
+          AppPaymentLineTile(
             line: line,
             onEdit: () => _selectLineKind(line.kind, line),
             onDelete: () => _removeLine(line.id),
@@ -492,7 +496,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         Row(
           children: [
             Expanded(
-              child: _PaymentMethodButton(
+              child: AppPaymentMethodButton(
                 icon: Icons.payments_outlined,
                 label: 'كاش',
                 subtitleWidget: Text.rich(
@@ -512,7 +516,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: _PaymentMethodButton(
+              child: AppPaymentMethodButton(
                 icon: Icons.credit_card,
                 label: 'شبكة',
                 subtitleWidget: Text.rich(
@@ -532,7 +536,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
-              child: _PaymentMethodButton(
+              child: AppPaymentMethodButton(
                 icon: Icons.person_outline,
                 label: 'آجل',
                 subtitleWidget: Text.rich(
@@ -846,210 +850,4 @@ class PaymentDialogResult {
     required String? saleId,
     bool openInvoice = false,
   }) : this._(completed: true, saleId: saleId, openInvoice: openInvoice);
-}
-
-class _PaymentLineTile extends StatelessWidget {
-  final PaymentDraftLine line;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  const _PaymentLineTile({
-    required this.line,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final (icon, title) = switch (line.kind) {
-      SaleTenderKind.cash => (Icons.payments_outlined, 'كاش'),
-      SaleTenderKind.network => (Icons.credit_card, 'شبكة'),
-      SaleTenderKind.credit => (Icons.person_outline, 'آجل'),
-    };
-
-    final subtitleWidget = line.kind == SaleTenderKind.cash && line.change > 0
-        ? Text.rich(
-            TextSpan(
-              children: [
-                const TextSpan(text: 'المستلم '),
-                PosFormatters.amountRich(line.tenderedAmount),
-                const TextSpan(text: ' - الراجع '),
-                PosFormatters.amountRich(line.change),
-              ],
-            ),
-            style: const TextStyle(fontSize: 12),
-          )
-        : null;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppSpacing.borderRadiusMd,
-        border: Border.all(color: AppColors.border),
-        boxShadow: AppSpacing.shadowSm,
-      ),
-      child: ListTile(
-        leading: Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(
-            color: AppColors.primary.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(icon, color: AppColors.primary, size: 20),
-        ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: subtitleWidget,
-        trailing: Wrap(
-          spacing: AppSpacing.xs,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Text.rich(
-              PosFormatters.amountRich(
-                line.amount,
-                amountStyle: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-            ),
-            IconButton(
-              tooltip: 'تعديل',
-              icon: const Icon(Icons.edit_outlined, size: 20),
-              onPressed: onEdit,
-            ),
-            IconButton(
-              tooltip: 'حذف',
-              icon: const Icon(
-                Icons.delete_outline,
-                size: 20,
-                color: AppColors.error,
-              ),
-              onPressed: onDelete,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SummaryRow extends StatelessWidget {
-  final String label;
-  final double value;
-
-  const _SummaryRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const Spacer(),
-        Text.rich(
-          PosFormatters.amountRich(
-            value,
-            amountStyle: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _CompleteButton extends StatelessWidget {
-  final bool isProcessing;
-  final bool enabled;
-  final String label;
-  final VoidCallback onPressed;
-
-  const _CompleteButton({
-    required this.isProcessing,
-    required this.enabled,
-    required this.label,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: AppSpacing.jumbo + AppSpacing.sm,
-      child: AppButton.primary(
-        onPressed: !enabled || isProcessing ? null : onPressed,
-        customColor: AppColors.payButton,
-        isLoading: isProcessing,
-        label: label,
-      ),
-    );
-  }
-}
-
-class _PaymentMethodButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Widget subtitleWidget;
-  final Color color;
-  final VoidCallback? onPressed;
-
-  const _PaymentMethodButton({
-    required this.icon,
-    required this.label,
-    required this.subtitleWidget,
-    required this.color,
-    this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: AppSpacing.borderRadiusLg,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.md,
-          ),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.06),
-            borderRadius: AppSpacing.borderRadiusLg,
-            border: Border.all(color: color.withValues(alpha: 0.25)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: color,
-                  fontSize: 13,
-                ),
-              ),
-              subtitleWidget,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

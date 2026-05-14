@@ -3,11 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:holol_POS/core/design_system/colors.dart';
 import 'package:holol_POS/core/design_system/spacing.dart';
 import 'package:holol_POS/core/services/formatters/pos_formatters.dart';
+import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
 import 'package:holol_POS/shared/presentation/widgets/key_value_row.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/core/l10n/app_localizations.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
+import 'package:holol_POS/shared/refactor/pos_payment_draft.dart';
+import 'dart:typed_data';
 
 class AppPageHeader extends StatelessWidget {
   final String title;
@@ -1187,6 +1190,704 @@ class AppHeaderSearchField extends StatelessWidget {
         onChanged: onChanged,
         onSubmitted: onSubmitted,
       ),
+    );
+  }
+}
+
+class AppBrandMark extends StatelessWidget {
+  final String label;
+
+  const AppBrandMark({super.key, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.point_of_sale,
+          color: AppColors.onPrimary,
+          size: AppSpacing.xxl,
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.onPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class AppCashierSearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String hintText;
+  final ValueChanged<String> onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final VoidCallback? onScanPressed;
+
+  const AppCashierSearchField({
+    super.key,
+    required this.controller,
+    required this.focusNode,
+    required this.hintText,
+    required this.onChanged,
+    this.onSubmitted,
+    this.onScanPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 520),
+      child: SizedBox(
+        height: AppSpacing.jumbo,
+        child: TextField(
+          controller: controller,
+          focusNode: focusNode,
+          style: const TextStyle(color: AppColors.onPrimary, fontSize: 14),
+          textInputAction: TextInputAction.done,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: AppColors.onPrimary.withValues(alpha: 0.15),
+            hintText: hintText,
+            hintStyle: TextStyle(
+              color: AppColors.onPrimary.withValues(alpha: 0.6),
+              fontSize: 14,
+            ),
+            prefixIcon: Icon(
+              Icons.search,
+              color: AppColors.onPrimary.withValues(alpha: 0.7),
+              size: AppSpacing.xl,
+            ),
+            contentPadding: AppSpacing.horizontalMd,
+            border: OutlineInputBorder(
+              borderRadius: AppSpacing.borderRadiusMd,
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppSpacing.borderRadiusMd,
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppSpacing.borderRadiusMd,
+              borderSide: BorderSide(
+                color: AppColors.onPrimary.withValues(alpha: 0.4),
+              ),
+            ),
+            suffixIcon: onScanPressed != null
+                ? IconButton(
+                    icon: Icon(
+                      Icons.qr_code_scanner,
+                      color: AppColors.onPrimary.withValues(alpha: 0.7),
+                      size: AppSpacing.xl,
+                    ),
+                    tooltip: AppLocalizations.of(context)!.scanBarcode,
+                    onPressed: onScanPressed,
+                  )
+                : null,
+          ),
+          onChanged: onChanged,
+          onSubmitted: onSubmitted,
+          inputFormatters: [FilteringTextInputFormatter.singleLineFormatter],
+        ),
+      ),
+    );
+  }
+}
+
+class AppTopBarButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const AppTopBarButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppSpacing.borderRadiusMd,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            decoration: BoxDecoration(
+              color: AppColors.onPrimary.withValues(alpha: 0.06),
+              borderRadius: AppSpacing.borderRadiusMd,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: AppColors.onPrimary.withValues(alpha: 0.85),
+                  size: 20,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: AppColors.onPrimary.withValues(alpha: 0.7),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AppCashierBadge extends StatelessWidget {
+  final String cashierName;
+
+  const AppCashierBadge({super.key, required this.cashierName});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.onPrimary.withValues(alpha: 0.1),
+        borderRadius: AppSpacing.borderRadiusMd,
+        border: Border.all(color: AppColors.onPrimary.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withValues(alpha: 0.3),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.person,
+              color: AppColors.onPrimary,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 120),
+            child: Text(
+              cashierName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.onPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AppLogoutButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const AppLogoutButton({super.key, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return IconButton(
+      icon: Icon(
+        Icons.logout,
+        color: AppColors.onPrimary.withValues(alpha: 0.7),
+        size: AppSpacing.xl,
+      ),
+      tooltip: l10n.logout,
+      onPressed: onPressed,
+    );
+  }
+}
+
+class AppPaymentSummaryRow extends StatelessWidget {
+  final String label;
+  final double value;
+
+  const AppPaymentSummaryRow({
+    super.key,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const Spacer(),
+        Text.rich(
+          PosFormatters.amountRich(
+            value,
+            amountStyle: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class AppCompleteButton extends StatelessWidget {
+  final bool isProcessing;
+  final bool enabled;
+  final String label;
+  final VoidCallback onPressed;
+
+  const AppCompleteButton({
+    super.key,
+    required this.isProcessing,
+    required this.enabled,
+    required this.label,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: AppSpacing.jumbo + AppSpacing.sm,
+      child: AppButton.primary(
+        onPressed: !enabled || isProcessing ? null : onPressed,
+        customColor: AppColors.payButton,
+        isLoading: isProcessing,
+        label: label,
+      ),
+    );
+  }
+}
+
+class AppPaymentMethodButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Widget subtitleWidget;
+  final Color color;
+  final VoidCallback? onPressed;
+
+  const AppPaymentMethodButton({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.subtitleWidget,
+    required this.color,
+    this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onPressed == null;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: AppSpacing.borderRadiusLg,
+        child: AnimatedContainer(
+          duration: AppSpacing.durationFast,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: disabled
+                ? AppColors.surfaceVariant
+                : color.withValues(alpha: 0.08),
+            borderRadius: AppSpacing.borderRadiusLg,
+            border: Border.all(
+              color: disabled
+                  ? AppColors.border
+                  : color.withValues(alpha: 0.25),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                color: disabled ? AppColors.textHint : color,
+                size: 24,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: disabled ? AppColors.textHint : AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xxs),
+              DefaultTextStyle(
+                style: TextStyle(
+                  color: disabled ? AppColors.textHint : color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+                child: subtitleWidget,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+enum AppOverflowAction {
+  hold,
+  heldOrders,
+  shift,
+  history,
+  sync,
+  devices,
+  settings,
+}
+
+class AppOverflowActions extends StatelessWidget {
+  final VoidCallback onHold;
+  final VoidCallback onHeldOrders;
+  final VoidCallback onShift;
+  final VoidCallback onHistory;
+  final VoidCallback onSync;
+  final VoidCallback onDevices;
+  final VoidCallback onSettings;
+
+  const AppOverflowActions({
+    super.key,
+    required this.onHold,
+    required this.onHeldOrders,
+    required this.onShift,
+    required this.onHistory,
+    required this.onSync,
+    required this.onDevices,
+    required this.onSettings,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return PopupMenuButton<AppOverflowAction>(
+      tooltip: 'المزيد',
+      icon: Icon(
+        Icons.more_vert,
+        color: AppColors.onPrimary.withValues(alpha: 0.8),
+      ),
+      onSelected: (action) {
+        switch (action) {
+          case AppOverflowAction.hold:
+            onHold();
+          case AppOverflowAction.heldOrders:
+            onHeldOrders();
+          case AppOverflowAction.shift:
+            onShift();
+          case AppOverflowAction.history:
+            onHistory();
+          case AppOverflowAction.sync:
+            onSync();
+          case AppOverflowAction.devices:
+            onDevices();
+          case AppOverflowAction.settings:
+            onSettings();
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: AppOverflowAction.hold,
+          child: ListTile(
+            dense: true,
+            leading: const Icon(Icons.pause_circle_outline),
+            title: Text(l10n.hold),
+          ),
+        ),
+        const PopupMenuItem(
+          value: AppOverflowAction.heldOrders,
+          child: ListTile(
+            dense: true,
+            leading: Icon(Icons.restore_page_outlined),
+            title: Text('الطلبات المعلقة'),
+          ),
+        ),
+        const PopupMenuItem(
+          value: AppOverflowAction.shift,
+          child: ListTile(
+            dense: true,
+            leading: Icon(Icons.analytics_outlined),
+            title: Text('الشفت'),
+          ),
+        ),
+        PopupMenuItem(
+          value: AppOverflowAction.history,
+          child: ListTile(
+            dense: true,
+            leading: const Icon(Icons.history),
+            title: Text(l10n.salesHistory),
+          ),
+        ),
+        PopupMenuItem(
+          value: AppOverflowAction.sync,
+          child: ListTile(
+            dense: true,
+            leading: const Icon(Icons.sync),
+            title: Text(l10n.syncMonitor),
+          ),
+        ),
+        PopupMenuItem(
+          value: AppOverflowAction.devices,
+          child: ListTile(
+            dense: true,
+            leading: const Icon(Icons.devices),
+            title: Text(l10n.posDevices),
+          ),
+        ),
+        PopupMenuItem(
+          value: AppOverflowAction.settings,
+          child: ListTile(
+            dense: true,
+            leading: const Icon(Icons.settings),
+            title: Text(l10n.settings),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class AppPaymentLineTile extends StatelessWidget {
+  final PaymentDraftLine line;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  const AppPaymentLineTile({
+    super.key,
+    required this.line,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, title) = switch (line.kind) {
+      SaleTenderKind.cash => (Icons.payments_outlined, 'كاش'),
+      SaleTenderKind.network => (Icons.credit_card, 'شبكة'),
+      SaleTenderKind.credit => (Icons.person_outline, 'آجل'),
+    };
+
+    final subtitleWidget = line.kind == SaleTenderKind.cash && line.change > 0
+        ? Text.rich(
+            TextSpan(
+              children: [
+                const TextSpan(text: 'المستلم '),
+                PosFormatters.amountRich(line.tenderedAmount),
+                const TextSpan(text: ' - الراجع '),
+                PosFormatters.amountRich(line.change),
+              ],
+            ),
+            style: const TextStyle(fontSize: 12),
+          )
+        : null;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppSpacing.borderRadiusMd,
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppSpacing.shadowSm,
+      ),
+      child: ListTile(
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 20),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: subtitleWidget,
+        trailing: Wrap(
+          spacing: AppSpacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text.rich(
+              PosFormatters.amountRich(
+                line.amount,
+                amountStyle: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+            ),
+            IconButton(
+              tooltip: 'تعديل',
+              icon: const Icon(Icons.edit_outlined, size: 20),
+              onPressed: onEdit,
+            ),
+            IconButton(
+              tooltip: 'حذف',
+              icon: const Icon(
+                Icons.delete_outline,
+                size: 20,
+                color: AppColors.error,
+              ),
+              onPressed: onDelete,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AppDialogHeader extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final VoidCallback? onClose;
+  final Widget? trailing;
+  final EdgeInsetsGeometry padding;
+  final BorderRadiusGeometry? borderRadius;
+
+  const AppDialogHeader({
+    super.key,
+    required this.title,
+    required this.icon,
+    this.onClose,
+    this.trailing,
+    this.padding = const EdgeInsets.symmetric(
+      horizontal: AppSpacing.lg,
+      vertical: AppSpacing.md,
+    ),
+    this.borderRadius,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        gradient: AppColors.headerGradient,
+        borderRadius: borderRadius,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.onPrimary, size: 22),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.onPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          if (trailing != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            trailing!,
+          ],
+          if (onClose != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            IconButton(
+              icon: const Icon(
+                Icons.close,
+                color: AppColors.onPrimary,
+                size: 20,
+              ),
+              onPressed: onClose,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class AppReceiptImageFrame extends StatelessWidget {
+  final Uint8List bytes;
+  final double? maxWidth;
+  final FilterQuality filterQuality;
+
+  const AppReceiptImageFrame({
+    super.key,
+    required this.bytes,
+    this.maxWidth,
+    this.filterQuality = FilterQuality.high,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final image = DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: AppSpacing.borderRadiusSm,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: AppSpacing.borderRadiusSm,
+        child: Image.memory(bytes, filterQuality: filterQuality),
+      ),
+    );
+
+    return Center(
+      child: maxWidth == null
+          ? image
+          : ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth!),
+              child: image,
+            ),
     );
   }
 }

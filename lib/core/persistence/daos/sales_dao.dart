@@ -592,11 +592,6 @@ class SalesDao {
       return true;
     });
   }
-
-  String? DaoText.clean(String? value) {
-    final text = value?.trim();
-    return text == null || text.isEmpty ? null : text;
-  }
 }
 
 /// Aggregated shift sales totals.

@@ -1,7 +1,8 @@
 import 'package:drift/drift.dart';
+
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/invoices/invoice_print_history_entry.dart';
-import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 class InvoicePrintHistoryDao {
   final AppDatabase _db;
@@ -40,6 +41,7 @@ class InvoicePrintHistoryDao {
               ..where((entry) => entry.saleId.equals(saleId))
               ..orderBy([(entry) => OrderingTerm.desc(entry.createdAt)]))
             .get();
+
     return rows.map(_entryFromData).toList();
   }
 }
@@ -64,9 +66,4 @@ InvoicePrintHistoryEntry _entryFromData(PrintHistoryData row) {
     createdAt: row.createdAt,
     printedAt: row.printedAt,
   );
-}
-
-String? DaoText.clean(Object? value) {
-  final text = value?.toString().trim();
-  return text == null || text.isEmpty ? null : text;
 }

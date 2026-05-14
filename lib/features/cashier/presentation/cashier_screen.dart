@@ -29,6 +29,7 @@ import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/shared/refactor/pos_scan_flow.dart';
+import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 
 enum _BarcodeSubmitIntent { manualSearch, scannerLikeInput }
 
@@ -639,11 +640,11 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                       children: [
                         Row(
                           children: [
-                            _BrandMark(label: l10n.posShort),
+                            AppBrandMark(label: l10n.posShort),
                             const Spacer(),
-                            _CashierBadge(cashierName: cashierName),
+                            AppCashierBadge(cashierName: cashierName),
                             const SizedBox(width: AppSpacing.xs),
-                            _OverflowActions(
+                            AppOverflowActions(
                               onHold: () => _holdOrder(context),
                               onHeldOrders: () => _showHeldOrders(context),
                               onShift: () => context.push(AppRoutes.shift),
@@ -654,7 +655,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                               onSettings: () =>
                                   context.push(AppRoutes.settings),
                             ),
-                            _LogoutButton(
+                            AppLogoutButton(
                               onPressed: () => ref
                                   .read(posSessionControllerProvider.notifier)
                                   .logout(),
@@ -662,7 +663,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                           ],
                         ),
                         const SizedBox(height: AppSpacing.sm),
-                        _SearchField(
+                        AppCashierSearchField(
                           controller: _searchController,
                           focusNode: _searchFocus,
                           hintText: l10n.searchProductsOrScanBarcode,
@@ -682,10 +683,10 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                     height: AppSpacing.jumbo + AppSpacing.sm,
                     child: Row(
                       children: [
-                        _BrandMark(label: l10n.posShort),
+                        AppBrandMark(label: l10n.posShort),
                         const SizedBox(width: AppSpacing.xxl),
                         Expanded(
-                          child: _SearchField(
+                          child: AppCashierSearchField(
                             controller: _searchController,
                             focusNode: _searchFocus,
                             hintText: l10n.searchProductsOrScanBarcode,
@@ -700,27 +701,27 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                           ),
                         ),
                         const SizedBox(width: AppSpacing.lg),
-                        _TopBarButton(
+                        AppTopBarButton(
                           icon: Icons.pause_circle_outline,
                           label: l10n.hold,
                           onTap: () => _holdOrder(context),
                         ),
-                        _TopBarButton(
+                        AppTopBarButton(
                           icon: Icons.restore_page_outlined,
                           label: 'المعلقة',
                           onTap: () => _showHeldOrders(context),
                         ),
-                        _TopBarButton(
+                        AppTopBarButton(
                           icon: Icons.analytics_outlined,
                           label: 'الشفت',
                           onTap: () => context.push(AppRoutes.shift),
                         ),
-                        _TopBarButton(
+                        AppTopBarButton(
                           icon: Icons.history,
                           label: l10n.salesHistory,
                           onTap: () => context.push(AppRoutes.history),
                         ),
-                        _OverflowActions(
+                        AppOverflowActions(
                           onHold: () => _holdOrder(context),
                           onHeldOrders: () => _showHeldOrders(context),
                           onShift: () => context.push(AppRoutes.shift),
@@ -730,9 +731,9 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
                           onSettings: () => context.push(AppRoutes.settings),
                         ),
                         const SizedBox(width: AppSpacing.sm),
-                        _CashierBadge(cashierName: cashierName),
+                        AppCashierBadge(cashierName: cashierName),
                         const SizedBox(width: AppSpacing.xs),
-                        _LogoutButton(
+                        AppLogoutButton(
                           onPressed: () => ref
                               .read(posSessionControllerProvider.notifier)
                               .logout(),
@@ -810,311 +811,6 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
           ),
         );
       },
-    );
-  }
-}
-
-class _BrandMark extends StatelessWidget {
-  final String label;
-
-  const _BrandMark({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Icon(
-          Icons.point_of_sale,
-          color: AppColors.onPrimary,
-          size: AppSpacing.xxl,
-        ),
-        const SizedBox(width: AppSpacing.sm),
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColors.onPrimary,
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SearchField extends StatelessWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final String hintText;
-  final ValueChanged<String> onChanged;
-  final ValueChanged<String>? onSubmitted;
-  final VoidCallback? onScanPressed;
-
-  const _SearchField({
-    required this.controller,
-    required this.focusNode,
-    required this.hintText,
-    required this.onChanged,
-    this.onSubmitted,
-    this.onScanPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 520),
-      child: SizedBox(
-        height: AppSpacing.jumbo,
-        child: TextField(
-          controller: controller,
-          focusNode: focusNode,
-          style: const TextStyle(color: AppColors.onPrimary, fontSize: 14),
-          textInputAction: TextInputAction.done,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: AppColors.onPrimary.withValues(alpha: 0.15),
-            hintText: hintText,
-            hintStyle: TextStyle(
-              color: AppColors.onPrimary.withValues(alpha: 0.6),
-              fontSize: 14,
-            ),
-            prefixIcon: Icon(
-              Icons.search,
-              color: AppColors.onPrimary.withValues(alpha: 0.7),
-              size: AppSpacing.xl,
-            ),
-            contentPadding: AppSpacing.horizontalMd,
-            border: OutlineInputBorder(
-              borderRadius: AppSpacing.borderRadiusMd,
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: AppSpacing.borderRadiusMd,
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: AppSpacing.borderRadiusMd,
-              borderSide: BorderSide(
-                color: AppColors.onPrimary.withValues(alpha: 0.4),
-              ),
-            ),
-            suffixIcon: onScanPressed != null
-                ? IconButton(
-                    icon: Icon(
-                      Icons.qr_code_scanner,
-                      color: AppColors.onPrimary.withValues(alpha: 0.7),
-                      size: AppSpacing.xl,
-                    ),
-                    tooltip: AppLocalizations.of(context)!.scanBarcode,
-                    onPressed: onScanPressed,
-                  )
-                : null,
-          ),
-          onChanged: onChanged,
-          onSubmitted: onSubmitted,
-          inputFormatters: [FilteringTextInputFormatter.singleLineFormatter],
-        ),
-      ),
-    );
-  }
-}
-
-class _TopBarButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _TopBarButton({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: label,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: AppSpacing.borderRadiusMd,
-          child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.sm,
-            ),
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            decoration: BoxDecoration(
-              color: AppColors.onPrimary.withValues(alpha: 0.06),
-              borderRadius: AppSpacing.borderRadiusMd,
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  icon,
-                  color: AppColors.onPrimary.withValues(alpha: 0.85),
-                  size: 20,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: AppColors.onPrimary.withValues(alpha: 0.7),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CashierBadge extends StatelessWidget {
-  final String cashierName;
-
-  const _CashierBadge({required this.cashierName});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.onPrimary.withValues(alpha: 0.1),
-        borderRadius: AppSpacing.borderRadiusMd,
-        border: Border.all(color: AppColors.onPrimary.withValues(alpha: 0.1)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: AppColors.secondary.withValues(alpha: 0.3),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.person, color: AppColors.onPrimary, size: 16),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 120),
-            child: Text(
-              cashierName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.onPrimary,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LogoutButton extends StatelessWidget {
-  final VoidCallback onPressed;
-
-  const _LogoutButton({required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return IconButton(
-      icon: Icon(
-        Icons.logout,
-        color: AppColors.onPrimary.withValues(alpha: 0.7),
-        size: AppSpacing.xl,
-      ),
-      tooltip: l10n.logout,
-      onPressed: onPressed,
-    );
-  }
-}
-
-class _OverflowActions extends StatelessWidget {
-  final VoidCallback onHold;
-  final VoidCallback onHeldOrders;
-  final VoidCallback onShift;
-  final VoidCallback onHistory;
-  final VoidCallback onSync;
-  final VoidCallback onDevices;
-  final VoidCallback onSettings;
-
-  const _OverflowActions({
-    required this.onHold,
-    required this.onHeldOrders,
-    required this.onShift,
-    required this.onHistory,
-    required this.onSync,
-    required this.onDevices,
-    required this.onSettings,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return PopupMenuButton<VoidCallback>(
-      tooltip: l10n.settings,
-      icon: Icon(
-        Icons.more_vert,
-        color: AppColors.onPrimary.withValues(alpha: 0.85),
-      ),
-      onSelected: (action) => action(),
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: onHold,
-          child: _MenuAction(
-            icon: Icons.pause_circle_outline,
-            label: l10n.hold,
-          ),
-        ),
-        PopupMenuItem(
-          value: onHeldOrders,
-          child: const _MenuAction(
-            icon: Icons.restore_page_outlined,
-            label: 'الطلبات المعلقة',
-          ),
-        ),
-        PopupMenuItem(
-          value: onShift,
-          child: const _MenuAction(
-            icon: Icons.analytics_outlined,
-            label: 'الشفت الحالي',
-          ),
-        ),
-        PopupMenuItem(
-          value: onHistory,
-          child: _MenuAction(icon: Icons.history, label: l10n.salesHistory),
-        ),
-        PopupMenuItem(
-          value: onSync,
-          child: _MenuAction(icon: Icons.sync, label: l10n.syncStatus),
-        ),
-        PopupMenuItem(
-          value: onDevices,
-          child: _MenuAction(icon: Icons.devices_other, label: l10n.devices),
-        ),
-        PopupMenuItem(
-          value: onSettings,
-          child: _MenuAction(icon: Icons.settings, label: l10n.settings),
-        ),
-      ],
     );
   }
 }

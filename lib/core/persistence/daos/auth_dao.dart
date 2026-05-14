@@ -1,21 +1,15 @@
-// core/persistence/daos/auth_dao.dart
-// WHY: Organized DB access for authentication operations.
-// AuthDao owns local PIN and user lookup only.
-
-
 import 'package:drift/drift.dart';
+
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
-import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
-/// Data access for user authentication.
 class AuthDao {
   final AppDatabase _db;
   final Clock _clock;
 
   AuthDao(this._db, {Clock clock = const SystemClock()}) : _clock = clock;
 
-  /// Find user by username, ID, usr_id, or login_name.
   Future<PosUser?> findByUsername(String username) async {
     final normalized = username.trim().toLowerCase();
     if (normalized.isEmpty) return null;
@@ -95,13 +89,5 @@ class AuthDao {
 
     if (row == null) return false;
     return row.pinHash == DaoLocalPinCodec.hash(pin, salt: row.pinSalt);
-  }
-
-String DaoLocalPinCodec.newSalt() {
-    final random = Random.secure();
-    return List<int>.generate(
-      12,
-      (_) => random.nextInt(256),
-    ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
   }
 }

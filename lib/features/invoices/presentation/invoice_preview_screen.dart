@@ -196,28 +196,7 @@ class _UnifiedReceiptImage extends StatelessWidget {
             );
           }
 
-          return Center(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: AppSpacing.borderRadiusSm,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: AppSpacing.borderRadiusSm,
-                child: Image.memory(
-                  snapshot.data!,
-                  filterQuality: FilterQuality.high,
-                ),
-              ),
-            ),
-          );
+          return AppReceiptImageFrame(bytes: snapshot.data!);
         },
       ),
     );

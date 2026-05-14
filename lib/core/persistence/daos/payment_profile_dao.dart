@@ -1,11 +1,11 @@
 import 'package:drift/drift.dart';
+
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
-import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 class PaymentProfileDao {
   final AppDatabase _db;
-
   final Clock _clock;
 
   PaymentProfileDao(this._db, {Clock clock = const SystemClock()})
@@ -24,7 +24,8 @@ class PaymentProfileDao {
   Stream<PaymentDeviceProfile?> watchManualProfile(String userId) {
     return (_db.select(_db.paymentDeviceProfiles)..where(
           (p) =>
-              p.id.equals(DaoPaymentProfileIds.manualCard(userId)) & p.userId.equals(userId),
+              p.id.equals(DaoPaymentProfileIds.manualCard(userId)) &
+              p.userId.equals(userId),
         ))
         .watchSingleOrNull();
   }
@@ -42,7 +43,8 @@ class PaymentProfileDao {
   Future<PaymentDeviceProfile?> getManualProfile(String userId) {
     return (_db.select(_db.paymentDeviceProfiles)..where(
           (p) =>
-              p.id.equals(DaoPaymentProfileIds.manualCard(userId)) & p.userId.equals(userId),
+              p.id.equals(DaoPaymentProfileIds.manualCard(userId)) &
+              p.userId.equals(userId),
         ))
         .getSingleOrNull();
   }
@@ -51,9 +53,15 @@ class PaymentProfileDao {
     return _db.into(_db.paymentDeviceProfiles).insertOnConflictUpdate(profile);
   }
 
-  static String manualProfileId(String userId) => DaoPaymentProfileIds.manualCard(userId);
+  static String manualProfileId(String userId) {
+    return DaoPaymentProfileIds.manualCard(userId);
+  }
 
-) {
+  Future<void> saveTestResult({
+    required String id,
+    required bool success,
+    String? error,
+  }) {
     return (_db.update(
       _db.paymentDeviceProfiles,
     )..where((p) => p.id.equals(id))).write(
