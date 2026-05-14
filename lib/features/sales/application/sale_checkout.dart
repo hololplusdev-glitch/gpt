@@ -1,12 +1,10 @@
 
-import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
 import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
 import 'package:holol_POS/core/persistence/daos/shift_dao.dart';
-import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/persistence/pos_config_repository.dart';
 import 'package:holol_POS/core/services/invoice_number_service.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document_builder.dart';
@@ -20,7 +18,6 @@ import 'package:holol_POS/features/cashier/domain/models/cart.dart';
 import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
-import 'package:uuid/uuid.dart';
 import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
 import 'package:holol_POS/shared/refactor/pos_payment_draft.dart';
 
@@ -70,8 +67,6 @@ class SaleCheckout {
        _activeSession = activeSession,
        _pricingEngine = pricingEngine,
        _clock = clock;
-
-  static const _uuid = Uuid();
 
   Future<SaleCheckoutResult> complete(SaleCheckoutRequest request) async {
     final session = PosBusinessGuards.requireActiveSession(
@@ -156,115 +151,35 @@ class SaleCheckout {
       exceptionFactory: SaleCheckoutException.new,
     ).validate(quote: quote, payments: payments);
 
-    final localInvoiceNo = await _invoiceNumberService.generateNext(
-      branchNo: session.activeBranchNo,
-      machineNo: session.activeMachineNo,
-      sequenceType: PosBusinessRules.sequenceType(
-        session.invoiceSeries,
-        fallback: 'sale',
-      ),
-    );
 
-    final saleId = 'SALE_${_uuid.v4()}';
-    final now = _clock.now();
-    final idempotencyKey = 'sale_${request.checkoutAttemptId}';
-
-    final envelope = const PosSaleEnvelopeBuilder().build(
-      saleId: saleId,
-      localInvoiceNo: localInvoiceNo,
+    final persistenceResult = await PosSaleCompletionWorkflow(
+      salesDao: _salesDao,
+      config: _config,
+      invoiceNumberService: _invoiceNumberService,
+      invoiceDocumentBuilder: _invoiceDocumentBuilder,
+      outboxEventFactory: _outboxEventFactory,
+      printQueue: _printQueue,
+      printJobProcessor: _printJobProcessor,
+      clock: _clock,
+    ).persistCompletedSale(
       shiftId: shiftId,
       session: session,
       lines: officialLines,
       payments: payments,
       quote: quote,
       paymentResult: paymentResult,
+      checkoutAttemptId: request.checkoutAttemptId,
       customerId: request.customerId,
       customerName: request.customerName,
       customerTaxNumber: request.customerTaxNumber,
-      idempotencyKey: idempotencyKey,
-      now: now,
     );
-
-    final invoiceDocument = await _invoiceDocumentBuilder
-        .buildFromCheckoutSnapshot(
-          saleId: saleId,
-          localInvoiceNo: localInvoiceNo,
-          invoiceDateTime: now,
-          statusCode: SaleStatus.completed.code,
-          syncStatusCode: OutboxStatus.pending.code,
-          terminalId: session.activeMachineNo,
-          machineNo: session.activeMachineNo,
-          branchNo: session.activeBranchNo,
-          branchYear: session.activeBranchYear,
-          storeId: session.activeStoreId,
-          priceLevelId: session.activePriceLevelId,
-          useTax: session.activeUseTax,
-          cashierId: session.activeUserId,
-          cashierName: session.activeUserName,
-          customerId: request.customerId,
-          customerName: request.customerName,
-          customerTaxNumber: request.customerTaxNumber,
-          lines: officialLines,
-          quote: quote,
-          payments: payments,
-          taxes: envelope.taxes,
-        );
-
-    final invoiceArchive = InvoiceDocumentsCompanion.insert(
-      id: 'DOC_$saleId',
-      saleId: saleId,
-      snapshotJson: Value(invoiceDocument.toJsonString()),
-      hash: Value(invoiceDocument.auditHash),
-      archivedAt: Value(now),
-      validationStatus: Value(invoiceDocument.validationStatus),
-      validationError: Value(invoiceDocument.validationMessage),
-    );
-
-    final printJobs = (_config.autoPrintAfterSale || session.autoPrint)
-        ? await _printQueue.invoiceReceipt(
-            document: invoiceDocument,
-            createdAt: now,
-            createdBy: session.activeUserId,
-            requireAutoPrint: true,
-            preferredPrinterName: session.printerName,
-          )
-        : const <PrintJobsCompanion>[];
-
-    final printJobIds = printJobs
-        .map((job) => job.id.value)
-        .toList(growable: false);
-
-    await _salesDao.persistSaleEnvelope(
-      header: envelope.header,
-      items: envelope.items,
-      payments: envelope.payments,
-      taxes: envelope.taxes,
-      invoiceDocument: invoiceArchive,
-      printJobs: printJobs,
-      auditLogEntry: envelope.auditLogEntry,
-      outboxEntry: _outboxEventFactory.saleCreated(
-        saleId: saleId,
-        localInvoiceNo: localInvoiceNo,
-        machineNo: session.activeMachineNo,
-        branchNo: session.activeBranchNo,
-        shiftId: shiftId,
-        cashierId: session.activeUserId,
-        grandTotal: quote.grandTotal,
-        completedAt: now,
-        idempotencyKey: idempotencyKey,
-      ),
-    );
-
-    if (printJobIds.isNotEmpty) {
-      await _printJobProcessor.processJobIds(printJobIds);
-    }
 
     return SaleCheckoutResult(
-      saleId: saleId,
-      localSaleNo: localInvoiceNo,
+      saleId: persistenceResult.saleId,
+      localSaleNo: persistenceResult.localSaleNo,
       selectedPaymentType: primaryType ?? PaymentMethodType.cash,
       change: change,
-      uploadQueued: true,
+      uploadQueued: persistenceResult.uploadQueued,
     );
   }
 }

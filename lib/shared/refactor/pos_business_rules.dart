@@ -13,6 +13,14 @@ import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
 import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
+import 'package:holol_POS/core/persistence/pos_config_repository.dart';
+import 'package:holol_POS/core/services/invoice_number_service.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document_builder.dart';
+import 'package:holol_POS/core/services/pos_devices/print_job_processor.dart';
+import 'package:holol_POS/core/services/pos_devices/print_queue.dart';
+import 'package:holol_POS/core/services/sync/outbox_event_factory.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
 
 typedef BusinessRuleExceptionFactory = BusinessException Function(String message);
 
@@ -440,6 +448,236 @@ class PosHeldOrderResumeData {
   });
 }
 
+class PosHeldOrdersWorkflow {
+  static const _uuid = Uuid();
+
+  final SalesDao salesDao;
+  final ShiftDao shiftDao;
+  final AuditDao auditDao;
+  final CatalogDao catalogDao;
+  final PosConfigRepository config;
+  final ActivePosSession? activeSession;
+  final PricingEngine pricingEngine;
+  final Clock clock;
+  final BusinessRuleExceptionFactory? exceptionFactory;
+
+  const PosHeldOrdersWorkflow({
+    required this.salesDao,
+    required this.shiftDao,
+    required this.auditDao,
+    required this.catalogDao,
+    required this.config,
+    required this.activeSession,
+    this.pricingEngine = const PricingEngine(),
+    this.clock = const SystemClock(),
+    this.exceptionFactory,
+  });
+
+  CheckoutQuote previewQuote({required List<SaleLineInput> lineItems}) {
+    final session = _requireSession();
+    _validateLines(lineItems);
+    return PosSaleQuoteRules.quote(
+      pricingEngine: pricingEngine,
+      lines: lineItems,
+      useTax: session.activeUseTax,
+      priceIncludesTax: session.priceIncludesTax,
+      exceptionFactory: exceptionFactory,
+    );
+  }
+
+  Future<String> holdOrder({
+    required List<SaleLineInput> items,
+    String? customerId,
+    String? customerName,
+    String? referenceName,
+    String? notes,
+  }) async {
+    final session = _requireSession();
+    final shift = await _requireOpenShift(session);
+    final shiftId = shift.id;
+
+    if (!config.useHeldInvoices) {
+      throw _exception('Held orders are disabled by POS configuration.');
+    }
+
+    final currentCount = await salesDao.countActiveHeldOrders(shiftId);
+    if (currentCount >= config.maxHeldInvoices) {
+      throw _exception('Maximum held orders (${config.maxHeldInvoices}) reached.');
+    }
+
+    _validateLines(items);
+
+    final quote = previewQuote(lineItems: items);
+    final id = 'HLD_${_uuid.v4()}';
+    final now = clock.now();
+
+    final snapshotJson = jsonEncode({
+      'version': 1,
+      'type': 'cart_intent_snapshot',
+      'createdAt': now.toIso8601String(),
+      'createdBy': session.activeUserId,
+      'items': items.map((line) => line.toHeldOrderSnapshotJson()).toList(),
+    });
+
+    await salesDao.holdOrder(
+      HeldOrdersCompanion(
+        id: Value(id),
+        branchNo: Value(session.activeBranchNo),
+        branchYear: Value(session.activeBranchYear),
+        machineNo: Value(session.activeMachineNo),
+        storeId: Value(session.activeStoreId),
+        priceLevelId: Value(session.activePriceLevelId),
+        useTax: Value(session.activeUseTax),
+        shiftId: Value(shiftId),
+        cashierId: Value(session.activeUserId),
+        customerId: Value(customerId),
+        customerNameSnapshot: Value(customerName),
+        referenceName: Value(referenceName),
+        snapshotJson: Value(snapshotJson),
+        subtotal: Value(quote.subtotal),
+        taxTotal: Value(quote.taxTotal),
+        discountTotal: Value(quote.discountTotal),
+        grandTotal: Value(quote.grandTotal),
+        status: Value(HeldOrderStatus.held.code),
+        notes: Value(notes),
+        heldAt: Value(now),
+      ),
+    );
+
+    await auditDao.log(
+      id: 'AUD_${_uuid.v4()}',
+      action: AuditAction.orderHeld,
+      actorId: session.activeUserId,
+      targetType: OutboxEntityType.heldOrder.code,
+      targetId: id,
+      terminalId: session.activeMachineNo,
+    );
+
+    return id;
+  }
+
+  Future<PosHeldOrderResumeData> resumeHeldOrder({required String orderId}) async {
+    final session = _requireSession();
+    final shift = await _requireOpenShift(session);
+    final shiftId = shift.id;
+
+    final orders = await salesDao.getActiveHeldOrders(shiftId);
+    final order = _findHeldOrder(orders, orderId);
+
+    if (order == null) {
+      throw _exception('Held order not found or already resumed.');
+    }
+
+    final resumeData = await PosHeldOrderRehydrator(
+      catalogDao: catalogDao,
+      pricingEngine: pricingEngine,
+      exceptionFactory: exceptionFactory,
+    ).rehydrate(
+      order: order,
+      session: session,
+    );
+
+    final now = clock.now();
+    final auditLogEntry = AuditLogCompanion.insert(
+      id: 'AUD_${_uuid.v4()}',
+      action: AuditAction.orderRecalled.code,
+      actorId: session.activeUserId,
+      targetType: Value(OutboxEntityType.heldOrder.code),
+      targetId: Value(orderId),
+      terminalId: session.activeMachineNo,
+      createdAt: now,
+    );
+
+    final updated = await salesDao.resumeHeldOrderEnvelope(
+      orderId: orderId,
+      shiftId: shiftId,
+      now: now,
+      auditLogEntry: auditLogEntry,
+    );
+
+    if (!updated) {
+      throw _exception('Held order was already changed.');
+    }
+
+    return resumeData;
+  }
+
+  Future<void> cancelHeldOrder({required String orderId}) async {
+    final session = _requireSession();
+    final shift = await _requireOpenShift(session);
+    final shiftId = shift.id;
+    final now = clock.now();
+
+    final auditLogEntry = AuditLogCompanion.insert(
+      id: 'AUD_${_uuid.v4()}',
+      action: AuditAction.orderCancelled.code,
+      actorId: session.activeUserId,
+      targetType: Value(OutboxEntityType.heldOrder.code),
+      targetId: Value(orderId),
+      terminalId: session.activeMachineNo,
+      createdAt: now,
+    );
+
+    final updated = await salesDao.cancelHeldOrderEnvelope(
+      orderId: orderId,
+      shiftId: shiftId,
+      auditLogEntry: auditLogEntry,
+    );
+
+    if (!updated) {
+      throw _exception('Held order not found or already changed.');
+    }
+  }
+
+  Future<List<HeldOrder>> getCurrentHeldOrders() async {
+    final session = _requireSession();
+    final shift = await _requireOpenShift(session);
+    return salesDao.getActiveHeldOrders(shift.id);
+  }
+
+  Future<List<HeldOrder>> getHeldOrders(String shiftId) {
+    return salesDao.getActiveHeldOrders(shiftId);
+  }
+
+  ActivePosSession _requireSession() {
+    return PosBusinessGuards.requireActiveSession(
+      activeSession,
+      message: 'Select a cashier and POS machine before selling.',
+      exceptionFactory: exceptionFactory,
+    );
+  }
+
+  Future<Shift> _requireOpenShift(ActivePosSession session) {
+    return PosBusinessGuards.requireOpenShift(
+      shiftDao: shiftDao,
+      session: session,
+      message: 'Open a shift before holding orders.',
+      exceptionFactory: exceptionFactory,
+    );
+  }
+
+  void _validateLines(List<SaleLineInput> lines) {
+    SaleLineValidator.validateSaleLines(
+      lines,
+      exceptionFactory: exceptionFactory,
+      validatePricing: true,
+      pricingEngine: pricingEngine,
+      priceIncludesTax: false,
+    );
+  }
+
+  HeldOrder? _findHeldOrder(List<HeldOrder> orders, String orderId) {
+    for (final order in orders) {
+      if (order.id == orderId) return order;
+    }
+    return null;
+  }
+
+  BusinessException _exception(String message) {
+    return exceptionFactory?.call(message) ?? BusinessException(message, code: 'HELD_ORDER_ERROR');
+  }
+}
+
 class PosSaleEnvelope {
   final SalesCompanion header;
   final List<SaleLinesCompanion> items;
@@ -655,4 +893,161 @@ class _ProcessedSaleLine {
     required this.taxAmount,
     required this.lineTotal,
   });
+}
+
+class PosSaleCompletionPersistResult {
+  final String saleId;
+  final String localSaleNo;
+  final bool uploadQueued;
+
+  const PosSaleCompletionPersistResult({
+    required this.saleId,
+    required this.localSaleNo,
+    required this.uploadQueued,
+  });
+}
+
+class PosSaleCompletionWorkflow {
+  static const _uuid = Uuid();
+
+  final SalesDao salesDao;
+  final PosConfigRepository config;
+  final InvoiceNumberService invoiceNumberService;
+  final InvoiceDocumentBuilder invoiceDocumentBuilder;
+  final OutboxEventFactory outboxEventFactory;
+  final PrintQueue printQueue;
+  final PrintJobProcessor printJobProcessor;
+  final Clock clock;
+
+  const PosSaleCompletionWorkflow({
+    required this.salesDao,
+    required this.config,
+    required this.invoiceNumberService,
+    required this.invoiceDocumentBuilder,
+    required this.outboxEventFactory,
+    required this.printQueue,
+    required this.printJobProcessor,
+    required this.clock,
+  });
+
+  Future<PosSaleCompletionPersistResult> persistCompletedSale({
+    required String shiftId,
+    required ActivePosSession session,
+    required List<SaleLineInput> lines,
+    required List<SalePaymentInput> payments,
+    required CheckoutQuote quote,
+    required PaymentValidationResult paymentResult,
+    required String checkoutAttemptId,
+    required String? customerId,
+    required String? customerName,
+    required String? customerTaxNumber,
+  }) async {
+    final localInvoiceNo = await invoiceNumberService.generateNext(
+      branchNo: session.activeBranchNo,
+      machineNo: session.activeMachineNo,
+      sequenceType: PosBusinessRules.sequenceType(
+        session.invoiceSeries,
+        fallback: 'sale',
+      ),
+    );
+
+    final saleId = 'SALE_${_uuid.v4()}';
+    final now = clock.now();
+    final idempotencyKey = 'sale_$checkoutAttemptId';
+
+    final envelope = const PosSaleEnvelopeBuilder().build(
+      saleId: saleId,
+      localInvoiceNo: localInvoiceNo,
+      shiftId: shiftId,
+      session: session,
+      lines: lines,
+      payments: payments,
+      quote: quote,
+      paymentResult: paymentResult,
+      customerId: customerId,
+      customerName: customerName,
+      customerTaxNumber: customerTaxNumber,
+      idempotencyKey: idempotencyKey,
+      now: now,
+    );
+
+    final invoiceDocument = await invoiceDocumentBuilder.buildFromCheckoutSnapshot(
+      saleId: saleId,
+      localInvoiceNo: localInvoiceNo,
+      invoiceDateTime: now,
+      statusCode: SaleStatus.completed.code,
+      syncStatusCode: OutboxStatus.pending.code,
+      terminalId: session.activeMachineNo,
+      machineNo: session.activeMachineNo,
+      branchNo: session.activeBranchNo,
+      branchYear: session.activeBranchYear,
+      storeId: session.activeStoreId,
+      priceLevelId: session.activePriceLevelId,
+      useTax: session.activeUseTax,
+      cashierId: session.activeUserId,
+      cashierName: session.activeUserName,
+      customerId: customerId,
+      customerName: customerName,
+      customerTaxNumber: customerTaxNumber,
+      lines: lines,
+      quote: quote,
+      payments: payments,
+      taxes: envelope.taxes,
+    );
+
+    final invoiceArchive = InvoiceDocumentsCompanion.insert(
+      id: 'DOC_$saleId',
+      saleId: saleId,
+      snapshotJson: Value(invoiceDocument.toJsonString()),
+      hash: Value(invoiceDocument.auditHash),
+      archivedAt: Value(now),
+      validationStatus: Value(invoiceDocument.validationStatus),
+      validationError: Value(invoiceDocument.validationMessage),
+    );
+
+    final printJobs = (config.autoPrintAfterSale || session.autoPrint)
+        ? await printQueue.invoiceReceipt(
+            document: invoiceDocument,
+            createdAt: now,
+            createdBy: session.activeUserId,
+            requireAutoPrint: true,
+            preferredPrinterName: session.printerName,
+          )
+        : const <PrintJobsCompanion>[];
+
+    final printJobIds = printJobs
+        .map((job) => job.id.value)
+        .toList(growable: false);
+
+    await salesDao.persistSaleEnvelope(
+      header: envelope.header,
+      items: envelope.items,
+      payments: envelope.payments,
+      taxes: envelope.taxes,
+      invoiceDocument: invoiceArchive,
+      printJobs: printJobs,
+      auditLogEntry: envelope.auditLogEntry,
+      outboxEntry: outboxEventFactory.saleCreated(
+        saleId: saleId,
+        localInvoiceNo: localInvoiceNo,
+        machineNo: session.activeMachineNo,
+        branchNo: session.activeBranchNo,
+        shiftId: shiftId,
+        cashierId: session.activeUserId,
+        grandTotal: quote.grandTotal,
+        completedAt: now,
+        idempotencyKey: idempotencyKey,
+      ),
+    );
+
+    if (printJobIds.isNotEmpty) {
+      await printJobProcessor.processJobIds(printJobIds);
+    }
+
+    return PosSaleCompletionPersistResult(
+      saleId: saleId,
+      localSaleNo: localInvoiceNo,
+      uploadQueued: true,
+    );
+  }
 }
