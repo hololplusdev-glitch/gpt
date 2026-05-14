@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:holol_POS/core/design_system/colors.dart';
 import 'package:holol_POS/core/design_system/spacing.dart';
 
+/// A unified section card for grouping related content.
+///
+/// Used across settings, sync monitor, shift, and setup screens
+/// as the SSOT for visual grouping with a titled header.
+/// Features icon in colored circle background and subtle card elevation.
 class AppSectionCard extends StatelessWidget {
   final String title;
   final IconData icon;
@@ -29,8 +34,15 @@ class AppSectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final effectiveColor = titleColor ?? AppColors.primary;
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppSpacing.borderRadiusLg,
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppSpacing.shadowSm,
+      ),
       child: Padding(
         padding: AppSpacing.paddingLg,
         child: Column(
@@ -38,8 +50,18 @@ class AppSectionCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(icon, color: titleColor ?? AppColors.primary),
-                const SizedBox(width: AppSpacing.sm),
+                // WHY: Icon in colored circle matches AppDialog/AppMetricCard
+                // pattern for visual consistency across all cards.
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: effectiveColor.withValues(alpha: 0.1),
+                    borderRadius: AppSpacing.borderRadiusMd,
+                  ),
+                  child: Icon(icon, color: effectiveColor, size: 20),
+                ),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,7 +89,10 @@ class AppSectionCard extends StatelessWidget {
                 if (action != null) action!,
               ],
             ),
-            const SizedBox(height: AppSpacing.md),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+              child: Divider(height: 1),
+            ),
             child,
             if (footer != null) ...[
               const SizedBox(height: AppSpacing.md),

@@ -37,7 +37,12 @@ class AppPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: padding,
-      color: color,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: AppSpacing.borderRadiusLg,
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppSpacing.shadowSm,
+      ),
       child: title == null
           ? child
           : Column(
@@ -50,7 +55,10 @@ class AppPanel extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  child: Divider(height: 1),
+                ),
                 child,
               ],
             ),

@@ -33,6 +33,25 @@ abstract final class AppColors {
   static const Color gradientMid = Color(0xFF1E3A5F);
   static const Color gradientEnd = Color(0xFF059669);
 
+  // ─── Gradient presets (SSOT for gradient usage) ────────────────────
+  static const LinearGradient brandGradient = LinearGradient(
+    colors: [gradientStart, gradientMid, gradientEnd],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient headerGradient = LinearGradient(
+    colors: [primary, primaryLight],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  static const LinearGradient successGradient = LinearGradient(
+    colors: [Color(0xFF059669), Color(0xFF34D399)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
   // ─── Status colors (tuned for clarity) ─────────────────────────────
   static const Color success = Color(0xFF16A34A);
   static const Color successBg = Color(0xFFDCFCE7);
@@ -50,6 +69,15 @@ abstract final class AppColors {
   static const Color cardSurface = Colors.white;
   static const Color shadow = Color(0x1A0F172A);
   static const Color shadowMd = Color(0x290F172A);
+
+  // ─── Glassmorphism / Frosted tokens ────────────────────────────────
+  static const Color glassWhite = Color(0x99FFFFFF);
+  static const Color glassBorder = Color(0x33FFFFFF);
+  static const Color glassOverlay = Color(0x0DFFFFFF);
+
+  // ─── Shimmer / Loading animation tokens ────────────────────────────
+  static const Color shimmerBase = Color(0xFFE2E8F0);
+  static const Color shimmerHighlight = Color(0xFFF8FAFC);
 
   // ─── Text (balanced contrast hierarchy) ────────────────────────────
   static const Color textPrimary = Color(0xFF0F172A);

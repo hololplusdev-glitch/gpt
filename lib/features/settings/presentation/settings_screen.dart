@@ -218,23 +218,81 @@ class _SettingsTile extends StatelessWidget {
   }
 }
 
-class _StatusDot extends StatelessWidget {
+class _StatusDot extends StatefulWidget {
   final HealthStatus status;
 
   const _StatusDot({required this.status});
 
   @override
+  State<_StatusDot> createState() => _StatusDotState();
+}
+
+class _StatusDotState extends State<_StatusDot>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
+    // Only pulse for active (ok) status.
+    if (widget.status == HealthStatus.ok) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _StatusDot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.status == HealthStatus.ok && !_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    } else if (widget.status != HealthStatus.ok && _controller.isAnimating) {
+      _controller.stop();
+      _controller.value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final color = switch (status) {
+    final color = switch (widget.status) {
       HealthStatus.ok => AppColors.success,
       HealthStatus.degraded => AppColors.warning,
       HealthStatus.down => AppColors.error,
       HealthStatus.unknown => AppColors.textHint,
     };
-    return Container(
-      width: 10,
-      height: 10,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final glowOpacity = widget.status == HealthStatus.ok
+            ? 0.15 + (_controller.value * 0.2)
+            : 0.0;
+        return Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color.withValues(alpha: glowOpacity),
+          ),
+          child: child,
+        );
+      },
+      child: Center(
+        child: Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+      ),
     );
   }
 }

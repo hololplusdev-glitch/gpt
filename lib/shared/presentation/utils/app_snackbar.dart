@@ -4,6 +4,12 @@ import 'package:holol_POS/core/design_system/spacing.dart';
 
 /// Centralized utility for showing snackbars.
 /// Enforces consistent styling, durations, and behavior across the app.
+///
+/// Features:
+/// - Dismiss current snackbar before showing new one (prevents stacking)
+/// - Colored background with matching icon and text
+/// - Rounded corners + floating behavior
+/// - Uses design system tokens exclusively (SSOT)
 abstract class AppSnackbar {
   static void showSuccess(BuildContext context, String message) {
     _show(
@@ -11,7 +17,7 @@ abstract class AppSnackbar {
       message: message,
       icon: Icons.check_circle_outline,
       backgroundColor: AppColors.successBg,
-      textColor: AppColors.success,
+      accentColor: AppColors.success,
     );
   }
 
@@ -21,7 +27,8 @@ abstract class AppSnackbar {
       message: message,
       icon: Icons.error_outline,
       backgroundColor: AppColors.errorBg,
-      textColor: AppColors.error,
+      accentColor: AppColors.error,
+      duration: const Duration(seconds: 5),
     );
   }
 
@@ -31,7 +38,7 @@ abstract class AppSnackbar {
       message: message,
       icon: Icons.info_outline,
       backgroundColor: AppColors.infoBg,
-      textColor: AppColors.info,
+      accentColor: AppColors.info,
     );
   }
 
@@ -41,7 +48,7 @@ abstract class AppSnackbar {
       message: message,
       icon: Icons.warning_amber_rounded,
       backgroundColor: AppColors.warningBg,
-      textColor: AppColors.warning,
+      accentColor: AppColors.warning,
     );
   }
 
@@ -50,7 +57,8 @@ abstract class AppSnackbar {
     required String message,
     required IconData icon,
     required Color backgroundColor,
-    required Color textColor,
+    required Color accentColor,
+    Duration duration = const Duration(seconds: 3),
   }) {
     // Dismiss any currently showing snackbars
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -60,27 +68,35 @@ abstract class AppSnackbar {
         backgroundColor: backgroundColor,
         behavior: SnackBarBehavior.floating,
         margin: AppSpacing.paddingLg,
-        padding: AppSpacing.paddingMd,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppSpacing.borderRadiusMd,
-          side: BorderSide(color: textColor.withValues(alpha: 0.2)),
-        ),
-        content: Row(
-          children: [
-            Icon(icon, color: textColor),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Text(
-                message,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w600,
+        padding: EdgeInsets.zero,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusMd),
+        content: Container(
+          padding: AppSpacing.paddingMd,
+          decoration: BoxDecoration(
+            borderRadius: AppSpacing.borderRadiusMd,
+            // WHY: Left accent border matches AppInfoBanner pattern for
+            // visual consistency across all notification types.
+            border: Border(left: BorderSide(color: accentColor, width: 3.5)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: accentColor, size: 22),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Text(
+                  message,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: accentColor,
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-        duration: const Duration(seconds: 3),
+        duration: duration,
       ),
     );
   }

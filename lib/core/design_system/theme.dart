@@ -31,6 +31,17 @@ abstract final class AppTheme {
       ),
       scaffoldBackgroundColor: AppColors.background,
 
+      // ─── Page transitions (smooth slide+fade for premium feel) ──────
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.windows: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.linux: CupertinoPageTransitionsBuilder(),
+        },
+      ),
+
       // ─── Cards ──────────────────────────────────────────
       cardTheme: CardThemeData(
         color: AppColors.cardSurface,
@@ -40,6 +51,7 @@ abstract final class AppTheme {
           side: const BorderSide(color: AppColors.border, width: 1),
         ),
         margin: EdgeInsets.zero,
+        shadowColor: AppColors.shadow,
       ),
 
       // ─── AppBar ─────────────────────────────────────────
@@ -47,6 +59,7 @@ abstract final class AppTheme {
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.onPrimary,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: false,
         surfaceTintColor: Colors.transparent,
         titleTextStyle: TextStyle(
@@ -59,33 +72,56 @@ abstract final class AppTheme {
 
       // ─── Elevated Buttons ───────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.onPrimary,
-          minimumSize: const Size(120, 48),
-          elevation: 0,
-          shadowColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppSpacing.borderRadiusMd,
-          ),
-          textStyle: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.2,
-          ),
-        ),
+        style:
+            ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.onPrimary,
+              minimumSize: const Size(120, 48),
+              elevation: 0,
+              shadowColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: AppSpacing.borderRadiusMd,
+              ),
+              textStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
+              animationDuration: AppSpacing.durationMd,
+            ).copyWith(
+              // WHY: Animated overlay color on press for tactile feedback.
+              overlayColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.pressed)) {
+                  return Colors.white.withValues(alpha: 0.12);
+                }
+                if (states.contains(WidgetState.hovered)) {
+                  return Colors.white.withValues(alpha: 0.06);
+                }
+                return null;
+              }),
+            ),
       ),
 
       // ─── Outlined Buttons ───────────────────────────────
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          minimumSize: const Size(120, 48),
-          side: const BorderSide(color: AppColors.borderStrong),
-          shape: RoundedRectangleBorder(
-            borderRadius: AppSpacing.borderRadiusMd,
-          ),
-        ),
+        style:
+            OutlinedButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              minimumSize: const Size(120, 48),
+              side: const BorderSide(color: AppColors.borderStrong),
+              shape: RoundedRectangleBorder(
+                borderRadius: AppSpacing.borderRadiusMd,
+              ),
+              animationDuration: AppSpacing.durationMd,
+            ).copyWith(
+              side: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.focused) ||
+                    states.contains(WidgetState.pressed)) {
+                  return const BorderSide(color: AppColors.primary, width: 1.5);
+                }
+                return const BorderSide(color: AppColors.borderStrong);
+              }),
+            ),
       ),
 
       // ─── Text Buttons ──────────────────────────────────
@@ -94,6 +130,20 @@ abstract final class AppTheme {
           foregroundColor: AppColors.primary,
           minimumSize: const Size(80, 40),
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          animationDuration: AppSpacing.durationMd,
+        ),
+      ),
+
+      // ─── Filled Buttons (e.g. PIN dialog confirm) ──────
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: AppColors.onPrimary,
+          minimumSize: const Size(120, 48),
+          shape: RoundedRectangleBorder(
+            borderRadius: AppSpacing.borderRadiusMd,
+          ),
+          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -122,6 +172,12 @@ abstract final class AppTheme {
           borderRadius: AppSpacing.borderRadiusMd,
           borderSide: const BorderSide(color: AppColors.error, width: 2),
         ),
+        disabledBorder: OutlineInputBorder(
+          borderRadius: AppSpacing.borderRadiusMd,
+          borderSide: BorderSide(
+            color: AppColors.border.withValues(alpha: 0.5),
+          ),
+        ),
         labelStyle: const TextStyle(
           color: AppColors.textSecondary,
           fontWeight: FontWeight.w500,
@@ -131,6 +187,13 @@ abstract final class AppTheme {
           color: AppColors.primary,
           fontWeight: FontWeight.w600,
         ),
+        errorStyle: const TextStyle(
+          color: AppColors.error,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        // WHY: Smooth transition on focus/hover for a premium feel.
+        floatingLabelBehavior: FloatingLabelBehavior.auto,
       ),
 
       // ─── Divider ────────────────────────────────────────
@@ -143,7 +206,9 @@ abstract final class AppTheme {
       // ─── Dialog ─────────────────────────────────────────
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surface,
-        elevation: 0,
+        elevation: 8,
+        shadowColor: AppColors.shadow,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusXl),
         titleTextStyle: const TextStyle(
           fontSize: 20,
@@ -155,19 +220,25 @@ abstract final class AppTheme {
       // ─── Bottom Sheet ───────────────────────────────────
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: AppColors.surface,
-        elevation: 0,
+        elevation: 8,
+        shadowColor: AppColors.shadow,
+        surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(AppSpacing.radiusXxl),
             topRight: Radius.circular(AppSpacing.radiusXxl),
           ),
         ),
+        dragHandleColor: AppColors.borderStrong,
+        dragHandleSize: const Size(40, 4),
+        showDragHandle: true,
       ),
 
       // ─── SnackBar ───────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.primary,
+        elevation: 4,
         contentTextStyle: const TextStyle(
           color: AppColors.onPrimary,
           fontSize: 14,
@@ -189,6 +260,8 @@ abstract final class AppTheme {
           fontSize: 13,
           color: AppColors.textSecondary,
         ),
+        // WHY: Subtle highlight on hover for desktop/tablet use.
+        selectedTileColor: AppColors.selectedBg,
       ),
 
       // ─── Chip ──────────────────────────────────────────
@@ -205,12 +278,14 @@ abstract final class AppTheme {
         decoration: BoxDecoration(
           color: AppColors.primary,
           borderRadius: AppSpacing.borderRadiusSm,
+          boxShadow: AppSpacing.shadowMd,
         ),
         textStyle: const TextStyle(
           color: AppColors.onPrimary,
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
+        waitDuration: const Duration(milliseconds: 500),
       ),
 
       // ─── Switch ────────────────────────────────────────
@@ -227,6 +302,57 @@ abstract final class AppTheme {
           }
           return AppColors.border;
         }),
+      ),
+
+      // ─── Segmented Button ──────────────────────────────
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          shape: WidgetStateProperty.all(
+            RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusMd),
+          ),
+          animationDuration: AppSpacing.durationMd,
+        ),
+      ),
+
+      // ─── DataTable ─────────────────────────────────────
+      dataTableTheme: DataTableThemeData(
+        headingRowColor: WidgetStateProperty.all(AppColors.surfaceVariant),
+        headingTextStyle: const TextStyle(
+          fontWeight: FontWeight.w700,
+          color: AppColors.textPrimary,
+          fontSize: 13,
+        ),
+        dataTextStyle: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 13,
+        ),
+        dividerThickness: 1,
+      ),
+
+      // ─── PopupMenu ────────────────────────────────────
+      popupMenuTheme: PopupMenuThemeData(
+        elevation: 8,
+        shadowColor: AppColors.shadow,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusMd),
+        color: AppColors.surface,
+      ),
+
+      // ─── ProgressIndicator ────────────────────────────
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.primary,
+        linearTrackColor: AppColors.surfaceVariant,
+        linearMinHeight: 6,
+        circularTrackColor: AppColors.surfaceVariant,
+      ),
+
+      // ─── IconButton ───────────────────────────────────
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: AppSpacing.borderRadiusMd,
+          ),
+        ),
       ),
     );
 

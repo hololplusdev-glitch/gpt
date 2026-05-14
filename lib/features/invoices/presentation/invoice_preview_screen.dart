@@ -44,25 +44,91 @@ class InvoicePreviewScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(l10n.receipt),
-        actions: [
-          IconButton(
-            tooltip: l10n.refresh,
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.invalidate(invoiceDocumentProvider(saleId)),
+      body: Column(
+        children: [
+          // ── Gradient Header ──
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: AppColors.headerGradient,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadow,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AppColors.onPrimary,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.receipt_long,
+                        color: AppColors.onPrimary,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Text(
+                      l10n.receipt,
+                      style: const TextStyle(
+                        color: AppColors.onPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      tooltip: l10n.refresh,
+                      icon: const Icon(
+                        Icons.refresh,
+                        color: AppColors.onPrimary,
+                      ),
+                      onPressed: () =>
+                          ref.invalidate(invoiceDocumentProvider(saleId)),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // ── Body ──
+          Expanded(
+            child: documentAsync.when(
+              loading: () => const AppLoading(),
+              error: (error, _) => Center(
+                child: Padding(
+                  padding: AppSpacing.paddingLg,
+                  child: AppInfoBanner.error(
+                    message: ErrorMapper.userMessage(error),
+                  ),
+                ),
+              ),
+              data: (document) => _InvoicePreview(document: document),
+            ),
           ),
         ],
-      ),
-      body: documentAsync.when(
-        loading: () => const AppLoading(),
-        error: (error, _) => Center(
-          child: Padding(
-            padding: AppSpacing.paddingLg,
-            child: AppInfoBanner.error(message: ErrorMapper.userMessage(error)),
-          ),
-        ),
-        data: (document) => _InvoicePreview(document: document),
       ),
     );
   }
@@ -118,7 +184,10 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: AppSpacing.paddingLg,
-      color: AppColors.surface,
+      decoration: BoxDecoration(
+        gradient: AppColors.headerGradient,
+        borderRadius: AppSpacing.borderRadiusLg,
+      ),
       child: Wrap(
         spacing: AppSpacing.lg,
         runSpacing: AppSpacing.md,
@@ -134,14 +203,30 @@ class _Header extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
+                    color: AppColors.onPrimary,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                Text(document.branch.name),
+                Text(
+                  document.branch.name,
+                  style: TextStyle(
+                    color: AppColors.onPrimary.withValues(alpha: 0.85),
+                  ),
+                ),
                 if (document.branch.taxNumber?.isNotEmpty == true)
-                  Text('Tax No: ${document.branch.taxNumber}'),
+                  Text(
+                    'الرقم الضريبي: ${document.branch.taxNumber}',
+                    style: TextStyle(
+                      color: AppColors.onPrimary.withValues(alpha: 0.8),
+                    ),
+                  ),
                 if (document.branch.address?.isNotEmpty == true)
-                  Text(document.branch.address!),
+                  Text(
+                    document.branch.address!,
+                    style: TextStyle(
+                      color: AppColors.onPrimary.withValues(alpha: 0.8),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -155,10 +240,17 @@ class _Header extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
+                    color: AppColors.onPrimary,
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xs),
-                SelectableText(document.localInvoiceNo),
+                SelectableText(
+                  document.localInvoiceNo,
+                  style: TextStyle(
+                    color: AppColors.onPrimary.withValues(alpha: 0.9),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.xs),
                 AppStatusChip(
                   label: document.statusCode.isEmpty
@@ -197,6 +289,7 @@ class _Actions extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final printHistory = ref.watch(
       invoicePrintHistoryProvider(document.saleId),
     );
@@ -223,25 +316,25 @@ class _Actions extends ConsumerWidget {
         AppButton.outlined(
           onPressed: () => _savePdf(context, ref),
           icon: Icons.picture_as_pdf,
-          label: 'Save PDF',
+          label: 'حفظ PDF',
         ),
         AppButton.outlined(
           onPressed: () => _share(context, ref),
           icon: Icons.share,
-          label: 'Share',
+          label: 'مشاركة',
         ),
         AppButton.outlined(
           onPressed: () {
             Clipboard.setData(ClipboardData(text: document.localInvoiceNo));
-            AppSnackbar.showSuccess(context, 'Invoice number copied');
+            AppSnackbar.showSuccess(context, 'تم نسخ رقم الفاتورة');
           },
           icon: Icons.copy,
-          label: 'Copy number',
+          label: 'نسخ الرقم',
         ),
         AppButton.text(
           onPressed: () => context.go(AppRoutes.cashier),
           icon: Icons.point_of_sale,
-          label: 'New sale',
+          label: l10n.backToPos,
         ),
       ],
     );
@@ -282,7 +375,7 @@ class _Actions extends ConsumerWidget {
         .read(invoiceOutputActionsProvider)
         .savePdf(document.saleId);
     if (context.mounted) {
-      AppSnackbar.showSuccess(context, 'Saved PDF: ${file.path}');
+      AppSnackbar.showSuccess(context, 'تم حفظ ملف PDF: ${file.path}');
     }
   }
 
@@ -291,7 +384,7 @@ class _Actions extends ConsumerWidget {
       await ref.read(invoiceOutputActionsProvider).sharePdf(document.saleId);
     } catch (error) {
       if (context.mounted) {
-        AppSnackbar.showError(context, 'Share failed.');
+        AppSnackbar.showError(context, 'فشلت المشاركة.');
       }
     }
   }
@@ -309,12 +402,15 @@ class _InfoGrid extends StatelessWidget {
         spacing: AppSpacing.xl,
         runSpacing: AppSpacing.md,
         children: [
-          _InfoTile('Date', PosFormatters.dateTime(document.invoiceDateTime)),
-          _InfoTile('Cashier', document.cashier.name),
-          _InfoTile('Terminal', document.terminal.terminalId),
-          _InfoTile('Machine', document.terminal.machineNumber ?? '-'),
-          _InfoTile('Customer', document.customer?.name ?? '-'),
-          _InfoTile('Print', document.printStatusLabel ?? '-'),
+          _InfoTile(
+            'التاريخ',
+            PosFormatters.dateTime(document.invoiceDateTime),
+          ),
+          _InfoTile('الكاشير', document.cashier.name),
+          _InfoTile('الجهاز', document.terminal.terminalId),
+          _InfoTile('نقطة التشغيل', document.terminal.machineNumber ?? '-'),
+          _InfoTile('العميل', document.customer?.name ?? '-'),
+          _InfoTile('حالة الطباعة', document.printStatusLabel ?? '-'),
         ],
       ),
     );
@@ -329,14 +425,10 @@ class _LinesTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppPanel(
+      title: 'الأصناف',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Items',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: AppSpacing.md),
           for (final line in document.lines) ...[
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,9 +448,11 @@ class _LinesTable extends StatelessWidget {
                     ],
                   ),
                 ),
-                Text(
-                  line.display.lineTotal,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                Text.rich(
+                  PosFormatters.amountRich(
+                    line.lineTotal,
+                    amountStyle: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ],
             ),
@@ -379,19 +473,32 @@ class _Totals extends StatelessWidget {
   Widget build(BuildContext context) {
     final totals = document.totals;
     return AppPanel(
+      title: 'الملخص',
       child: Column(
         children: [
-          KeyValueRow(label: 'Subtotal', value: totals.displaySubtotal),
-          KeyValueRow(label: 'Discount', value: totals.displayDiscountTotal),
-          KeyValueRow(label: 'VAT/Tax', value: totals.displayTaxTotal),
+          KeyValueRow(
+            label: 'المجموع قبل الضريبة',
+            value: '${totals.displaySubtotal} ر.س',
+          ),
+          KeyValueRow(
+            label: 'الخصم',
+            value: '${totals.displayDiscountTotal} ر.س',
+          ),
+          KeyValueRow(label: 'الضريبة', value: '${totals.displayTaxTotal} ر.س'),
           const Divider(),
           KeyValueRow(
-            label: 'Net total',
-            value: totals.displayNetTotal,
+            label: 'الإجمالي',
+            value: '${totals.displayNetTotal} ر.س',
             strong: true,
           ),
-          KeyValueRow(label: 'Paid', value: totals.displayPaidTotal),
-          KeyValueRow(label: 'Change', value: totals.displayChangeAmount),
+          KeyValueRow(
+            label: 'المدفوع',
+            value: '${totals.displayPaidTotal} ر.س',
+          ),
+          KeyValueRow(
+            label: 'الباقي',
+            value: '${totals.displayChangeAmount} ر.س',
+          ),
         ],
       ),
     );
@@ -406,7 +513,7 @@ class _Payments extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppPanel(
-      title: 'Payments',
+      title: 'طرق الدفع',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -414,8 +521,8 @@ class _Payments extends StatelessWidget {
             KeyValueRow(
               label: payment.referenceNo == null
                   ? payment.displayMethod
-                  : '${payment.displayMethod} - Ref ${payment.referenceNo}',
-              value: payment.displayAmount,
+                  : '${payment.displayMethod} - مرجع ${payment.referenceNo}',
+              value: '${payment.displayAmount} ر.س',
             ),
         ],
       ),
@@ -431,19 +538,16 @@ class _AuditPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppPanel(
-      title: 'Audit',
+      title: 'التدقيق',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           KeyValueRow(
-            label: 'Validation',
-            value: document.validationStatus ?? 'unknown',
+            label: 'التحقق',
+            value: document.validationStatus ?? 'غير محدد',
           ),
           if (document.validationMessage?.isNotEmpty == true)
-            KeyValueRow(
-              label: 'Validation note',
-              value: document.validationMessage!,
-            ),
+            KeyValueRow(label: 'ملاحظة', value: document.validationMessage!),
           if (document.auditHash?.isNotEmpty == true)
             SelectableText(
               'Hash: ${document.auditHash}',
@@ -468,25 +572,21 @@ class _PrintHistory extends ConsumerWidget {
       error: (_, _) => const SizedBox.shrink(),
       data: (rows) {
         if (rows.isEmpty) {
-          return const AppPanel(child: Text('No print history yet.'));
+          return const AppPanel(child: Text('لا يوجد سجل طباعة بعد.'));
         }
         return AppPanel(
+          title: 'سجل الطباعة',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Print history',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: AppSpacing.md),
               for (final row in rows) ...[
                 Row(
                   children: [
                     Expanded(
                       child: Text(
                         row.isReprint
-                            ? 'Reprint copy ${row.copyNumber}'
-                            : 'Original print',
+                            ? 'إعادة طباعة نسخة ${row.copyNumber}'
+                            : 'طباعة أصلية',
                       ),
                     ),
                     AppStatusChip(

@@ -5,6 +5,7 @@ import 'package:holol_POS/core/persistence/daos/print_job_dao.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document_builder.dart';
 import 'package:holol_POS/core/services/invoices/invoice_pdf_exporter.dart';
+import 'package:holol_POS/core/services/invoices/thermal_receipt_pdf_renderer.dart';
 import 'package:holol_POS/core/services/pos_devices/print_job_processor.dart';
 import 'package:holol_POS/core/services/pos_devices/print_job_service.dart';
 import 'package:holol_POS/core/services/pos_devices/print_queue.dart';
@@ -16,6 +17,7 @@ import 'package:share_plus/share_plus.dart';
 class InvoiceOutputActions {
   final InvoiceDocumentBuilder _documentBuilder;
   final InvoicePdfExporter _pdfExporter;
+  final ThermalReceiptPdfRenderer _thermalPdfRenderer;
   final PrintQueue _printQueue;
   final PrintJobService _printJobService;
   final PrintJobProcessor _printJobProcessor;
@@ -25,6 +27,7 @@ class InvoiceOutputActions {
   const InvoiceOutputActions({
     required InvoiceDocumentBuilder documentBuilder,
     required InvoicePdfExporter pdfExporter,
+    required ThermalReceiptPdfRenderer thermalPdfRenderer,
     required PrintQueue printQueue,
     required PrintJobService printJobService,
     required PrintJobProcessor printJobProcessor,
@@ -32,6 +35,7 @@ class InvoiceOutputActions {
     Clock clock = const SystemClock(),
   }) : _documentBuilder = documentBuilder,
        _pdfExporter = pdfExporter,
+       _thermalPdfRenderer = thermalPdfRenderer,
        _printQueue = printQueue,
        _printJobService = printJobService,
        _printJobProcessor = printJobProcessor,
@@ -102,14 +106,26 @@ class InvoiceOutputActions {
     return _processJobs(jobs.map((job) => job.id.value).toList());
   }
 
-  Future<File> savePdf(String saleId) async {
+  /// WHY: Uses ThermalReceiptPdfRenderer so the saved PDF looks
+  /// identical to the thermal printer output — same layout, same boxes,
+  /// same Arabic rendering. Falls back to A4 exporter if thermal fails.
+  Future<File> savePdf(String saleId, {int paperWidthMm = 80}) async {
     final document = await getOrCreateOriginal(saleId);
-    return _pdfExporter.save(document);
+    try {
+      final pdfBytes = await _thermalPdfRenderer.render(
+        document,
+        paperWidthMm: paperWidthMm,
+      );
+      return _pdfExporter.saveBytes(document, pdfBytes);
+    } catch (_) {
+      // Fallback to A4 layout if thermal rendering fails
+      return _pdfExporter.save(document);
+    }
   }
 
-  Future<File> sharePdf(String saleId) async {
+  Future<File> sharePdf(String saleId, {int paperWidthMm = 80}) async {
     final document = await getOrCreateOriginal(saleId);
-    final file = await _pdfExporter.save(document);
+    final file = await savePdf(saleId, paperWidthMm: paperWidthMm);
 
     await Share.shareXFiles([
       XFile(
@@ -183,6 +199,7 @@ final invoiceOutputActionsProvider = Provider<InvoiceOutputActions>((ref) {
   return InvoiceOutputActions(
     documentBuilder: ref.watch(invoiceDocumentBuilderProvider),
     pdfExporter: ref.watch(invoicePdfExporterProvider),
+    thermalPdfRenderer: const ThermalReceiptPdfRenderer(),
     printQueue: ref.watch(printQueueProvider),
     printJobService: ref.watch(printJobServiceProvider),
     printJobProcessor: ref.watch(printJobProcessorProvider),

@@ -23,7 +23,7 @@ import 'package:holol_POS/shared/presentation/widgets/app_empty_state.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_status_chip.dart';
-import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
+import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
 
 final historySearchQueryProvider = StateProvider.autoDispose<String>((ref) {
   return '';
@@ -81,32 +81,120 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(l10n.salesHistory),
-        actions: [
-          IconButton(
-            tooltip: l10n.refresh,
-            icon: const Icon(Icons.refresh),
-            onPressed: () => ref.invalidate(historySalesProvider),
-          ),
-        ],
-      ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: AppContentWidth.wide),
-          child: Column(
-            children: [
-              Padding(
-                padding: AppSpacing.paddingLg,
-                child: _HistorySearchField(
-                  controller: _searchController,
-                  onChanged: _onSearchChanged,
-                  onSubmitted: _applySearch,
-                  onClear: _clearSearch,
+      body: Column(
+        children: [
+          // ── Gradient Header ──
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: AppColors.headerGradient,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadow,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                ),
+                child: Column(
+                  children: [
+                    // Title row
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: AppColors.onPrimary,
+                          ),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.receipt_long,
+                            color: AppColors.onPrimary,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: AppSpacing.md),
+                        Text(
+                          l10n.salesHistory,
+                          style: const TextStyle(
+                            color: AppColors.onPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const Spacer(),
+                        // Count badge
+                        salesAsync.whenOrNull(
+                              data: (sales) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.sm,
+                                  vertical: AppSpacing.xxs,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.15),
+                                  borderRadius: AppSpacing.borderRadiusSm,
+                                ),
+                                child: Text(
+                                  '${sales.length}',
+                                  style: const TextStyle(
+                                    color: AppColors.onPrimary,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ) ??
+                            const SizedBox.shrink(),
+                        const SizedBox(width: AppSpacing.xs),
+                        IconButton(
+                          tooltip: l10n.refresh,
+                          icon: const Icon(
+                            Icons.refresh,
+                            color: AppColors.onPrimary,
+                          ),
+                          onPressed: () => ref.invalidate(historySalesProvider),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    // Search
+                    _HistorySearchField(
+                      controller: _searchController,
+                      onChanged: _onSearchChanged,
+                      onSubmitted: _applySearch,
+                      onClear: _clearSearch,
+                    ),
+                  ],
                 ),
               ),
-              Expanded(
+            ),
+          ),
+          // ── Body ──
+          Expanded(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: AppContentWidth.wide,
+                ),
                 child: salesAsync.when(
                   data: (sales) => _HistoryResults(sales: sales),
                   loading: () => const AppLoading(),
@@ -118,9 +206,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                   ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -143,18 +231,51 @@ class _HistorySearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return AppTextField(
-      controller: controller,
-      labelText: l10n.searchInvoiceOrProduct,
-      prefixIcon: const Icon(Icons.search),
-      suffixIcon: IconButton(
-        tooltip: l10n.clearFilters,
-        icon: const Icon(Icons.clear),
-        onPressed: onClear,
+    return SizedBox(
+      height: 44,
+      child: TextField(
+        controller: controller,
+        style: const TextStyle(color: AppColors.onPrimary, fontSize: 14),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.white.withValues(alpha: 0.12),
+          hintText: l10n.searchInvoiceOrProduct,
+          hintStyle: TextStyle(
+            color: AppColors.onPrimary.withValues(alpha: 0.5),
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            Icons.search,
+            color: AppColors.onPrimary.withValues(alpha: 0.6),
+          ),
+          suffixIcon: IconButton(
+            tooltip: l10n.clearFilters,
+            icon: Icon(
+              Icons.clear,
+              color: AppColors.onPrimary.withValues(alpha: 0.6),
+            ),
+            onPressed: onClear,
+          ),
+          contentPadding: AppSpacing.horizontalMd,
+          border: OutlineInputBorder(
+            borderRadius: AppSpacing.borderRadiusMd,
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: AppSpacing.borderRadiusMd,
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: AppSpacing.borderRadiusMd,
+            borderSide: BorderSide(
+              color: AppColors.onPrimary.withValues(alpha: 0.3),
+            ),
+          ),
+        ),
+        onChanged: onChanged,
+        onSubmitted: onSubmitted,
       ),
-      textInputAction: TextInputAction.search,
-      onChanged: onChanged,
-      onSubmitted: onSubmitted,
     );
   }
 }
@@ -253,7 +374,13 @@ class _SaleCard extends StatelessWidget {
     final invoiceNo = _invoiceNo(sale);
     final statusColor = SaleStatusPresenter.color(sale.status);
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppSpacing.borderRadiusMd,
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppSpacing.shadowSm,
+      ),
       child: InkWell(
         onTap: () => context.push(AppRoutes.invoicePath(sale.id)),
         borderRadius: AppSpacing.borderRadiusMd,
@@ -439,23 +566,14 @@ class _SaleActions extends ConsumerWidget {
     WidgetRef ref,
     _SaleHistoryAction action,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final isVoid = action == _SaleHistoryAction.voidSale;
+    final confirmed = await AppDialog.show<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          action == _SaleHistoryAction.voidSale ? 'إلغاء البيع' : 'مرتجع كامل',
-        ),
+      dialog: AppDialog.warning(
+        title: isVoid ? 'إلغاء البيع' : 'مرتجع كامل',
         content: Text(_invoiceNo(sale)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('تأكيد'),
-          ),
-        ],
+        confirmLabel: 'تأكيد',
+        cancelLabel: 'إلغاء',
       ),
     );
     if (confirmed != true || !context.mounted) return;

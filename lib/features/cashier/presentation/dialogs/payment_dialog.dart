@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:holol_POS/core/services/invoices/invoice_output_actions.dart';
+import 'package:holol_POS/features/cashier/presentation/dialogs/thermal_receipt_preview_dialog.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:holol_POS/core/design_system/colors.dart';
@@ -396,10 +398,18 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                 ? AppSpacing.lg
                 : AppSpacing.xl,
           ),
-          color: AppColors.primary,
+          decoration: const BoxDecoration(gradient: AppColors.headerGradient),
           child: Row(
             children: [
-              const Icon(Icons.payment, color: AppColors.onPrimary),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.onPrimary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.payment, color: AppColors.onPrimary),
+              ),
               const SizedBox(width: AppSpacing.md),
               Text(
                 l10n.payment,
@@ -410,6 +420,15 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                 ),
               ),
               const Spacer(),
+              Text(
+                PosFormatters.amount(_totalAmount),
+                style: TextStyle(
+                  color: AppColors.onPrimary.withValues(alpha: 0.9),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
               IconButton(
                 tooltip: l10n.cancel,
                 icon: const Icon(Icons.close, color: AppColors.onPrimary),
@@ -470,23 +489,40 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   }
 
   Widget _buildPaymentSummary() {
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceVariant,
-        borderRadius: AppSpacing.borderRadiusMd,
+        borderRadius: AppSpacing.borderRadiusLg,
+        border: Border.all(color: AppColors.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           children: [
-            _SummaryRow(label: 'إجمالي الفاتورة', value: _totalAmount),
-            const Divider(height: AppSpacing.lg),
+            Row(
+              children: [
+                const Text(
+                  'إجمالي الفاتورة',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                const Spacer(),
+                Text(
+                  PosFormatters.amount(_totalAmount),
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: AppSpacing.xl),
             _SummaryRow(label: 'المدفوع فعليًا', value: _actualPaidAmount),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.xs),
             _SummaryRow(label: 'الآجل', value: _creditAmount),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.xs),
             _SummaryRow(label: 'المتبقي', value: _remainingAmount),
-            const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.xs),
             _SummaryRow(label: 'الراجع', value: _change),
           ],
         ),
@@ -522,33 +558,55 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       return const SizedBox.shrink();
     }
 
-    final prefix = _paymentLines.isEmpty ? '' : 'أكمل ';
-
-    return Wrap(
-      spacing: AppSpacing.sm,
-      runSpacing: AppSpacing.sm,
-      alignment: WrapAlignment.center,
+    return Column(
       children: [
-        AppButton.outlined(
-          onPressed: _isProcessing
-              ? null
-              : () => _selectLineKind(SaleTenderKind.cash),
-          icon: Icons.payments_outlined,
-          label: '${prefix}كاش ${PosFormatters.amount(remaining)}',
+        Text(
+          'اختر طريقة الدفع',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+            fontSize: 13,
+          ),
         ),
-        AppButton.outlined(
-          onPressed: _isProcessing
-              ? null
-              : () => _selectLineKind(SaleTenderKind.network),
-          icon: Icons.credit_card,
-          label: '${prefix}شبكة ${PosFormatters.amount(remaining)}',
-        ),
-        AppButton.outlined(
-          onPressed: _isProcessing
-              ? null
-              : () => _selectLineKind(SaleTenderKind.credit),
-          icon: Icons.person_outline,
-          label: '${prefix}آجل ${PosFormatters.amount(remaining)}',
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            Expanded(
+              child: _PaymentMethodButton(
+                icon: Icons.payments_outlined,
+                label: 'كاش',
+                subtitle: PosFormatters.amount(remaining),
+                color: AppColors.success,
+                onPressed: _isProcessing
+                    ? null
+                    : () => _selectLineKind(SaleTenderKind.cash),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _PaymentMethodButton(
+                icon: Icons.credit_card,
+                label: 'شبكة',
+                subtitle: PosFormatters.amount(remaining),
+                color: AppColors.info,
+                onPressed: _isProcessing
+                    ? null
+                    : () => _selectLineKind(SaleTenderKind.network),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _PaymentMethodButton(
+                icon: Icons.person_outline,
+                label: 'آجل',
+                subtitle: PosFormatters.amount(remaining),
+                color: AppColors.warning,
+                onPressed: _isProcessing
+                    ? null
+                    : () => _selectLineKind(SaleTenderKind.credit),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -570,10 +628,11 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       SaleTenderKind.credit => (Icons.person_outline, 'دفع آجل', 'المبلغ'),
     };
 
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceVariant,
-        borderRadius: AppSpacing.borderRadiusMd,
+        borderRadius: AppSpacing.borderRadiusLg,
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -708,10 +767,18 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.check_circle,
-            size: AppSpacing.jumbo + AppSpacing.xxl,
-            color: AppColors.success,
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_circle,
+              size: 48,
+              color: AppColors.success,
+            ),
           ),
           const SizedBox(height: AppSpacing.xl),
           Text(
@@ -731,9 +798,34 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
           ],
           const SizedBox(height: AppSpacing.lg),
           if (_change > 0) ...[
-            AppInfoBanner(
-              message: '${l10n.change}: ${PosFormatters.amount(_change)}',
-              type: AppBannerType.info,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.info.withValues(alpha: 0.08),
+                borderRadius: AppSpacing.borderRadiusMd,
+                border: Border.all(
+                  color: AppColors.info.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.currency_exchange, color: AppColors.info),
+                  const SizedBox(width: AppSpacing.sm),
+                  Text(
+                    '${l10n.change}: ${PosFormatters.amount(_change)}',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.info,
+                    ),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
@@ -773,9 +865,12 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     final id = _saleId;
     if (id == null) return;
 
-    Navigator.of(
-      context,
-    ).pop(PaymentDialogResult.completed(saleId: id, openInvoice: true));
+    final outputActions = ref.read(invoiceOutputActionsProvider);
+    showThermalReceiptPreview(
+      context: context,
+      saleId: id,
+      outputActions: outputActions,
+    );
   }
 }
 
@@ -853,15 +948,27 @@ class _PaymentLineTile extends StatelessWidget {
         ? 'المستلم ${PosFormatters.amount(line.tenderedAmount)} - الراجع ${PosFormatters.amount(line.change)}'
         : null;
 
-    return DecoratedBox(
+    return Container(
       decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
+        color: AppColors.surface,
         borderRadius: AppSpacing.borderRadiusMd,
+        border: Border.all(color: AppColors.border),
+        boxShadow: AppSpacing.shadowSm,
       ),
       child: ListTile(
-        leading: Icon(icon, color: AppColors.primary),
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: AppColors.primary, size: 20),
+        ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: subtitle == null ? null : Text(subtitle),
+        subtitle: subtitle == null
+            ? null
+            : Text(subtitle, style: const TextStyle(fontSize: 12)),
         trailing: Wrap(
           spacing: AppSpacing.xs,
           crossAxisAlignment: WrapCrossAlignment.center,
@@ -876,12 +983,16 @@ class _PaymentLineTile extends StatelessWidget {
             ),
             IconButton(
               tooltip: 'تعديل',
-              icon: const Icon(Icons.edit_outlined),
+              icon: const Icon(Icons.edit_outlined, size: 20),
               onPressed: onEdit,
             ),
             IconButton(
               tooltip: 'حذف',
-              icon: const Icon(Icons.delete_outline),
+              icon: const Icon(
+                Icons.delete_outline,
+                size: 20,
+                color: AppColors.error,
+              ),
               onPressed: onDelete,
             ),
           ],
@@ -945,6 +1056,74 @@ class _CompleteButton extends StatelessWidget {
         customColor: AppColors.payButton,
         isLoading: isProcessing,
         label: label,
+      ),
+    );
+  }
+}
+
+class _PaymentMethodButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final Color color;
+  final VoidCallback? onPressed;
+
+  const _PaymentMethodButton({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.color,
+    this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: AppSpacing.borderRadiusLg,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.sm,
+            vertical: AppSpacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.06),
+            borderRadius: AppSpacing.borderRadiusLg,
+            border: Border.all(color: color.withValues(alpha: 0.25)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                  fontSize: 13,
+                ),
+              ),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: color.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

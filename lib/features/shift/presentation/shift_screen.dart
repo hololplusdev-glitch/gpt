@@ -19,6 +19,7 @@ import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
 import 'package:holol_POS/shared/presentation/widgets/key_value_row.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 
 class ShiftScreen extends ConsumerStatefulWidget {
@@ -63,57 +64,126 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: Text(hasOpenShift ? 'الشفت الحالي' : l10n.openShift),
-        actions: [
-          if (hasOpenShift)
-            TextButton.icon(
-              onPressed: actionState.isLoading
-                  ? null
-                  : () => context.go(AppRoutes.cashier),
-              icon: const Icon(Icons.point_of_sale),
-              label: Text(l10n.backToPos),
+      body: Column(
+        children: [
+          // ── Gradient Header ──
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: AppColors.headerGradient,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadow,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
             ),
-        ],
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: AppSpacing.paddingLg,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: AppContentWidth.narrow,
-              ),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.xxxl),
-                  child: activeSession == null
-                      ? _buildNoSessionView(l10n)
-                      : dashboardAsync.when(
-                          data: (dashboard) {
-                            if (dashboard == null) {
-                              return _buildOpenShiftView(
-                                actionState,
-                                activeSession,
-                                l10n,
-                              );
-                            }
-
-                            return _buildShiftDashboardView(
-                              dashboard,
-                              actionState,
-                              activeSession,
-                              l10n,
-                            );
-                          },
-                          loading: _buildLoadingView,
-                          error: (error, _) => _buildLoadErrorView(error),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AppColors.onPrimary,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        hasOpenShift
+                            ? Icons.analytics_outlined
+                            : Icons.play_circle_outline,
+                        color: AppColors.onPrimary,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Text(
+                      hasOpenShift ? 'الشفت الحالي' : l10n.openShift,
+                      style: const TextStyle(
+                        color: AppColors.onPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (hasOpenShift)
+                      FilledButton.icon(
+                        onPressed: actionState.isLoading
+                            ? null
+                            : () => context.go(AppRoutes.cashier),
+                        icon: const Icon(Icons.point_of_sale, size: 18),
+                        label: Text(l10n.backToPos),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.white.withValues(alpha: 0.15),
+                          foregroundColor: AppColors.onPrimary,
                         ),
+                      ),
+                  ],
                 ),
               ),
             ),
           ),
-        ),
+          // ── Body ──
+          Expanded(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: AppSpacing.paddingLg,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: AppContentWidth.narrow,
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.xxl),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: AppSpacing.borderRadiusLg,
+                      border: Border.all(color: AppColors.border),
+                      boxShadow: AppSpacing.shadowMd,
+                    ),
+                    child: activeSession == null
+                        ? _buildNoSessionView(l10n)
+                        : dashboardAsync.when(
+                            data: (dashboard) {
+                              if (dashboard == null) {
+                                return _buildOpenShiftView(
+                                  actionState,
+                                  activeSession,
+                                  l10n,
+                                );
+                              }
+
+                              return _buildShiftDashboardView(
+                                dashboard,
+                                actionState,
+                                activeSession,
+                                l10n,
+                              );
+                            },
+                            loading: _buildLoadingView,
+                            error: (error, _) => _buildLoadErrorView(error),
+                          ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -147,7 +217,7 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
   Widget _buildLoadingView() {
     return const Padding(
       padding: EdgeInsets.all(AppSpacing.xxxl),
-      child: Center(child: CircularProgressIndicator()),
+      child: AppLoading(),
     );
   }
 
@@ -433,22 +503,54 @@ class _CountRow extends StatelessWidget {
   }
 }
 
-class _ShiftHeroIcon extends StatelessWidget {
+class _ShiftHeroIcon extends StatefulWidget {
   final IconData icon;
   final Color color;
 
   const _ShiftHeroIcon({required this.icon, required this.color});
 
   @override
+  State<_ShiftHeroIcon> createState() => _ShiftHeroIconState();
+}
+
+class _ShiftHeroIconState extends State<_ShiftHeroIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: AppSpacing.durationHero,
+    )..forward();
+    _scaleAnim = CurvedAnimation(
+      parent: _controller,
+      curve: AppSpacing.curveBounce,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Center(
-      child: Container(
-        padding: AppSpacing.paddingLg,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: AppSpacing.borderRadiusLg,
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 0.6, end: 1.0).animate(_scaleAnim),
+        child: Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: widget.color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(widget.icon, color: widget.color, size: 36),
         ),
-        child: Icon(icon, color: color, size: AppSpacing.jumbo),
       ),
     );
   }

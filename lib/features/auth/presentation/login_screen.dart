@@ -15,7 +15,9 @@ import 'package:holol_POS/features/auth/application/pos_session_controller.dart'
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_dropdown.dart';
-import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
+import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_numeric_keypad.dart';
 
 final loginIdentityCardProvider = FutureProvider.autoDispose<LoginIdentityInfo>(
   (ref) async {
@@ -173,190 +175,186 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: SingleChildScrollView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: EdgeInsets.symmetric(
-              horizontal: isCompact ? AppSpacing.md : AppSpacing.lg,
-              vertical: isCompact ? AppSpacing.md : AppSpacing.xl,
+              horizontal: isCompact ? AppSpacing.sm : AppSpacing.lg,
+              vertical: isCompact ? 0 : AppSpacing.xl,
             ),
             child: ConstrainedBox(
               constraints: BoxConstraints(
-                maxWidth: isCompact ? double.infinity : 460,
+                maxWidth: isCompact ? double.infinity : 480,
               ),
-              child: Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(
-                  isCompact ? AppSpacing.lg : AppSpacing.xxxl,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.surface,
-                  borderRadius: AppSpacing.borderRadiusXl,
-                  boxShadow: const [
-                    BoxShadow(
-                      color: AppColors.shadow,
-                      blurRadius: AppSpacing.xxl,
-                      offset: Offset(0, AppSpacing.sm),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // ── Gradient Banner ──
+                  if (!isCompact) const SizedBox(height: AppSpacing.lg),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.xl,
+                      AppSpacing.xxl,
+                      AppSpacing.xl,
+                      AppSpacing.lg,
                     ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.point_of_sale_rounded,
-                      size: isCompact
-                          ? AppSpacing.jumbo
-                          : AppSpacing.jumbo + AppSpacing.lg,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      l10n.appTitle,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      'دخول محلي برقم المستخدم ونقطة التشغيل',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: AppColors.textSecondary,
+                    decoration: const BoxDecoration(
+                      gradient: AppColors.brandGradient,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.xl),
-                    const _LoginIdentityCard(),
-                    SizedBox(
-                      height: isCompact ? AppSpacing.lg : AppSpacing.xxl,
-                    ),
-                    if (sessionState.errorMessage != null) ...[
-                      Container(
-                        width: double.infinity,
-                        padding: AppSpacing.paddingMd,
-                        decoration: BoxDecoration(
-                          color: AppColors.error.withValues(alpha: 0.1),
-                          borderRadius: AppSpacing.borderRadiusMd,
-                          border: Border.all(
-                            color: AppColors.error.withValues(alpha: 0.3),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: AppColors.onPrimary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: const Icon(
+                            Icons.point_of_sale_rounded,
+                            color: AppColors.onPrimary,
+                            size: 36,
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.error_outline,
-                              color: AppColors.error,
-                              size: AppSpacing.xl,
-                            ),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Text(
-                                sessionState.errorMessage!,
-                                style: const TextStyle(
-                                  color: AppColors.error,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                          ],
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          l10n.appTitle,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.onPrimary,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                    ],
-                    AppTextField(
-                      controller: _userNumberController,
-                      focusNode: _userNumberFocus,
-                      textInputAction: TextInputAction.done,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      labelText: 'رقم المستخدم',
-                      prefixIcon: const Icon(Icons.badge_outlined),
-                      onChanged: (value) {
-                        if (_handleOwnerShortcut(value)) return;
-                        ref
-                            .read(posSessionControllerProvider.notifier)
-                            .resolveUserNumber(value);
-                      },
-                      onSubmitted: (value) {
-                        if (_handleOwnerShortcut(value)) return;
-                        if (sessionState.canLogin) _handleLoginPressed();
-                      },
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    AppDropdown<String>(
-                      key: ValueKey(
-                        '${sessionState.resolvedUser?.id}:${sessionState.selectedMachineNo}:${sessionState.machineChoices.length}',
-                      ),
-                      value: sessionState.selectedMachineNo,
-                      labelText: 'نقطة التشغيل',
-                      hintText: sessionState.isResolvingUser
-                          ? 'جاري البحث...'
-                          : sessionState.machineChoices.isEmpty
-                          ? 'أدخل رقم المستخدم أولًا'
-                          : 'اختر نقطة التشغيل',
-                      prefixIcon: const Icon(Icons.storefront_outlined),
-                      items: sessionState.machineChoices
-                          .map(
-                            (choice) => DropdownMenuItem<String>(
-                              value: choice.machineNo,
-                              child: Text(choice.label),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: sessionState.machineChoices.length <= 1
-                          ? null
-                          : (value) => ref
-                                .read(posSessionControllerProvider.notifier)
-                                .selectMachine(value),
-                    ),
-                    SizedBox(
-                      height: isCompact ? AppSpacing.lg : AppSpacing.xxl,
-                    ),
-                    SizedBox(
-                      width: double.infinity,
-                      height: AppSpacing.jumbo + AppSpacing.xs,
-                      child: AppButton.primary(
-                        onPressed: sessionState.canLogin
-                            ? _handleLoginPressed
-                            : null,
-                        isLoading: sessionState.isLoading,
-                        label: 'دخول',
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.xl),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(AppSpacing.md),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.05),
-                        borderRadius: AppSpacing.borderRadiusSm,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            size: AppSpacing.lg,
-                            color: AppColors.primary.withValues(alpha: 0.6),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          'دخول محلي برقم المستخدم ونقطة التشغيل',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppColors.onPrimary.withValues(alpha: 0.7),
+                            fontSize: 13,
                           ),
-                          const SizedBox(width: AppSpacing.sm),
-                          Expanded(
-                            child: Text(
-                              isCompact
-                                  ? 'سيُطلب PIN بعد الضغط على دخول.'
-                                  : 'يتم تحديد نقاط التشغيل من صلاحيات DEVICE_PRIV المحلية. سيُطلب PIN بعد الضغط على دخول.',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: AppColors.textHint,
-                                    fontSize: 11,
-                                  ),
-                            ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // ── Card Body ──
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(
+                      isCompact ? AppSpacing.lg : AppSpacing.xxl,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                      boxShadow: AppSpacing.shadowMd,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const _LoginIdentityCard(),
+                        const SizedBox(height: AppSpacing.lg),
+                        if (sessionState.errorMessage != null) ...[
+                          AppInfoBanner.error(
+                            message: sessionState.errorMessage!,
                           ),
+                          const SizedBox(height: AppSpacing.lg),
                         ],
-                      ),
+                        // ── User Number ──
+                        AppTextField(
+                          controller: _userNumberController,
+                          focusNode: _userNumberFocus,
+                          textInputAction: TextInputAction.done,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          labelText: 'رقم المستخدم',
+                          prefixIcon: const Icon(Icons.badge_outlined),
+                          suffixIcon: sessionState.isResolvingUser
+                              ? const Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child: SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                )
+                              : sessionState.resolvedUser != null
+                              ? const Icon(
+                                  Icons.check_circle,
+                                  color: AppColors.success,
+                                )
+                              : null,
+                          onChanged: (value) {
+                            if (_handleOwnerShortcut(value)) return;
+                            ref
+                                .read(posSessionControllerProvider.notifier)
+                                .resolveUserNumber(value);
+                          },
+                          onSubmitted: (value) {
+                            if (_handleOwnerShortcut(value)) return;
+                            if (sessionState.canLogin) _handleLoginPressed();
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        // ── Machine Selection ──
+                        AppDropdown<String>(
+                          key: ValueKey(
+                            '${sessionState.resolvedUser?.id}:${sessionState.selectedMachineNo}:${sessionState.machineChoices.length}',
+                          ),
+                          value: sessionState.selectedMachineNo,
+                          labelText: 'نقطة التشغيل',
+                          hintText: sessionState.isResolvingUser
+                              ? 'جاري البحث...'
+                              : sessionState.machineChoices.isEmpty
+                              ? 'أدخل رقم المستخدم أولًا'
+                              : 'اختر نقطة التشغيل',
+                          prefixIcon: const Icon(Icons.storefront_outlined),
+                          items: sessionState.machineChoices
+                              .map(
+                                (choice) => DropdownMenuItem<String>(
+                                  value: choice.machineNo,
+                                  child: Text(choice.label),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: sessionState.machineChoices.length <= 1
+                              ? null
+                              : (value) => ref
+                                    .read(posSessionControllerProvider.notifier)
+                                    .selectMachine(value),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        // ── Numeric Keypad (touch screens) ──
+                        AppNumericKeypad(
+                          controller: _userNumberController,
+                          maxLength: 6,
+                          onSubmit: sessionState.canLogin
+                              ? _handleLoginPressed
+                              : null,
+                          submitLabel: 'دخول',
+                          submitIcon: Icons.login,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        // ── Info ──
+                        AppInfoBanner.info(
+                          message: isCompact
+                              ? 'سيُطلب PIN بعد الضغط على دخول.'
+                              : 'يتم تحديد نقاط التشغيل من صلاحيات DEVICE_PRIV المحلية. سيُطلب PIN بعد الضغط على دخول.',
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        const _LoginFooter(),
+                      ],
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    const _LoginFooter(),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -382,7 +380,18 @@ class _PinEntryDialogState extends State<_PinEntryDialog> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    _pinController.addListener(_onInputChanged);
+    _confirmController.addListener(_onInputChanged);
+  }
+
+  void _onInputChanged() => setState(() {});
+
+  @override
   void dispose() {
+    _pinController.removeListener(_onInputChanged);
+    _confirmController.removeListener(_onInputChanged);
     _pinController.dispose();
     _confirmController.dispose();
     super.dispose();
@@ -407,74 +416,48 @@ class _PinEntryDialogState extends State<_PinEntryDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final isCompact = MediaQuery.sizeOf(context).width < 600;
-
-    return AlertDialog(
-      insetPadding: EdgeInsets.symmetric(
-        horizontal: isCompact ? AppSpacing.md : AppSpacing.xl,
-        vertical: AppSpacing.lg,
-      ),
-      title: Text(widget.createMode ? 'إنشاء PIN' : 'إدخال PIN'),
+    return AppDialog(
+      title: widget.createMode ? 'إنشاء PIN' : 'إدخال PIN',
+      icon: Icons.lock_outline,
+      confirmLabel: null,
+      cancelLabel: 'إلغاء',
+      onCancel: () => Navigator.of(context).pop(),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppTextField(
-              controller: _pinController,
-              autofocus: false,
-              labelText: widget.createMode ? 'PIN جديد' : 'PIN',
-              keyboardType: TextInputType.number,
-              obscureText: true,
-              textInputAction: widget.createMode
-                  ? TextInputAction.next
-                  : TextInputAction.done,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(4),
-              ],
-              onSubmitted: (_) {
-                if (!widget.createMode) _submit();
-              },
+            // ── PIN Display ──
+            _PinDotsDisplay(
+              length: _pinController.text.length,
+              maxLength: 4,
+              label: widget.createMode ? 'PIN جديد' : 'PIN',
             ),
             if (widget.createMode) ...[
               const SizedBox(height: AppSpacing.md),
-              AppTextField(
-                controller: _confirmController,
-                autofocus: false,
-                labelText: 'تأكيد PIN',
-                keyboardType: TextInputType.number,
-                obscureText: true,
-                textInputAction: TextInputAction.done,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(4),
-                ],
-                onSubmitted: (_) => _submit(),
+              _PinDotsDisplay(
+                length: _confirmController.text.length,
+                maxLength: 4,
+                label: 'تأكيد PIN',
               ),
             ],
             if (_error != null) ...[
               const SizedBox(height: AppSpacing.md),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Text(
-                  _error!,
-                  style: const TextStyle(color: AppColors.error, fontSize: 12),
-                ),
-              ),
+              AppInfoBanner.error(message: _error!),
             ],
+            const SizedBox(height: AppSpacing.lg),
+            // ── Keypad ──
+            AppNumericKeypad(
+              controller: widget.createMode && _pinController.text.length >= 4
+                  ? _confirmController
+                  : _pinController,
+              maxLength: 4,
+              onSubmit: _submit,
+              submitLabel: widget.createMode ? 'حفظ ودخول' : 'دخول',
+              submitIcon: Icons.lock_open,
+            ),
           ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('إلغاء'),
-        ),
-        FilledButton(
-          onPressed: _submit,
-          child: Text(widget.createMode ? 'حفظ ودخول' : 'دخول'),
-        ),
-      ],
     );
   }
 }
@@ -557,14 +540,74 @@ class _LoginFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(
-      'تطوير Alboraihi-hololPlus',
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        color: AppColors.textHint,
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-      ),
+    return Column(
+      children: [
+        Divider(color: AppColors.border.withValues(alpha: 0.5)),
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.code, size: 14, color: AppColors.textHint),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              'تطوير Alboraihi-hololPlus',
+              style: TextStyle(
+                color: AppColors.textHint,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _PinDotsDisplay extends StatelessWidget {
+  final int length;
+  final int maxLength;
+  final String label;
+
+  const _PinDotsDisplay({
+    required this.length,
+    required this.maxLength,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(maxLength, (i) {
+            final filled = i < length;
+            return Container(
+              width: 16,
+              height: 16,
+              margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: filled ? AppColors.primary : Colors.transparent,
+                border: Border.all(
+                  color: filled ? AppColors.primary : AppColors.border,
+                  width: 2,
+                ),
+              ),
+            );
+          }),
+        ),
+      ],
     );
   }
 }

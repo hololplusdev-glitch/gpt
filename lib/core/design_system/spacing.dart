@@ -70,12 +70,26 @@ abstract final class AppSpacing {
     BoxShadow(color: Color(0x080F172A), blurRadius: 4, offset: Offset(0, 2)),
   ];
 
+  // WHY: Colored glow shadows for CTA buttons and success/error states.
+  static List<BoxShadow> coloredGlow(Color color, {double intensity = 0.25}) {
+    return [
+      BoxShadow(
+        color: color.withValues(alpha: intensity),
+        blurRadius: 16,
+        offset: const Offset(0, 6),
+      ),
+    ];
+  }
+
   // ─── Animation durations ──────────────────────────────
   static const Duration durationFast = Duration(milliseconds: 150);
   static const Duration durationMd = Duration(milliseconds: 250);
   static const Duration durationSlow = Duration(milliseconds: 400);
+  static const Duration durationHero = Duration(milliseconds: 600);
 
   // ─── Curves ───────────────────────────────────────────
   static const Curve curveDefault = Curves.easeOutCubic;
   static const Curve curveSpring = Curves.elasticOut;
+  static const Curve curveBounce = Curves.easeOutBack;
+  static const Curve curveSnap = Curves.easeOutExpo;
 }

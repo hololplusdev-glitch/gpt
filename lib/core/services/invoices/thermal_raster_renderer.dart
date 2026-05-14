@@ -38,7 +38,9 @@ class ThermalRasterRenderer {
     );
 
     final pngBytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    final rgbaBytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+    final rgbaBytes = await image.toByteData(
+      format: ui.ImageByteFormat.rawRgba,
+    );
 
     if (pngBytes == null || rgbaBytes == null) {
       throw StateError('Unable to render thermal receipt image.');
@@ -354,8 +356,9 @@ class _ReceiptPainter {
     final rect = Rect.fromLTWH(margin, y, widthPx - margin * 2, h);
     _box(canvas, rect);
 
-    final labelW = rect.width * 0.48;
-    final valueW = rect.width - labelW;
+    // RTL layout: value on the LEFT, label on the RIGHT.
+    final valueW = rect.width * 0.52;
+    final labelW = rect.width - valueW;
 
     for (var i = 0; i < values.length; i++) {
       final top = y + i * rowH;
@@ -365,35 +368,38 @@ class _ReceiptPainter {
         _line(canvas, Offset(row.left, row.top), Offset(row.right, row.top));
       }
 
+      // Vertical separator
       _line(
         canvas,
-        Offset(row.left + labelW, row.top),
-        Offset(row.left + labelW, row.bottom),
+        Offset(row.left + valueW, row.top),
+        Offset(row.left + valueW, row.bottom),
       );
 
-      text.draw(
-        canvas,
-        values[i].label,
-        Rect.fromLTWH(row.left + 5, row.top + 3, labelW - 10, rowH - 6),
-        size: small,
-        bold: true,
-        align: TextAlign.right,
-        dir: TextDirection.rtl,
-      );
-
+      // Value (left side in RTL)
       text.draw(
         canvas,
         values[i].value,
-        Rect.fromLTWH(
-          row.left + labelW + 5,
-          row.top + 3,
-          valueW - 10,
-          rowH - 6,
-        ),
+        Rect.fromLTWH(row.left + 5, row.top + 3, valueW - 10, rowH - 6),
         size: font,
         bold: true,
         align: TextAlign.center,
         dir: values[i].dir,
+      );
+
+      // Label (right side in RTL)
+      text.draw(
+        canvas,
+        values[i].label,
+        Rect.fromLTWH(
+          row.left + valueW + 5,
+          row.top + 3,
+          labelW - 10,
+          rowH - 6,
+        ),
+        size: small,
+        bold: true,
+        align: TextAlign.right,
+        dir: TextDirection.rtl,
       );
     }
 
@@ -406,11 +412,13 @@ class _ReceiptPainter {
 
     final headerH = paperWidthMm == 58 ? 32.0 : 36.0;
     final headerRect = Rect.fromLTWH(margin, y, w, headerH);
+
+    // RTL column order: الإجمالي | الخصم | الكمية | السعر
     final headerLabels = [
-      labels.unitPrice,
-      labels.quantity,
-      labels.discount,
       labels.total,
+      labels.discount,
+      labels.quantity,
+      labels.unitPrice,
     ];
 
     _box(canvas, headerRect, fill: const Color(0xFFEFEFEF));
@@ -444,11 +452,12 @@ class _ReceiptPainter {
       final row = Rect.fromLTWH(margin, y, w, h);
       _box(canvas, row);
 
+      // RTL value order matching headers
       final values = [
-        line.display.unitPrice,
-        line.display.quantity,
-        line.display.discountAmount,
         line.display.lineTotal,
+        line.display.discountAmount,
+        line.display.quantity,
+        line.display.unitPrice,
       ];
 
       for (var i = 0; i < values.length; i++) {
@@ -472,13 +481,14 @@ class _ReceiptPainter {
         );
       }
 
+      // Product name spanning full width below the numbers
       text.draw(
         canvas,
         line.itemName,
         Rect.fromLTWH(margin + 5, y + 28, w - 10, h - 30),
         size: small + 1,
         bold: true,
-        align: TextAlign.center,
+        align: TextAlign.right,
         dir: TextDirection.rtl,
       );
 
@@ -489,6 +499,9 @@ class _ReceiptPainter {
   }
 
   double _totals(Canvas canvas, double y) {
+    // RTL label for currency
+    const currencyLabel = 'ر.س';
+
     final rows = [
       (label: labels.subtotal, value: document.totals.displaySubtotal),
       (label: labels.discount, value: document.totals.displayDiscountTotal),
@@ -499,7 +512,8 @@ class _ReceiptPainter {
     ];
 
     final w = widthPx - margin * 2;
-    final valueW = w * 0.34;
+    // RTL: value on LEFT, label on RIGHT
+    final valueW = w * 0.40;
     final labelW = w - valueW;
     final h = rowH * rows.length;
     final rect = Rect.fromLTWH(margin, y, w, h);
@@ -507,6 +521,7 @@ class _ReceiptPainter {
     _box(canvas, rect);
 
     for (var i = 0; i < rows.length; i++) {
+      final isTotal = rows[i].label == labels.total;
       final top = y + i * rowH;
       final row = Rect.fromLTWH(margin, top, w, rowH);
 
@@ -516,33 +531,35 @@ class _ReceiptPainter {
 
       _line(
         canvas,
-        Offset(row.left + labelW, row.top),
-        Offset(row.left + labelW, row.bottom),
+        Offset(row.left + valueW, row.top),
+        Offset(row.left + valueW, row.bottom),
       );
 
+      // Value + currency (left side in RTL)
       text.draw(
         canvas,
-        rows[i].label,
-        Rect.fromLTWH(row.left + 5, row.top + 3, labelW - 10, rowH - 6),
-        size: small + 1,
+        '${rows[i].value} $currencyLabel',
+        Rect.fromLTWH(row.left + 5, row.top + 3, valueW - 10, rowH - 6),
+        size: isTotal ? font + 2 : font + 1,
         bold: true,
         align: TextAlign.center,
         dir: TextDirection.rtl,
       );
 
+      // Label (right side in RTL)
       text.draw(
         canvas,
-        rows[i].value,
+        rows[i].label,
         Rect.fromLTWH(
-          row.left + labelW + 5,
+          row.left + valueW + 5,
           row.top + 3,
-          valueW - 10,
+          labelW - 10,
           rowH - 6,
         ),
-        size: font + 1,
+        size: small + 1,
         bold: true,
-        align: TextAlign.center,
-        dir: TextDirection.ltr,
+        align: TextAlign.right,
+        dir: TextDirection.rtl,
       );
     }
 
@@ -552,19 +569,22 @@ class _ReceiptPainter {
   double _payments(Canvas canvas, double y) {
     if (document.payments.isEmpty) return y;
 
+    const currencyLabel = 'ر.س';
     final w = widthPx - margin * 2;
-    final valueW = w * 0.34;
-    final labelW = w - valueW;
+    // RTL: amount on LEFT, method on RIGHT
+    final amountW = w * 0.40;
+    final methodW = w - amountW;
     final h = rowH * (document.payments.length + 1);
     final rect = Rect.fromLTWH(margin, y, w, h);
 
     _box(canvas, rect);
 
+    // Header row
     final headerRow = Rect.fromLTWH(margin, y, w, rowH);
     _line(
       canvas,
-      Offset(headerRow.left + labelW, headerRow.top),
-      Offset(headerRow.left + labelW, headerRow.bottom),
+      Offset(headerRow.left + amountW, headerRow.top),
+      Offset(headerRow.left + amountW, headerRow.bottom),
     );
     _line(
       canvas,
@@ -572,13 +592,14 @@ class _ReceiptPainter {
       Offset(headerRow.right, headerRow.bottom),
     );
 
+    // Amount header (left in RTL)
     text.draw(
       canvas,
-      labels.paymentMethod,
+      labels.amount,
       Rect.fromLTWH(
         headerRow.left + 5,
         headerRow.top + 3,
-        labelW - 10,
+        amountW - 10,
         rowH - 6,
       ),
       size: small + 1,
@@ -587,18 +608,19 @@ class _ReceiptPainter {
       dir: TextDirection.rtl,
     );
 
+    // Method header (right in RTL)
     text.draw(
       canvas,
-      labels.amount,
+      labels.paymentMethod,
       Rect.fromLTWH(
-        headerRow.left + labelW + 5,
+        headerRow.left + amountW + 5,
         headerRow.top + 3,
-        valueW - 10,
+        methodW - 10,
         rowH - 6,
       ),
       size: small + 1,
       bold: true,
-      align: TextAlign.center,
+      align: TextAlign.right,
       dir: TextDirection.rtl,
     );
 
@@ -613,33 +635,35 @@ class _ReceiptPainter {
 
       _line(
         canvas,
-        Offset(row.left + labelW, row.top),
-        Offset(row.left + labelW, row.bottom),
+        Offset(row.left + amountW, row.top),
+        Offset(row.left + amountW, row.bottom),
       );
 
+      // Amount (left in RTL)
       text.draw(
         canvas,
-        payment.displayMethod,
-        Rect.fromLTWH(row.left + 5, row.top + 3, labelW - 10, rowH - 6),
-        size: small + 1,
+        '${payment.displayAmount} $currencyLabel',
+        Rect.fromLTWH(row.left + 5, row.top + 3, amountW - 10, rowH - 6),
+        size: font + 1,
         bold: true,
         align: TextAlign.center,
         dir: TextDirection.rtl,
       );
 
+      // Method name (right in RTL)
       text.draw(
         canvas,
-        payment.displayAmount,
+        payment.displayMethod,
         Rect.fromLTWH(
-          row.left + labelW + 5,
+          row.left + amountW + 5,
           row.top + 3,
-          valueW - 10,
+          methodW - 10,
           rowH - 6,
         ),
-        size: font + 1,
+        size: small + 1,
         bold: true,
-        align: TextAlign.center,
-        dir: TextDirection.ltr,
+        align: TextAlign.right,
+        dir: TextDirection.rtl,
       );
     }
 

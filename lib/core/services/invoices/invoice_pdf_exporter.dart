@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -152,6 +153,19 @@ class InvoicePdfExporter {
     return file;
   }
 
+  /// Saves pre-rendered PDF bytes (e.g. from ThermalReceiptPdfRenderer)
+  /// to the same download directory with the same naming convention.
+  Future<File> saveBytes(InvoiceDocument document, Uint8List pdfBytes) async {
+    final outputDir = await _invoiceDownloadsDirectory();
+    await outputDir.create(recursive: true);
+
+    final safeNo = _safeInvoiceNo(document.localInvoiceNo);
+    final file = await _nextAvailableFile(outputDir, 'invoice_$safeNo', 'pdf');
+
+    await file.writeAsBytes(pdfBytes, flush: true);
+    return file;
+  }
+
   Future<Directory> _invoiceDownloadsDirectory() async {
     final fallback = await getApplicationDocumentsDirectory();
 
@@ -214,10 +228,35 @@ class InvoicePdfExporter {
     InvoicePdfFontSet fonts,
     InvoicePdfLabels labels,
   ) {
+    // RTL: company info on RIGHT, invoice info + QR on LEFT.
     return pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
       children: [
+        // LEFT side: QR + invoice number
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            if (document.qrPayload?.isNotEmpty == true) ...[
+              pw.BarcodeWidget(
+                data: document.qrPayload!,
+                barcode: pw.Barcode.qrCode(),
+                width: 86,
+                height: 86,
+                drawText: false,
+              ),
+              pw.SizedBox(height: 8),
+            ],
+            pw.Text(document.localInvoiceNo, style: fonts.style()),
+            pw.Text(
+              labels.simplifiedTaxInvoice,
+              style: fonts.style(fontSize: 14, isBold: true),
+            ),
+            if (document.copyInfo.isCopy)
+              pw.Text(document.copyInfo.label, style: fonts.style()),
+          ],
+        ),
+        // RIGHT side: company info
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.end,
           children: [
@@ -238,28 +277,8 @@ class InvoicePdfExporter {
               ),
             if (document.branch.address?.isNotEmpty == true)
               pw.Text(document.branch.address!, style: fonts.style()),
-          ],
-        ),
-        pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.end,
-          children: [
-            pw.Text(
-              labels.simplifiedTaxInvoice,
-              style: fonts.style(fontSize: 16, isBold: true),
-            ),
-            pw.Text(document.localInvoiceNo, style: fonts.style()),
-            if (document.copyInfo.isCopy)
-              pw.Text(document.copyInfo.label, style: fonts.style()),
-            if (document.qrPayload?.isNotEmpty == true) ...[
-              pw.SizedBox(height: 8),
-              pw.BarcodeWidget(
-                data: document.qrPayload!,
-                barcode: pw.Barcode.qrCode(),
-                width: 86,
-                height: 86,
-                drawText: false,
-              ),
-            ],
+            if (document.seller.phone?.isNotEmpty == true)
+              pw.Text(document.seller.phone!, style: fonts.style()),
           ],
         ),
       ],
@@ -271,8 +290,10 @@ class InvoicePdfExporter {
     InvoicePdfFontSet fonts,
     InvoicePdfLabels labels,
   ) {
+    // RTL: value on LEFT, label on RIGHT
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey300),
+      columnWidths: const {0: pw.FlexColumnWidth(3), 1: pw.FlexColumnWidth(2)},
       children: [
         _row(
           labels.date,
@@ -291,28 +312,31 @@ class InvoicePdfExporter {
     InvoicePdfFontSet fonts,
     InvoicePdfLabels labels,
   ) {
+    const currencyLabel = 'ر.س';
+
+    // RTL column order: الإجمالي | سعر الوحدة | الكمية | الصنف
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey300),
       columnWidths: const {
-        0: pw.FlexColumnWidth(4),
-        1: pw.FlexColumnWidth(1.4),
-        2: pw.FlexColumnWidth(1.6),
-        3: pw.FlexColumnWidth(1.8),
+        0: pw.FlexColumnWidth(1.8),
+        1: pw.FlexColumnWidth(1.6),
+        2: pw.FlexColumnWidth(1.4),
+        3: pw.FlexColumnWidth(4),
       },
       children: [
         _headerRow([
-          labels.item,
-          labels.quantity,
-          labels.unitPrice,
           labels.total,
+          labels.unitPrice,
+          labels.quantity,
+          labels.item,
         ], fonts),
         for (final line in document.lines)
           pw.TableRow(
             children: [
-              _cell('${line.itemName}\n${line.unitName ?? ''}', fonts),
+              _cell('${line.display.lineTotal} $currencyLabel', fonts),
+              _cell('${line.display.unitPrice} $currencyLabel', fonts),
               _cell(line.display.quantity, fonts),
-              _cell(line.display.unitPrice, fonts),
-              _cell(line.display.lineTotal, fonts),
+              _cell('${line.itemName}\n${line.unitName ?? ''}', fonts),
             ],
           ),
       ],
@@ -324,20 +348,44 @@ class InvoicePdfExporter {
     InvoicePdfFontSet fonts,
     InvoicePdfLabels labels,
   ) {
+    const currencyLabel = 'ر.س';
     final t = document.totals;
+
+    // RTL: value on LEFT, label on RIGHT (but aligned to the right of the page)
     return pw.Align(
       alignment: pw.Alignment.centerRight,
       child: pw.SizedBox(
-        width: 260,
+        width: 280,
         child: pw.Table(
           border: pw.TableBorder.all(color: PdfColors.grey300),
+          columnWidths: const {
+            0: pw.FlexColumnWidth(3),
+            1: pw.FlexColumnWidth(2),
+          },
           children: [
-            _row(labels.beforeTaxTotal, t.displaySubtotal, fonts),
-            _row(labels.discount, t.displayDiscountTotal, fonts),
-            _row(labels.vat, t.displayTaxTotal, fonts),
-            _row(labels.total, t.displayNetTotal, fonts, bold: true),
-            _row(labels.paid, t.displayPaidTotal, fonts),
-            _row(labels.change, t.displayChangeAmount, fonts),
+            _row(
+              labels.beforeTaxTotal,
+              '${t.displaySubtotal} $currencyLabel',
+              fonts,
+            ),
+            _row(
+              labels.discount,
+              '${t.displayDiscountTotal} $currencyLabel',
+              fonts,
+            ),
+            _row(labels.vat, '${t.displayTaxTotal} $currencyLabel', fonts),
+            _row(
+              labels.total,
+              '${t.displayNetTotal} $currencyLabel',
+              fonts,
+              bold: true,
+            ),
+            _row(labels.paid, '${t.displayPaidTotal} $currencyLabel', fonts),
+            _row(
+              labels.change,
+              '${t.displayChangeAmount} $currencyLabel',
+              fonts,
+            ),
           ],
         ),
       ),
@@ -349,20 +397,23 @@ class InvoicePdfExporter {
     InvoicePdfFontSet fonts,
     InvoicePdfLabels labels,
   ) {
+    const currencyLabel = 'ر.س';
+
+    // RTL column order: المبلغ | المرجع | طريقة الدفع
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey300),
       children: [
         _headerRow([
-          labels.paymentMethod,
-          labels.reference,
           labels.amount,
+          labels.reference,
+          labels.paymentMethod,
         ], fonts),
         for (final payment in document.payments)
           pw.TableRow(
             children: [
-              _cell(payment.displayMethod, fonts),
+              _cell('${payment.displayAmount} $currencyLabel', fonts),
               _cell(payment.referenceNo ?? '-', fonts),
-              _cell(payment.displayAmount, fonts),
+              _cell(payment.displayMethod, fonts),
             ],
           ),
       ],
@@ -385,10 +436,11 @@ class InvoicePdfExporter {
     bool bold = false,
   }) {
     final style = bold ? fonts.style(isBold: true) : null;
+    // RTL: value first (LEFT), label second (RIGHT)
     return pw.TableRow(
       children: [
-        _cell(label, fonts, style: style),
         _cell(value, fonts, style: style),
+        _cell(label, fonts, style: style),
       ],
     );
   }

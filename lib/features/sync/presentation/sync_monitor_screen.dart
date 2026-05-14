@@ -185,22 +185,87 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text(l10n.syncMonitor)),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: AppContentWidth.wide),
-          child: ListView(
-            padding: AppSpacing.paddingXl,
-            children: [
-              _buildMasterDownloadSection(l10n),
-              const SizedBox(height: AppSpacing.xxl),
-              _buildUploadSection(l10n, countsAsync),
-              const SizedBox(height: AppSpacing.xxl),
-              _buildStateSection(stateAsync),
-            ],
+      body: Column(
+        children: [
+          // ── Gradient Header ──
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: AppColors.headerGradient,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.shadow,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AppColors.onPrimary,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.sync,
+                        color: AppColors.onPrimary,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Text(
+                      l10n.syncMonitor,
+                      style: const TextStyle(
+                        color: AppColors.onPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+          // ── Body ──
+          Expanded(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: AppContentWidth.wide,
+                ),
+                child: ListView(
+                  padding: AppSpacing.paddingXl,
+                  children: [
+                    _buildMasterDownloadSection(l10n),
+                    const SizedBox(height: AppSpacing.xxl),
+                    _buildUploadSection(l10n, countsAsync),
+                    const SizedBox(height: AppSpacing.xxl),
+                    _buildStateSection(stateAsync),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -224,10 +289,7 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
             Text(
               progress.type == MasterDataType.devicePrivilege
                   ? 'صلاحيات نقاط التشغيل'
-                  : 'تحميل ${progress.type.code}' +
-                        (progress.totalPages > 1
-                            ? ' — صفحة ${progress.currentPage}/${progress.totalPages}'
-                            : ''),
+                  : 'تحميل ${progress.type.code}${progress.totalPages > 1 ? ' — صفحة ${progress.currentPage}/${progress.totalPages}' : ''}',
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: AppSpacing.sm),

@@ -245,123 +245,261 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
         context: context,
         useSafeArea: true,
         isScrollControlled: true,
+        backgroundColor: Colors.transparent,
         builder: (sheetContext) {
-          return SafeArea(
-            child: Padding(
-              padding: AppSpacing.paddingLg,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 520),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'الطلبات المعلقة',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
+          return Container(
+            constraints: const BoxConstraints(maxHeight: 560),
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ── Drag Handle ──
+                const SizedBox(height: AppSpacing.sm),
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(999),
                     ),
-                    const SizedBox(height: AppSpacing.md),
-                    Flexible(
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        itemCount: orders.length,
-                        separatorBuilder: (_, __) => const Divider(),
-                        itemBuilder: (itemContext, index) {
-                          final order = orders[index];
-                          final title =
-                              order.referenceName?.trim().isNotEmpty == true
-                              ? order.referenceName!
-                              : order.customerNameSnapshot?.trim().isNotEmpty ==
-                                    true
-                              ? order.customerNameSnapshot!
-                              : 'طلب معلق';
-
-                          return ListTile(
-                            leading: const Icon(Icons.pause_circle_outline),
-                            title: Text(title),
-                            subtitle: Text(
-                              '${PosFormatters.amount(order.grandTotal)} • ${PosFormatters.dateTime(order.heldAt)}',
+                  ),
+                ),
+                // ── Header ──
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.md,
+                    AppSpacing.lg,
+                    0,
+                  ),
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  decoration: BoxDecoration(
+                    gradient: AppColors.brandGradient,
+                    borderRadius: AppSpacing.borderRadiusLg,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.pause_circle_outline,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'الطلبات المعلقة',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                            trailing: Wrap(
-                              spacing: AppSpacing.xs,
-                              children: [
-                                IconButton(
-                                  tooltip: 'استرجاع',
-                                  icon: const Icon(Icons.restore),
-                                  onPressed: () async {
-                                    try {
-                                      final resumeResult = await service
-                                          .resumeHeldOrder(orderId: order.id);
+                            Text(
+                              '${orders.length} طلب',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.7),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                // ── Orders List ──
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
+                    itemCount: orders.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: AppSpacing.sm),
+                    itemBuilder: (itemContext, index) {
+                      final order = orders[index];
+                      final title =
+                          order.referenceName?.trim().isNotEmpty == true
+                          ? order.referenceName!
+                          : order.customerNameSnapshot?.trim().isNotEmpty ==
+                                true
+                          ? order.customerNameSnapshot!
+                          : 'طلب معلق';
 
-                                      ref
-                                          .read(cartProvider.notifier)
-                                          .restoreFromSaleLineInputs(
-                                            resumeResult.lines,
-                                          );
+                      return Container(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceVariant,
+                          borderRadius: AppSpacing.borderRadiusMd,
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            // ── Order Info ──
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.xxs),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: AppSpacing.sm,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.primary.withValues(
+                                            alpha: 0.08,
+                                          ),
+                                          borderRadius:
+                                              AppSpacing.borderRadiusSm,
+                                        ),
+                                        child: Text(
+                                          PosFormatters.amount(
+                                            order.grandTotal,
+                                          ),
+                                          style: const TextStyle(
+                                            color: AppColors.primary,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      Icon(
+                                        Icons.access_time,
+                                        size: 13,
+                                        color: AppColors.textHint,
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        PosFormatters.dateTime(order.heldAt),
+                                        style: const TextStyle(
+                                          color: AppColors.textHint,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // ── Actions ──
+                            const SizedBox(width: AppSpacing.sm),
+                            FilledButton.tonalIcon(
+                              onPressed: () async {
+                                try {
+                                  final resumeResult = await service
+                                      .resumeHeldOrder(orderId: order.id);
 
-                                      if (sheetContext.mounted) {
-                                        Navigator.of(sheetContext).pop();
-                                      }
-
-                                      if (context.mounted) {
-                                        final warningText =
-                                            resumeResult.warnings.isEmpty
-                                            ? ''
-                                            : '\n${resumeResult.warnings.take(3).join('\n')}';
-                                        AppSnackbar.showSuccess(
-                                          context,
-                                          'تم استرجاع الطلب المعلق.$warningText',
-                                        );
-                                      }
-                                    } catch (e) {
-                                      if (context.mounted) {
-                                        AppSnackbar.showError(
-                                          context,
-                                          ErrorMapper.userMessage(e),
-                                        );
-                                      }
-                                    }
-                                  },
-                                ),
-                                IconButton(
-                                  tooltip: 'إلغاء',
-                                  icon: const Icon(Icons.delete_outline),
-                                  onPressed: () async {
-                                    try {
-                                      await service.cancelHeldOrder(
-                                        orderId: order.id,
+                                  ref
+                                      .read(cartProvider.notifier)
+                                      .restoreFromSaleLineInputs(
+                                        resumeResult.lines,
                                       );
 
-                                      if (sheetContext.mounted) {
-                                        Navigator.of(sheetContext).pop();
-                                      }
+                                  if (sheetContext.mounted) {
+                                    Navigator.of(sheetContext).pop();
+                                  }
 
-                                      if (context.mounted) {
-                                        AppSnackbar.showSuccess(
-                                          context,
-                                          'تم إلغاء الطلب المعلق.',
-                                        );
-                                      }
-                                    } catch (e) {
-                                      if (context.mounted) {
-                                        AppSnackbar.showError(
-                                          context,
-                                          ErrorMapper.userMessage(e),
-                                        );
-                                      }
-                                    }
-                                  },
+                                  if (context.mounted) {
+                                    final warningText =
+                                        resumeResult.warnings.isEmpty
+                                        ? ''
+                                        : '\n${resumeResult.warnings.take(3).join('\n')}';
+                                    AppSnackbar.showSuccess(
+                                      context,
+                                      'تم استرجاع الطلب المعلق.$warningText',
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    AppSnackbar.showError(
+                                      context,
+                                      ErrorMapper.userMessage(e),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.restore, size: 18),
+                              label: const Text('استرجاع'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: AppColors.success.withValues(
+                                  alpha: 0.1,
                                 ),
-                              ],
+                                foregroundColor: AppColors.success,
+                              ),
                             ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                            const SizedBox(width: AppSpacing.xs),
+                            IconButton(
+                              tooltip: 'إلغاء',
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: AppColors.error,
+                                size: 20,
+                              ),
+                              onPressed: () async {
+                                try {
+                                  await service.cancelHeldOrder(
+                                    orderId: order.id,
+                                  );
+
+                                  if (sheetContext.mounted) {
+                                    Navigator.of(sheetContext).pop();
+                                  }
+
+                                  if (context.mounted) {
+                                    AppSnackbar.showSuccess(
+                                      context,
+                                      'تم إلغاء الطلب المعلق.',
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    AppSnackbar.showError(
+                                      context,
+                                      ErrorMapper.userMessage(e),
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
+                const SizedBox(height: AppSpacing.lg),
+              ],
             ),
           );
         },
@@ -497,12 +635,12 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           decoration: const BoxDecoration(
-            color: AppColors.primary,
+            gradient: AppColors.headerGradient,
             boxShadow: [
               BoxShadow(
                 color: AppColors.shadow,
-                blurRadius: AppSpacing.xs,
-                offset: Offset(0, AppSpacing.xxs),
+                blurRadius: 8,
+                offset: Offset(0, 2),
               ),
             ],
           ),
@@ -811,30 +949,40 @@ class _TopBarButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: label,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppSpacing.borderRadiusSm,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: AppSpacing.xs,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: AppColors.onPrimary.withValues(alpha: 0.7),
-                size: AppSpacing.xl,
-              ),
-              Text(
-                label,
-                style: TextStyle(
-                  color: AppColors.onPrimary.withValues(alpha: 0.6),
-                  fontSize: 10,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppSpacing.borderRadiusMd,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.sm,
+            ),
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            decoration: BoxDecoration(
+              color: AppColors.onPrimary.withValues(alpha: 0.06),
+              borderRadius: AppSpacing.borderRadiusMd,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: AppColors.onPrimary.withValues(alpha: 0.85),
+                  size: 20,
                 ),
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: AppColors.onPrimary.withValues(alpha: 0.7),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -855,25 +1003,34 @@ class _CashierBadge extends StatelessWidget {
         vertical: AppSpacing.xs,
       ),
       decoration: BoxDecoration(
-        color: AppColors.onPrimary.withValues(alpha: 0.15),
-        borderRadius: AppSpacing.borderRadiusSm,
+        color: AppColors.onPrimary.withValues(alpha: 0.1),
+        borderRadius: AppSpacing.borderRadiusMd,
+        border: Border.all(color: AppColors.onPrimary.withValues(alpha: 0.1)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.person,
-            color: AppColors.onPrimary.withValues(alpha: 0.7),
-            size: AppSpacing.lg,
+          Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: AppColors.secondary.withValues(alpha: 0.3),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.person, color: AppColors.onPrimary, size: 16),
           ),
-          const SizedBox(width: AppSpacing.xs),
+          const SizedBox(width: AppSpacing.sm),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 120),
             child: Text(
               cashierName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: AppColors.onPrimary, fontSize: 13),
+              style: const TextStyle(
+                color: AppColors.onPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -1023,12 +1180,12 @@ class _CartPreviewBar extends ConsumerWidget {
           vertical: AppSpacing.md,
         ),
         decoration: BoxDecoration(
-          color: AppColors.primary,
+          gradient: AppColors.brandGradient,
           borderRadius: AppSpacing.borderRadiusLg,
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.3),
-              blurRadius: 12,
+              color: AppColors.primary.withValues(alpha: 0.4),
+              blurRadius: 16,
               offset: const Offset(0, -4),
             ),
           ],
@@ -1036,19 +1193,20 @@ class _CartPreviewBar extends ConsumerWidget {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xs,
-              ),
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: AppColors.onPrimary.withValues(alpha: 0.2),
-                borderRadius: AppSpacing.borderRadiusSm,
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: Text(
-                '${cart.totalLinesCount}',
-                style: const TextStyle(
-                  color: AppColors.onPrimary,
-                  fontWeight: FontWeight.w700,
+              child: Center(
+                child: Text(
+                  '${cart.totalLinesCount}',
+                  style: const TextStyle(
+                    color: AppColors.onPrimary,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),
@@ -1066,15 +1224,23 @@ class _CartPreviewBar extends ConsumerWidget {
               quoteTotal,
               style: const TextStyle(
                 color: AppColors.onPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(width: AppSpacing.sm),
-            const Icon(
-              Icons.arrow_upward,
-              color: AppColors.onPrimary,
-              size: 20,
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.keyboard_arrow_up,
+                color: AppColors.onPrimary,
+                size: 20,
+              ),
             ),
           ],
         ),

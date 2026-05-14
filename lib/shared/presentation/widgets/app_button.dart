@@ -6,6 +6,9 @@ import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 enum AppButtonType { primary, secondary, outlined, text }
 
 /// A unified button component enforcing the SSOT for interactions.
+///
+/// Wraps Material buttons with a subtle scale-on-press micro-animation
+/// for tactile feedback. All visual properties are derived from [AppTheme].
 class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final String label;
@@ -86,15 +89,19 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isEnabled = onPressed != null && !isLoading;
     final child = _ButtonContent(
       label: label,
       icon: icon,
       isLoading: isLoading,
+      type: type,
     );
+
+    Widget button;
 
     switch (type) {
       case AppButtonType.primary:
-        return ElevatedButton(
+        button = ElevatedButton(
           onPressed: isLoading ? null : onPressed,
           style: customColor != null
               ? ElevatedButton.styleFrom(backgroundColor: customColor)
@@ -103,7 +110,7 @@ class AppButton extends StatelessWidget {
         );
 
       case AppButtonType.secondary:
-        return ElevatedButton(
+        button = ElevatedButton(
           onPressed: isLoading ? null : onPressed,
           style: ElevatedButton.styleFrom(
             backgroundColor: customColor ?? AppColors.secondary,
@@ -113,7 +120,7 @@ class AppButton extends StatelessWidget {
         );
 
       case AppButtonType.outlined:
-        return OutlinedButton(
+        button = OutlinedButton(
           onPressed: isLoading ? null : onPressed,
           style: customColor != null
               ? OutlinedButton.styleFrom(
@@ -125,7 +132,7 @@ class AppButton extends StatelessWidget {
         );
 
       case AppButtonType.text:
-        return TextButton(
+        button = TextButton(
           onPressed: isLoading ? null : onPressed,
           style: customColor != null
               ? TextButton.styleFrom(foregroundColor: customColor)
@@ -133,6 +140,64 @@ class AppButton extends StatelessWidget {
           child: child,
         );
     }
+
+    // WHY: Scale-on-press micro-animation gives premium tactile feedback.
+    // Disabled/loading buttons don't animate.
+    if (!isEnabled) return button;
+    return _PressableWrapper(child: button);
+  }
+}
+
+/// Wraps a widget to provide a subtle scale-down on press.
+class _PressableWrapper extends StatefulWidget {
+  final Widget child;
+
+  const _PressableWrapper({required this.child});
+
+  @override
+  State<_PressableWrapper> createState() => _PressableWrapperState();
+}
+
+class _PressableWrapperState extends State<_PressableWrapper>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: AppSpacing.durationFast,
+      lowerBound: 0,
+      upperBound: 1,
+    );
+    _scale = Tween<double>(begin: 1.0, end: 0.97).animate(
+      CurvedAnimation(parent: _controller, curve: AppSpacing.curveSnap),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) => _controller.reverse(),
+      onTapCancel: () => _controller.reverse(),
+      child: AnimatedBuilder(
+        animation: _scale,
+        builder: (context, child) {
+          return Transform.scale(scale: _scale.value, child: child);
+        },
+        child: widget.child,
+      ),
+    );
   }
 }
 
@@ -140,20 +205,27 @@ class _ButtonContent extends StatelessWidget {
   final String label;
   final IconData? icon;
   final bool isLoading;
+  final AppButtonType type;
 
   const _ButtonContent({
     required this.label,
     required this.icon,
     required this.isLoading,
+    required this.type,
   });
 
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const SizedBox(
+      return SizedBox(
         width: AppSpacing.xl,
         height: AppSpacing.xl,
-        child: AppLoading.small(),
+        child: AppLoading.small(
+          centered: false,
+          color: type == AppButtonType.primary
+              ? AppColors.onPrimary.withValues(alpha: 0.7)
+              : null,
+        ),
       );
     }
 

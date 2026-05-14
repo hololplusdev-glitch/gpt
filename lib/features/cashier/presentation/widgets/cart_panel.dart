@@ -19,6 +19,7 @@ import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_empty_state.dart';
 import 'package:holol_POS/shared/presentation/widgets/key_value_row.dart';
+import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
 
 class CartPanel extends ConsumerStatefulWidget {
   const CartPanel({super.key});
@@ -40,30 +41,18 @@ class _CartPanelState extends ConsumerState<CartPanel> {
     final cart = ref.read(cartProvider);
     if (cart.isEmpty) return;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await AppDialog.show<bool>(
       context: context,
-      requestFocus: false,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('مسح السلة'),
-          content: Text(
-            cart.items.length == 1
-                ? 'سيتم حذف الصنف الموجود في السلة.'
-                : 'سيتم حذف جميع الأصناف الموجودة في السلة.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('إلغاء'),
-            ),
-            FilledButton.icon(
-              onPressed: () => Navigator.of(context).pop(true),
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('مسح السلة'),
-            ),
-          ],
-        );
-      },
+      dialog: AppDialog.warning(
+        title: 'مسح السلة',
+        content: Text(
+          cart.items.length == 1
+              ? 'سيتم حذف الصنف الموجود في السلة.'
+              : 'سيتم حذف جميع الأصناف الموجودة في السلة.',
+        ),
+        confirmLabel: 'مسح السلة',
+        cancelLabel: 'إلغاء',
+      ),
     );
 
     if (confirmed == true && mounted) {

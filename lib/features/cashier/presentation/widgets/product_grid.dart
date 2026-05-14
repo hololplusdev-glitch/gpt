@@ -100,36 +100,47 @@ class ProductGrid extends ConsumerWidget {
                       .read(activePosSessionProvider)
                       .valueOrNull;
                   return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.warning_amber_rounded,
-                          size: 64,
-                          color: AppColors.warning,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          catalogState.emptyMessage ??
-                              l10n.noPricedProductsForDeviceStore,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                    child: Padding(
+                      padding: AppSpacing.paddingXl,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 80,
+                            height: 80,
+                            decoration: BoxDecoration(
+                              color: AppColors.warningBg,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.warning_amber_rounded,
+                              size: 36,
+                              color: AppColors.warning,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        SelectableText(
-                          l10n.storeAndPriceLevelDetails(
-                            session?.activeStoreId ?? '',
-                            session?.activePriceLevelId ?? '',
+                          const SizedBox(height: AppSpacing.lg),
+                          Text(
+                            catalogState.emptyMessage ??
+                                l10n.noPricedProductsForDeviceStore,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          const SizedBox(height: AppSpacing.sm),
+                          SelectableText(
+                            l10n.storeAndPriceLevelDetails(
+                              session?.activeStoreId ?? '',
+                              session?.activePriceLevelId ?? '',
+                            ),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 }
@@ -205,23 +216,30 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
-      borderRadius: AppSpacing.borderRadiusLg,
-      child: InkWell(
-        onTap: onTap,
+    return AnimatedContainer(
+      duration: AppSpacing.durationFast,
+      curve: AppSpacing.curveDefault,
+      decoration: BoxDecoration(
+        color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
         borderRadius: AppSpacing.borderRadiusLg,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.lg,
-            vertical: AppSpacing.sm,
-          ),
-          child: Center(
+        boxShadow: isSelected ? AppSpacing.shadowSm : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: AppSpacing.borderRadiusLg,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: AppSpacing.borderRadiusLg,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
             child: Text(
               label,
               style: TextStyle(
                 color: isSelected ? AppColors.onPrimary : AppColors.textPrimary,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 fontSize: 13,
               ),
             ),
@@ -302,123 +320,139 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
 
     final isInteractive = !isEmpty && !isLoading && !isError;
 
-    return Material(
-      color: isEmpty ? AppColors.surfaceVariant : AppColors.cardSurface,
-      borderRadius: AppSpacing.borderRadiusMd,
-      elevation: isInteractive ? 1 : 0,
-      child: InkWell(
-        onTap: isInteractive
-            ? () => _addToCart(selectedUnit!)
-            : (isEmpty ? _showNoPriceError : null),
+    return Container(
+      decoration: BoxDecoration(
+        color: isEmpty ? AppColors.surfaceVariant : AppColors.cardSurface,
         borderRadius: AppSpacing.borderRadiusMd,
-        child: Padding(
-          padding: AppSpacing.paddingMd,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Product image
-              Expanded(
-                child: Center(
-                  child: ClipRRect(
-                    borderRadius: AppSpacing.borderRadiusMd,
-                    child: (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-                        ? Image.network(
-                            item.imageUrl!,
-                            width: double.infinity,
-                            height: double.infinity,
-                            fit: BoxFit.contain,
-                            color: isEmpty
-                                ? Colors.white.withValues(alpha: 0.5)
-                                : null,
-                            colorBlendMode: isEmpty ? BlendMode.modulate : null,
-                            errorBuilder: (context, error, stackTrace) =>
-                                _buildPlaceholder(isEmpty),
-                          )
-                        : _buildPlaceholder(isEmpty),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-
-              // Product name
-              Text(
-                item.name,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                  height: 1.2,
-                  color: isEmpty ? AppColors.textHint : AppColors.textPrimary,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: AppSpacing.xs),
-
-              if (isLoading)
-                const LinearProgressIndicator(minHeight: 2)
-              else if (isEmpty)
-                Text(
-                  l10n.noPrice,
-                  style: const TextStyle(
-                    color: AppColors.error,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                )
-              else if (isError)
-                Text(
-                  l10n.errorLoading,
-                  style: const TextStyle(color: AppColors.error, fontSize: 12),
-                )
-              else ...[
-                // Unit Dropdown or Text
-                if (allUnits != null && allUnits.length > 1)
-                  Container(
-                    height: 34,
-                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceVariant,
-                      borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: isEmpty ? AppColors.border : AppColors.border,
+        ),
+        boxShadow: isInteractive ? AppSpacing.shadowSm : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: AppSpacing.borderRadiusMd,
+        child: InkWell(
+          onTap: isInteractive
+              ? () => _addToCart(selectedUnit!)
+              : (isEmpty ? _showNoPriceError : null),
+          borderRadius: AppSpacing.borderRadiusMd,
+          hoverColor: AppColors.cartItemHover,
+          child: Padding(
+            padding: AppSpacing.paddingMd,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Product image
+                Expanded(
+                  child: Center(
+                    child: ClipRRect(
+                      borderRadius: AppSpacing.borderRadiusSm,
+                      child:
+                          (item.imageUrl != null && item.imageUrl!.isNotEmpty)
+                          ? Image.network(
+                              item.imageUrl!,
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.contain,
+                              color: isEmpty
+                                  ? Colors.white.withValues(alpha: 0.5)
+                                  : null,
+                              colorBlendMode: isEmpty
+                                  ? BlendMode.modulate
+                                  : null,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildPlaceholder(isEmpty),
+                            )
+                          : _buildPlaceholder(isEmpty),
                     ),
-                    child: AppInlineDropdown<String>(
-                      value: selectedUnit!.sellableItem.unitId,
-                      items: allUnits
-                          .map(
-                            (u) => DropdownMenuItem(
-                              value: u.sellableItem.unitId,
-                              child: Text(u.sellableItem.unitName),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (newId) {
-                        setState(() => _selectedUnitId = newId);
-                      },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+
+                // Product name
+                Text(
+                  item.name,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                    color: isEmpty ? AppColors.textHint : AppColors.textPrimary,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+
+                if (isLoading)
+                  const LinearProgressIndicator(minHeight: 2)
+                else if (isEmpty)
+                  Text(
+                    l10n.noPrice,
+                    style: const TextStyle(
+                      color: AppColors.error,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
                     ),
                   )
-                else
+                else if (isError)
                   Text(
-                    unitName,
+                    l10n.errorLoading,
                     style: const TextStyle(
+                      color: AppColors.error,
                       fontSize: 12,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
                     ),
-                  ),
+                  )
+                else ...[
+                  // Unit Dropdown or Text
+                  if (allUnits != null && allUnits.length > 1)
+                    Container(
+                      height: 34,
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceVariant,
+                        borderRadius: AppSpacing.borderRadiusXs,
+                      ),
+                      child: AppInlineDropdown<String>(
+                        value: selectedUnit!.sellableItem.unitId,
+                        items: allUnits
+                            .map(
+                              (u) => DropdownMenuItem(
+                                value: u.sellableItem.unitId,
+                                child: Text(u.sellableItem.unitName),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (newId) {
+                          setState(() => _selectedUnitId = newId);
+                        },
+                      ),
+                    )
+                  else
+                    Text(
+                      unitName,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
 
-                const SizedBox(height: 2),
-                // Price
-                Text.rich(
-                  PosFormatters.amountRich(
-                    unitPrice,
-                    amountStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
+                  const SizedBox(height: AppSpacing.xxs),
+                  // Price
+                  Text.rich(
+                    PosFormatters.amountRich(
+                      unitPrice,
+                      amountStyle: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.secondary,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

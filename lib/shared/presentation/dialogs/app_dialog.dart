@@ -4,6 +4,12 @@ import 'package:holol_POS/core/design_system/spacing.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 
 /// A unified dialog component to replace manual showDialog + AlertDialog calls.
+///
+/// Features:
+/// - Consistent border radius, padding, and icon treatment (SSOT)
+/// - Icon is rendered inside a colored circle background for visual weight
+/// - Animated entrance via [AppDialog.show] (scale + fade)
+/// - Pre-built factories for common patterns: warning, error, confirm
 class AppDialog extends StatelessWidget {
   final String title;
   final Widget content;
@@ -74,36 +80,84 @@ class AppDialog extends StatelessWidget {
     );
   }
 
+  /// Pre-built factory for a Confirmation dialog with success styling
+  factory AppDialog.confirm({
+    Key? key,
+    required String title,
+    required Widget content,
+    required String confirmLabel,
+    String? cancelLabel,
+    VoidCallback? onConfirm,
+    VoidCallback? onCancel,
+    bool isConfirmLoading = false,
+  }) {
+    return AppDialog(
+      key: key,
+      title: title,
+      content: content,
+      icon: Icons.help_outline,
+      confirmLabel: confirmLabel,
+      cancelLabel: cancelLabel,
+      onConfirm: onConfirm,
+      onCancel: onCancel,
+      isConfirmLoading: isConfirmLoading,
+    );
+  }
+
+  /// Shows the dialog with an animated entrance (scale + fade).
   static Future<T?> show<T>({
     required BuildContext context,
     required AppDialog dialog,
     bool barrierDismissible = true,
   }) {
-    return showDialog<T>(
+    return showGeneralDialog<T>(
       context: context,
       barrierDismissible: barrierDismissible,
-      builder: (context) => dialog,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54,
+      transitionDuration: AppSpacing.durationMd,
+      pageBuilder: (context, animation, secondaryAnimation) => dialog,
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: AppSpacing.curveBounce,
+        );
+        return ScaleTransition(
+          scale: Tween<double>(begin: 0.85, end: 1.0).animate(curvedAnimation),
+          child: FadeTransition(opacity: curvedAnimation, child: child),
+        );
+      },
     );
   }
+
+  /// The accent color for the icon — derived from confirmColor or primary.
+  Color get _accentColor => confirmColor ?? AppColors.primary;
 
   @override
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: AppSpacing.borderRadiusXl),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
+        constraints: const BoxConstraints(maxWidth: 420),
         padding: AppSpacing.paddingXl,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            // ─── Icon + Title row ────────────────────────
             Row(
               children: [
                 if (icon != null) ...[
-                  Icon(
-                    icon,
-                    color: confirmColor ?? AppColors.primary,
-                    size: 28,
+                  // WHY: Colored circle background gives the icon visual weight
+                  // and makes dialog intent immediately obvious.
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: _accentColor.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: _accentColor, size: 24),
                   ),
                   const SizedBox(width: AppSpacing.md),
                 ],
@@ -119,13 +173,18 @@ class AppDialog extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.lg),
+
+            // ─── Content ─────────────────────────────────
             DefaultTextStyle(
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium!.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                color: AppColors.textSecondary,
+                height: 1.5,
+              ),
               child: content,
             ),
             const SizedBox(height: AppSpacing.xl),
+
+            // ─── Actions ─────────────────────────────────
             if (actions != null)
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
