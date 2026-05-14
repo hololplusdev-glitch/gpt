@@ -58,9 +58,9 @@ class RawSystemEscPosPrinterAdapter implements PrinterAdapter {
         documentName: document.localInvoiceNo,
       );
       return const PrinterAdapterResult.success();
-    } catch (e) {
-      return PrinterAdapterResult.failure(
-        'Unable to print RAW ESC/POS to the configured system printer: $e',
+    } catch (_) {
+      return const PrinterAdapterResult.failure(
+        'Unable to print RAW ESC/POS to the configured system printer.',
       );
     }
   }

@@ -72,15 +72,23 @@ class PrinterAdapterFactory {
       ),
     ];
 
-    if (platform == AppPlatform.windows ||
-        platform == AppPlatform.macos ||
-        platform == AppPlatform.linux) {
+    if (platform == AppPlatform.windows) {
       options.addAll(const [
         PrinterConnectionOption(
           type: PrinterConnectionType.systemPrinter,
           available: true,
           label: 'System Printer RAW ESC/POS',
         ),
+        PrinterConnectionOption(
+          type: PrinterConnectionType.bluetooth,
+          available: false,
+          label: 'Bluetooth ESC-POS',
+          reason: _bluetoothReason,
+        ),
+      ]);
+    } else if (platform == AppPlatform.macos ||
+        platform == AppPlatform.linux) {
+      options.addAll(const [
         PrinterConnectionOption(
           type: PrinterConnectionType.bluetooth,
           available: false,

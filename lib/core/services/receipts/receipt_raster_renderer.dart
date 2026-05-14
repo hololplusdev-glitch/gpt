@@ -149,7 +149,7 @@ class ReceiptRasterRenderer {
   ) {
     final widthBytes = (image.widthPx + 7) ~/ 8;
     final output = <int>[];
-for (var y0 = 0; y0 < image.heightPx; y0 += profile.rasterBandHeight) {
+    for (var y0 = 0; y0 < image.heightPx; y0 += profile.rasterBandHeight) {
       final h = (image.heightPx - y0) < profile.rasterBandHeight
           ? (image.heightPx - y0)
           : profile.rasterBandHeight;
@@ -216,9 +216,9 @@ class _ReceiptPainter {
 
   double get width => profile.widthPx.toDouble();
 
-  double get contentLeft => profile.margin + _sideRailWidth;
+  double get contentLeft => profile.leftMargin + _sideRailWidth;
 
-  double get contentRight => width - profile.margin;
+  double get contentRight => width - profile.rightMargin;
 
   double get contentWidth => contentRight - contentLeft;
 
