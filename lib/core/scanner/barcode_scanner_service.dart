@@ -14,6 +14,7 @@
 import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
 import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 /// Outcome of processing a scanned barcode.
 sealed class ScanResult {
@@ -93,7 +94,7 @@ class BarcodeScannerService {
     String rawCode, {
     BarcodeScanSource source = BarcodeScanSource.camera,
   }) async {
-    final candidates = CatalogDao.barcodeLookupCandidates(rawCode);
+    final candidates = DaoBarcodeRules.lookupCandidates(rawCode);
     final code = candidates.isEmpty ? '' : candidates.first;
     if (code.isEmpty) return const ScanDuplicate();
 

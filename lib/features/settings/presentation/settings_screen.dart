@@ -11,6 +11,7 @@ import 'package:holol_POS/features/setup/application/setup_notifier.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_section_card.dart';
 import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
+import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 
 /// WHY: Settings screen is READ-ONLY for connection. Connection editing
 /// is only done through Setup (DRY principle). To change connection,
@@ -39,13 +40,13 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.dns,
                 child: Column(
                   children: [
-                    _SettingsTile(
+                    AppSettingsTile(
                       icon: Icons.computer,
                       title: l10n.serverConnection,
                       subtitle: connection != null
                           ? connection.baseUrl
                           : l10n.notConfigured,
-                      trailing: _StatusDot(
+                      trailing: AppStatusDot(
                         status: connection?.isValidated == true
                             ? HealthStatus.ok
                             : connection != null
@@ -62,7 +63,7 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.devices,
                 child: Column(
                   children: [
-                    _SettingsTile(
+                    AppSettingsTile(
                       icon: Icons.point_of_sale,
                       title: l10n.posDevices,
                       subtitle: l10n.posDevicesSubtitle,
@@ -79,7 +80,7 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.point_of_sale,
                 child: Column(
                   children: [
-                    _SettingsTile(
+                    AppSettingsTile(
                       icon: Icons.analytics_outlined,
                       title: 'الشفت الحالي',
                       subtitle: 'عرض ملخص الشفت وإغلاقه',
@@ -96,7 +97,7 @@ class SettingsScreen extends ConsumerWidget {
                 icon: Icons.tune,
                 child: Column(
                   children: [
-                    _SettingsTile(
+                    AppSettingsTile(
                       icon: Icons.language,
                       title: l10n.languageLabel,
                       subtitle: setupState?.language == 'ar'
@@ -111,7 +112,7 @@ class SettingsScreen extends ConsumerWidget {
                             .setLanguage(newLang);
                       },
                     ),
-                    _SettingsTile(
+                    AppSettingsTile(
                       icon: Icons.info_outline,
                       title: l10n.about,
                       subtitle: l10n.versionLabel(AppIdentity.version),
@@ -154,7 +155,7 @@ class SettingsScreen extends ConsumerWidget {
                 titleColor: AppColors.error,
                 child: Column(
                   children: [
-                    _SettingsTile(
+                    AppSettingsTile(
                       icon: Icons.restart_alt,
                       title: l10n.resetSetup,
                       subtitle: l10n.resetSetupSubtitle,
@@ -179,118 +180,6 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Widget? trailing;
-  final Color? iconColor;
-  final VoidCallback? onTap;
-
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    this.trailing,
-    this.iconColor,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final chevronIcon = Directionality.of(context) == TextDirection.rtl
-        ? Icons.chevron_left
-        : Icons.chevron_right;
-
-    return ListTile(
-      leading: Icon(icon, color: iconColor ?? AppColors.textSecondary),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: trailing ?? (onTap != null ? Icon(chevronIcon) : null),
-      onTap: onTap,
-    );
-  }
-}
-
-class _StatusDot extends StatefulWidget {
-  final HealthStatus status;
-
-  const _StatusDot({required this.status});
-
-  @override
-  State<_StatusDot> createState() => _StatusDotState();
-}
-
-class _StatusDotState extends State<_StatusDot>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    );
-    // Only pulse for active (ok) status.
-    if (widget.status == HealthStatus.ok) {
-      _controller.repeat(reverse: true);
-    }
-  }
-
-  @override
-  void didUpdateWidget(covariant _StatusDot oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.status == HealthStatus.ok && !_controller.isAnimating) {
-      _controller.repeat(reverse: true);
-    } else if (widget.status != HealthStatus.ok && _controller.isAnimating) {
-      _controller.stop();
-      _controller.value = 0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final color = switch (widget.status) {
-      HealthStatus.ok => AppColors.success,
-      HealthStatus.degraded => AppColors.warning,
-      HealthStatus.down => AppColors.error,
-      HealthStatus.unknown => AppColors.textHint,
-    };
-
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        final glowOpacity = widget.status == HealthStatus.ok
-            ? 0.15 + (_controller.value * 0.2)
-            : 0.0;
-        return Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: color.withValues(alpha: glowOpacity),
-          ),
-          child: child,
-        );
-      },
-      child: Center(
-        child: Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
       ),
     );

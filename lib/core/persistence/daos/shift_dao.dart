@@ -1,10 +1,10 @@
 // core/persistence/daos/shift_dao.dart
 // WHY: DB access for shift records. Handles create, update, close, and resume.
 
-import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 /// Data access for shift operations.
 class ShiftDao {
@@ -52,34 +52,6 @@ class ShiftDao {
     });
   }
 
-  String _buildSummaryJson({
-    required double grossSales,
-    required double netSales,
-    required double cashSales,
-    required double cardSales,
-    required double otherSales,
-    required double cashReturns,
-    required double totalDiscounts,
-    required double totalTaxes,
-    required double totalReturns,
-    required double totalVoids,
-    required int saleCount,
-  }) {
-    return jsonEncode({
-      'grossSales': grossSales,
-      'netSales': netSales,
-      'cashSales': cashSales,
-      'cardSales': cardSales,
-      'otherSales': otherSales,
-      'cashReturns': cashReturns,
-      'totalDiscounts': totalDiscounts,
-      'totalTaxes': totalTaxes,
-      'totalReturns': totalReturns,
-      'totalVoids': totalVoids,
-      'saleCount': saleCount,
-    });
-  }
-
   Future<void> closeShiftEnvelope({
     required String localId,
     required double expectedCash,
@@ -100,7 +72,7 @@ class ShiftDao {
     required AuditLogCompanion auditLogEntry,
     String? closingNotes,
   }) async {
-    final summaryJson = _buildSummaryJson(
+    final summaryJson = DaoShiftCloseSummaryJson.encode(
       grossSales: grossSales,
       netSales: netSales,
       cashSales: cashSales,

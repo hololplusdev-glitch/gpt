@@ -7,6 +7,7 @@ import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/database.dart' hide Customer;
 import 'package:holol_POS/shared/models/customer.dart';
 import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 /// Data access for catalog tables.
 class CatalogDao {
@@ -147,7 +148,7 @@ EXISTS (
     String storeId,
     String priceLevelId,
   ) async {
-    final candidates = barcodeLookupCandidates(barcode);
+    final candidates = DaoBarcodeRules.lookupCandidates(barcode);
     if (candidates.isEmpty) return null;
 
     final rows = await (_db.select(
@@ -197,32 +198,6 @@ EXISTS (
       barcode: _barcodeWithUnitId(barcodeRow, sourceUnitId),
       sourceUnitId: sourceUnitId,
     );
-  }
-
-  static List<String> barcodeLookupCandidates(String rawCode) {
-    final trimmed = rawCode.trim();
-    if (trimmed.isEmpty) return const [];
-
-    final candidates = <String>[];
-    void add(String value) {
-      if (value.isNotEmpty && !candidates.contains(value)) {
-        candidates.add(value);
-      }
-    }
-
-    add(trimmed);
-    add(trimmed.replaceAll(RegExp(r'[\x00-\x1F\x7F]'), ''));
-    add(trimmed.replaceAll(RegExp(r'\s+'), ''));
-
-    final compact = candidates.last;
-    if (RegExp(r'^\d{12}$').hasMatch(compact)) {
-      add('0$compact');
-    }
-    if (RegExp(r'^0\d{12}$').hasMatch(compact)) {
-      add(compact.substring(1));
-    }
-
-    return candidates;
   }
 
   // ---------------------------------------------------------------------------
@@ -663,10 +638,6 @@ EXISTS (
     }
     return null;
   }
-}
-
-class DuplicateCatalogBarcodeException implements Exception {
-  const DuplicateCatalogBarcodeException();
 }
 
 /// Barcode lookup result combining item + unit + barcode data.

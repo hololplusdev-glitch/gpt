@@ -2,11 +2,11 @@
 // WHY: Organized DB access for authentication operations.
 // AuthDao owns local PIN and user lookup only.
 
-import 'dart:math';
 
 import 'package:drift/drift.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 /// Data access for user authentication.
 class AuthDao {
@@ -49,8 +49,6 @@ class AuthDao {
     )..where((u) => u.id.equals(userId))).getSingleOrNull();
   }
 
-  static const _pinPrefix = 'local-pin-v1';
-
   Future<bool> hasLocalPin({required String userId}) async {
     final row = await (_db.select(
       _db.localUserPins,
@@ -63,21 +61,21 @@ class AuthDao {
     required String userId,
     required String pin,
   }) async {
-    _validatePin(pin);
+    DaoLocalPinCodec.validate(pin);
 
     final now = _clock.now();
     final existing = await (_db.select(
       _db.localUserPins,
     )..where((row) => row.userId.equals(userId))).getSingleOrNull();
 
-    final salt = existing?.pinSalt ?? _newSalt();
+    final salt = existing?.pinSalt ?? DaoLocalPinCodec.newSalt();
 
     await _db
         .into(_db.localUserPins)
         .insertOnConflictUpdate(
           LocalUserPinsCompanion(
             userId: Value(userId),
-            pinHash: Value(_hashPin(pin, salt: salt)),
+            pinHash: Value(DaoLocalPinCodec.hash(pin, salt: salt)),
             pinSalt: Value(salt),
             createdAt: Value(existing?.createdAt ?? now),
             updatedAt: Value(now),
@@ -89,35 +87,17 @@ class AuthDao {
     required String userId,
     required String pin,
   }) async {
-    _validatePin(pin);
+    DaoLocalPinCodec.validate(pin);
 
     final row = await (_db.select(
       _db.localUserPins,
     )..where((pinRow) => pinRow.userId.equals(userId))).getSingleOrNull();
 
     if (row == null) return false;
-    return row.pinHash == _hashPin(pin, salt: row.pinSalt);
+    return row.pinHash == DaoLocalPinCodec.hash(pin, salt: row.pinSalt);
   }
 
-  void _validatePin(String pin) {
-    if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
-      throw ArgumentError('PIN must be exactly 4 digits.');
-    }
-  }
-
-  String _hashPin(String pin, {required String salt}) {
-    final payload = '$salt:$pin';
-
-    var hash = 0xcbf29ce484222325;
-    for (final unit in payload.codeUnits) {
-      hash ^= unit;
-      hash = (hash * 0x100000001b3) & 0x7fffffffffffffff;
-    }
-
-    return '$_pinPrefix:$salt:${hash.toRadixString(16)}';
-  }
-
-  String _newSalt() {
+String DaoLocalPinCodec.newSalt() {
     final random = Random.secure();
     return List<int>.generate(
       12,

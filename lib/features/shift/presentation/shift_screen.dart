@@ -65,77 +65,26 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // ── Gradient Header ──
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: AppColors.headerGradient,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
+          AppPageHeader(
+            title: hasOpenShift ? 'الشفت الحالي' : l10n.openShift,
+            icon: hasOpenShift
+                ? Icons.analytics_outlined
+                : Icons.play_circle_outline,
+            onBack: () => Navigator.of(context).pop(),
+            actions: [
+              if (hasOpenShift)
+                FilledButton.icon(
+                  onPressed: actionState.isLoading
+                      ? null
+                      : () => context.go(AppRoutes.cashier),
+                  icon: const Icon(Icons.point_of_sale, size: 18),
+                  label: Text(l10n.backToPos),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white.withValues(alpha: 0.15),
+                    foregroundColor: AppColors.onPrimary,
+                  ),
                 ),
-              ],
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: AppColors.onPrimary,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        hasOpenShift
-                            ? Icons.analytics_outlined
-                            : Icons.play_circle_outline,
-                        color: AppColors.onPrimary,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Text(
-                      hasOpenShift ? 'الشفت الحالي' : l10n.openShift,
-                      style: const TextStyle(
-                        color: AppColors.onPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const Spacer(),
-                    if (hasOpenShift)
-                      FilledButton.icon(
-                        onPressed: actionState.isLoading
-                            ? null
-                            : () => context.go(AppRoutes.cashier),
-                        icon: const Icon(Icons.point_of_sale, size: 18),
-                        label: Text(l10n.backToPos),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: Colors.white.withValues(alpha: 0.15),
-                          foregroundColor: AppColors.onPrimary,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
+            ],
           ),
           // ── Body ──
           Expanded(

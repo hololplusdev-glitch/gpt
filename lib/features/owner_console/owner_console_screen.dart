@@ -9,6 +9,7 @@ import 'package:holol_POS/features/owner_console/local_db_inspector_repository.d
 import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
+import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 
 final localDbInspectorRepositoryProvider = Provider<LocalDbInspectorRepository>(
   (ref) {
@@ -51,7 +52,7 @@ class OwnerConsoleScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(l10n.ownerConsoleReadOnlyNotice),
                 const SizedBox(height: 24),
-                _OwnerConsoleAction(
+                AppActionTile(
                   icon: Icons.table_chart_outlined,
                   title: l10n.localTables,
                   subtitle: l10n.localTablesSubtitle,
@@ -64,7 +65,7 @@ class OwnerConsoleScreen extends StatelessWidget {
                   },
                 ),
                 const SizedBox(height: 12),
-                _OwnerConsoleAction(
+                AppActionTile(
                   icon: Icons.rule_folder_outlined,
                   title: l10n.diagnosticFilters,
                   subtitle: l10n.diagnosticFiltersSubtitle,
@@ -74,34 +75,6 @@ class OwnerConsoleScreen extends StatelessWidget {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _OwnerConsoleAction extends StatelessWidget {
-  const _OwnerConsoleAction({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        enabled: onTap != null,
-        leading: Icon(icon, size: 32),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
       ),
     );
   }

@@ -22,6 +22,7 @@ import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/responsive_row.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/shared/refactor/pos_runtime_state.dart';
+import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 
 final syncCountsProvider = FutureProvider.autoDispose<_SyncCounts>((ref) async {
   final syncDao = ref.watch(syncDaoProvider);
@@ -159,69 +160,17 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
       backgroundColor: AppColors.background,
       body: Column(
         children: [
-          // ── Gradient Header ──
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: AppColors.headerGradient,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: AppColors.onPrimary,
-                      ),
-                      onPressed: () {
-                        if (context.canPop()) {
-                          context.pop();
-                          return;
-                        }
+          AppPageHeader(
+            title: l10n.syncMonitor,
+            icon: Icons.sync,
+            onBack: () {
+              if (context.canPop()) {
+                context.pop();
+                return;
+              }
 
-                        context.go(AppRoutes.shift);
-                      },
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.sync,
-                        color: AppColors.onPrimary,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Text(
-                      l10n.syncMonitor,
-                      style: const TextStyle(
-                        color: AppColors.onPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+              context.go(AppRoutes.shift);
+            },
           ),
           // ── Body ──
           Expanded(

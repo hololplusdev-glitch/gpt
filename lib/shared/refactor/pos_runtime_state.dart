@@ -555,7 +555,6 @@ final posSessionControllerProvider =
 
 // WHY: DB-backed product/category/payment providers for the cashier UI.
 
-
 final searchQueryProvider = StateProvider<String>((ref) => '');
 
 final selectedCategoryProvider = StateProvider<String?>((ref) => null);

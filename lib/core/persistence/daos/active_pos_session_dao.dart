@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
 import 'package:uuid/uuid.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 /// Public POS runtime facade.
 /// The DB row stores only pointers. Runtime values are derived from:
@@ -70,14 +71,14 @@ class RuntimeMachineChoice {
   String get machineNo => privilege.machineNo;
 
   String get label {
-    final terminalName = _firstNonEmptyStatic([
+    final terminalName = DaoText.firstNonEmpty([
       privilege.terminalName,
       machine.name,
       machine.machineNo,
     ])!;
 
-    final storeId = _firstNonEmptyStatic([privilege.storeId, machine.storeId]);
-    final priceLevelId = _firstNonEmptyStatic([
+    final storeId = DaoText.firstNonEmpty([privilege.storeId, machine.storeId]);
+    final priceLevelId = DaoText.firstNonEmpty([
       privilege.priceLevelId,
       machine.priceLevelId,
     ]);
@@ -88,14 +89,6 @@ class RuntimeMachineChoice {
       if (priceLevelId != null) 'سعر $priceLevelId',
     ].join(' • ');
   }
-}
-
-String? _firstNonEmptyStatic(List<String?> values) {
-  for (final value in values) {
-    final trimmed = value?.trim();
-    if (trimmed != null && trimmed.isNotEmpty) return trimmed;
-  }
-  return null;
 }
 
 class ActivePosSessionDao {
@@ -260,26 +253,26 @@ class ActivePosSessionDao {
       throw StateError('Active POS session privilege is no longer valid.');
     }
 
-    final branchNo = _firstNonEmpty([
+    final branchNo = DaoText.firstNonEmpty([
       privilege.branchNo,
       machine.branchNo,
       user.branchNo,
     ]);
-    final branchYear = _firstNonEmpty([
+    final branchYear = DaoText.firstNonEmpty([
       privilege.branchYear,
       machine.branchYear,
       user.branchYear,
     ]);
-    final storeId = _firstNonEmpty([
+    final storeId = DaoText.firstNonEmpty([
       privilege.storeId,
       machine.storeId,
       user.defaultStoreId,
     ]);
-    final priceLevelId = _firstNonEmpty([
+    final priceLevelId = DaoText.firstNonEmpty([
       privilege.priceLevelId,
       machine.priceLevelId,
     ]);
-    final defaultBankId = _firstNonEmpty([
+    final defaultBankId = DaoText.firstNonEmpty([
       privilege.defaultBankId,
       machine.defaultBankId,
     ]);
@@ -318,14 +311,6 @@ class ActivePosSessionDao {
       returnInvoiceSeries: machine.returnInvoiceSeries,
       loginAt: row.loginAt,
     );
-  }
-
-  String? _firstNonEmpty(List<String?> values) {
-    for (final value in values) {
-      final trimmed = value?.trim();
-      if (trimmed != null && trimmed.isNotEmpty) return trimmed;
-    }
-    return null;
   }
 
   void _validateUser(PosUser user) {

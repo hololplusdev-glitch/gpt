@@ -6,6 +6,7 @@ import 'package:drift/drift.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 /// Data access for sync queue operations.
 class SyncDao {
@@ -21,7 +22,7 @@ class SyncDao {
               ..where((s) => s.status.equals(OutboxStatus.pending.code))
               ..orderBy([(s) => OrderingTerm.asc(s.createdAt)]))
             .get();
-    rows.sort(_compareBySyncPriority);
+    rows.sort(DaoOutboxSyncPolicy.compareBySyncPriority);
     return rows.take(limit).toList();
   }
 
@@ -36,7 +37,7 @@ class SyncDao {
               )
               ..orderBy([(s) => OrderingTerm.asc(s.createdAt)]))
             .get();
-    rows.sort(_compareBySyncPriority);
+    rows.sort(DaoOutboxSyncPolicy.compareBySyncPriority);
     return rows.take(limit).toList();
   }
 
@@ -113,9 +114,10 @@ class SyncDao {
     if (entry == null) return;
 
     final newRetryCount = entry.retryCount + 1;
-    final newStatus = newRetryCount >= entry.maxRetries
-        ? OutboxStatus.blocked.code
-        : OutboxStatus.failed.code;
+    final newStatus = DaoOutboxSyncPolicy.failureStatus(
+      retryCount: newRetryCount,
+      maxRetries: entry.maxRetries,
+    );
 
     await (_db.update(_db.outboxEvents)..where((s) => s.id.equals(id))).write(
       OutboxEventsCompanion(
@@ -176,7 +178,9 @@ class SyncDao {
       )..where((s) => s.id.equals(entry.id))).write(
         OutboxEventsCompanion(
           status: Value(OutboxStatus.failed.code),
-          lastError: const Value('Recovered from stale uploading state.'),
+          lastError: const Value(
+            DaoOutboxSyncPolicy.staleUploadingRecoveryMessage,
+          ),
           lastAttemptAt: Value(_clock.now()),
         ),
       );
@@ -257,31 +261,5 @@ class SyncDao {
       ..addColumns([count])
       ..where(predicate);
     return query.map((row) => row.read(count) ?? 0).getSingle();
-  }
-
-  int _compareBySyncPriority(OutboxEvent a, OutboxEvent b) {
-    final priorityCompare = _syncPriority(a).compareTo(_syncPriority(b));
-    if (priorityCompare != 0) return priorityCompare;
-    return a.createdAt.compareTo(b.createdAt);
-  }
-
-  int _syncPriority(OutboxEvent entry) {
-    final type = OutboxEventType.fromCode(entry.eventType);
-
-    switch (type) {
-      case OutboxEventType.shiftOpened:
-        return 10;
-      case OutboxEventType.saleCreated:
-      case OutboxEventType.returnCreated:
-        return 20;
-      case OutboxEventType.saleVoided:
-        return 30;
-      case OutboxEventType.shiftExtended:
-        return 40;
-      case OutboxEventType.shiftClosed:
-        return 50;
-      case null:
-        return 999;
-    }
   }
 }

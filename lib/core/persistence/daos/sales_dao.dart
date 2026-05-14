@@ -7,6 +7,7 @@ import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/payments/payment_method_resolver.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/models/sales_history.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 /// Data access for sale persistence and querying.
 class SalesDao {
@@ -295,8 +296,8 @@ class SalesDao {
       labels.putIfAbsent(
         payment.saleId,
         () =>
-            _clean(payment.methodNameSnapshot) ??
-            _clean(payment.methodCodeSnapshot) ??
+            DaoText.clean(payment.methodNameSnapshot) ??
+            DaoText.clean(payment.methodCodeSnapshot) ??
             payment.paymentMethodId,
       );
     }
@@ -592,7 +593,7 @@ class SalesDao {
     });
   }
 
-  String? _clean(String? value) {
+  String? DaoText.clean(String? value) {
     final text = value?.trim();
     return text == null || text.isEmpty ? null : text;
   }

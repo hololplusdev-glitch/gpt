@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/invoices/invoice_print_history_entry.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 class InvoicePrintHistoryDao {
   final AppDatabase _db;
@@ -48,24 +49,24 @@ InvoicePrintHistoryEntry _entryFromData(PrintHistoryData row) {
     id: row.id,
     saleId: row.saleId,
     invoiceNo: row.invoiceNo,
-    printJobId: _clean(row.printJobId),
-    printerProfileId: _clean(row.printerProfileId),
-    printerName: _clean(row.printerNameSnapshot),
-    printerRole: _clean(row.printerRoleSnapshot),
+    printJobId: DaoText.clean(row.printJobId),
+    printerProfileId: DaoText.clean(row.printerProfileId),
+    printerName: DaoText.clean(row.printerNameSnapshot),
+    printerRole: DaoText.clean(row.printerRoleSnapshot),
     documentType: row.documentType,
     isReprint: row.isReprint,
     copyNumber: row.copyNumber,
-    reprintReason: _clean(row.reprintReason),
-    printedBy: _clean(row.printedBy),
+    reprintReason: DaoText.clean(row.reprintReason),
+    printedBy: DaoText.clean(row.printedBy),
     status: row.status,
-    failureReason: _clean(row.failureReason),
-    payloadHash: _clean(row.payloadHash),
+    failureReason: DaoText.clean(row.failureReason),
+    payloadHash: DaoText.clean(row.payloadHash),
     createdAt: row.createdAt,
     printedAt: row.printedAt,
   );
 }
 
-String? _clean(Object? value) {
+String? DaoText.clean(Object? value) {
   final text = value?.toString().trim();
   return text == null || text.isEmpty ? null : text;
 }

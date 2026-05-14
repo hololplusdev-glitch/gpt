@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 class PrinterProfileDao {
   final AppDatabase _db;
@@ -111,7 +112,7 @@ class PrinterProfileDao {
       _db.printerProfiles,
     )..where((p) => p.id.equals(id))).write(
       PrinterProfilesCompanion(
-        lastTestStatus: Value(success ? 'ready' : 'failed'),
+        lastTestStatus: Value(DaoProfileStatus.testStatus(success)),
         lastTestAt: Value(_clock.now()),
         lastError: Value<String?>(success ? null : error),
         updatedAt: Value(_clock.now()),

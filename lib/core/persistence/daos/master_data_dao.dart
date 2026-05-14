@@ -1,9 +1,8 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/master_data/master_data_contract.dart';
 import 'package:holol_POS/core/services/master_data/master_data_mapper.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 class MasterDataDao {
   final AppDatabase _db;
@@ -72,7 +71,7 @@ class MasterDataDao {
     String typeCode, {
     required MasterDataSyncContext context,
   }) async {
-    final syncKey = _syncKey(typeCode, context);
+    final syncKey = DaoMasterDataScope.key(typeCode, context);
     final row = await (_db.select(
       _db.scopedSyncState,
     )..where((state) => state.syncKey.equals(syncKey))).getSingleOrNull();
@@ -87,7 +86,7 @@ class MasterDataDao {
     String? serverTime,
     String? error,
   }) async {
-    final syncKey = _syncKey(typeCode, context);
+    final syncKey = DaoMasterDataScope.key(typeCode, context);
     final existing = await (_db.select(
       _db.scopedSyncState,
     )..where((state) => state.syncKey.equals(syncKey))).getSingleOrNull();
@@ -102,7 +101,7 @@ class MasterDataDao {
           ScopedSyncStateCompanion(
             syncKey: Value(syncKey),
             type: Value(typeCode),
-            scopeJson: Value(_scopeJson(context)),
+            scopeJson: Value(DaoMasterDataScope.toJson(context)),
             lastSuccessTime: Value(
               isSuccessful ? now.toIso8601String() : existing?.lastSuccessTime,
             ),
@@ -111,17 +110,6 @@ class MasterDataDao {
             lastError: Value(error),
           ),
         );
-  }
-
-  String _syncKey(String typeCode, MasterDataSyncContext context) {
-    return <String>[typeCode, 'usr=${context.syncUserId.trim()}'].join('|');
-  }
-
-  String _scopeJson(MasterDataSyncContext context) {
-    return jsonEncode({
-      'userId': context.syncUserId,
-      'downloadScope': 'single_setup_customer',
-    });
   }
 
   Future<void> insertRun({
@@ -373,26 +361,6 @@ class MasterDataDao {
     return row != null;
   }
 
-  String? _syncStateScopeLabel(String typeCode, String? scopeJson) {
-    if (scopeJson == null || scopeJson.trim().isEmpty) return null;
-
-    try {
-      final decoded = jsonDecode(scopeJson);
-      if (decoded is! Map) return null;
-
-      final userId = decoded['userId']?.toString().trim();
-      if (typeCode == MasterDataType.devicePrivilege.code &&
-          userId != null &&
-          userId.isNotEmpty) {
-        return 'usr=$userId';
-      }
-
-      return null;
-    } catch (_) {
-      return null;
-    }
-  }
-
   Future<List<ScopedSyncStateView>> getScopedSyncStates() async {
     final rows = await (_db.select(
       _db.scopedSyncState,
@@ -401,7 +369,7 @@ class MasterDataDao {
         .map(
           (row) => ScopedSyncStateView(
             syncType: row.type,
-            scopeLabel: _syncStateScopeLabel(row.type, row.scopeJson),
+            scopeLabel: DaoMasterDataScope.label(row.type, row.scopeJson),
             lastSuccessTime: row.lastSuccessTime,
             lastServerTime: row.lastServerTime,
             lastStatus: row.lastStatus,
