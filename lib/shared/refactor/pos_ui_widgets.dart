@@ -1030,3 +1030,167 @@ class AppReadinessFeature extends StatelessWidget {
     );
   }
 }
+
+class AppPageHeaderWithBottom extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final VoidCallback? onBack;
+  final List<Widget> actions;
+  final Widget bottom;
+
+  const AppPageHeaderWithBottom({
+    super.key,
+    required this.title,
+    required this.icon,
+    required this.bottom,
+    this.onBack,
+    this.actions = const [],
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: AppColors.headerGradient,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.shadow,
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.md,
+            AppSpacing.sm,
+            AppSpacing.md,
+            AppSpacing.lg,
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  if (onBack != null) ...[
+                    IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: AppColors.onPrimary,
+                      ),
+                      onPressed: onBack,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                  ],
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      icon,
+                      color: AppColors.onPrimary,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.onPrimary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  if (actions.isNotEmpty) ...[
+                    const SizedBox(width: AppSpacing.md),
+                    ...actions,
+                  ],
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              bottom,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AppHeaderSearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final String hintText;
+  final ValueChanged<String> onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final VoidCallback onClear;
+  final String? clearTooltip;
+
+  const AppHeaderSearchField({
+    super.key,
+    required this.controller,
+    required this.hintText,
+    required this.onChanged,
+    required this.onClear,
+    this.onSubmitted,
+    this.clearTooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 44,
+      child: TextField(
+        controller: controller,
+        style: const TextStyle(color: AppColors.onPrimary, fontSize: 14),
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.white.withValues(alpha: 0.12),
+          hintText: hintText,
+          hintStyle: TextStyle(
+            color: AppColors.onPrimary.withValues(alpha: 0.5),
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(
+            Icons.search,
+            color: AppColors.onPrimary.withValues(alpha: 0.6),
+          ),
+          suffixIcon: IconButton(
+            tooltip: clearTooltip,
+            icon: Icon(
+              Icons.clear,
+              color: AppColors.onPrimary.withValues(alpha: 0.6),
+            ),
+            onPressed: onClear,
+          ),
+          contentPadding: AppSpacing.horizontalMd,
+          border: OutlineInputBorder(
+            borderRadius: AppSpacing.borderRadiusMd,
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: AppSpacing.borderRadiusMd,
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: AppSpacing.borderRadiusMd,
+            borderSide: BorderSide(
+              color: AppColors.onPrimary.withValues(alpha: 0.3),
+            ),
+          ),
+        ),
+        onChanged: onChanged,
+        onSubmitted: onSubmitted,
+      ),
+    );
+  }
+}

@@ -22,6 +22,7 @@ import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 
 import 'package:holol_POS/core/services/receipts/receipt_raster_renderer.dart';
+import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 
 final invoiceDocumentProvider = FutureProvider.autoDispose
     .family<InvoiceDocument, String>((ref, id) {

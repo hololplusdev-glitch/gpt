@@ -24,6 +24,7 @@ import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_status_chip.dart';
 import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
+import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 
 final historySearchQueryProvider = StateProvider.autoDispose<String>((ref) {
   return '';
@@ -209,72 +210,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _HistorySearchField extends StatelessWidget {
-  final TextEditingController controller;
-  final ValueChanged<String> onChanged;
-  final ValueChanged<String> onSubmitted;
-  final VoidCallback onClear;
-
-  const _HistorySearchField({
-    required this.controller,
-    required this.onChanged,
-    required this.onSubmitted,
-    required this.onClear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return SizedBox(
-      height: 44,
-      child: TextField(
-        controller: controller,
-        style: const TextStyle(color: AppColors.onPrimary, fontSize: 14),
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          filled: true,
-          fillColor: Colors.white.withValues(alpha: 0.12),
-          hintText: l10n.searchInvoiceOrProduct,
-          hintStyle: TextStyle(
-            color: AppColors.onPrimary.withValues(alpha: 0.5),
-            fontSize: 14,
-          ),
-          prefixIcon: Icon(
-            Icons.search,
-            color: AppColors.onPrimary.withValues(alpha: 0.6),
-          ),
-          suffixIcon: IconButton(
-            tooltip: l10n.clearFilters,
-            icon: Icon(
-              Icons.clear,
-              color: AppColors.onPrimary.withValues(alpha: 0.6),
-            ),
-            onPressed: onClear,
-          ),
-          contentPadding: AppSpacing.horizontalMd,
-          border: OutlineInputBorder(
-            borderRadius: AppSpacing.borderRadiusMd,
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: AppSpacing.borderRadiusMd,
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: AppSpacing.borderRadiusMd,
-            borderSide: BorderSide(
-              color: AppColors.onPrimary.withValues(alpha: 0.3),
-            ),
-          ),
-        ),
-        onChanged: onChanged,
-        onSubmitted: onSubmitted,
       ),
     );
   }
