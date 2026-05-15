@@ -9,6 +9,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 import 'package:holol_POS/core/services/invoices/receipt_template_labels.dart';
 import 'package:holol_POS/core/services/receipts/receipt_render_profile.dart';
+import 'package:holol_POS/core/utils/text_normalizer.dart';
 
 class ReceiptRasterImage {
   final int widthPx;
@@ -1227,13 +1228,14 @@ class _ReceiptPainter {
 
   String? _firstVisible(List<String?> values) {
     for (final value in values) {
-      if (_visible(value)) return value!.trim();
+      final cleaned = CoreText.clean(value);
+      if (cleaned != null) return cleaned;
     }
 
     return null;
   }
 
-  bool _visible(String? value) => value != null && value.trim().isNotEmpty;
+  bool _visible(String? value) => CoreText.clean(value) != null;
 
   double _max(double a, double b) => a > b ? a : b;
 }

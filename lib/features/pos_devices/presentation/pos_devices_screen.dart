@@ -23,6 +23,8 @@ import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 
 import 'dialogs/printer_form_dialogs.dart';
+import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_scaffold.dart';
 
 class PosDevicesScreen extends ConsumerWidget {
   const PosDevicesScreen({super.key});
@@ -34,9 +36,10 @@ class PosDevicesScreen extends ConsumerWidget {
     final paymentProfile = ref.watch(manualPaymentProfileProvider);
     final jobs = ref.watch(retryablePrintJobsProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text(l10n.posDevices)),
+    return AppScaffold(
+      title: l10n.posDevices,
+      icon: Icons.devices_outlined,
+      onBack: () => Navigator.of(context).maybePop(),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(
@@ -134,80 +137,78 @@ class _PrinterTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context)!;
     final role = PrinterStatusPresenter.roleFromName(printer.role);
-    return ListTile(
-      leading: Icon(PrinterStatusPresenter.roleIcon(role)),
-      title: Text(printer.name),
-      subtitle: Text(_printerSubtitle(printer, role, l10n)),
-      trailing: Wrap(
-        spacing: AppSpacing.xs,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        children: [
-          _readinessChip(_printerReadiness(printer), l10n),
-          IconButton(
-            tooltip: l10n.test,
-            icon: const Icon(Icons.fact_check_outlined),
-            onPressed: () async {
-              final result = await ref
+
+    return AppDeviceTile(
+      icon: PrinterStatusPresenter.roleIcon(role),
+      title: printer.name,
+      subtitle: _printerSubtitle(printer, role, l10n),
+      status: _readinessChip(_printerReadiness(printer), l10n),
+      actions: [
+        IconButton(
+          tooltip: l10n.test,
+          icon: const Icon(Icons.fact_check_outlined),
+          onPressed: () async {
+            final result = await ref
+                .read(printerProfileServiceProvider)
+                .testPrinter(printer);
+
+            if (context.mounted) {
+              if (result.success) {
+                AppSnackbar.showSuccess(context, l10n.testPrintSucceeded);
+              } else {
+                AppSnackbar.showError(
+                  context,
+                  result.errorMessage ?? l10n.testPrintFailed,
+                );
+              }
+            }
+          },
+        ),
+        Switch(
+          value: printer.enabled,
+          onChanged: (value) async {
+            try {
+              await ref
                   .read(printerProfileServiceProvider)
-                  .testPrinter(printer);
+                  .setEnabled(printer.id, value);
+            } catch (_) {
               if (context.mounted) {
-                if (result.success) {
-                  AppSnackbar.showSuccess(context, l10n.testPrintSucceeded);
-                } else {
-                  AppSnackbar.showError(
-                    context,
-                    result.errorMessage ?? l10n.testPrintFailed,
-                  );
-                }
+                AppSnackbar.showError(context, l10n.printerUpdateFailed);
               }
-            },
-          ),
-          Switch(
-            value: printer.enabled,
-            onChanged: (value) async {
-              try {
-                await ref
-                    .read(printerProfileServiceProvider)
-                    .setEnabled(printer.id, value);
-              } catch (e) {
-                if (context.mounted) {
-                  AppSnackbar.showError(context, l10n.printerUpdateFailed);
-                }
+            }
+          },
+        ),
+        IconButton(
+          tooltip: l10n.edit,
+          icon: const Icon(Icons.edit_outlined),
+          onPressed: () => showPrinterDialog(context, ref, current: printer),
+        ),
+        IconButton(
+          tooltip: l10n.delete,
+          icon: const Icon(Icons.delete_outline),
+          onPressed: () async {
+            final shouldDelete = await AppDialog.show<bool>(
+              context: context,
+              dialog: AppDialog.warning(
+                title: l10n.deletePrinter,
+                content: Text(l10n.deletePrinterConfirmation(printer.name)),
+                confirmLabel: l10n.delete,
+                cancelLabel: l10n.cancel,
+              ),
+            );
+
+            if (shouldDelete != true) return;
+
+            try {
+              await ref.read(printerProfileServiceProvider).delete(printer.id);
+            } catch (_) {
+              if (context.mounted) {
+                AppSnackbar.showError(context, l10n.printerDeleteFailed);
               }
-            },
-          ),
-          IconButton(
-            tooltip: l10n.edit,
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: () => showPrinterDialog(context, ref, current: printer),
-          ),
-          IconButton(
-            tooltip: l10n.delete,
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () async {
-              final shouldDelete = await AppDialog.show<bool>(
-                context: context,
-                dialog: AppDialog.warning(
-                  title: l10n.deletePrinter,
-                  content: Text(l10n.deletePrinterConfirmation(printer.name)),
-                  confirmLabel: l10n.delete,
-                  cancelLabel: l10n.cancel,
-                ),
-              );
-              if (shouldDelete != true) return;
-              try {
-                await ref
-                    .read(printerProfileServiceProvider)
-                    .delete(printer.id);
-              } catch (_) {
-                if (context.mounted) {
-                  AppSnackbar.showError(context, l10n.printerDeleteFailed);
-                }
-              }
-            },
-          ),
-        ],
-      ),
+            }
+          },
+        ),
+      ],
     );
   }
 }
@@ -330,25 +331,25 @@ class _ReadinessSection extends ConsumerWidget {
       icon: Icons.health_and_safety_outlined,
       child: Column(
         children: [
-          _ReadinessTile(
+          AppReadinessTile(
             label: l10n.cashierPrinter,
             value: _getReadinessLabel(cashierReady, l10n),
           ),
-          _ReadinessTile(
+          AppReadinessTile(
             label: l10n.kitchenPrinter,
             value: _getReadinessLabel(kitchenReady, l10n),
           ),
-          _ReadinessTile(
+          AppReadinessTile(
             label: l10n.paymentTerminal,
             value: paymentEnabled ? l10n.manualCard : l10n.disabled,
           ),
-          _ReadinessTile(
+          AppReadinessTile(
             label: l10n.referenceRequired,
             value: paymentProfile?.requireReference == true
                 ? l10n.yes
                 : l10n.no,
           ),
-          _ReadinessTile(
+          AppReadinessTile(
             label: l10n.retryableJobs,
             value: '${retryableJobs.length}',
           ),
@@ -371,7 +372,7 @@ class _ReadinessSection extends ConsumerWidget {
                 },
               ),
             ),
-          _ReadinessTile(label: l10n.saleReadiness, value: saleReadiness),
+          AppReadinessTile(label: l10n.saleReadiness, value: saleReadiness),
         ],
       ),
     );
@@ -387,25 +388,6 @@ class _UnavailableOptions extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // WHY: Intentionally hidden. Uncomment only for developer debugging.
     return const SizedBox.shrink();
-  }
-}
-
-class _ReadinessTile extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _ReadinessTile({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      dense: true,
-      title: Text(label),
-      trailing: Text(
-        value,
-        style: const TextStyle(fontWeight: FontWeight.w600),
-      ),
-    );
   }
 }
 

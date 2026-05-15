@@ -13,6 +13,7 @@ import 'package:holol_POS/core/services/invoices/invoice_output_actions.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
+import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
 
 /// Shows a thermal receipt image preview in a dialog.
 ///
@@ -78,88 +79,63 @@ class _ThermalReceiptDialogState extends State<_ThermalReceiptDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.xxl,
+    return AppDialog(
+      title: 'معاينة الفاتورة',
+      icon: Icons.receipt_long,
+      maxWidth: 420,
+      onClose: () => Navigator.of(context).pop(),
+      contentPadding: EdgeInsets.zero,
+      content: _buildBody(),
+      footer: Row(
+        children: [
+          Expanded(
+            child: AppButton.outlined(
+              onPressed: () => Navigator.of(context).pop(),
+              icon: Icons.check,
+              label: 'إغلاق',
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: AppButton.primary(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.push(AppRoutes.invoicePath(widget.saleId));
+              },
+              icon: Icons.open_in_new,
+              label: 'التفاصيل الكاملة',
+            ),
+          ),
+        ],
       ),
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 420),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: AppSpacing.borderRadiusLg,
-          boxShadow: AppSpacing.shadowLg,
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(AppSpacing.xxxl),
+        child: AppLoading(),
+      );
+    }
+
+    if (_error != null) {
+      return Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Text(
+          _error!,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: AppColors.error),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppDialogHeader(
-              title: 'معاينة الفاتورة',
-              icon: Icons.receipt_long,
-              onClose: () => Navigator.of(context).pop(),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(AppSpacing.lg),
-                topRight: Radius.circular(AppSpacing.lg),
-              ),
-            ),
-            // ── Body ──
-            Flexible(
-              child: _isLoading
-                  ? const Padding(
-                      padding: EdgeInsets.all(AppSpacing.xxxl),
-                      child: AppLoading(),
-                    )
-                  : _error != null
-                  ? Padding(
-                      padding: const EdgeInsets.all(AppSpacing.xxl),
-                      child: Text(
-                        _error!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(color: AppColors.error),
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md,
-                        vertical: AppSpacing.lg,
-                      ),
-                      child: AppReceiptImageFrame(bytes: _pngBytes!),
-                    ),
-            ),
-            // ── Actions ──
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: AppColors.border)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: AppButton.outlined(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: Icons.check,
-                      label: 'إغلاق',
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Expanded(
-                    child: AppButton.primary(
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                        context.push(AppRoutes.invoicePath(widget.saleId));
-                      },
-                      icon: Icons.open_in_new,
-                      label: 'التفاصيل الكاملة',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.lg,
       ),
+      child: AppReceiptImageFrame(bytes: _pngBytes!),
     );
   }
 }

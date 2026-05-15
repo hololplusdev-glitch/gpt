@@ -30,6 +30,8 @@ import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/shared/refactor/pos_runtime_state.dart';
 import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_scaffold.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_search_field.dart';
 
 enum _BarcodeSubmitIntent { manualSearch, scannerLikeInput }
 
@@ -45,9 +47,7 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   final _searchFocus = FocusNode();
   Timer? _searchDebounce;
 
-  final _scannerBuffer = StringBuffer();
-  DateTime? _lastScannerKeyTime;
-  DateTime? _scannerBufferStartedAt;
+  final _keyboardScanner = PosKeyboardScannerBuffer();
 
   @override
   void dispose() {
@@ -123,73 +123,28 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   }
 
   KeyEventResult _handleScannerKeyEvent(FocusNode node, KeyEvent event) {
-    if (_searchFocus.hasFocus || event is! KeyDownEvent) {
-      return KeyEventResult.ignored;
-    }
+    final scannerEvent = _keyboardScanner.handle(
+      event,
+      textInputFocused: _searchFocus.hasFocus,
+      now: DateTime.now(),
+    );
 
-    final now = DateTime.now();
-    final logicalKey = event.logicalKey;
-
-    final isTerminator =
-        logicalKey == LogicalKeyboardKey.enter ||
-        logicalKey == LogicalKeyboardKey.numpadEnter ||
-        logicalKey == LogicalKeyboardKey.tab;
-
-    if (isTerminator) {
-      final code = _scannerBuffer.toString();
-      final startedAt = _scannerBufferStartedAt;
-      _clearScannerBuffer();
-
-      if (startedAt == null || code.trim().length < 3) {
-        return KeyEventResult.ignored;
-      }
-
-      final elapsed = now.difference(startedAt);
-      final maxScannerDuration = Duration(milliseconds: code.length * 90);
-
-      if (elapsed <= maxScannerDuration) {
+    switch (scannerEvent.disposition) {
+      case PosKeyboardScannerDisposition.submit:
         unawaited(
           _handleBarcodeSubmit(
-            code,
+            scannerEvent.code!,
             intent: _BarcodeSubmitIntent.scannerLikeInput,
           ),
         );
         return KeyEventResult.handled;
-      }
 
-      return KeyEventResult.ignored;
+      case PosKeyboardScannerDisposition.buffering:
+        return KeyEventResult.handled;
+
+      case PosKeyboardScannerDisposition.ignored:
+        return KeyEventResult.ignored;
     }
-
-    final character = event.character;
-    if (character == null || character.isEmpty) {
-      return KeyEventResult.ignored;
-    }
-
-    if (character.runes.length != 1 ||
-        character.codeUnitAt(0) < 0x20 ||
-        HardwareKeyboard.instance.isControlPressed ||
-        HardwareKeyboard.instance.isAltPressed ||
-        HardwareKeyboard.instance.isMetaPressed) {
-      return KeyEventResult.ignored;
-    }
-
-    final last = _lastScannerKeyTime;
-    if (last == null ||
-        now.difference(last) > const Duration(milliseconds: 120)) {
-      _scannerBuffer.clear();
-      _scannerBufferStartedAt = now;
-    }
-
-    _scannerBuffer.write(character);
-    _lastScannerKeyTime = now;
-
-    return KeyEventResult.handled;
-  }
-
-  void _clearScannerBuffer() {
-    _scannerBuffer.clear();
-    _lastScannerKeyTime = null;
-    _scannerBufferStartedAt = null;
   }
 
   void _scheduleProductSearch(String value) {
@@ -538,12 +493,9 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     final activeSession = ref.watch(activePosSessionProvider).valueOrNull;
 
     if (activeSession == null) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          backgroundColor: AppColors.primary,
-          title: Text(l10n.posShort),
-        ),
+      return AppScaffold(
+        title: l10n.posShort,
+        icon: Icons.point_of_sale,
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: AppContentWidth.narrow),
@@ -587,9 +539,9 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
     return Focus(
       autofocus: true,
       onKeyEvent: _handleScannerKeyEvent,
-      child: Scaffold(
-        backgroundColor: AppColors.background,
-        body: Column(
+      child: ColoredBox(
+        color: AppColors.background,
+        child: Column(
           children: [
             _buildTopBar(context, activeSession.activeUserName),
             Expanded(
@@ -605,136 +557,83 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
 
   Widget _buildTopBar(BuildContext context, String cashierName) {
     final l10n = AppLocalizations.of(context)!;
+    final canScanWithCamera = ref.watch(hasCameraScannerProvider);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < AppBreakpoints.medium;
+    final search = AppScaffoldSearchConfig(
+      controller: _searchController,
+      focusNode: _searchFocus,
+      hintText: l10n.searchProductsOrScanBarcode,
+      mode: AppSearchFieldMode.barcode,
+      onChanged: _scheduleProductSearch,
+      onSubmitted: (value) => _handleBarcodeSubmit(
+        value,
+        intent: _BarcodeSubmitIntent.manualSearch,
+      ),
+      onScanPressed: canScanWithCamera
+          ? () => showBarcodeScannerSheet(context)
+          : null,
+    );
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-          decoration: const BoxDecoration(
-            gradient: AppColors.headerGradient,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.shadow,
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: isCompact
-                ? Padding(
-                    padding: AppSpacing.verticalSm,
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            AppBrandMark(label: l10n.posShort),
-                            const Spacer(),
-                            AppCashierBadge(cashierName: cashierName),
-                            const SizedBox(width: AppSpacing.xs),
-                            AppOverflowActions(
-                              onHold: () => _holdOrder(context),
-                              onHeldOrders: () => _showHeldOrders(context),
-                              onShift: () => context.push(AppRoutes.shift),
-                              onHistory: () => context.push(AppRoutes.history),
-                              onSync: () => context.push(AppRoutes.syncMonitor),
-                              onDevices: () =>
-                                  context.push(AppRoutes.posDevices),
-                              onSettings: () =>
-                                  context.push(AppRoutes.settings),
-                            ),
-                            AppLogoutButton(
-                              onPressed: () => ref
-                                  .read(posSessionControllerProvider.notifier)
-                                  .logout(),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        AppCashierSearchField(
-                          controller: _searchController,
-                          focusNode: _searchFocus,
-                          hintText: l10n.searchProductsOrScanBarcode,
-                          onChanged: _scheduleProductSearch,
-                          onSubmitted: (value) => _handleBarcodeSubmit(
-                            value,
-                            intent: _BarcodeSubmitIntent.manualSearch,
-                          ),
-                          onScanPressed: ref.watch(hasCameraScannerProvider)
-                              ? () => showBarcodeScannerSheet(context)
-                              : null,
-                        ),
-                      ],
-                    ),
-                  )
-                : SizedBox(
-                    height: AppSpacing.jumbo + AppSpacing.sm,
-                    child: Row(
-                      children: [
-                        AppBrandMark(label: l10n.posShort),
-                        const SizedBox(width: AppSpacing.xxl),
-                        Expanded(
-                          child: AppCashierSearchField(
-                            controller: _searchController,
-                            focusNode: _searchFocus,
-                            hintText: l10n.searchProductsOrScanBarcode,
-                            onChanged: _scheduleProductSearch,
-                            onSubmitted: (value) => _handleBarcodeSubmit(
-                              value,
-                              intent: _BarcodeSubmitIntent.manualSearch,
-                            ),
-                            onScanPressed: ref.watch(hasCameraScannerProvider)
-                                ? () => showBarcodeScannerSheet(context)
-                                : null,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.lg),
-                        AppTopBarButton(
-                          icon: Icons.pause_circle_outline,
-                          label: l10n.hold,
-                          onTap: () => _holdOrder(context),
-                        ),
-                        AppTopBarButton(
-                          icon: Icons.restore_page_outlined,
-                          label: 'المعلقة',
-                          onTap: () => _showHeldOrders(context),
-                        ),
-                        AppTopBarButton(
-                          icon: Icons.analytics_outlined,
-                          label: 'الشفت',
-                          onTap: () => context.push(AppRoutes.shift),
-                        ),
-                        AppTopBarButton(
-                          icon: Icons.history,
-                          label: l10n.salesHistory,
-                          onTap: () => context.push(AppRoutes.history),
-                        ),
-                        AppOverflowActions(
-                          onHold: () => _holdOrder(context),
-                          onHeldOrders: () => _showHeldOrders(context),
-                          onShift: () => context.push(AppRoutes.shift),
-                          onHistory: () => context.push(AppRoutes.history),
-                          onSync: () => context.push(AppRoutes.syncMonitor),
-                          onDevices: () => context.push(AppRoutes.posDevices),
-                          onSettings: () => context.push(AppRoutes.settings),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        AppCashierBadge(cashierName: cashierName),
-                        const SizedBox(width: AppSpacing.xs),
-                        AppLogoutButton(
-                          onPressed: () => ref
-                              .read(posSessionControllerProvider.notifier)
-                              .logout(),
-                        ),
-                      ],
-                    ),
-                  ),
-          ),
-        );
-      },
+    return AppScaffold.header(
+      context,
+      titleWidget: AppBrandMark(label: l10n.posShort),
+      search: search,
+      variant: AppScaffoldVariant.pos,
+      actions: [
+        AppTopBarButton(
+          icon: Icons.pause_circle_outline,
+          label: l10n.hold,
+          onTap: () => _holdOrder(context),
+        ),
+        AppTopBarButton(
+          icon: Icons.restore_page_outlined,
+          label: 'المعلقة',
+          onTap: () => _showHeldOrders(context),
+        ),
+        AppTopBarButton(
+          icon: Icons.analytics_outlined,
+          label: 'الشفت',
+          onTap: () => context.push(AppRoutes.shift),
+        ),
+        AppTopBarButton(
+          icon: Icons.history,
+          label: l10n.salesHistory,
+          onTap: () => context.push(AppRoutes.history),
+        ),
+        AppOverflowActions(
+          onHold: () => _holdOrder(context),
+          onHeldOrders: () => _showHeldOrders(context),
+          onShift: () => context.push(AppRoutes.shift),
+          onHistory: () => context.push(AppRoutes.history),
+          onSync: () => context.push(AppRoutes.syncMonitor),
+          onDevices: () => context.push(AppRoutes.posDevices),
+          onSettings: () => context.push(AppRoutes.settings),
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        AppCashierBadge(cashierName: cashierName),
+        const SizedBox(width: AppSpacing.xs),
+        AppLogoutButton(
+          onPressed: () =>
+              ref.read(posSessionControllerProvider.notifier).logout(),
+        ),
+      ],
+      compactActions: [
+        AppCashierBadge(cashierName: cashierName),
+        const SizedBox(width: AppSpacing.xs),
+        AppOverflowActions(
+          onHold: () => _holdOrder(context),
+          onHeldOrders: () => _showHeldOrders(context),
+          onShift: () => context.push(AppRoutes.shift),
+          onHistory: () => context.push(AppRoutes.history),
+          onSync: () => context.push(AppRoutes.syncMonitor),
+          onDevices: () => context.push(AppRoutes.posDevices),
+          onSettings: () => context.push(AppRoutes.settings),
+        ),
+        AppLogoutButton(
+          onPressed: () =>
+              ref.read(posSessionControllerProvider.notifier).logout(),
+        ),
+      ],
     );
   }
 
@@ -782,24 +681,6 @@ class _CashierScreenState extends ConsumerState<CashierScreen> {
   }
 }
 
-class _MenuAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _MenuAction({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: AppColors.primary, size: AppSpacing.xl),
-        const SizedBox(width: AppSpacing.md),
-        Flexible(child: Text(label)),
-      ],
-    );
-  }
-}
-
 class _CartPreviewBar extends ConsumerWidget {
   final VoidCallback onTap;
 
@@ -815,85 +696,11 @@ class _CartPreviewBar extends ConsumerWidget {
         ? l10n.quoteError
         : PosFormatters.amount(quoteState.quote!.grandTotal);
 
-    return GestureDetector(
+    return AppBottomDockBar(
       onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(
-          AppSpacing.md,
-          AppSpacing.md,
-          AppSpacing.md,
-          AppSpacing.lg,
-        ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-        decoration: BoxDecoration(
-          gradient: AppColors.brandGradient,
-          borderRadius: AppSpacing.borderRadiusLg,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.4),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Center(
-                child: Text(
-                  '${cart.totalLinesCount}',
-                  style: const TextStyle(
-                    color: AppColors.onPrimary,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Text(
-              l10n.viewCart,
-              style: const TextStyle(
-                color: AppColors.onPrimary,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const Spacer(),
-            Text(
-              quoteTotal,
-              style: const TextStyle(
-                color: AppColors.onPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.keyboard_arrow_up,
-                color: AppColors.onPrimary,
-                size: 20,
-              ),
-            ),
-          ],
-        ),
-      ),
+      badgeText: '${cart.totalLinesCount}',
+      label: l10n.viewCart,
+      value: quoteTotal,
     );
   }
 }

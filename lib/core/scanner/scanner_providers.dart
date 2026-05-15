@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:holol_POS/core/scanner/barcode_scanner_service.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
+import 'package:holol_POS/shared/refactor/pos_runtime_state.dart';
 
 /// Whether the current platform supports camera-based barcode scanning.
 ///
@@ -28,10 +29,16 @@ final hasCameraScannerProvider = Provider<bool>((ref) {
 /// debounce and lookup pipeline.
 final barcodeScannerServiceProvider = Provider<BarcodeScannerService>((ref) {
   final session = ref.watch(activePosSessionProvider).valueOrNull;
+  final context = PosRuntimeContextRules.requireActiveContext(
+    session,
+    message: 'Select a cashier and POS machine before scanning.',
+    code: 'NO_ACTIVE_POS_SESSION',
+  );
+
   return BarcodeScannerService(
     catalogDao: ref.watch(catalogDaoProvider),
-    priceLevelId: session?.activePriceLevelId ?? '',
-    storeId: session?.activeStoreId ?? '',
+    priceLevelId: context.priceLevelId,
+    storeId: context.storeId,
     clock: ref.watch(clockProvider),
   );
 });

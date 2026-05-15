@@ -160,7 +160,7 @@ class ActivePosSessionDao {
   Future<List<RuntimeMachineChoice>> listRuntimeMachineChoicesForUser({
     required PosUser user,
   }) async {
-    _validateUser(user);
+    DaoActiveSessionPolicy.validateUser(user);
 
     final privileges = await listAllowedMachinesForUser(userId: user.id);
 
@@ -188,8 +188,8 @@ class ActivePosSessionDao {
     required PosUser user,
     required PosMachine machine,
   }) async {
-    _validateUser(user);
-    _validateMachine(machine);
+    DaoActiveSessionPolicy.validateUser(user);
+    DaoActiveSessionPolicy.validateMachine(machine);
 
     final privilege = await _runtimeMachinePrivilege(
       userId: user.id,
@@ -241,8 +241,8 @@ class ActivePosSessionDao {
       throw StateError('Active POS session machine no longer exists.');
     }
 
-    _validateUser(user);
-    _validateMachine(machine);
+    DaoActiveSessionPolicy.validateUser(user);
+    DaoActiveSessionPolicy.validateMachine(machine);
 
     final privilege = await _runtimeMachinePrivilege(
       userId: row.activeUserId,
@@ -311,17 +311,5 @@ class ActivePosSessionDao {
       returnInvoiceSeries: machine.returnInvoiceSeries,
       loginAt: row.loginAt,
     );
-  }
-
-  void _validateUser(PosUser user) {
-    if (!user.isActive || !user.canLoginPos) {
-      throw StateError('User is not authorized for POS login.');
-    }
-  }
-
-  void _validateMachine(PosMachine machine) {
-    if (!machine.isActive) {
-      throw StateError('Selected POS machine is inactive.');
-    }
   }
 }

@@ -27,39 +27,6 @@ class ResolvedPaymentMethod {
 }
 
 abstract final class PaymentMethodResolver {
-  static const builtInCash = ResolvedPaymentMethod(
-    methodId: PaymentMethodCodes.cash,
-    code: PaymentMethodCodes.cash,
-    displayName: 'كاش',
-    type: PaymentMethodType.cash,
-    requiresReference: false,
-    allowsChange: true,
-    isManual: false,
-    needsPaymentProfile: false,
-  );
-
-  static const builtInManualCard = ResolvedPaymentMethod(
-    methodId: PaymentMethodCodes.manualCard,
-    code: PaymentMethodCodes.manualCard,
-    displayName: 'شبكة',
-    type: PaymentMethodType.manualCard,
-    requiresReference: false,
-    allowsChange: false,
-    isManual: true,
-    needsPaymentProfile: true,
-  );
-
-  static const builtInCustomerCredit = ResolvedPaymentMethod(
-    methodId: PaymentMethodCodes.customerCredit,
-    code: PaymentMethodCodes.customerCredit,
-    displayName: 'آجل',
-    type: PaymentMethodType.customerCredit,
-    requiresReference: false,
-    allowsChange: false,
-    isManual: true,
-    needsPaymentProfile: false,
-  );
-
   static ResolvedPaymentMethod resolve({
     required String methodId,
     required String code,
@@ -155,6 +122,17 @@ abstract final class PaymentMethodResolver {
       PaymentMethodType.manualCard => true,
       PaymentMethodType.customerCredit => true,
     };
+  }
+
+  static bool isCustomerCredit({String? methodType, String? methodCode}) {
+    final byType = methodType == null
+        ? null
+        : PaymentMethodType.fromCode(methodType);
+    if (byType == PaymentMethodType.customerCredit) return true;
+
+    final code = methodCode?.trim();
+    if (code == null || code.isEmpty) return false;
+    return typeFromCode(code) == PaymentMethodType.customerCredit;
   }
 
   static String? _suffixForPrefix(String code, String prefix) {

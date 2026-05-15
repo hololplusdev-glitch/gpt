@@ -1,72 +1,12 @@
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
-import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
 
 class InvoiceValidationService {
   const InvoiceValidationService();
 
   InvoiceValidationResult validate(InvoiceDocument document) {
-    final errors = <String>[];
-    final lineSubtotal = document.lines.fold<double>(
-      0.0,
-      (sum, line) => sum + line.lineSubtotal,
-    );
-    final lineDiscount = document.lines.fold<double>(
-      0.0,
-      (sum, line) => sum + line.discountAmount,
-    );
-    final lineTax = document.lines.fold<double>(
-      0.0,
-      (sum, line) => sum + line.taxAmount,
-    );
-    final lineTotal = document.lines.fold<double>(
-      0.0,
-      (sum, line) => sum + line.lineTotal,
-    );
-    final paymentTotal = document.payments.fold<double>(
-      0.0,
-      (sum, payment) =>
-          _isCustomerCreditPayment(payment) ? sum : sum + payment.amount,
-    );
-
-    _expect('subtotal', lineSubtotal, document.totals.subtotal, errors);
-    if (lineDiscount > document.totals.discountTotal) {
-      errors.add('line discounts exceed invoice discount total');
-    }
-    _expect('tax total', lineTax, document.totals.taxTotal, errors);
-    final invoiceLevelDiscount = document.totals.discountTotal > lineDiscount
-        ? document.totals.discountTotal - lineDiscount
-        : 0.0;
-    _expect(
-      'net total',
-      lineTotal - invoiceLevelDiscount,
-      document.totals.netTotal,
-      errors,
-    );
-    _expect('paid total', paymentTotal, document.totals.paidTotal, errors);
-
-    if (document.totals.changeAmount < 0 ||
-        document.totals.remainingTotal < 0 ||
-        document.totals.netTotal < 0) {
-      errors.add('invoice contains unexpected negative totals');
-    }
-
-    return InvoiceValidationResult(errors);
-  }
-
-  bool _isCustomerCreditPayment(InvoicePaymentDocument payment) {
-    return payment.methodType == PaymentMethodType.customerCredit.code ||
-        payment.paymentMethodCode == 'CUSTOMER_CREDIT';
-  }
-
-  void _expect(
-    String label,
-    double actual,
-    double expected,
-    List<String> errors,
-  ) {
-    if ((actual - expected).abs() > 0.01) {
-      errors.add('$label mismatch: expected $expected, got $actual');
-    }
+    final result = PosInvoiceValidationRules.validate(document);
+    return InvoiceValidationResult(result.errors);
   }
 }
 

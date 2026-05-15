@@ -359,9 +359,9 @@ EXISTS (
         continue;
       }
       if (candidates.length > 1) {
-        throw BusinessException(
-          'Duplicate item price for item ${requested.itemId} and unit ${requested.sourceUnitId}.',
-          code: 'DUPLICATE_PRICE',
+        throw DaoCatalogPricePolicy.duplicatePrice(
+          itemId: requested.itemId,
+          unitId: requested.sourceUnitId,
         );
       }
       final price = candidates.single;
@@ -440,9 +440,9 @@ EXISTS (
         .toList();
     if (candidates.isEmpty) return null;
     if (candidates.length > 1) {
-      throw BusinessException(
-        'Duplicate item price for item $itemId and unit $unitId.',
-        code: 'DUPLICATE_PRICE',
+      throw DaoCatalogPricePolicy.duplicatePrice(
+        itemId: itemId,
+        unitId: unitId,
       );
     }
     final price = candidates.single;

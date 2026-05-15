@@ -22,6 +22,7 @@ import 'package:holol_POS/shared/presentation/widgets/responsive_row.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/shared/refactor/pos_runtime_state.dart';
 import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_scaffold.dart';
 
 final syncCountsProvider = FutureProvider.autoDispose<_SyncCounts>((ref) async {
   final syncDao = ref.watch(syncDaoProvider);
@@ -155,44 +156,33 @@ class _SyncMonitorScreenState extends ConsumerState<SyncMonitorScreen> {
     final countsAsync = ref.watch(syncCountsProvider);
     final stateAsync = ref.watch(scopedSyncStateProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          AppPageHeader(
-            title: l10n.syncMonitor,
-            icon: Icons.sync,
-            onBack: () {
-              if (context.canPop()) {
-                context.pop();
-                return;
-              }
+    return AppScaffold(
+      title: l10n.syncMonitor,
+      icon: Icons.sync,
+      onBack: () {
+        if (context.canPop()) {
+          context.pop();
+          return;
+        }
 
-              context.go(AppRoutes.shift);
-            },
+        context.go(AppRoutes.shift);
+      },
+      maxContentWidth: AppContentWidth.wide,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: AppContentWidth.wide),
+          child: ListView(
+            padding: AppSpacing.paddingXl,
+            children: [
+              _buildMasterDownloadSection(l10n),
+              const SizedBox(height: AppSpacing.xxl),
+              _buildUploadSection(l10n, countsAsync),
+              const SizedBox(height: AppSpacing.xxl),
+              _buildStateSection(stateAsync),
+            ],
           ),
-          // ── Body ──
-          Expanded(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: AppContentWidth.wide,
-                ),
-                child: ListView(
-                  padding: AppSpacing.paddingXl,
-                  children: [
-                    _buildMasterDownloadSection(l10n),
-                    const SizedBox(height: AppSpacing.xxl),
-                    _buildUploadSection(l10n, countsAsync),
-                    const SizedBox(height: AppSpacing.xxl),
-                    _buildStateSection(stateAsync),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

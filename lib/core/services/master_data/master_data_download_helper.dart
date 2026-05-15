@@ -5,6 +5,7 @@ import 'package:holol_POS/core/services/master_data/master_data_sync_service.dar
 import 'package:holol_POS/core/services/readiness/catalog_readiness_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
+import 'package:holol_POS/core/utils/text_normalizer.dart';
 
 class MasterDataDownloadResult {
   final MasterDataSyncSummary summary;
@@ -116,19 +117,13 @@ class MasterDataDownloadHelper {
   }
 
   String _formatFailure(MasterDataTypeResult result) {
-    final code = _clean(result.errorCode);
-    final reason = _clean(result.error);
+    final code = CoreText.cleanOrEmpty(result.errorCode);
+    final reason = CoreText.cleanOrEmpty(result.error);
     final parts = [if (code.isNotEmpty) code, if (reason.isNotEmpty) reason];
 
     if (parts.isEmpty) return result.type.code;
 
     return '${result.type.code}: ${parts.join(' - ')}';
-  }
-
-  String _clean(String? value) {
-    final text = value?.trim() ?? '';
-    if (text.isEmpty || text.toLowerCase() == 'null') return '';
-    return text;
   }
 }
 

@@ -12,6 +12,7 @@ import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_section_card.dart';
 import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
 import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_scaffold.dart';
 
 /// WHY: Settings screen is READ-ONLY for connection. Connection editing
 /// is only done through Setup (DRY principle). To change connection,
@@ -25,9 +26,10 @@ class SettingsScreen extends ConsumerWidget {
     final setupState = ref.watch(setupProvider).valueOrNull;
     final connection = setupState?.syncProfile;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(title: Text(l10n.settings)),
+    return AppScaffold(
+      title: l10n.settings,
+      icon: Icons.settings_outlined,
+      onBack: () => Navigator.of(context).maybePop(),
       body: Align(
         alignment: Alignment.topCenter,
         child: ConstrainedBox(

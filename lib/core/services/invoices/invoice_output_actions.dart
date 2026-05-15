@@ -15,6 +15,7 @@ import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:typed_data';
 import 'package:holol_POS/core/services/receipts/receipt_raster_renderer.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 class InvoiceOutputActions {
   final InvoiceDocumentBuilder _documentBuilder;
@@ -74,7 +75,7 @@ class InvoiceOutputActions {
     final originalJobs = await _printJobDao.getOriginalJobs(saleId);
 
     final hasPrintedOriginal = originalJobs.any(
-      (job) => job.status == PrintJobStatus.printed.code,
+      DaoPrintJobPolicy.isPrintedOriginal,
     );
 
     if (hasPrintedOriginal) {
@@ -82,12 +83,7 @@ class InvoiceOutputActions {
     }
 
     final retryableOriginalJobIds = originalJobs
-        .where(
-          (job) =>
-              (job.status == PrintJobStatus.pending.code ||
-                  job.status == PrintJobStatus.failed.code) &&
-              job.attempts < job.maxAttempts,
-        )
+        .where(DaoPrintJobPolicy.isRetryable)
         .map((job) => job.id)
         .toList();
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:drift/drift.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 import 'package:uuid/uuid.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
@@ -12,6 +13,7 @@ import 'package:holol_POS/core/services/payments/payment_method_resolver.dart';
 import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
 import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/shared/models/sales_history.dart';
 import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
 import 'package:holol_POS/core/persistence/pos_config_repository.dart';
 import 'package:holol_POS/core/services/invoice_number_service.dart';
@@ -20,20 +22,289 @@ import 'package:holol_POS/core/services/pos_devices/print_job_processor.dart';
 import 'package:holol_POS/core/services/pos_devices/print_queue.dart';
 import 'package:holol_POS/core/services/sync/outbox_event_factory.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/core/services/formatters/pos_formatters.dart';
 import 'package:holol_POS/core/persistence/daos/audit_dao.dart';
 import 'package:holol_POS/core/constants/pos_config_keys.dart';
+import 'package:holol_POS/core/utils/text_normalizer.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document.dart'
+    as invoice_doc;
 
 typedef BusinessRuleExceptionFactory =
     BusinessException Function(String message);
+
+abstract final class PosNumericInputRules {
+  static double? parseDecimalInput(String raw) {
+    final normalized = raw.trim().replaceAll(',', '.');
+    if (normalized.isEmpty) return null;
+    return double.tryParse(normalized);
+  }
+}
 
 abstract final class PosDomainTolerances {
   static const double money = 0.01;
   static const double quantity = 0.000001;
 }
 
+abstract final class PosPaymentMethodRules {
+  static PaymentMethodType? typeFromStored({
+    required String methodCode,
+    String? storedTypeCode,
+  }) {
+    return PaymentMethodResolver.typeFromStored(
+      methodCode: methodCode,
+      storedTypeCode: storedTypeCode,
+    );
+  }
+
+  static bool isManual(PaymentMethodType type) {
+    return PaymentMethodResolver.isManual(type);
+  }
+
+  static String describe({
+    required String methodCode,
+    required String? methodName,
+    required PaymentMethodType? type,
+    required bool manualRecord,
+  }) {
+    return PaymentMethodResolver.describe(
+      methodCode: methodCode,
+      methodName: methodName,
+      type: type,
+      manualRecord: manualRecord,
+    );
+  }
+
+  static bool isCustomerCredit({
+    String? methodType,
+    String? methodCode,
+  }) {
+    return PaymentMethodResolver.isCustomerCredit(
+      methodType: methodType,
+      methodCode: methodCode,
+    );
+  }
+}
+
+
 /// Shift-specific exception.
 class ShiftException extends BusinessException {
   const ShiftException(super.message) : super(code: 'shift_error');
+}
+
+abstract final class PosShiftInputRules {
+  static String normalizeShiftId(String raw, {required String emptyMessage}) {
+    final value = raw.trim();
+
+    if (value.isEmpty) {
+      throw ShiftException(emptyMessage);
+    }
+
+    return value;
+  }
+
+  static void requireValidOpeningCash(double value) {
+    if (!_isValidCashAmount(value)) {
+      throw const ShiftException('Opening cash cannot be negative.');
+    }
+  }
+
+  static void requireValidActualCash(double value) {
+    if (!_isValidCashAmount(value)) {
+      throw const ShiftException('Actual cash cannot be negative.');
+    }
+  }
+
+  static int requireValidExtendMinutes(int minutes) {
+    if (minutes <= 0) {
+      throw const ShiftException('Shift extension minutes must be positive.');
+    }
+
+    return minutes;
+  }
+
+  static double parseOpeningCashText(String raw) {
+    final text = raw.trim();
+    final value = text.isEmpty
+        ? 0.0
+        : PosNumericInputRules.parseDecimalInput(text);
+
+    if (value == null || !_isValidCashAmount(value)) {
+      throw const ShiftException('أدخل مبلغ افتتاح صحيح.');
+    }
+
+    return value;
+  }
+
+  static double parseActualCashText(String raw) {
+    final text = raw.trim();
+    final value = text.isEmpty
+        ? null
+        : PosNumericInputRules.parseDecimalInput(text);
+
+    if (value == null || !_isValidCashAmount(value)) {
+      throw const ShiftException('أدخل النقد الفعلي في الدرج.');
+    }
+
+    return value;
+  }
+
+  static bool _isValidCashAmount(double value) {
+    return !value.isNaN && !value.isInfinite && value >= 0;
+  }
+}
+
+class ShiftSalesTotals {
+  final double grossSales;
+  final double netSales;
+  final double cashSales;
+  final double cardSales;
+  final double otherSales;
+  final double cashReturns;
+  final double totalDiscounts;
+  final double totalTaxes;
+  final double totalReturns;
+  final double totalVoids;
+  final int saleCount;
+
+  const ShiftSalesTotals({
+    required this.grossSales,
+    required this.netSales,
+    required this.cashSales,
+    required this.cardSales,
+    required this.otherSales,
+    required this.cashReturns,
+    required this.totalDiscounts,
+    required this.totalTaxes,
+    required this.totalReturns,
+    required this.totalVoids,
+    required this.saleCount,
+  });
+}
+
+abstract final class PosShiftTotalsRules {
+  static ShiftSalesTotals calculate({
+    required Iterable<Sale> sales,
+    required Iterable<SalePayment> payments,
+  }) {
+    final paymentsBySaleId = <String, List<SalePayment>>{};
+
+    for (final payment in payments) {
+      paymentsBySaleId.putIfAbsent(payment.saleId, () => []).add(payment);
+    }
+
+    var grossSales = 0.0;
+    var netSales = 0.0;
+    var totalDiscounts = 0.0;
+    var totalTaxes = 0.0;
+    var totalReturns = 0.0;
+    var totalVoids = 0.0;
+    var cashSales = 0.0;
+    var cardSales = 0.0;
+    var otherSales = 0.0;
+    var cashReturns = 0.0;
+    var saleCount = 0;
+
+    for (final sale in sales) {
+      if (isCompletedNormalSale(sale)) {
+        grossSales += sale.grandTotal;
+        netSales += sale.subtotal;
+        totalDiscounts += sale.discountTotal;
+        totalTaxes += sale.taxTotal;
+        saleCount++;
+
+        for (final payment
+            in paymentsBySaleId[sale.id] ?? const <SalePayment>[]) {
+          final methodType = _requireStoredPaymentType(sale, payment);
+
+          switch (methodType) {
+            case PaymentMethodType.cash:
+              cashSales += payment.amount;
+            case PaymentMethodType.manualCard:
+              cardSales += payment.amount;
+            case PaymentMethodType.customerCredit:
+              otherSales += payment.amount;
+          }
+        }
+      } else if (isCompletedReturnSale(sale)) {
+        totalReturns += sale.grandTotal;
+
+        for (final payment
+            in paymentsBySaleId[sale.id] ?? const <SalePayment>[]) {
+          final methodType = PaymentMethodResolver.typeFromStored(
+            methodCode: payment.methodCodeSnapshot,
+            storedTypeCode: payment.methodTypeSnapshot,
+          );
+
+          if (methodType == PaymentMethodType.cash) {
+            cashReturns += payment.amount;
+          }
+        }
+      } else if (isVoidedSale(sale)) {
+        totalVoids += sale.grandTotal;
+      }
+    }
+
+    return ShiftSalesTotals(
+      grossSales: grossSales,
+      netSales: netSales,
+      cashSales: cashSales,
+      cardSales: cardSales,
+      otherSales: otherSales,
+      cashReturns: cashReturns,
+      totalDiscounts: totalDiscounts,
+      totalTaxes: totalTaxes,
+      totalReturns: totalReturns,
+      totalVoids: totalVoids,
+      saleCount: saleCount,
+    );
+  }
+
+  static bool isCompletedNormalSale(Sale sale) {
+    return sale.type == SaleType.sale.code &&
+        sale.status == SaleStatus.completed.code;
+  }
+
+  static bool isCompletedReturnSale(Sale sale) {
+    return sale.type == SaleType.returnSale.code &&
+        sale.status == SaleStatus.completed.code;
+  }
+
+  static bool isVoidedSale(Sale sale) {
+    return sale.status == SaleStatus.voided.code;
+  }
+
+  static double expectedCash({
+    required double openingCash,
+    required ShiftSalesTotals totals,
+  }) {
+    return openingCash + totals.cashSales - totals.cashReturns;
+  }
+
+  static double cashDifference({
+    required double actualCash,
+    required double expectedCash,
+  }) {
+    return actualCash - expectedCash;
+  }
+
+  static PaymentMethodType _requireStoredPaymentType(
+    Sale sale,
+    SalePayment payment,
+  ) {
+    final methodType = PaymentMethodResolver.typeFromStored(
+      methodCode: payment.methodCodeSnapshot,
+      storedTypeCode: payment.methodTypeSnapshot,
+    );
+
+    if (methodType == null) {
+      throw StateError(
+        'Unknown payment method type in sale ${sale.id}: '
+        '${payment.methodCodeSnapshot}',
+      );
+    }
+
+    return methodType;
+  }
 }
 
 class PosShiftWorkflow {
@@ -58,9 +329,7 @@ class PosShiftWorkflow {
     required double openingCash,
     String? shiftTypeId,
   }) async {
-    if (openingCash < 0 || openingCash.isNaN) {
-      throw const ShiftException('Opening cash cannot be negative.');
-    }
+    PosShiftInputRules.requireValidOpeningCash(openingCash);
 
     final existing = await shiftDao.getOpenShift(session.activeMachineNo);
     if (existing != null) {
@@ -131,11 +400,14 @@ class PosShiftWorkflow {
     required double actualCash,
     String? closingNotes,
   }) async {
-    if (actualCash < 0 || actualCash.isNaN) {
-      throw const ShiftException('Actual cash cannot be negative.');
-    }
+    final normalizedLocalId = PosShiftInputRules.normalizeShiftId(
+      localId,
+      emptyMessage: 'No open shift to close.',
+    );
 
-    final shift = await shiftDao.getById(localId);
+    PosShiftInputRules.requireValidActualCash(actualCash);
+
+    final shift = await shiftDao.getById(normalizedLocalId);
     if (shift == null) throw ShiftException('Shift not found: $localId');
 
     final isOpen =
@@ -147,7 +419,7 @@ class PosShiftWorkflow {
     }
 
     if (config.blockShiftCloseWithHeldInvoices) {
-      final heldCount = await salesDao.countActiveHeldOrders(localId);
+      final heldCount = await salesDao.countActiveHeldOrders(normalizedLocalId);
       if (heldCount > 0) {
         throw ShiftException(
           'Cannot close shift: $heldCount held order(s) remain. Complete or cancel them first.',
@@ -155,16 +427,30 @@ class PosShiftWorkflow {
       }
     }
 
-    final totals = await salesDao.getShiftSalesTotals(localId);
+    final sales = await salesDao.getSalesForShift(normalizedLocalId);
+    final payments = await salesDao.getSalePaymentsForSales(
+      sales.map((sale) => sale.id),
+    );
 
-    final expectedCash =
-        shift.openingCash + totals.cashSales - totals.cashReturns;
-    final difference = actualCash - expectedCash;
+    final totals = PosShiftTotalsRules.calculate(
+      sales: sales,
+      payments: payments,
+    );
+
+    final expectedCash = PosShiftTotalsRules.expectedCash(
+      openingCash: shift.openingCash,
+      totals: totals,
+    );
+
+    final difference = PosShiftTotalsRules.cashDifference(
+      actualCash: actualCash,
+      expectedCash: expectedCash,
+    );
 
     final now = clock.now();
 
     final outboxEntry = outboxEventFactory.shiftClosed(
-      localId: localId,
+      localId: normalizedLocalId,
       machineNo: session.activeMachineNo,
       cashierId: session.activeUserId,
       cashierName: session.activeUserName,
@@ -191,7 +477,7 @@ class PosShiftWorkflow {
       actorId: session.activeUserId,
       actorName: Value(session.activeUserName),
       targetType: Value(OutboxEntityType.shift.code),
-      targetId: Value(localId),
+      targetId: Value(normalizedLocalId),
       detailsJson: Value(
         jsonEncode({
           'expectedCash': expectedCash,
@@ -204,7 +490,7 @@ class PosShiftWorkflow {
     );
 
     await shiftDao.closeShiftEnvelope(
-      localId: localId,
+      localId: normalizedLocalId,
       expectedCash: expectedCash,
       actualCash: actualCash,
       difference: difference,
@@ -220,6 +506,7 @@ class PosShiftWorkflow {
       totalVoids: totals.totalVoids,
       saleCount: totals.saleCount,
       closingNotes: closingNotes,
+      closedAt: now,
       outboxEntry: outboxEntry,
       auditLogEntry: auditLogEntry,
     );
@@ -230,17 +517,24 @@ class PosShiftWorkflow {
     required String localId,
     int? overrideMinutes,
   }) async {
-    final shift = await shiftDao.getById(localId);
+    final normalizedLocalId = PosShiftInputRules.normalizeShiftId(
+      localId,
+      emptyMessage: 'No open shift to extend.',
+    );
+
+    final shift = await shiftDao.getById(normalizedLocalId);
     if (shift == null) throw const ShiftException('Shift not found');
 
-    final minutes = overrideMinutes ?? config.shiftExtendMinutes;
+    final minutes = PosShiftInputRules.requireValidExtendMinutes(
+      overrideMinutes ?? config.shiftExtendMinutes,
+    );
     final currentExpiry = shift.expiresAt ?? clock.now();
     final newExpiry = currentExpiry.add(Duration(minutes: minutes));
 
     final now = clock.now();
 
     final outboxEntry = outboxEventFactory.shiftExtended(
-      localId: localId,
+      localId: normalizedLocalId,
       extendedByMinutes: minutes,
       newExpiry: newExpiry,
       extendedAt: now,
@@ -251,14 +545,14 @@ class PosShiftWorkflow {
       action: AuditAction.shiftExtended.code,
       actorId: session.activeUserId,
       targetType: Value(OutboxEntityType.shift.code),
-      targetId: Value(localId),
+      targetId: Value(normalizedLocalId),
       detailsJson: Value(jsonEncode({'extendedByMinutes': minutes})),
       terminalId: session.activeMachineNo,
       createdAt: now,
     );
 
     await shiftDao.extendShiftEnvelope(
-      localId: localId,
+      localId: normalizedLocalId,
       newExpiry: newExpiry,
       outboxEntry: outboxEntry,
       auditLogEntry: auditLogEntry,
@@ -289,6 +583,191 @@ class PaymentValidationResult {
     required this.changeTotal,
   });
 }
+
+abstract final class PosInvoicePaymentValidationRules {
+  static double nonCreditPaymentTotal(
+    Iterable<invoice_doc.InvoicePaymentDocument> payments,
+  ) {
+    return payments.fold<double>(
+      0.0,
+      (sum, payment) =>
+          isCustomerCreditPayment(payment) ? sum : sum + payment.amount,
+    );
+  }
+
+  static bool isCustomerCreditPayment(
+    invoice_doc.InvoicePaymentDocument payment,
+  ) {
+    return PosPaymentMethodRules.isCustomerCredit(
+      methodType: payment.methodType,
+      methodCode: payment.paymentMethodCode,
+    );
+  }
+}
+
+class PosInvoiceValidationResult {
+  final List<String> errors;
+
+  const PosInvoiceValidationResult(this.errors);
+
+  bool get isValid => errors.isEmpty;
+
+  String? get message => isValid ? null : errors.join('; ');
+}
+
+abstract final class PosInvoiceValidationRules {
+  static PosInvoiceValidationResult validate(
+    invoice_doc.InvoiceDocument document,
+  ) {
+    final errors = <String>[];
+
+    final lineSubtotal = document.lines.fold<double>(
+      0.0,
+      (sum, line) => sum + line.lineSubtotal,
+    );
+
+    final lineDiscount = document.lines.fold<double>(
+      0.0,
+      (sum, line) => sum + line.discountAmount,
+    );
+
+    final lineTax = document.lines.fold<double>(
+      0.0,
+      (sum, line) => sum + line.taxAmount,
+    );
+
+    final lineTotal = document.lines.fold<double>(
+      0.0,
+      (sum, line) => sum + line.lineTotal,
+    );
+
+    final paymentTotal = PosInvoicePaymentValidationRules.nonCreditPaymentTotal(
+      document.payments,
+    );
+
+    _expect('subtotal', lineSubtotal, document.totals.subtotal, errors);
+
+    if (lineDiscount > document.totals.discountTotal) {
+      errors.add('line discounts exceed invoice discount total');
+    }
+
+    _expect('tax total', lineTax, document.totals.taxTotal, errors);
+
+    final invoiceLevelDiscount = document.totals.discountTotal > lineDiscount
+        ? document.totals.discountTotal - lineDiscount
+        : 0.0;
+
+    _expect(
+      'net total',
+      lineTotal - invoiceLevelDiscount,
+      document.totals.netTotal,
+      errors,
+    );
+
+    _expect('paid total', paymentTotal, document.totals.paidTotal, errors);
+
+    if (document.totals.changeAmount < 0 ||
+        document.totals.remainingTotal < 0 ||
+        document.totals.netTotal < 0) {
+      errors.add('invoice contains unexpected negative totals');
+    }
+
+    return PosInvoiceValidationResult(errors);
+  }
+
+  static void _expect(
+    String label,
+    double actual,
+    double expected,
+    List<String> errors,
+  ) {
+    if ((actual - expected).abs() > PosDomainTolerances.money) {
+      errors.add('$label mismatch: expected $expected, got $actual');
+    }
+  }
+}
+
+
+abstract final class PosInvoiceDocumentRules {
+  static invoice_doc.InvoicePaymentDocument fromPaymentInput(
+    SalePaymentInput payment,
+  ) {
+    final type = payment.paymentMethodType;
+    final manualRecord = PosPaymentMethodRules.isManual(type);
+    final name = payment.paymentMethodName ?? payment.paymentMethodCode;
+
+    return invoice_doc.InvoicePaymentDocument(
+      paymentMethodId: payment.paymentMethodId,
+      paymentMethodCode: payment.paymentMethodCode,
+      methodName: name,
+      methodType: type.code,
+      amount: payment.amount,
+      cashTendered: payment.cashTendered,
+      changeGiven: payment.changeGiven,
+      referenceNo: DaoText.clean(payment.referenceNo),
+      bankId: DaoText.clean(payment.bankId),
+      cardTypeId: DaoText.clean(payment.cardTypeId),
+      manualRecord: manualRecord,
+      displayMethod: PosPaymentMethodRules.describe(
+        methodCode: payment.paymentMethodCode,
+        methodName: name,
+        type: type,
+        manualRecord: manualRecord,
+      ),
+      displayAmount: PosFormatters.amount(payment.amount),
+    );
+  }
+
+  static invoice_doc.InvoicePaymentDocument fromStoredPayment({
+    required String saleId,
+    required SalePayment payment,
+    required PaymentMethod? method,
+  }) {
+    final code = payment.methodCodeSnapshot;
+    final type = PosPaymentMethodRules.typeFromStored(
+      methodCode: code,
+      storedTypeCode: (payment.methodTypeSnapshot ?? method?.type)?.toString(),
+    );
+
+    if (type == null) {
+      throw StateError(
+        'Unknown payment method type while building invoice for $saleId: $code',
+      );
+    }
+
+    final manualRecord = payment.isManual || PosPaymentMethodRules.isManual(type);
+    final name = payment.methodNameSnapshot ?? method?.name ?? code;
+    final amount = payment.amount;
+
+    return invoice_doc.InvoicePaymentDocument(
+      paymentMethodId: payment.paymentMethodId,
+      paymentMethodCode: code,
+      methodName: name,
+      methodType: type.code,
+      amount: amount,
+      cashTendered: payment.cashTendered,
+      changeGiven: payment.changeGiven,
+      referenceNo: DaoText.clean(payment.referenceNo),
+      bankId: DaoText.clean(payment.bankId),
+      cardTypeId: DaoText.clean(payment.cardTypeId),
+      manualRecord: manualRecord,
+      displayMethod: PosPaymentMethodRules.describe(
+        methodCode: code,
+        methodName: name,
+        type: type,
+        manualRecord: manualRecord,
+      ),
+      displayAmount: PosFormatters.amount(amount),
+    );
+  }
+
+  static String syncEntityTypeForSaleType(String? saleType) {
+    return saleType == SaleType.returnSale.code
+        ? OutboxEntityType.returnSale.code
+        : OutboxEntityType.sale.code;
+  }
+}
+
 
 abstract final class SaleLineValidator {
   static bool isWholeQuantity(double value) {
@@ -420,6 +899,8 @@ abstract final class SaleLineValidator {
   }
 }
 
+typedef PosCheckoutQuote = CheckoutQuote;
+
 abstract final class PosSaleQuoteRules {
   static CheckoutQuote quote({
     required PricingEngine pricingEngine,
@@ -430,7 +911,19 @@ abstract final class PosSaleQuoteRules {
   }) {
     try {
       return pricingEngine.calculateQuote(
-        lines: lines.toPricingLineInputs(),
+        lines: [
+          for (final line in lines)
+            PricingLineInput(
+              itemId: line.itemId,
+              unitId: line.unitId,
+              unitPrice: line.unitPrice,
+              quantity: line.quantity,
+              discountType: line.discountType,
+              discountValue: line.discountValue,
+              allowDiscount: line.allowDiscount,
+              taxRate: line.taxRate,
+            ),
+        ],
         taxRate: 0,
         useTax: useTax,
         priceIncludesTax: priceIncludesTax,
@@ -439,6 +932,21 @@ abstract final class PosSaleQuoteRules {
       throw exceptionFactory?.call(e.message) ??
           BusinessException(e.message, code: 'PRICING_ERROR');
     }
+  }
+}
+
+abstract final class PosCartQuoteRules {
+  static PosCheckoutQuote preview({
+    required Cart cart,
+    required bool useTax,
+    required bool priceIncludesTax,
+    PricingEngine pricingEngine = const PricingEngine(),
+  }) {
+    return cart.previewQuote(
+      pricingEngine: pricingEngine,
+      useTax: useTax,
+      priceIncludesTax: priceIncludesTax,
+    );
   }
 }
 
@@ -498,68 +1006,6 @@ abstract final class PosBusinessGuards {
   }
 }
 
-class PosOfficialPriceResolver {
-  final CatalogDao catalogDao;
-  final BusinessRuleExceptionFactory? exceptionFactory;
-
-  const PosOfficialPriceResolver({
-    required this.catalogDao,
-    this.exceptionFactory,
-  });
-
-  Future<List<SaleLineInput>> resolve({
-    required ActivePosSession session,
-    required List<SaleLineInput> draftLines,
-  }) async {
-    final resolved = <SaleLineInput>[];
-
-    for (final line in draftLines) {
-      final item = await catalogDao.getItemById(line.itemId);
-
-      if (item == null || item.inactive || item.noSale) {
-        throw _exception('Item ${line.itemName} is no longer sellable.');
-      }
-
-      final price = await catalogDao.resolveItemPrice(
-        itemId: line.itemId,
-        priceLevelId: session.activePriceLevelId,
-        storeId: session.activeStoreId,
-        unitId: line.unitId,
-      );
-
-      if (price == null) {
-        throw _exception('Missing exact ITEM_PRICE for ${line.itemName}.');
-      }
-
-      resolved.add(
-        SaleLineInput(
-          itemId: item.id,
-          unitId: price.unitId ?? line.unitId,
-          itemName: item.name,
-          unitName: price.unitName ?? line.unitName,
-          unitSize: price.unitSize ?? line.unitSize,
-          barcode: line.barcode ?? price.barcode,
-          useQtyFraction: price.useQtyFraction,
-          quantity: line.quantity,
-          unitPrice: price.unitPrice,
-          taxRate: price.taxRate != 0 ? price.taxRate : item.taxRate,
-          discountType: line.discountType,
-          discountValue: line.discountValue,
-          allowDiscount: price.allowDiscount,
-          notes: line.notes,
-        ),
-      );
-    }
-
-    return resolved;
-  }
-
-  BusinessException _exception(String message) {
-    return exceptionFactory?.call(message) ??
-        BusinessException(message, code: 'OFFICIAL_PRICE_ERROR');
-  }
-}
-
 abstract final class PosHeldSnapshotReader {
   static List<Map<String, dynamic>> itemsFromJson(
     String snapshotJson, {
@@ -594,10 +1040,7 @@ abstract final class PosHeldSnapshotReader {
   }
 
   static String? text(Object? value) {
-    final result = value?.toString().trim();
-    if (result == null || result.isEmpty || result.toLowerCase() == 'null')
-      return null;
-    return result;
+    return CoreText.clean(value);
   }
 
   static double doubleValue(Object? value, {double fallback = 0.0}) {
@@ -663,6 +1106,9 @@ class PosHeldOrderRehydrator {
       final oldUnitName = PosHeldSnapshotReader.text(snapshot['unitName']);
       final itemName =
           PosHeldSnapshotReader.text(snapshot['itemName']) ?? itemId;
+      final oldAllowDiscount = snapshot['allowDiscount'] is bool
+          ? snapshot['allowDiscount'] as bool
+          : null;
 
       final item = await catalogDao.getItemById(itemId);
       if (item == null || item.inactive || item.noSale) {
@@ -720,11 +1166,11 @@ class PosHeldOrderRehydrator {
         barcode: sellable.barcode,
         useQtyFraction: sellable.useQtyFraction,
         quantity: quantity,
-        unitPrice: sellable.unitPrice,
-        taxRate: sellable.taxRate,
+        unitPrice: oldUnitPrice ?? sellable.unitPrice,
+        taxRate: oldTaxRate ?? sellable.taxRate,
         discountType: discountType,
         discountValue: discountValue,
-        allowDiscount: sellable.allowDiscount,
+        allowDiscount: oldAllowDiscount ?? sellable.allowDiscount,
         notes: PosHeldSnapshotReader.text(snapshot['notes']),
       );
 
@@ -986,6 +1432,84 @@ class PosHeldOrdersWorkflow {
   }
 }
 
+class SaleDetailSnapshot {
+  final Sale sale;
+  final List<SaleLine> items;
+  final List<SalePayment> payments;
+
+  const SaleDetailSnapshot({
+    required this.sale,
+    required this.items,
+    required this.payments,
+  });
+}
+
+abstract final class PosSalesHistorySummaryRules {
+  static List<SaleSummary> build({
+    required Iterable<Sale> sales,
+    required Iterable<SaleLine> lines,
+    required Iterable<SalePayment> payments,
+  }) {
+    final productNamesBySaleId = <String, List<String>>{};
+
+    for (final line in lines) {
+      final name = line.itemNameSnapshot.trim();
+      if (name.isEmpty) continue;
+
+      final names = productNamesBySaleId.putIfAbsent(line.saleId, () => []);
+      if (!names.contains(name)) {
+        names.add(name);
+      }
+    }
+
+    final paymentLabels = primaryPaymentLabels(payments);
+
+    return sales.map((sale) {
+      return SaleSummary(
+        id: sale.id,
+        localSaleNo: sale.localSaleNo,
+        type: sale.type,
+        status: sale.status,
+        grandTotal: sale.grandTotal,
+        createdAt: sale.createdAt,
+        cashierId: sale.cashierId,
+        paymentMethodLabel: paymentLabels[sale.id],
+        productSummary: productSummary(productNamesBySaleId[sale.id]),
+      );
+    }).toList(growable: false);
+  }
+
+  static Map<String, String> primaryPaymentLabels(
+    Iterable<SalePayment> payments,
+  ) {
+    final ordered = payments.toList()
+      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    final labels = <String, String>{};
+
+    for (final payment in ordered) {
+      labels.putIfAbsent(
+        payment.saleId,
+        () =>
+            DaoText.clean(payment.methodNameSnapshot) ??
+            DaoText.clean(payment.methodCodeSnapshot) ??
+            payment.paymentMethodId,
+      );
+    }
+
+    return labels;
+  }
+
+  static String productSummary(List<String>? names) {
+    if (names == null || names.isEmpty) return '';
+    if (names.length <= 3) return names.join(', ');
+
+    final visible = names.take(3).join(', ');
+    final remaining = names.length - 3;
+    return '$visible +$remaining';
+  }
+}
+
 class PosSalesHistoryWorkflow {
   static const _uuid = Uuid();
 
@@ -1007,6 +1531,38 @@ class PosSalesHistoryWorkflow {
     this.clock = const SystemClock(),
   });
 
+  Future<List<SaleSummary>> searchSalesHistory({
+    String? query,
+    int limit = 100,
+  }) async {
+    final sales = await salesDao.searchSales(query: query, limit: limit);
+    if (sales.isEmpty) return const <SaleSummary>[];
+
+    final saleIds = sales.map((sale) => sale.id).toSet();
+    final lines = await salesDao.getSaleLinesForSales(saleIds);
+    final payments = await salesDao.getSalePaymentsForSales(saleIds);
+
+    return PosSalesHistorySummaryRules.build(
+      sales: sales,
+      lines: lines,
+      payments: payments,
+    );
+  }
+
+  Future<SaleDetailSnapshot?> getSaleDetail(String saleId) async {
+    final sale = await salesDao.getById(saleId);
+    if (sale == null) return null;
+
+    final items = await salesDao.getSaleLines(saleId);
+    final payments = await salesDao.getSalePayments(saleId);
+
+    return SaleDetailSnapshot(
+      sale: sale,
+      items: items,
+      payments: payments,
+    );
+  }
+
   Future<void> voidSale(String saleId) async {
     final session = PosBusinessGuards.requireActiveSession(
       activeSession,
@@ -1021,7 +1577,7 @@ class PosSalesHistoryWorkflow {
 
     final now = clock.now();
 
-    if (await salesDao.hasCompletedReturnForSale(sale.id)) {
+    if (await _hasCompletedReturnForSale(sale.id)) {
       throw const BusinessException(
         'Sale with a completed return cannot be voided.',
         code: 'SALE_HAS_RETURN',
@@ -1030,7 +1586,10 @@ class PosSalesHistoryWorkflow {
 
     await salesDao.voidSaleEnvelope(
       saleId: sale.id,
-      voidedAt: now,
+      voidUpdate: SalesCompanion(
+        status: Value(SaleStatus.voided.code),
+        voidedAt: Value(now),
+      ),
       outboxEntry: outboxEventFactory.saleVoided(
         saleId: sale.id,
         cashierId: session.activeUserId,
@@ -1075,7 +1634,7 @@ class PosSalesHistoryWorkflow {
       saleId: saleId,
     );
 
-    if (await salesDao.hasCompletedReturnForSale(original.id)) {
+    if (await _hasCompletedReturnForSale(original.id)) {
       throw const BusinessException(
         'This sale has already been fully returned.',
         code: 'SALE_ALREADY_RETURNED',
@@ -1239,6 +1798,16 @@ class PosSalesHistoryWorkflow {
     await invoiceDocumentBuilder.buildForSale(returnSaleId);
 
     return returnSaleId;
+  }
+
+  Future<bool> _hasCompletedReturnForSale(String originalSaleId) async {
+    final returns = await salesDao.getSalesByOriginalSaleId(originalSaleId);
+
+    return returns.any(
+      (sale) =>
+          sale.type == SaleType.returnSale.code &&
+          sale.status == SaleStatus.completed.code,
+    );
   }
 }
 
@@ -1558,6 +2127,9 @@ class PosSaleCompletionWorkflow {
           lines: lines,
           quote: quote,
           payments: payments,
+          paidTotal: paymentResult.paidTotal,
+          remainingTotal: paymentResult.remainingTotal,
+          changeTotal: paymentResult.changeTotal,
           taxes: envelope.taxes,
         );
 
@@ -1630,6 +2202,82 @@ class AddToCartResult {
   });
 }
 
+class CartDiscountDraftResult {
+  final bool shouldClear;
+  final double? value;
+  final String? errorMessage;
+
+  const CartDiscountDraftResult._({
+    required this.shouldClear,
+    this.value,
+    this.errorMessage,
+  });
+
+  const CartDiscountDraftResult.clear() : this._(shouldClear: true);
+
+  const CartDiscountDraftResult.valid(double value)
+    : this._(shouldClear: false, value: value);
+
+  const CartDiscountDraftResult.invalid(String message)
+    : this._(shouldClear: false, errorMessage: message);
+
+  bool get isValid => errorMessage == null && !shouldClear && value != null;
+}
+
+abstract final class CartDiscountDraftRules {
+  static CartDiscountDraftResult parse({
+    required String raw,
+    required DiscountType type,
+    required double grossAmount,
+  }) {
+    final input = raw.trim();
+
+    if (input.isEmpty) {
+      return const CartDiscountDraftResult.clear();
+    }
+
+    final value = PosNumericInputRules.parseDecimalInput(raw);
+
+    if (value == null || value < 0) {
+      return const CartDiscountDraftResult.invalid('أدخل خصمًا صحيحًا.');
+    }
+
+    if (type == DiscountType.percentage && value > 100) {
+      return const CartDiscountDraftResult.invalid('النسبة لا تتجاوز 100%.');
+    }
+
+    if (type == DiscountType.fixed && value > grossAmount) {
+      return const CartDiscountDraftResult.invalid(
+        'الخصم لا يتجاوز إجمالي السطر.',
+      );
+    }
+
+    return CartDiscountDraftResult.valid(value);
+  }
+}
+
+abstract final class CartLineQuoteLookup {
+  static double? lineTotalForItem(CartItem item, CheckoutQuote? quote) {
+    return _findLine(item, quote)?.lineTotal;
+  }
+
+  static double? lineDiscountForItem(CartItem item, CheckoutQuote? quote) {
+    return _findLine(item, quote)?.discountAmount;
+  }
+
+  static PricedLine? _findLine(CartItem item, CheckoutQuote? quote) {
+    if (quote == null) return null;
+
+    for (final line in quote.lines) {
+      if (line.itemId == item.itemId && line.unitId == item.unitId) {
+        return line;
+      }
+    }
+
+    return null;
+  }
+}
+
 class CartItem {
   final SellableItemSnapshot sellableItem;
   final double quantity;
@@ -1653,6 +2301,7 @@ class CartItem {
   bool get useQtyFraction => sellableItem.useQtyFraction;
   String? get barcode => sellableItem.barcode;
   double get unitPrice => sellableItem.unitPrice;
+  double get grossAmount => PricingEngine.roundAmount(unitPrice * quantity);
   double get taxRate => sellableItem.taxRate;
   bool get allowDiscount => sellableItem.allowDiscount;
   String get lineKey => '$itemId|$unitId';
@@ -1678,6 +2327,23 @@ class CartItem {
       sellableItem: sellableItem,
       quantity: quantity,
       notes: notes,
+    );
+  }
+
+  CartItem withUnitPrice(double unitPrice) {
+    return copyWith(
+      sellableItem: SellableItemSnapshot(
+        itemId: sellableItem.itemId,
+        unitId: sellableItem.unitId,
+        itemName: sellableItem.itemName,
+        unitName: sellableItem.unitName,
+        unitSize: sellableItem.unitSize,
+        barcode: sellableItem.barcode,
+        unitPrice: PricingEngine.roundAmount(unitPrice),
+        taxRate: sellableItem.taxRate,
+        allowDiscount: sellableItem.allowDiscount,
+        useQtyFraction: sellableItem.useQtyFraction,
+      ),
     );
   }
 
@@ -1781,6 +2447,20 @@ class Cart {
     if (current == null) return this;
 
     return replaceLine(current.copyWith(sellableItem: pricedSnapshot));
+  }
+
+  Cart changeUnitPrice(String itemId, String? unitId, double unitPrice) {
+    if (unitPrice <= 0 || unitPrice.isNaN) {
+      throw const BusinessException(
+        'Unit price must be greater than zero.',
+        code: 'INVALID_UNIT_PRICE',
+      );
+    }
+
+    final current = findLine(itemId, unitId);
+    if (current == null) return this;
+
+    return replaceLine(current.withUnitPrice(unitPrice));
   }
 
   Cart applyLineDiscount(

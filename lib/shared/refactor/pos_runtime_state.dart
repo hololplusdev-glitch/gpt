@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
-import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
 import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/models/sellable_item_snapshot.dart';
@@ -21,6 +20,8 @@ import 'package:holol_POS/core/services/master_data/master_data_download_helper.
 import 'package:holol_POS/core/services/master_data/master_data_sync_service.dart';
 import 'package:flutter/services.dart';
 import 'package:holol_POS/core/scanner/barcode_scanner_service.dart';
+import 'package:holol_POS/core/utils/text_normalizer.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 typedef CartPriceResolver =
     Future<ResolvedItemPrice?> Function({
@@ -88,21 +89,11 @@ class CartController extends StateNotifier<Cart> {
     final current = state.findLine(itemId, unitId);
     if (current == null) return;
 
-    var next = state.changeQuantity(itemId, unitId, newQuantity);
+    state = state.changeQuantity(itemId, unitId, newQuantity);
+  }
 
-    if (unitId != null && unitId.isNotEmpty) {
-      final pricedSnapshot = await _resolveCurrentSnapshot(
-        current.sellableItem,
-      );
-
-      next = next.applyResolvedPrice(
-        itemId: itemId,
-        unitId: unitId,
-        pricedSnapshot: pricedSnapshot,
-      );
-    }
-
-    state = next;
+  void changeUnitPrice(String itemId, String? unitId, double unitPrice) {
+    state = state.changeUnitPrice(itemId, unitId, unitPrice);
   }
 
   void applyLineDiscount(
@@ -196,14 +187,14 @@ final cartProvider = StateNotifierProvider<CartController, Cart>((ref) {
 });
 
 class CartQuoteState {
-  final CheckoutQuote? quote;
+  final PosCheckoutQuote? quote;
   final Object? error;
 
   const CartQuoteState._({this.quote, this.error});
 
   const CartQuoteState.empty() : this._();
 
-  const CartQuoteState.data(CheckoutQuote quote) : this._(quote: quote);
+  const CartQuoteState.data(PosCheckoutQuote quote) : this._(quote: quote);
 
   const CartQuoteState.failure(Object error) : this._(error: error);
 
@@ -211,7 +202,7 @@ class CartQuoteState {
 }
 
 /// UI preview only.
-/// Official checkout totals are recalculated by SaleCheckout.
+/// Checkout uses this cart snapshot as the final sale pricing source.
 final cartQuoteProvider = Provider<CartQuoteState>((ref) {
   final cart = ref.watch(cartProvider);
 
@@ -221,8 +212,8 @@ final cartQuoteProvider = Provider<CartQuoteState>((ref) {
   if (session == null) return const CartQuoteState.empty();
 
   try {
-    final quote = cart.previewQuote(
-      pricingEngine: const PricingEngine(),
+    final quote = PosCartQuoteRules.preview(
+      cart: cart,
       useTax: session.activeUseTax,
       priceIncludesTax: session.priceIncludesTax,
     );
@@ -387,7 +378,7 @@ class PosSessionController extends StateNotifier<PosSessionState> {
         return;
       }
 
-      if (!user.isActive || !user.canLoginPos) {
+      if (!DaoActiveSessionPolicy.canLoginUser(user)) {
         state = const PosSessionState(
           errorMessage: 'هذا المستخدم غير مسموح له بالدخول إلى نقاط البيع.',
         );
@@ -949,6 +940,219 @@ abstract final class PosMasterDataRuntimeWorkflow {
   }
 }
 
+class PosRuntimeContext {
+  final String storeId;
+  final String priceLevelId;
+
+  const PosRuntimeContext({required this.storeId, required this.priceLevelId});
+}
+
+abstract final class PosRuntimeContextRules {
+  static const missingDisplayValue = '—';
+  static const runtimeContextMissingBlocker = 'Runtime context missing';
+
+  static PosRuntimeContext? tryRead(ActivePosSession? session) {
+    if (session == null) return null;
+
+    final storeId = session.activeStoreId.trim();
+    final priceLevelId = session.activePriceLevelId.trim();
+
+    if (storeId.isEmpty || priceLevelId.isEmpty) return null;
+
+    return PosRuntimeContext(storeId: storeId, priceLevelId: priceLevelId);
+  }
+
+  static PosRuntimeContext requireActiveContext(
+    ActivePosSession? session, {
+    String message = runtimeContextMissingBlocker,
+    String code = 'INVALID_RUNTIME_CONTEXT',
+  }) {
+    final context = tryRead(session);
+
+    if (context == null) {
+      throw BusinessException(message, code: code);
+    }
+
+    return context;
+  }
+
+  static String displayStoreId(ActivePosSession? session) {
+    return tryRead(session)?.storeId ?? missingDisplayValue;
+  }
+
+  static String displayPriceLevelId(ActivePosSession? session) {
+    return tryRead(session)?.priceLevelId ?? missingDisplayValue;
+  }
+}
+
+abstract final class PosCatalogReadinessRules {
+  static const noPricesForCurrentContext =
+      'No prices for current store/price level';
+
+  static bool hasRuntimeContext(ActivePosSession? session) {
+    return PosRuntimeContextRules.tryRead(session) != null;
+  }
+
+  static void addRuntimeContextBlockers({
+    required ActivePosSession? session,
+    required List<String> blockers,
+  }) {
+    if (!hasRuntimeContext(session)) {
+      blockers.add(PosRuntimeContextRules.runtimeContextMissingBlocker);
+    }
+  }
+
+  static void addPriceBlockers({
+    required PosRuntimeContext? context,
+    required int priceCount,
+    required List<String> blockers,
+  }) {
+    if (context != null && priceCount == 0) {
+      blockers.add(noPricesForCurrentContext);
+    }
+  }
+}
+
+class PosScannerRuntimeContext {
+  final String storeId;
+  final String priceLevelId;
+
+  const PosScannerRuntimeContext({
+    required this.storeId,
+    required this.priceLevelId,
+  });
+}
+
+abstract final class PosScannerContextRules {
+  static PosScannerRuntimeContext requireActiveContext(
+    ActivePosSession? session,
+  ) {
+    if (session == null) {
+      throw const BusinessException(
+        'Select a cashier and POS machine before scanning.',
+        code: 'NO_ACTIVE_POS_SESSION',
+      );
+    }
+
+    final storeId = session.activeStoreId.trim();
+    final priceLevelId = session.activePriceLevelId.trim();
+
+    if (storeId.isEmpty || priceLevelId.isEmpty) {
+      throw const BusinessException(
+        'Scanner context is missing store or price level.',
+        code: 'INVALID_SCANNER_CONTEXT',
+      );
+    }
+
+    return PosScannerRuntimeContext(
+      storeId: storeId,
+      priceLevelId: priceLevelId,
+    );
+  }
+}
+
+enum PosKeyboardScannerDisposition { ignored, buffering, submit }
+
+class PosKeyboardScannerEvent {
+  final PosKeyboardScannerDisposition disposition;
+  final String? code;
+
+  const PosKeyboardScannerEvent._({required this.disposition, this.code});
+
+  const PosKeyboardScannerEvent.ignored()
+    : this._(disposition: PosKeyboardScannerDisposition.ignored);
+
+  const PosKeyboardScannerEvent.buffering()
+    : this._(disposition: PosKeyboardScannerDisposition.buffering);
+
+  const PosKeyboardScannerEvent.submit(String code)
+    : this._(disposition: PosKeyboardScannerDisposition.submit, code: code);
+}
+
+class PosKeyboardScannerBuffer {
+  static const minCodeLength = 3;
+  static const keyGapLimit = Duration(milliseconds: 120);
+  static const perCharacterMaxDuration = Duration(milliseconds: 90);
+
+  final StringBuffer _buffer = StringBuffer();
+
+  DateTime? _lastKeyTime;
+  DateTime? _bufferStartedAt;
+
+  PosKeyboardScannerEvent handle(
+    KeyEvent event, {
+    required bool textInputFocused,
+    required DateTime now,
+  }) {
+    if (textInputFocused || event is! KeyDownEvent) {
+      return const PosKeyboardScannerEvent.ignored();
+    }
+
+    final logicalKey = event.logicalKey;
+
+    final isTerminator =
+        logicalKey == LogicalKeyboardKey.enter ||
+        logicalKey == LogicalKeyboardKey.numpadEnter ||
+        logicalKey == LogicalKeyboardKey.tab;
+
+    if (isTerminator) {
+      final code = _buffer.toString();
+      final startedAt = _bufferStartedAt;
+
+      clear();
+
+      if (startedAt == null || code.trim().length < minCodeLength) {
+        return const PosKeyboardScannerEvent.ignored();
+      }
+
+      final elapsed = now.difference(startedAt);
+      final maxScannerDuration = perCharacterMaxDuration * code.length;
+
+      if (elapsed <= maxScannerDuration) {
+        return PosKeyboardScannerEvent.submit(code);
+      }
+
+      return const PosKeyboardScannerEvent.ignored();
+    }
+
+    final character = event.character;
+
+    if (!_isAllowedScannerCharacter(character)) {
+      return const PosKeyboardScannerEvent.ignored();
+    }
+
+    final last = _lastKeyTime;
+
+    if (last == null || now.difference(last) > keyGapLimit) {
+      _buffer.clear();
+      _bufferStartedAt = now;
+    }
+
+    _buffer.write(character);
+    _lastKeyTime = now;
+
+    return const PosKeyboardScannerEvent.buffering();
+  }
+
+  void clear() {
+    _buffer.clear();
+    _lastKeyTime = null;
+    _bufferStartedAt = null;
+  }
+
+  static bool _isAllowedScannerCharacter(String? character) {
+    if (character == null || character.isEmpty) return false;
+
+    if (character.runes.length != 1 || character.codeUnitAt(0) < 0x20) {
+      return false;
+    }
+
+    return !HardwareKeyboard.instance.isControlPressed &&
+        !HardwareKeyboard.instance.isAltPressed &&
+        !HardwareKeyboard.instance.isMetaPressed;
+  }
+}
+
 enum PosScanFlowOutcome {
   added,
   manualSearch,
@@ -1074,5 +1278,59 @@ abstract final class PosScanFlow {
       case ScanDuplicate():
         return const PosScanFlowResult.duplicate();
     }
+  }
+}
+
+abstract final class PosLoginIdentityText {
+  static String? firstNonEmpty(Iterable<String?> values) {
+    for (final value in values) {
+      final cleaned = clean(value);
+      if (cleaned != null) return cleaned;
+    }
+    return null;
+  }
+
+  static String? clean(String? value) {
+    final normalized = CoreText.clean(value);
+
+    if (normalized == null) {
+      return null;
+    }
+
+    final cleaned = normalized
+        .replaceAll(
+          RegExp(
+            r'\\b(oracle|erp|backend|source|sync\\s*provider)\\b',
+            caseSensitive: false,
+          ),
+          '',
+        )
+        .replaceAll(RegExp(r'(Oracle|ORACLE|oracle|أوراكل|اوراكل)'), '')
+        .replaceAll(RegExp(r'\\s+'), ' ')
+        .trim();
+
+    if (cleaned.isEmpty) {
+      return null;
+    }
+
+    return cleaned;
+  }
+}
+
+abstract final class PosRuntimeErrorText {
+  static String commandMessage(Object error) {
+    final mapped = ErrorMapper.userMessage(error);
+    final raw = CoreText.cleanOrEmpty(error);
+
+    if (raw.isEmpty || raw == mapped) {
+      return mapped;
+    }
+
+    if (mapped == 'Something went wrong. Please try again.' ||
+        mapped == 'Enter a valid value.') {
+      return raw;
+    }
+
+    return '$mapped\n$raw';
   }
 }

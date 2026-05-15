@@ -25,6 +25,7 @@ import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_status_chip.dart';
 import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
 import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_scaffold.dart';
 
 final historySearchQueryProvider = StateProvider.autoDispose<String>((ref) {
   return '';
@@ -80,138 +81,55 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
     final l10n = AppLocalizations.of(context)!;
     final salesAsync = ref.watch(historySalesProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          // ── Gradient Header ──
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: AppColors.headerGradient,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
+    return AppScaffold(
+      title: l10n.salesHistory,
+      icon: Icons.receipt_long,
+      onBack: () => Navigator.of(context).pop(),
+      actions: [
+        salesAsync.whenOrNull(
+              data: (sales) => Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xxs,
                 ),
-              ],
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.md,
-                  AppSpacing.sm,
-                  AppSpacing.md,
-                  AppSpacing.lg,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: AppSpacing.borderRadiusSm,
                 ),
-                child: Column(
-                  children: [
-                    // Title row
-                    Row(
-                      children: [
-                        IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back,
-                            color: AppColors.onPrimary,
-                          ),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.receipt_long,
-                            color: AppColors.onPrimary,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Text(
-                          l10n.salesHistory,
-                          style: const TextStyle(
-                            color: AppColors.onPrimary,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const Spacer(),
-                        // Count badge
-                        salesAsync.whenOrNull(
-                              data: (sales) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.sm,
-                                  vertical: AppSpacing.xxs,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.15),
-                                  borderRadius: AppSpacing.borderRadiusSm,
-                                ),
-                                child: Text(
-                                  '${sales.length}',
-                                  style: const TextStyle(
-                                    color: AppColors.onPrimary,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ) ??
-                            const SizedBox.shrink(),
-                        const SizedBox(width: AppSpacing.xs),
-                        IconButton(
-                          tooltip: l10n.refresh,
-                          icon: const Icon(
-                            Icons.refresh,
-                            color: AppColors.onPrimary,
-                          ),
-                          onPressed: () => ref.invalidate(historySalesProvider),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    // Search
-                    AppHeaderSearchField(
-                      controller: _searchController,
-                      hintText: l10n.searchInvoiceOrProduct,
-                      clearTooltip: l10n.clearFilters,
-                      onChanged: _onSearchChanged,
-                      onSubmitted: _applySearch,
-                      onClear: _clearSearch,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // ── Body ──
-          Expanded(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: AppContentWidth.wide,
-                ),
-                child: salesAsync.when(
-                  data: (sales) => _HistoryResults(sales: sales),
-                  loading: () => const AppLoading(),
-                  error: (error, _) => Padding(
-                    padding: AppSpacing.paddingLg,
-                    child: AppInfoBanner.error(
-                      message: ErrorMapper.userMessage(error),
-                    ),
+                child: Text(
+                  '${sales.length}',
+                  style: const TextStyle(
+                    color: AppColors.onPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
+            ) ??
+            const SizedBox.shrink(),
+        const SizedBox(width: AppSpacing.xs),
+        IconButton(
+          tooltip: l10n.refresh,
+          icon: const Icon(Icons.refresh, color: AppColors.onPrimary),
+          onPressed: () => ref.invalidate(historySalesProvider),
+        ),
+      ],
+      search: AppScaffoldSearchConfig(
+        controller: _searchController,
+        hintText: l10n.searchInvoiceOrProduct,
+        clearTooltip: l10n.clearFilters,
+        onChanged: _onSearchChanged,
+        onSubmitted: _applySearch,
+        onClear: _clearSearch,
+      ),
+      maxContentWidth: AppContentWidth.wide,
+      body: salesAsync.when(
+        data: (sales) => _HistoryResults(sales: sales),
+        loading: () => const AppLoading(),
+        error: (error, _) => Padding(
+          padding: AppSpacing.paddingLg,
+          child: AppInfoBanner.error(message: ErrorMapper.userMessage(error)),
+        ),
       ),
     );
   }
@@ -311,69 +229,36 @@ class _SaleCard extends StatelessWidget {
     final invoiceNo = _invoiceNo(sale);
     final statusColor = SaleStatusPresenter.color(sale.status);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppSpacing.borderRadiusMd,
-        border: Border.all(color: AppColors.border),
-        boxShadow: AppSpacing.shadowSm,
-      ),
-      child: InkWell(
-        onTap: () => context.push(AppRoutes.invoicePath(sale.id)),
-        borderRadius: AppSpacing.borderRadiusMd,
-        child: Padding(
-          padding: AppSpacing.paddingLg,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(child: _InvoiceText(invoiceNo: invoiceNo)),
-                  const SizedBox(width: AppSpacing.md),
-                  Text.rich(
-                    PosFormatters.amountRich(
-                      sale.grandTotal,
-                      amountStyle: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: statusColor,
-                      ),
-                    ),
-                    textAlign: TextAlign.end,
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                sale.productSummary.isEmpty ? '-' : sale.productSummary,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      PosFormatters.dateTime(sale.createdAt),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                  AppStatusChip(
-                    label: SaleStatusPresenter.label(sale.status, l10n),
-                    color: statusColor,
-                    icon: SaleStatusPresenter.icon(sale.status),
-                  ),
-                  _SaleActions(sale: sale),
-                ],
-              ),
-            ],
+    return AppSummaryCard(
+      onTap: () => context.push(AppRoutes.invoicePath(sale.id)),
+      title: AppMonospaceValueText(value: invoiceNo),
+      amount: Text.rich(
+        PosFormatters.amountRich(
+          sale.grandTotal,
+          amountStyle: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: statusColor,
           ),
         ),
+        textAlign: TextAlign.end,
       ),
+      subtitle: Text(
+        sale.productSummary.isEmpty ? '-' : sale.productSummary,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(color: AppColors.textSecondary),
+      ),
+      meta: Text(
+        PosFormatters.dateTime(sale.createdAt),
+        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+      ),
+      status: AppStatusChip(
+        label: SaleStatusPresenter.label(sale.status, l10n),
+        color: statusColor,
+        icon: SaleStatusPresenter.icon(sale.status),
+      ),
+      actions: _SaleActions(sale: sale),
     );
   }
 }
@@ -385,24 +270,7 @@ class _InvoiceCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _InvoiceText(invoiceNo: _invoiceNo(sale));
-  }
-}
-
-class _InvoiceText extends StatelessWidget {
-  final String invoiceNo;
-
-  const _InvoiceText({required this.invoiceNo});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      invoiceNo,
-      style: const TextStyle(
-        fontWeight: FontWeight.w700,
-        fontFamily: 'monospace',
-      ),
-    );
+    return AppMonospaceValueText(value: _invoiceNo(sale));
   }
 }
 

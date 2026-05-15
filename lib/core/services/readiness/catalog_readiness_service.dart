@@ -5,11 +5,13 @@
 
 import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
+import 'package:holol_POS/shared/refactor/pos_payment_draft.dart';
+import 'package:holol_POS/shared/refactor/pos_runtime_state.dart';
 
 /// Aggregated readiness result — a single "go/no-go" gate.
 class CatalogReadiness {
   static const noPricesForCurrentContext =
-      'No prices for current store/price level';
+      PosCatalogReadinessRules.noPricesForCurrentContext;
 
   final bool hasMachineConfig;
   final bool hasItems;
@@ -64,13 +66,14 @@ class CatalogReadinessService {
   Future<CatalogReadiness> check() async {
     final blockers = <String>[];
 
-    final storeId = _activeSession?.activeStoreId ?? '';
-    final priceLevelId = _activeSession?.activePriceLevelId ?? '';
-    final hasStoreId = storeId.isNotEmpty;
-    final hasPriceLevelId = priceLevelId.isNotEmpty;
-    if (!hasStoreId || !hasPriceLevelId) {
-      blockers.add('Runtime context missing');
-    }
+    final runtimeContext = PosRuntimeContextRules.tryRead(_activeSession);
+    final hasStoreId = runtimeContext?.storeId.isNotEmpty ?? false;
+    final hasPriceLevelId = runtimeContext?.priceLevelId.isNotEmpty ?? false;
+
+    PosCatalogReadinessRules.addRuntimeContextBlockers(
+      session: _activeSession,
+      blockers: blockers,
+    );
 
     // Check 2: At least one active item exists.
     final itemCount = await _catalogDao.countActiveSellableItems();
@@ -86,23 +89,33 @@ class CatalogReadinessService {
     }
 
     // Check 4: At least one price row matches the current device context.
-    final priceCount = hasStoreId && hasPriceLevelId
-        ? await _catalogDao.countPricesForContext(storeId, priceLevelId)
-        : 0;
-    if (priceCount == 0) {
-      blockers.add(CatalogReadiness.noPricesForCurrentContext);
-    }
+    final priceCount = runtimeContext == null
+        ? 0
+        : await _catalogDao.countPricesForContext(
+            runtimeContext.storeId,
+            runtimeContext.priceLevelId,
+          );
 
-    // Payment methods are optional master data. Checkout has deterministic
-    // built-in defaults for cash, manual card, and customer credit.
+    PosCatalogReadinessRules.addPriceBlockers(
+      context: runtimeContext,
+      priceCount: priceCount,
+      blockers: blockers,
+    );
+
     final paymentMethodCount = await _catalogDao.countActivePaymentMethods();
+    blockers.addAll(
+      PosCheckoutPaymentMasterDataPolicy.readinessBlockers(paymentMethodCount),
+    );
 
     return CatalogReadiness(
       hasMachineConfig: hasStoreId && hasPriceLevelId,
       hasItems: itemCount > 0,
       hasSellableUnits: sellableUnitCount > 0,
       hasPrices: priceCount > 0,
-      hasPaymentMethods: true,
+      hasPaymentMethods:
+          PosCheckoutPaymentMasterDataPolicy.hasUsablePaymentMethods(
+            paymentMethodCount,
+          ),
       hasStoreId: hasStoreId,
       hasPriceLevelId: hasPriceLevelId,
       itemCount: itemCount,

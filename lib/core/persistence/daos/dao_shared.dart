@@ -4,11 +4,17 @@ import 'dart:math';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/services/master_data/master_data_contract.dart';
 import 'package:holol_POS/shared/models/enums.dart';
+import 'package:drift/drift.dart';
+import 'package:holol_POS/core/errors/app_exception.dart';
+import 'package:holol_POS/core/utils/text_normalizer.dart';
 
 abstract final class DaoText {
   static String? clean(Object? value) {
-    final text = value?.toString().trim();
-    return text == null || text.isEmpty ? null : text;
+    return CoreText.clean(value);
+  }
+
+  static String cleanOrEmpty(Object? value) {
+    return CoreText.cleanOrEmpty(value);
   }
 
   static String? firstNonEmpty(Iterable<String?> values) {
@@ -193,5 +199,83 @@ abstract final class DaoMasterDataScope {
     } catch (_) {
       return null;
     }
+  }
+}
+
+abstract final class DaoActiveSessionPolicy {
+  static bool canLoginUser(PosUser user) {
+    return user.isActive && user.canLoginPos;
+  }
+
+  static void validateUser(PosUser user) {
+    if (!canLoginUser(user)) {
+      throw StateError('User is not authorized for POS login.');
+    }
+  }
+
+  static void validateMachine(PosMachine machine) {
+    if (!machine.isActive) {
+      throw StateError('Selected POS machine is inactive.');
+    }
+  }
+}
+
+abstract final class DaoPrintJobPolicy {
+  static bool isPrinted(PrintJob job) {
+    return job.status == PrintJobStatus.printed.code;
+  }
+
+  static bool isFailed(PrintJob job) {
+    return job.status == PrintJobStatus.failed.code;
+  }
+
+  static bool isRetryable(PrintJob job) {
+    return (job.status == PrintJobStatus.pending.code ||
+            job.status == PrintJobStatus.failed.code) &&
+        job.attempts < job.maxAttempts;
+  }
+
+  static bool isPrintedOriginal(PrintJob job) {
+    return job.documentType == PrintDocumentType.invoiceReceipt.code &&
+        job.status == PrintJobStatus.printed.code;
+  }
+
+  static bool isPrintedReceiptCopy(PrintJob job) {
+    return job.documentType == PrintDocumentType.invoiceReceiptCopy.code &&
+        job.status == PrintJobStatus.printed.code;
+  }
+
+  static PrintJobsCompanion markPrinted(DateTime printedAt) {
+    return PrintJobsCompanion(
+      status: Value(PrintJobStatus.printed.code),
+      printedAt: Value(printedAt),
+      errorMessage: const Value<String?>(null),
+    );
+  }
+
+  static PrintJobsCompanion markFailed(String error) {
+    return PrintJobsCompanion(
+      status: Value(PrintJobStatus.failed.code),
+      errorMessage: Value(error),
+    );
+  }
+
+  static PrintJobsCompanion markPending() {
+    return PrintJobsCompanion(
+      status: Value(PrintJobStatus.pending.code),
+      errorMessage: const Value<String?>(null),
+    );
+  }
+}
+
+abstract final class DaoCatalogPricePolicy {
+  static BusinessException duplicatePrice({
+    required String itemId,
+    required String unitId,
+  }) {
+    return BusinessException(
+      'Duplicate item price for item $itemId and unit $unitId.',
+      code: 'DUPLICATE_PRICE',
+    );
   }
 }

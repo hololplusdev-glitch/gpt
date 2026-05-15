@@ -20,6 +20,8 @@ import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
+import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_scaffold.dart';
 
 class ShiftScreen extends ConsumerStatefulWidget {
   const ShiftScreen({super.key});
@@ -61,77 +63,63 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     final dashboard = dashboardAsync.valueOrNull;
     final hasOpenShift = dashboard != null;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          AppPageHeader(
-            title: hasOpenShift ? 'الشفت الحالي' : l10n.openShift,
-            icon: hasOpenShift
-                ? Icons.analytics_outlined
-                : Icons.play_circle_outline,
-            onBack: () => Navigator.of(context).pop(),
-            actions: [
-              if (hasOpenShift)
-                FilledButton.icon(
-                  onPressed: actionState.isLoading
-                      ? null
-                      : () => context.go(AppRoutes.cashier),
-                  icon: const Icon(Icons.point_of_sale, size: 18),
-                  label: Text(l10n.backToPos),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white.withValues(alpha: 0.15),
-                    foregroundColor: AppColors.onPrimary,
-                  ),
-                ),
-            ],
-          ),
-          // ── Body ──
-          Expanded(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: AppSpacing.paddingLg,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: AppContentWidth.narrow,
-                  ),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(AppSpacing.xxl),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: AppSpacing.borderRadiusLg,
-                      border: Border.all(color: AppColors.border),
-                      boxShadow: AppSpacing.shadowMd,
-                    ),
-                    child: activeSession == null
-                        ? _buildNoSessionView(l10n)
-                        : dashboardAsync.when(
-                            data: (dashboard) {
-                              if (dashboard == null) {
-                                return _buildOpenShiftView(
-                                  actionState,
-                                  activeSession,
-                                  l10n,
-                                );
-                              }
-
-                              return _buildShiftDashboardView(
-                                dashboard,
-                                actionState,
-                                activeSession,
-                                l10n,
-                              );
-                            },
-                            loading: _buildLoadingView,
-                            error: (error, _) => _buildLoadErrorView(error),
-                          ),
-                  ),
-                ),
-              ),
+    return AppScaffold(
+      title: hasOpenShift ? 'الشفت الحالي' : l10n.openShift,
+      icon: hasOpenShift ? Icons.analytics_outlined : Icons.play_circle_outline,
+      onBack: () => Navigator.of(context).pop(),
+      actions: [
+        if (hasOpenShift)
+          FilledButton.icon(
+            onPressed: actionState.isLoading
+                ? null
+                : () => context.go(AppRoutes.cashier),
+            icon: const Icon(Icons.point_of_sale, size: 18),
+            label: Text(l10n.backToPos),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.white.withValues(alpha: 0.15),
+              foregroundColor: AppColors.onPrimary,
             ),
           ),
-        ],
+      ],
+      body: Center(
+        child: SingleChildScrollView(
+          padding: AppSpacing.paddingLg,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: AppContentWidth.narrow),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.xxl),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: AppSpacing.borderRadiusLg,
+                border: Border.all(color: AppColors.border),
+                boxShadow: AppSpacing.shadowMd,
+              ),
+              child: activeSession == null
+                  ? _buildNoSessionView(l10n)
+                  : dashboardAsync.when(
+                      data: (dashboard) {
+                        if (dashboard == null) {
+                          return _buildOpenShiftView(
+                            actionState,
+                            activeSession,
+                            l10n,
+                          );
+                        }
+
+                        return _buildShiftDashboardView(
+                          dashboard,
+                          actionState,
+                          activeSession,
+                          l10n,
+                        );
+                      },
+                      loading: _buildLoadingView,
+                      error: (error, _) => _buildLoadErrorView(error),
+                    ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -339,15 +327,22 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
     context.go(AppRoutes.login);
   }
 
-  Future<void> _openShift() async {
-    final cashText = _openingCashController.text.trim();
-    final cashDouble = cashText.isEmpty ? 0.0 : double.tryParse(cashText);
-    if (cashDouble == null || cashDouble < 0) {
-      ref
-          .read(shiftControllerProvider.notifier)
-          .setError('أدخل مبلغ افتتاح صحيح.');
-      return;
+  double? _parseShiftAmount(double Function() parse) {
+    try {
+      return parse();
+    } on ShiftException catch (e) {
+      ref.read(shiftControllerProvider.notifier).setError(e.message);
+      return null;
     }
+  }
+
+  Future<void> _openShift() async {
+    final cashDouble = _parseShiftAmount(
+      () =>
+          PosShiftInputRules.parseOpeningCashText(_openingCashController.text),
+    );
+
+    if (cashDouble == null) return;
 
     final result = await ref
         .read(shiftControllerProvider.notifier)
@@ -363,14 +358,11 @@ class _ShiftScreenState extends ConsumerState<ShiftScreen> {
   }
 
   Future<void> _closeShift(String shiftId) async {
-    final cashText = _actualCashController.text.trim();
-    final cashDouble = cashText.isEmpty ? null : double.tryParse(cashText);
-    if (cashDouble == null || cashDouble < 0) {
-      ref
-          .read(shiftControllerProvider.notifier)
-          .setError('أدخل النقد الفعلي في الدرج.');
-      return;
-    }
+    final cashDouble = _parseShiftAmount(
+      () => PosShiftInputRules.parseActualCashText(_actualCashController.text),
+    );
+
+    if (cashDouble == null) return;
 
     final result = await ref
         .read(shiftControllerProvider.notifier)

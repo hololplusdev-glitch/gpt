@@ -12,10 +12,10 @@ import 'package:holol_POS/core/services/invoices/invoice_audit_hasher.dart';
 import 'package:holol_POS/core/services/invoices/invoice_document.dart';
 import 'package:holol_POS/core/services/invoices/invoice_validation_service.dart';
 import 'package:holol_POS/core/services/invoices/qr_payload_builder.dart';
-import 'package:holol_POS/core/services/payments/payment_method_resolver.dart';
-import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
 import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
+import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
 
 class InvoiceDocumentLabels {
   final String invoiceTypeSales;
@@ -137,7 +137,7 @@ class InvoiceDocumentBuilder {
       ),
       cashier: InvoiceCashierInfo(
         userId: sale.sourceUserId ?? sale.cashierId,
-        name: _clean(sale.cashierNameSnapshot) ?? sale.cashierId,
+        name: DaoText.clean(sale.cashierNameSnapshot) ?? sale.cashierId,
       ),
       customer: _customer(sale),
       lines: lines,
@@ -205,8 +205,11 @@ class InvoiceDocumentBuilder {
     required String? customerName,
     required String? customerTaxNumber,
     required List<SaleLineInput> lines,
-    required CheckoutQuote quote,
+    required PosCheckoutQuote quote,
     required List<SalePaymentInput> payments,
+    required double paidTotal,
+    required double remainingTotal,
+    required double changeTotal,
     required List<SaleTaxSummaryCompanion> taxes,
     String? notes,
     InvoiceDocumentLabels labels = const InvoiceDocumentLabels.ar(),
@@ -227,9 +230,9 @@ class InvoiceDocumentBuilder {
           itemId: line.itemId,
           itemName: line.itemName,
           unitId: line.unitId,
-          unitName: _clean(line.unitName),
+          unitName: DaoText.clean(line.unitName),
           unitSize: line.unitSize,
-          barcode: _clean(line.barcode),
+          barcode: DaoText.clean(line.barcode),
           quantity: line.quantity,
           unitPrice: line.unitPrice,
           lineSubtotal: priced.grossAmount,
@@ -241,8 +244,8 @@ class InvoiceDocumentBuilder {
           lineTotal: priced.lineTotal,
           allowDiscount: line.allowDiscount,
           priceOverridden: false,
-          storeId: _clean(storeId),
-          priceLevelId: _clean(priceLevelId),
+          storeId: DaoText.clean(storeId),
+          priceLevelId: DaoText.clean(priceLevelId),
           display: InvoiceLineDisplay(
             quantity: PosFormatters.quantity(line.quantity),
             unitPrice: PosFormatters.amount(line.unitPrice),
@@ -270,47 +273,9 @@ class InvoiceDocumentBuilder {
       );
     }).toList();
 
-    final invoicePayments = payments.map((payment) {
-      final type = payment.paymentMethodType;
-      final manualRecord = PaymentMethodResolver.isManual(type);
-      final name = payment.paymentMethodName ?? payment.paymentMethodCode;
-      return InvoicePaymentDocument(
-        paymentMethodId: payment.paymentMethodId,
-        paymentMethodCode: payment.paymentMethodCode,
-        methodName: name,
-        methodType: type.code,
-        amount: payment.amount,
-        cashTendered: payment.cashTendered,
-        changeGiven: payment.changeGiven,
-        referenceNo: _clean(payment.referenceNo),
-        bankId: _clean(payment.bankId),
-        cardTypeId: _clean(payment.cardTypeId),
-        manualRecord: manualRecord,
-        displayMethod: PaymentMethodResolver.describe(
-          methodCode: payment.paymentMethodCode,
-          methodName: name,
-          type: type,
-          manualRecord: manualRecord,
-        ),
-        displayAmount: PosFormatters.amount(payment.amount),
-      );
-    }).toList();
-
-    final nonCreditPaid = payments.fold(
-      0.0,
-      (sum, p) =>
-          sum +
-          (p.paymentMethodType == PaymentMethodType.customerCredit
-              ? 0.0
-              : p.amount),
-    );
-    final remainingTotal = PricingEngine.roundAmount(
-      quote.grandTotal - nonCreditPaid,
-    );
-    final changeAmount = payments.fold(
-      0.0,
-      (sum, p) => sum + (p.changeGiven ?? 0.0),
-    );
+    final invoicePayments = payments
+        .map(PosInvoiceDocumentRules.fromPaymentInput)
+        .toList(growable: false);
 
     var document = InvoiceDocument(
       saleId: saleId,
@@ -331,7 +296,7 @@ class InvoiceDocumentBuilder {
       ),
       cashier: InvoiceCashierInfo(
         userId: cashierId,
-        name: _clean(cashierName) ?? cashierId,
+        name: DaoText.clean(cashierName) ?? cashierId,
       ),
       customer: _customerFromValues(
         customerId,
@@ -346,18 +311,16 @@ class InvoiceDocumentBuilder {
         discountTotal: quote.discountTotal,
         taxTotal: quote.taxTotal,
         netTotal: quote.grandTotal,
-        paidTotal: nonCreditPaid,
-        remainingTotal: remainingTotal > 0 ? remainingTotal : 0,
-        changeAmount: changeAmount,
+        paidTotal: paidTotal,
+        remainingTotal: remainingTotal,
+        changeAmount: changeTotal,
         displaySubtotal: PosFormatters.amount(quote.subtotal),
         displayDiscountTotal: PosFormatters.amount(quote.discountTotal),
         displayTaxTotal: PosFormatters.amount(quote.taxTotal),
         displayNetTotal: PosFormatters.amount(quote.grandTotal),
-        displayPaidTotal: PosFormatters.amount(nonCreditPaid),
-        displayRemainingTotal: PosFormatters.amount(
-          remainingTotal > 0 ? remainingTotal : 0,
-        ),
-        displayChangeAmount: PosFormatters.amount(changeAmount),
+        displayPaidTotal: PosFormatters.amount(paidTotal),
+        displayRemainingTotal: PosFormatters.amount(remainingTotal),
+        displayChangeAmount: PosFormatters.amount(changeTotal),
       ),
       copyInfo: const InvoiceCopyInfo.original(),
       printStatusLabel: labels.printStatusPending,
@@ -387,9 +350,7 @@ class InvoiceDocumentBuilder {
 
   Future<String> _syncStatusLabel(String saleId, {String? saleType}) async {
     final type = saleType ?? (await _salesDao.getById(saleId))?.type;
-    final entityType = type == SaleType.returnSale.code
-        ? OutboxEntityType.returnSale.code
-        : OutboxEntityType.sale.code;
+    final entityType = PosInvoiceDocumentRules.syncEntityTypeForSaleType(type);
     final status =
         await _salesDao.getEntityOutboxStatus(
           entityType: entityType,
@@ -403,26 +364,26 @@ class InvoiceDocumentBuilder {
   Future<InvoiceBranchInfo> _loadBranch(Sale sale) async {
     final branch = await _salesDao.getInvoiceBranch(sale);
     final name =
-        _clean(branch?.commercialName) ??
-        _clean(branch?.nameAr) ??
-        _clean(branch?.name) ??
+        DaoText.clean(branch?.commercialName) ??
+        DaoText.clean(branch?.nameAr) ??
+        DaoText.clean(branch?.name) ??
         sale.branchNo ??
         '';
     final address = [
-      _clean(branch?.address),
-      _clean(branch?.streetName),
-      _clean(branch?.buildingNo),
-      _clean(branch?.postalZone),
+      DaoText.clean(branch?.address),
+      DaoText.clean(branch?.streetName),
+      DaoText.clean(branch?.buildingNo),
+      DaoText.clean(branch?.postalZone),
     ].whereType<String>().where((v) => v.isNotEmpty).join(' ');
     return InvoiceBranchInfo(
       id: sale.branchNo ?? '',
       name: name,
-      taxNumber: _clean(branch?.taxNumber),
-      commercialRegistration: _clean(branch?.commercialRegistrationNo),
-      city: _clean(branch?.cityName),
+      taxNumber: DaoText.clean(branch?.taxNumber),
+      commercialRegistration: DaoText.clean(branch?.commercialRegistrationNo),
+      city: DaoText.clean(branch?.cityName),
       address: address.isEmpty ? null : address,
-      branchNumber: sale.branchNo ?? _clean(branch?.branchNo),
-      branchYear: sale.branchYear ?? _clean(branch?.branchYear),
+      branchNumber: sale.branchNo ?? DaoText.clean(branch?.branchNo),
+      branchYear: sale.branchYear ?? DaoText.clean(branch?.branchYear),
     );
   }
 
@@ -436,26 +397,26 @@ class InvoiceDocumentBuilder {
       branchNo: branchNo,
     );
     final name =
-        _clean(branch?.commercialName) ??
-        _clean(branch?.nameAr) ??
-        _clean(branch?.name) ??
+        DaoText.clean(branch?.commercialName) ??
+        DaoText.clean(branch?.nameAr) ??
+        DaoText.clean(branch?.name) ??
         branchNo ??
         terminalId;
     final address = [
-      _clean(branch?.address),
-      _clean(branch?.streetName),
-      _clean(branch?.buildingNo),
-      _clean(branch?.postalZone),
+      DaoText.clean(branch?.address),
+      DaoText.clean(branch?.streetName),
+      DaoText.clean(branch?.buildingNo),
+      DaoText.clean(branch?.postalZone),
     ].whereType<String>().where((v) => v.isNotEmpty).join(' ');
     return InvoiceBranchInfo(
       id: branchNo ?? '',
       name: name,
-      taxNumber: _clean(branch?.taxNumber),
-      commercialRegistration: _clean(branch?.commercialRegistrationNo),
-      city: _clean(branch?.cityName),
+      taxNumber: DaoText.clean(branch?.taxNumber),
+      commercialRegistration: DaoText.clean(branch?.commercialRegistrationNo),
+      city: DaoText.clean(branch?.cityName),
       address: address.isEmpty ? null : address,
-      branchNumber: branchNo ?? _clean(branch?.branchNo),
-      branchYear: branchYear ?? _clean(branch?.branchYear),
+      branchNumber: branchNo ?? DaoText.clean(branch?.branchNo),
+      branchYear: branchYear ?? DaoText.clean(branch?.branchYear),
     );
   }
 
@@ -482,9 +443,9 @@ class InvoiceDocumentBuilder {
         itemId: line.itemId,
         itemName: line.itemNameSnapshot,
         unitId: line.unitId,
-        unitName: _clean(line.unitNameSnapshot),
+        unitName: DaoText.clean(line.unitNameSnapshot),
         unitSize: line.unitSize,
-        barcode: _clean(line.barcode),
+        barcode: DaoText.clean(line.barcode),
         quantity: quantity,
         unitPrice: unitPrice,
         lineSubtotal: grossAmount,
@@ -496,8 +457,8 @@ class InvoiceDocumentBuilder {
         lineTotal: lineTotal,
         allowDiscount: line.allowDiscountSnapshot ?? false,
         priceOverridden: false,
-        storeId: _clean(line.storeId),
-        priceLevelId: _clean(line.priceLevelId),
+        storeId: DaoText.clean(line.storeId),
+        priceLevelId: DaoText.clean(line.priceLevelId),
         display: InvoiceLineDisplay(
           quantity: PosFormatters.quantity(quantity),
           unitPrice: PosFormatters.amount(unitPrice),
@@ -534,44 +495,15 @@ class InvoiceDocumentBuilder {
 
   Future<List<InvoicePaymentDocument>> _loadPayments(String saleId) async {
     final rows = await _salesDao.getInvoicePaymentsWithMethodInfo(saleId);
-    return rows.map((row) {
-      final payment = row.payment;
-      final code = payment.methodCodeSnapshot;
-      final type = PaymentMethodResolver.typeFromStored(
-        methodCode: code,
-        storedTypeCode: (payment.methodTypeSnapshot ?? row.method?.type)
-            ?.toString(),
-      );
-      if (type == null) {
-        throw StateError(
-          'Unknown payment method type while building invoice for $saleId: $code',
-        );
-      }
-      final manualRecord =
-          payment.isManual || PaymentMethodResolver.isManual(type);
-      final name = payment.methodNameSnapshot ?? row.method?.name ?? code;
-      final amount = payment.amount;
-      return InvoicePaymentDocument(
-        paymentMethodId: payment.paymentMethodId,
-        paymentMethodCode: code,
-        methodName: name,
-        methodType: type.code,
-        amount: amount,
-        cashTendered: payment.cashTendered,
-        changeGiven: payment.changeGiven,
-        referenceNo: _clean(payment.referenceNo),
-        bankId: _clean(payment.bankId),
-        cardTypeId: _clean(payment.cardTypeId),
-        manualRecord: manualRecord,
-        displayMethod: PaymentMethodResolver.describe(
-          methodCode: code,
-          methodName: name,
-          type: type,
-          manualRecord: manualRecord,
-        ),
-        displayAmount: PosFormatters.amount(amount),
-      );
-    }).toList();
+    return rows
+        .map(
+          (row) => PosInvoiceDocumentRules.fromStoredPayment(
+            saleId: saleId,
+            payment: row.payment,
+            method: row.method,
+          ),
+        )
+        .toList(growable: false);
   }
 
   Future<String> _printStatus(
@@ -580,22 +512,22 @@ class InvoiceDocumentBuilder {
   ) async {
     final jobs = await _salesDao.getSalePrintJobs(saleId);
     if (jobs.isEmpty) return labels.printStatusNotPrinted;
-    if (jobs.any((job) => job.status == PrintJobStatus.printed.code)) {
+    if (jobs.any(DaoPrintJobPolicy.isPrinted)) {
       return labels.printStatusPrinted;
     }
-    if (jobs.any((job) => job.status == PrintJobStatus.failed.code)) {
+    if (jobs.any(DaoPrintJobPolicy.isFailed)) {
       return labels.printStatusFailed;
     }
     return labels.printStatusPending;
   }
 
   InvoiceCustomerInfo? _customer(Sale sale) {
-    final name = _clean(sale.customerNameSnapshot);
+    final name = DaoText.clean(sale.customerNameSnapshot);
     if (name == null && sale.customerId == null) return null;
     return InvoiceCustomerInfo(
       id: sale.customerId,
       name: name ?? sale.customerId ?? '',
-      taxNumber: _clean(sale.customerTaxNumberSnapshot),
+      taxNumber: DaoText.clean(sale.customerTaxNumberSnapshot),
     );
   }
 
@@ -604,18 +536,13 @@ class InvoiceDocumentBuilder {
     String? name,
     String? taxNumber,
   ) {
-    final cleanName = _clean(name);
-    final cleanId = _clean(id);
+    final cleanName = DaoText.clean(name);
+    final cleanId = DaoText.clean(id);
     if (cleanName == null && cleanId == null) return null;
     return InvoiceCustomerInfo(
       id: cleanId,
       name: cleanName ?? cleanId ?? '',
-      taxNumber: _clean(taxNumber),
+      taxNumber: DaoText.clean(taxNumber),
     );
-  }
-
-  String? _clean(Object? value) {
-    final text = value?.toString().trim();
-    return text == null || text.isEmpty ? null : text;
   }
 }

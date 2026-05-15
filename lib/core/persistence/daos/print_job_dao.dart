@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
+import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 class PrintJobDao {
   final AppDatabase _db;
@@ -50,10 +51,7 @@ class PrintJobDao {
       final job = await getById(id);
       if (job == null) return null;
 
-      final retryable =
-          (job.status == PrintJobStatus.pending.code ||
-              job.status == PrintJobStatus.failed.code) &&
-          job.attempts < job.maxAttempts;
+      final retryable = DaoPrintJobPolicy.isRetryable(job);
       if (!retryable) return null;
 
       final attempts = job.attempts + 1;
@@ -87,22 +85,12 @@ class PrintJobDao {
 
   Future<int> countPrintedCopies(String saleId) async {
     final jobs = await getForSale(saleId);
-    return jobs
-        .where(
-          (job) =>
-              job.documentType == PrintDocumentType.invoiceReceiptCopy.code &&
-              job.status == PrintJobStatus.printed.code,
-        )
-        .length;
+    return jobs.where(DaoPrintJobPolicy.isPrintedReceiptCopy).length;
   }
 
   Future<bool> hasPrintedOriginal(String saleId) async {
     final jobs = await getForSale(saleId);
-    return jobs.any(
-      (job) =>
-          job.documentType == PrintDocumentType.invoiceReceipt.code &&
-          job.status == PrintJobStatus.printed.code,
-    );
+    return jobs.any(DaoPrintJobPolicy.isPrintedOriginal);
   }
 
   Future<List<PrintJob>> getOriginalJobs(String saleId) {
@@ -130,29 +118,19 @@ class PrintJobDao {
 
   Future<void> markPrinted(String id) {
     return (_db.update(_db.printJobs)..where((j) => j.id.equals(id))).write(
-      PrintJobsCompanion(
-        status: Value(PrintJobStatus.printed.code),
-        printedAt: Value(_clock.now()),
-        errorMessage: const Value<String?>(null),
-      ),
+      DaoPrintJobPolicy.markPrinted(_clock.now()),
     );
   }
 
   Future<void> markFailed(String id, String error) {
     return (_db.update(_db.printJobs)..where((j) => j.id.equals(id))).write(
-      PrintJobsCompanion(
-        status: Value(PrintJobStatus.failed.code),
-        errorMessage: Value(error),
-      ),
+      DaoPrintJobPolicy.markFailed(error),
     );
   }
 
   Future<void> markPending(String id) {
-    return (_db.update(_db.printJobs)..where((j) => j.id.equals(id))).write(
-      PrintJobsCompanion(
-        status: Value(PrintJobStatus.pending.code),
-        errorMessage: const Value<String?>(null),
-      ),
-    );
+    return (_db.update(
+      _db.printJobs,
+    )..where((j) => j.id.equals(id))).write(DaoPrintJobPolicy.markPending());
   }
 }

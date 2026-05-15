@@ -15,13 +15,13 @@ import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/shared/presentation/presenters/printer_status_presenter.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_panel.dart';
-import 'package:holol_POS/shared/presentation/widgets/app_status_chip.dart';
 import 'package:holol_POS/shared/presentation/widgets/key_value_row.dart';
 import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_button.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 
 import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_scaffold.dart';
 
 final invoiceDocumentProvider = FutureProvider.autoDispose
     .family<InvoiceDocument, String>((ref, id) {
@@ -42,93 +42,26 @@ class InvoicePreviewScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final documentAsync = ref.watch(invoiceDocumentProvider(saleId));
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          // ── Gradient Header ──
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: AppColors.headerGradient,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.shadow,
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.sm,
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: AppColors.onPrimary,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.receipt_long,
-                        color: AppColors.onPrimary,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Text(
-                      l10n.receipt,
-                      style: const TextStyle(
-                        color: AppColors.onPrimary,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      tooltip: l10n.refresh,
-                      icon: const Icon(
-                        Icons.refresh,
-                        color: AppColors.onPrimary,
-                      ),
-                      onPressed: () =>
-                          ref.invalidate(invoiceDocumentProvider(saleId)),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+    return AppScaffold(
+      title: l10n.receipt,
+      icon: Icons.receipt_long,
+      onBack: () => Navigator.of(context).pop(),
+      actions: [
+        IconButton(
+          tooltip: l10n.refresh,
+          icon: const Icon(Icons.refresh, color: AppColors.onPrimary),
+          onPressed: () => ref.invalidate(invoiceDocumentProvider(saleId)),
+        ),
+      ],
+      body: documentAsync.when(
+        loading: () => const AppLoading(),
+        error: (error, _) => Center(
+          child: Padding(
+            padding: AppSpacing.paddingLg,
+            child: AppInfoBanner.error(message: ErrorMapper.userMessage(error)),
           ),
-          // ── Body ──
-          Expanded(
-            child: documentAsync.when(
-              loading: () => const AppLoading(),
-              error: (error, _) => Center(
-                child: Padding(
-                  padding: AppSpacing.paddingLg,
-                  child: AppInfoBanner.error(
-                    message: ErrorMapper.userMessage(error),
-                  ),
-                ),
-              ),
-              data: (document) => _InvoicePreview(document: document),
-            ),
-          ),
-        ],
+        ),
+        data: (document) => _InvoicePreview(document: document),
       ),
     );
   }
@@ -193,28 +126,7 @@ class _UnifiedReceiptImage extends ConsumerWidget {
             );
           }
 
-          return Center(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: AppSpacing.borderRadiusSm,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: AppSpacing.borderRadiusSm,
-                child: Image.memory(
-                  snapshot.data!,
-                  filterQuality: FilterQuality.high,
-                ),
-              ),
-            ),
-          );
+          return AppReceiptImageFrame(bytes: snapshot.data!);
         },
       ),
     );
@@ -237,9 +149,8 @@ class _Actions extends ConsumerWidget {
           (row) => !row.isReprint && row.status == 'printed',
         ) ??
         false;
-    return Wrap(
-      spacing: AppSpacing.sm,
-      runSpacing: AppSpacing.sm,
+
+    return AppActionsWrap(
       children: [
         if (!hasPrintedOriginal)
           AppButton.primary(
@@ -295,7 +206,9 @@ class _Actions extends ConsumerWidget {
             document.saleId,
             createdBy: activeSession?.activeUserId ?? document.cashier.userId,
           );
+
     if (!context.mounted) return;
+
     if (result.hasFailures) {
       AppSnackbar.showWarning(
         context,
@@ -306,6 +219,7 @@ class _Actions extends ConsumerWidget {
     } else {
       AppSnackbar.showSuccess(context, 'تم إرسال الفاتورة للطباعة.');
     }
+
     ref.invalidate(invoicePrintHistoryProvider(document.saleId));
   }
 
@@ -313,6 +227,7 @@ class _Actions extends ConsumerWidget {
     final file = await ref
         .read(invoiceOutputActionsProvider)
         .savePdf(document.saleId);
+
     if (context.mounted) {
       AppSnackbar.showSuccess(context, 'تم حفظ ملف PDF: ${file.path}');
     }
@@ -321,7 +236,7 @@ class _Actions extends ConsumerWidget {
   Future<void> _share(BuildContext context, WidgetRef ref) async {
     try {
       await ref.read(invoiceOutputActionsProvider).sharePdf(document.saleId);
-    } catch (error) {
+    } catch (_) {
       if (context.mounted) {
         AppSnackbar.showError(context, 'فشلت المشاركة.');
       }
@@ -336,24 +251,22 @@ class _AuditPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppPanel(
+    return AppKeyValuePanel(
       title: 'التدقيق',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          KeyValueRow(
-            label: 'التحقق',
-            value: document.validationStatus ?? 'غير محدد',
-          ),
-          if (document.validationMessage?.isNotEmpty == true)
-            KeyValueRow(label: 'ملاحظة', value: document.validationMessage!),
-          if (document.auditHash?.isNotEmpty == true)
-            SelectableText(
+      rows: [
+        KeyValueRow(
+          label: 'التحقق',
+          value: document.validationStatus ?? 'غير محدد',
+        ),
+        if (document.validationMessage?.isNotEmpty == true)
+          KeyValueRow(label: 'ملاحظة', value: document.validationMessage!),
+      ],
+      extra: document.auditHash?.isNotEmpty == true
+          ? SelectableText(
               'Hash: ${document.auditHash}',
               style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-            ),
-        ],
-      ),
+            )
+          : null,
     );
   }
 }
@@ -366,52 +279,34 @@ class _PrintHistory extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final history = ref.watch(invoicePrintHistoryProvider(saleId));
+
     return history.when(
       loading: () => const SizedBox.shrink(),
       error: (_, _) => const SizedBox.shrink(),
       data: (rows) {
-        if (rows.isEmpty) {
-          return const AppPanel(child: Text('لا يوجد سجل طباعة بعد.'));
-        }
-        return AppPanel(
+        return AppStatusHistoryList(
           title: 'سجل الطباعة',
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final row in rows) ...[
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        row.isReprint
-                            ? 'إعادة طباعة نسخة ${row.copyNumber}'
-                            : 'طباعة أصلية',
-                      ),
-                    ),
-                    AppStatusChip(
-                      label: PrinterStatusPresenter.printJobStatusLabel(
-                        row.status,
-                      ),
-                      color: PrinterStatusPresenter.printJobStatusColor(
-                        row.status,
-                      ),
-                    ),
-                  ],
+          empty: const Text('لا يوجد سجل طباعة بعد.'),
+          entries: [
+            for (final row in rows)
+              AppStatusHistoryEntry(
+                title: row.isReprint
+                    ? 'إعادة طباعة نسخة ${row.copyNumber}'
+                    : 'طباعة أصلية',
+                statusLabel: PrinterStatusPresenter.printJobStatusLabel(
+                  row.status,
                 ),
-                if (row.reprintReason?.isNotEmpty == true)
-                  Text(
-                    row.reprintReason!,
-                    style: const TextStyle(color: AppColors.textSecondary),
-                  ),
-                if (row.failureReason?.isNotEmpty == true)
-                  Text(
-                    row.failureReason!,
-                    style: const TextStyle(color: AppColors.error),
-                  ),
-                const Divider(),
-              ],
-            ],
-          ),
+                statusColor: PrinterStatusPresenter.printJobStatusColor(
+                  row.status,
+                ),
+                note: row.reprintReason?.isNotEmpty == true
+                    ? row.reprintReason
+                    : null,
+                error: row.failureReason?.isNotEmpty == true
+                    ? row.failureReason
+                    : null,
+              ),
+          ],
         );
       },
     );

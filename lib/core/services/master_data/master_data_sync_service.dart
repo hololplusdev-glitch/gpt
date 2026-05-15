@@ -10,6 +10,7 @@ import 'package:holol_POS/core/services/master_data/master_data_contract.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
 import 'package:holol_POS/core/network/network_models.dart';
 import 'package:holol_POS/shared/models/enums.dart';
+import 'package:holol_POS/core/utils/text_normalizer.dart';
 
 // Types are in master_data_contract.dart
 
@@ -161,7 +162,7 @@ class MasterDataSyncService {
   }
 
   String _responseStatus(Map<String, dynamic> data) {
-    return _cleanResponseText(data['status']).toUpperCase();
+    return CoreText.cleanOrEmpty(data['status']).toUpperCase();
   }
 
   bool _isKnownResponseStatus(String status) {
@@ -176,26 +177,12 @@ class MasterDataSyncService {
     Map<String, dynamic> data, {
     required String fallback,
   }) {
-    final message = _firstCleanResponseText([
+    final message = CoreText.firstUseful([
       data['message'],
       data['error'],
       data['details'],
     ]);
     return message.isEmpty ? fallback : message;
-  }
-
-  String _firstCleanResponseText(Iterable<Object?> values) {
-    for (final value in values) {
-      final text = _cleanResponseText(value);
-      if (text.isNotEmpty) return text;
-    }
-    return '';
-  }
-
-  String _cleanResponseText(Object? value) {
-    final text = value?.toString().trim() ?? '';
-    if (text.isEmpty || text.toLowerCase() == 'null') return '';
-    return text;
   }
 
   Future<MasterDataSyncSummary> syncAll(
@@ -1183,7 +1170,7 @@ class MasterDataSyncService {
     Map<String, dynamic> data,
     MasterDataType expectedType,
   ) {
-    final responseType = _cleanResponseText(data['type']).toUpperCase();
+    final responseType = CoreText.cleanOrEmpty(data['type']).toUpperCase();
 
     // Some backend responses may omit type. If present, it must match.
     if (responseType.isEmpty) return;
@@ -1242,7 +1229,7 @@ class MasterDataSyncService {
   }
 
   String _pageServerTime(Map<String, dynamic> data) {
-    final value = _firstCleanResponseText([
+    final value = CoreText.firstUseful([
       data['server_time'],
       data['serverTime'],
       data['server_timestamp'],
@@ -1286,7 +1273,7 @@ class MasterDataSyncService {
     if (value is int) return value;
     if (value is num) return value.toInt();
 
-    final text = _cleanResponseText(value);
+    final text = CoreText.cleanOrEmpty(value);
     if (text.isEmpty) return null;
 
     return int.tryParse(text);
@@ -1297,7 +1284,7 @@ class MasterDataSyncService {
     if (value is bool) return value;
     if (value is num) return value != 0;
 
-    final text = _cleanResponseText(value).toLowerCase();
+    final text = CoreText.cleanOrEmpty(value).toLowerCase();
     if (text.isEmpty) return null;
 
     if (text == 'true' ||
@@ -1323,7 +1310,7 @@ class MasterDataSyncService {
     Map<String, dynamic> data, {
     required String fallback,
   }) {
-    final value = _firstCleanResponseText([
+    final value = CoreText.firstUseful([
       data['code'],
       data['error_code'],
       data['errorCode'],

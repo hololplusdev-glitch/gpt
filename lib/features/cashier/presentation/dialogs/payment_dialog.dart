@@ -22,8 +22,9 @@ import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
 import 'package:uuid/uuid.dart';
 import 'package:holol_POS/shared/refactor/pos_payment_draft.dart';
-import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
+import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
 import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
+import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
 
 class PaymentDialog extends ConsumerStatefulWidget {
   final Cart cart;
@@ -51,7 +52,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   String? _selectedCustomerName;
   String? _selectedCustomerTaxNumber;
 
-  CheckoutQuote? _quote;
+  PosCheckoutQuote? _quote;
   PaymentMethodType _completedPaymentMethodType = PaymentMethodType.cash;
 
   bool _initialized = false;
@@ -62,7 +63,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
   String? _invoiceNo;
   String? _saleId;
 
-  double get _totalAmount => _quote?.grandTotal ?? 0.0;
+  double get _totalAmount => PaymentDraftRules.totalFromQuote(_quote);
 
   PaymentDraftTotals get _paymentTotals => _paymentDraft.totals(_totalAmount);
 
@@ -270,8 +271,8 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.sizeOf(context);
-    final isCompact = size.width < 600;
+    final l10n = AppLocalizations.of(context)!;
+    final isComplete = _isComplete;
 
     return PopScope(
       canPop: false,
@@ -279,141 +280,113 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
         if (didPop) return;
         _cancelBeforeCompletion();
       },
-      child: Dialog(
-        insetPadding: isCompact ? EdgeInsets.zero : AppSpacing.paddingLg,
-        child: Container(
-          width: isCompact ? double.infinity : 680,
-          height: isCompact ? size.height : null,
-          constraints: BoxConstraints(
-            maxHeight: isCompact
-                ? size.height
-                : size.height - AppSpacing.xxl * 2,
-          ),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: isCompact
-                ? BorderRadius.zero
-                : AppSpacing.borderRadiusLg,
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: _isComplete ? _buildCompletionView() : _buildPaymentView(),
+      child: AppDialog(
+        title: isComplete ? l10n.paymentSuccessful : l10n.payment,
+        icon: isComplete ? Icons.check_circle_outline : Icons.payment,
+        maxWidth: 680,
+        fullscreenOnCompact: true,
+        scrollable: true,
+        onClose: _isProcessing ? null : _cancelBeforeCompletion,
+        contentPadding: EdgeInsets.all(
+          MediaQuery.sizeOf(context).width < 600
+              ? AppSpacing.lg
+              : AppSpacing.xl,
         ),
+        headerTrailing: isComplete
+            ? null
+            : Text.rich(
+                PosFormatters.amountRich(
+                  _totalAmount,
+                  amountStyle: const TextStyle(
+                    color: AppColors.onPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+        footer: isComplete
+            ? null
+            : AppCompleteButton(
+                isProcessing: _isProcessing,
+                enabled: _canConfirm,
+                label: 'إتمام الدفع',
+                onPressed: _processPayment,
+              ),
+        content: isComplete ? _buildCompletionView() : _buildPaymentView(),
       ),
     );
   }
 
   Widget _buildPaymentView() {
-    final l10n = AppLocalizations.of(context)!;
     final customers = ref.watch(customerSearchResultsProvider);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        AppDialogHeaderWithAmount(
-          title: l10n.payment,
-          icon: Icons.payment,
-          amount: _totalAmount,
-          padding: EdgeInsets.all(
-            MediaQuery.sizeOf(context).width < 600
-                ? AppSpacing.lg
-                : AppSpacing.xl,
-          ),
-          onClose: _isProcessing ? null : _cancelBeforeCompletion,
-        ),
-        Flexible(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(
-              MediaQuery.sizeOf(context).width < 600
-                  ? AppSpacing.lg
-                  : AppSpacing.xl,
+        if (_errorMessage != null) ...[
+          AppInfoBanner.error(message: _errorMessage!),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+        _buildPaymentSummary(),
+        const SizedBox(height: AppSpacing.lg),
+        _buildPaymentLines(),
+        const SizedBox(height: AppSpacing.lg),
+        _buildSmartActions(),
+        if (_activeLineKind != null) ...[
+          const SizedBox(height: AppSpacing.lg),
+          _buildInlineLineEditor(),
+        ],
+        if (_hasCreditLine) ...[
+          const SizedBox(height: AppSpacing.lg),
+          customers.when(
+            data: _buildCustomerSearch,
+            loading: () => const Padding(
+              padding: EdgeInsets.all(AppSpacing.lg),
+              child: AppLoading(),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_errorMessage != null) ...[
-                  AppInfoBanner.error(message: _errorMessage!),
-                  const SizedBox(height: AppSpacing.lg),
-                ],
-                _buildPaymentSummary(),
-                const SizedBox(height: AppSpacing.lg),
-                _buildPaymentLines(),
-                const SizedBox(height: AppSpacing.lg),
-                _buildSmartActions(),
-                if (_activeLineKind != null) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  _buildInlineLineEditor(),
-                ],
-                if (_hasCreditLine) ...[
-                  const SizedBox(height: AppSpacing.lg),
-                  customers.when(
-                    data: _buildCustomerSearch,
-                    loading: () => const Padding(
-                      padding: EdgeInsets.all(AppSpacing.lg),
-                      child: AppLoading(),
-                    ),
-                    error: (error, _) => AppInfoBanner.error(
-                      message: ErrorMapper.userMessage(error),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: AppSpacing.xl),
-                AppCompleteButton(
-                  isProcessing: _isProcessing,
-                  enabled: _canConfirm,
-                  label: 'إتمام الدفع',
-                  onPressed: _processPayment,
-                ),
-              ],
-            ),
+            error: (error, _) =>
+                AppInfoBanner.error(message: ErrorMapper.userMessage(error)),
           ),
-        ),
+        ],
       ],
     );
   }
 
   Widget _buildPaymentSummary() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        borderRadius: AppSpacing.borderRadiusLg,
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                const Text(
-                  'إجمالي الفاتورة',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                ),
-                const Spacer(),
-                Text.rich(
-                  PosFormatters.amountRich(
-                    _totalAmount,
-                    amountStyle: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
-                    ),
+    return AppSurfaceSection(
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Text(
+                'إجمالي الفاتورة',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              ),
+              const Spacer(),
+              Text.rich(
+                PosFormatters.amountRich(
+                  _totalAmount,
+                  amountStyle: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
                   ),
                 ),
-              ],
-            ),
-            const Divider(height: AppSpacing.xl),
-            AppPaymentSummaryRow(
-              label: 'المدفوع فعليًا',
-              value: _actualPaidAmount,
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            AppPaymentSummaryRow(label: 'الآجل', value: _creditAmount),
-            const SizedBox(height: AppSpacing.xs),
-            AppPaymentSummaryRow(label: 'المتبقي', value: _remainingAmount),
-            const SizedBox(height: AppSpacing.xs),
-            AppPaymentSummaryRow(label: 'الراجع', value: _change),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const Divider(height: AppSpacing.xl),
+          AppPaymentSummaryRow(
+            label: 'المدفوع فعليًا',
+            value: _actualPaidAmount,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          AppPaymentSummaryRow(label: 'الآجل', value: _creditAmount),
+          const SizedBox(height: AppSpacing.xs),
+          AppPaymentSummaryRow(label: 'المتبقي', value: _remainingAmount),
+          const SizedBox(height: AppSpacing.xs),
+          AppPaymentSummaryRow(label: 'الراجع', value: _change),
+        ],
       ),
     );
   }
@@ -442,7 +415,7 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
 
   Widget _buildSmartActions() {
     final remaining = _remainingAmount;
-    if (remaining <= 0.01) {
+    if (remaining <= PosDomainTolerances.money) {
       return const SizedBox.shrink();
     }
 
@@ -540,52 +513,43 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
       SaleTenderKind.credit => (Icons.person_outline, 'دفع آجل', 'المبلغ'),
     };
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceVariant,
-        borderRadius: AppSpacing.borderRadiusLg,
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: AppColors.primary),
-                const SizedBox(width: AppSpacing.sm),
-                Text(title, style: Theme.of(context).textTheme.titleMedium),
-                const Spacer(),
-                Text.rich(
-                  PosFormatters.amountRich(
-                    available,
-                    amountStyle: Theme.of(context).textTheme.titleSmall,
-                  ),
+    return AppSurfaceSection(
+      borderColor: AppColors.primary.withValues(alpha: 0.2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: AppColors.primary),
+              const SizedBox(width: AppSpacing.sm),
+              Text(title, style: Theme.of(context).textTheme.titleMedium),
+              const Spacer(),
+              Text.rich(
+                PosFormatters.amountRich(
+                  available,
+                  amountStyle: Theme.of(context).textTheme.titleSmall,
                 ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppTextField(
-              controller: _lineAmountController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
               ),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-              ],
-              labelText: label,
-              prefixIcon: Icon(icon),
-              onChanged: (_) =>
-                  _submitInlineLine(showErrors: false, updateText: false),
-              onSubmitted: (_) => _submitInlineLine(updateText: true),
-            ),
-            if (_lineInputError != null) ...[
-              const SizedBox(height: AppSpacing.sm),
-              AppInfoBanner.error(message: _lineInputError!),
             ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppTextField(
+            controller: _lineAmountController,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*([.,])?\d{0,2}')),
+            ],
+            labelText: label,
+            prefixIcon: Icon(icon),
+            onChanged: (_) =>
+                _submitInlineLine(showErrors: false, updateText: false),
+            onSubmitted: (_) => _submitInlineLine(updateText: true),
+          ),
+          if (_lineInputError != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            AppInfoBanner.error(message: _lineInputError!),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -640,20 +604,12 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
                     customer.taxNumber!.trim(),
                 ];
 
-                return ListTile(
-                  dense: true,
-                  leading: Icon(
-                    selected ? Icons.check_circle : Icons.person_outline,
-                    color: selected ? AppColors.success : null,
-                  ),
-                  title: Text(
-                    customer.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                return AppSelectableListTile(
+                  selected: selected,
+                  title: customer.name,
                   subtitle: subtitleParts.isEmpty
                       ? null
-                      : Text(subtitleParts.join(' - ')),
+                      : subtitleParts.join(' - '),
                   onTap: () => _selectCustomer(customer),
                 );
               },
@@ -667,77 +623,54 @@ class _PaymentDialogState extends ConsumerState<PaymentDialog> {
     final l10n = AppLocalizations.of(context)!;
 
     final title =
-        _completedPaymentMethodType == PaymentMethodType.customerCredit
+        PaymentDraftRules.isCreditPaymentType(_completedPaymentMethodType)
         ? 'تم تسجيل البيع الآجل'
         : l10n.paymentSuccessful;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(
-        MediaQuery.sizeOf(context).width < 600
-            ? AppSpacing.xl
-            : AppSpacing.xxxl,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.check_circle,
-              size: 48,
-              color: AppColors.success,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xl),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const AppSuccessHero(),
+        const SizedBox(height: AppSpacing.xl),
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+        ),
+        if (_invoiceNo != null) ...[
+          const SizedBox(height: AppSpacing.sm),
           Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-          ),
-          if (_invoiceNo != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              l10n.invoiceNumberLabel(_invoiceNo!),
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 14,
-              ),
-            ),
-          ],
-          const SizedBox(height: AppSpacing.lg),
-          if (_change > 0) ...[
-            AppChangeNoticeBox(label: l10n.change, value: _change),
-            const SizedBox(height: AppSpacing.lg),
-          ],
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            alignment: WrapAlignment.center,
-            children: [
-              AppButton.outlined(
-                onPressed: _openInvoice,
-                icon: Icons.receipt_long,
-                label: l10n.viewInvoice,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          SizedBox(
-            width: double.infinity,
-            height: AppSpacing.jumbo + AppSpacing.sm,
-            child: AppButton.primary(
-              onPressed: _finishPayment,
-              icon: Icons.check,
-              label: l10n.doneNewSale,
+            l10n.invoiceNumberLabel(_invoiceNo!),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 14,
             ),
           ),
         ],
-      ),
+        const SizedBox(height: AppSpacing.lg),
+        if (_change > 0) ...[
+          AppChangeNoticeBox(label: l10n.change, value: _change),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+        AppActionsWrap(
+          alignment: WrapAlignment.center,
+          children: [
+            AppButton.outlined(
+              onPressed: _openInvoice,
+              icon: Icons.receipt_long,
+              label: l10n.viewInvoice,
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        AppBottomPrimaryAction(
+          padding: EdgeInsets.zero,
+          height: AppSpacing.jumbo + AppSpacing.sm,
+          onPressed: _finishPayment,
+          icon: Icons.check,
+          label: l10n.doneNewSale,
+        ),
+      ],
     );
   }
 

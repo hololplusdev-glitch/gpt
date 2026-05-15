@@ -10,6 +10,7 @@ import 'package:holol_POS/core/scanner/barcode_scanner_service.dart';
 import 'package:holol_POS/core/scanner/scanner_providers.dart';
 import 'package:holol_POS/features/cashier/domain/models/cart.dart';
 import 'package:holol_POS/shared/refactor/pos_runtime_state.dart';
+import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 
 bool _barcodeScannerSheetOpen = false;
 Future<void> _barcodeScannerReleaseFuture = Future<void>.value();
@@ -412,7 +413,17 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
         ),
         child: Column(
           children: [
-            const _DragHandle(),
+            const Padding(
+              padding: EdgeInsets.only(
+                top: AppSpacing.sm,
+                bottom: AppSpacing.xs,
+              ),
+              child: AppBottomSheetHandle(
+                width: 36,
+                height: 4,
+                color: AppColors.divider,
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
               child: Row(
@@ -478,11 +489,13 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
 
   Widget _buildScannerBody() {
     if (_permissionDenied) {
-      return const _PermissionDeniedState();
+      return AppCenteredMessageState(
+        message: AppLocalizations.of(context)!.cameraPermissionDenied,
+      );
     }
 
     if (_isClosing || _controllerDisposed || !_cameraVisible) {
-      return const _ScannerClosingState();
+      return const AppOverlayLoadingState();
     }
 
     return LayoutBuilder(
@@ -498,13 +511,16 @@ class _BarcodeScannerSheetState extends ConsumerState<_BarcodeScannerSheet>
               scanWindow: scanWindow,
               onDetect: _handleBarcodeDetection,
             ),
-            _ScanWindowOverlay(scanWindow: scanWindow),
+            AppScanWindowOverlay(scanWindow: scanWindow),
             if (_feedback != null)
               Positioned(
                 bottom: AppSpacing.xl,
                 left: AppSpacing.lg,
                 right: AppSpacing.lg,
-                child: _FeedbackToast(feedback: _feedback!),
+                child: AppFeedbackToast(
+                  message: _feedback!.message,
+                  isError: _feedback!.isError,
+                ),
               ),
           ],
         );
@@ -568,152 +584,9 @@ class _TorchButton extends StatelessWidget {
   }
 }
 
-class _ScannerClosingState extends StatelessWidget {
-  const _ScannerClosingState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black87,
-      alignment: Alignment.center,
-      child: const SizedBox(
-        width: 28,
-        height: 28,
-        child: CircularProgressIndicator(strokeWidth: 2),
-      ),
-    );
-  }
-}
-
-class _PermissionDeniedState extends StatelessWidget {
-  const _PermissionDeniedState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black87,
-      alignment: Alignment.center,
-      padding: AppSpacing.paddingLg,
-      child: Text(
-        AppLocalizations.of(context)!.cameraPermissionDenied,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
-}
-
-class _DragHandle extends StatelessWidget {
-  const _DragHandle();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.sm, bottom: AppSpacing.xs),
-      child: Center(
-        child: Container(
-          width: 36,
-          height: 4,
-          decoration: BoxDecoration(
-            color: AppColors.divider,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ScanWindowOverlay extends StatelessWidget {
-  final Rect scanWindow;
-
-  const _ScanWindowOverlay({required this.scanWindow});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        ColorFiltered(
-          colorFilter: const ColorFilter.mode(Colors.black54, BlendMode.srcOut),
-          child: Stack(
-            children: [
-              Container(
-                decoration: const BoxDecoration(
-                  color: Colors.black,
-                  backgroundBlendMode: BlendMode.dstOut,
-                ),
-              ),
-              Positioned.fromRect(
-                rect: scanWindow,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        Positioned.fromRect(
-          rect: scanWindow,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: AppColors.primary.withValues(alpha: 0.7),
-                width: 2,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _ScanFeedback {
   final String message;
   final bool isError;
 
   const _ScanFeedback({required this.message, required this.isError});
-}
-
-class _FeedbackToast extends StatelessWidget {
-  final _ScanFeedback feedback;
-
-  const _FeedbackToast({required this.feedback});
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      opacity: 1.0,
-      duration: const Duration(milliseconds: 200),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.lg,
-          vertical: AppSpacing.md,
-        ),
-        decoration: BoxDecoration(
-          color: feedback.isError
-              ? AppColors.error.withValues(alpha: 0.9)
-              : AppColors.success.withValues(alpha: 0.9),
-          borderRadius: AppSpacing.borderRadiusMd,
-        ),
-        child: Text(
-          feedback.message,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-          ),
-          textAlign: TextAlign.center,
-        ),
-      ),
-    );
-  }
 }

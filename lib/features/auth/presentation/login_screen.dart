@@ -14,7 +14,6 @@ import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_text_field.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_dropdown.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_info_banner.dart';
-import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_numeric_keypad.dart';
 import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
 
@@ -25,12 +24,16 @@ final loginIdentityCardProvider = FutureProvider.autoDispose<LoginIdentityInfo>(
       db.branchProfile,
     )..limit(1)).getSingleOrNull();
 
-    final companyName = _cleanIdentityText(
-      _firstNonEmpty([branch?.commercialName, branch?.nameAr, branch?.name]),
+    final companyName = PosLoginIdentityText.clean(
+      PosLoginIdentityText.firstNonEmpty([
+        branch?.commercialName,
+        branch?.nameAr,
+        branch?.name,
+      ]),
     );
 
-    final branchName = _cleanIdentityText(
-      _firstNonEmpty([branch?.nameAr, branch?.name]),
+    final branchName = PosLoginIdentityText.clean(
+      PosLoginIdentityText.firstNonEmpty([branch?.nameAr, branch?.name]),
     );
 
     return LoginIdentityInfo(companyName: companyName, branchName: branchName);
@@ -47,46 +50,9 @@ class LoginIdentityInfo {
   });
 }
 
-String? _firstNonEmpty(List<String?> values) {
-  for (final value in values) {
-    final trimmed = value?.trim();
-    if (trimmed != null && trimmed.isNotEmpty) {
-      return trimmed;
-    }
-  }
-
-  return null;
-}
-
 bool _shouldAutoFocusPosInput(BuildContext context) {
   final media = MediaQuery.maybeOf(context);
   return media != null && media.size.width >= 700;
-}
-
-String? _cleanIdentityText(String? value) {
-  final trimmed = value?.trim();
-
-  if (trimmed == null || trimmed.isEmpty) {
-    return null;
-  }
-
-  final cleaned = trimmed
-      .replaceAll(
-        RegExp(
-          r'\b(oracle|erp|backend|source|sync\s*provider)\b',
-          caseSensitive: false,
-        ),
-        '',
-      )
-      .replaceAll(RegExp(r'(Oracle|ORACLE|oracle|أوراكل|اوراكل)'), '')
-      .replaceAll(RegExp(r'\s+'), ' ')
-      .trim();
-
-  if (cleaned.isEmpty) {
-    return null;
-  }
-
-  return cleaned;
 }
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -152,7 +118,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       context: context,
       barrierDismissible: false,
       requestFocus: false,
-      builder: (context) => _PinEntryDialog(createMode: createMode),
+      builder: (context) => AppPinEntryDialog(createMode: createMode),
     );
   }
 
@@ -180,59 +146,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // ── Gradient Banner ──
                   if (!isCompact) const SizedBox(height: AppSpacing.lg),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.xl,
-                      AppSpacing.xxl,
-                      AppSpacing.xl,
-                      AppSpacing.lg,
-                    ),
-                    decoration: const BoxDecoration(
-                      gradient: AppColors.brandGradient,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: AppColors.onPrimary.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Icon(
-                            Icons.point_of_sale_rounded,
-                            color: AppColors.onPrimary,
-                            size: 36,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          l10n.appTitle,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: AppColors.onPrimary,
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          'دخول محلي برقم المستخدم ونقطة التشغيل',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.onPrimary.withValues(alpha: 0.7),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
+                  AppLoginBanner(
+                    title: l10n.appTitle,
+                    subtitle: 'دخول محلي برقم المستخدم ونقطة التشغيل',
                   ),
                   // ── Card Body ──
                   Container(
@@ -341,7 +258,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               : 'يتم تحديد نقاط التشغيل من صلاحيات DEVICE_PRIV المحلية. سيُطلب PIN بعد الضغط على دخول.',
                         ),
                         const SizedBox(height: AppSpacing.md),
-                        const _LoginFooter(),
+                        const AppBrandFooter(text: 'تطوير Alboraihi-hololPlus'),
                       ],
                     ),
                   ),
@@ -349,104 +266,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PinEntryDialog extends StatefulWidget {
-  final bool createMode;
-
-  const _PinEntryDialog({required this.createMode});
-
-  @override
-  State<_PinEntryDialog> createState() => _PinEntryDialogState();
-}
-
-class _PinEntryDialogState extends State<_PinEntryDialog> {
-  final _pinController = TextEditingController();
-  final _confirmController = TextEditingController();
-
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _pinController.addListener(_onInputChanged);
-    _confirmController.addListener(_onInputChanged);
-  }
-
-  void _onInputChanged() => setState(() {});
-
-  @override
-  void dispose() {
-    _pinController.removeListener(_onInputChanged);
-    _confirmController.removeListener(_onInputChanged);
-    _pinController.dispose();
-    _confirmController.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final pin = _pinController.text.trim();
-    final confirm = _confirmController.text.trim();
-
-    if (!RegExp(r'^\d{4}$').hasMatch(pin)) {
-      setState(() => _error = 'PIN يجب أن يكون 4 أرقام.');
-      return;
-    }
-
-    if (widget.createMode && pin != confirm) {
-      setState(() => _error = 'تأكيد PIN غير مطابق.');
-      return;
-    }
-
-    Navigator.of(context).pop(pin);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppDialog(
-      title: widget.createMode ? 'إنشاء PIN' : 'إدخال PIN',
-      icon: Icons.lock_outline,
-      confirmLabel: null,
-      cancelLabel: 'إلغاء',
-      onCancel: () => Navigator.of(context).pop(),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── PIN Display ──
-            AppPinDotsDisplay(
-              length: _pinController.text.length,
-              maxLength: 4,
-              label: widget.createMode ? 'PIN جديد' : 'PIN',
-            ),
-            if (widget.createMode) ...[
-              const SizedBox(height: AppSpacing.md),
-              AppPinDotsDisplay(
-                length: _confirmController.text.length,
-                maxLength: 4,
-                label: 'تأكيد PIN',
-              ),
-            ],
-            if (_error != null) ...[
-              const SizedBox(height: AppSpacing.md),
-              AppInfoBanner.error(message: _error!),
-            ],
-            const SizedBox(height: AppSpacing.lg),
-            // ── Keypad ──
-            AppNumericKeypad(
-              controller: widget.createMode && _pinController.text.length >= 4
-                  ? _confirmController
-                  : _pinController,
-              maxLength: 4,
-              onSubmit: _submit,
-              submitLabel: widget.createMode ? 'حفظ ودخول' : 'دخول',
-              submitIcon: Icons.lock_open,
-            ),
-          ],
         ),
       ),
     );
@@ -468,89 +287,6 @@ class _LoginIdentityCard extends ConsumerWidget {
         ? identity!.branchName!
         : 'الفرع غير محدد';
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.06),
-        borderRadius: AppSpacing.borderRadiusMd,
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.14)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.storefront_outlined,
-              color: AppColors.primary,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  companyName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  branchName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LoginFooter extends StatelessWidget {
-  const _LoginFooter();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Divider(color: AppColors.border.withValues(alpha: 0.5)),
-        const SizedBox(height: AppSpacing.sm),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.code, size: 14, color: AppColors.textHint),
-            const SizedBox(width: AppSpacing.xs),
-            Text(
-              'تطوير Alboraihi-hololPlus',
-              style: TextStyle(
-                color: AppColors.textHint,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
+    return AppIdentityCard(title: companyName, subtitle: branchName);
   }
 }

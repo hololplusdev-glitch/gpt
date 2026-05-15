@@ -10,6 +10,8 @@ import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
+import 'package:holol_POS/shared/presentation/widgets/app_scaffold.dart';
+import 'package:holol_POS/core/design_system/colors.dart';
 
 final localDbInspectorRepositoryProvider = Provider<LocalDbInspectorRepository>(
   (ref) {
@@ -24,17 +26,19 @@ class OwnerConsoleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.ownerConsole),
-        actions: [
-          TextButton.icon(
-            onPressed: () => context.go('/login'),
-            icon: const Icon(Icons.logout),
-            label: Text(l10n.exit),
+    return AppScaffold(
+      title: l10n.ownerConsole,
+      icon: Icons.admin_panel_settings_outlined,
+      actions: [
+        TextButton.icon(
+          onPressed: () => context.go('/login'),
+          icon: const Icon(Icons.logout, color: AppColors.onPrimary),
+          label: Text(
+            l10n.exit,
+            style: const TextStyle(color: AppColors.onPrimary),
           ),
-        ],
-      ),
+        ),
+      ],
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Center(
@@ -142,17 +146,17 @@ class _LocalTablesMenuScreenState
     final l10n = AppLocalizations.of(context)!;
     final grouped = _groupTables();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.localTables),
-        actions: [
-          IconButton(
-            tooltip: l10n.refresh,
-            onPressed: _loading ? null : _loadTables,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
+    return AppScaffold(
+      title: l10n.localTables,
+      icon: Icons.table_chart_outlined,
+      onBack: () => Navigator.of(context).pop(),
+      actions: [
+        IconButton(
+          tooltip: l10n.refresh,
+          onPressed: _loading ? null : _loadTables,
+          icon: const Icon(Icons.refresh, color: AppColors.onPrimary),
+        ),
+      ],
       body: _buildBody(grouped),
     );
   }
@@ -233,59 +237,12 @@ class _TableButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return SizedBox(
-      width: 260,
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              children: [
-                Text(table.icon, style: const TextStyle(fontSize: 26)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        table.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        table.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text('${table.rowCount}'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return AppDataTile(
+      leading: Text(table.icon, style: const TextStyle(fontSize: 26)),
+      title: table.title,
+      subtitle: table.name,
+      badgeText: '${table.rowCount}',
+      onTap: onTap,
     );
   }
 }
@@ -432,47 +389,15 @@ class _TableRowsScreenState extends ConsumerState<_TableRowsScreen> {
           minChildSize: 0.35,
           maxChildSize: 0.95,
           builder: (context, controller) {
-            return Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.table.title,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: l10n.copyRowJson,
-                        onPressed: () => _copyRowJson(row),
-                        icon: const Icon(Icons.copy),
-                      ),
-                      IconButton(
-                        tooltip: l10n.close,
-                        onPressed: () => Navigator.of(context).pop(),
-                        icon: const Icon(Icons.close),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(
-                  child: ListView.separated(
-                    controller: controller,
-                    itemCount: row.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (context, index) {
-                      final entry = row.entries.elementAt(index);
-                      return ListTile(
-                        title: Text(entry.key),
-                        subtitle: SelectableText(_formatFullValue(entry.value)),
-                      );
-                    },
-                  ),
-                ),
-              ],
+            return AppRowDetailsSheet(
+              title: widget.table.title,
+              entries: row.entries.toList(),
+              formatValue: _formatFullValue,
+              onCopy: () => _copyRowJson(row),
+              onClose: () => Navigator.of(context).pop(),
+              copyTooltip: l10n.copyRowJson,
+              closeTooltip: l10n.close,
+              controller: controller,
             );
           },
         );
@@ -512,27 +437,18 @@ class _TableRowsScreenState extends ConsumerState<_TableRowsScreen> {
         ? null
         : _columns.indexWhere((column) => column.name == _sortColumn);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(widget.table.title),
-            Text(
-              widget.table.name,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+    return AppScaffold(
+      title: widget.table.title,
+      subtitle: widget.table.name,
+      icon: Icons.storage_outlined,
+      onBack: () => Navigator.of(context).pop(),
+      actions: [
+        IconButton(
+          tooltip: l10n.refresh,
+          onPressed: _loading ? null : _loadRows,
+          icon: const Icon(Icons.refresh, color: AppColors.onPrimary),
         ),
-        actions: [
-          IconButton(
-            tooltip: l10n.refresh,
-            onPressed: _loading ? null : _loadRows,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
+      ],
       body: Column(
         children: [
           _buildPaginationBar(),
@@ -626,51 +542,12 @@ class _TableRowsScreenState extends ConsumerState<_TableRowsScreen> {
     final from = _totalRows == 0 ? 0 : _offset + 1;
     final to = (_offset + _rows.length).clamp(0, _totalRows);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final info = Text(
-            l10n.rowsRange(widget.table.name, from, to, _totalRows),
-            overflow: TextOverflow.ellipsis,
-          );
-
-          final controls = Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                tooltip: l10n.previousPage,
-                onPressed: _offset <= 0 || _loading ? null : _previousPage,
-                icon: const Icon(Icons.chevron_left),
-              ),
-              IconButton(
-                tooltip: l10n.nextPage,
-                onPressed: _offset + _limit >= _totalRows || _loading
-                    ? null
-                    : _nextPage,
-                icon: const Icon(Icons.chevron_right),
-              ),
-            ],
-          );
-
-          if (constraints.maxWidth < 360) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                info,
-                Align(alignment: Alignment.centerRight, child: controls),
-              ],
-            );
-          }
-
-          return Row(
-            children: [
-              Expanded(child: info),
-              controls,
-            ],
-          );
-        },
-      ),
+    return AppPaginationBar(
+      label: l10n.rowsRange(widget.table.name, from, to, _totalRows),
+      previousTooltip: l10n.previousPage,
+      nextTooltip: l10n.nextPage,
+      onPrevious: _offset <= 0 || _loading ? null : _previousPage,
+      onNext: _offset + _limit >= _totalRows || _loading ? null : _nextPage,
     );
   }
 }

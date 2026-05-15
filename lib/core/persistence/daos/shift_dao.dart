@@ -3,16 +3,13 @@
 
 import 'package:drift/drift.dart';
 import 'package:holol_POS/core/persistence/database.dart';
-import 'package:holol_POS/core/services/time/clock.dart';
 import 'package:holol_POS/core/persistence/daos/dao_shared.dart';
 
 /// Data access for shift operations.
 class ShiftDao {
   final AppDatabase _db;
 
-  final Clock _clock;
-
-  ShiftDao(this._db, {Clock clock = const SystemClock()}) : _clock = clock;
+  ShiftDao(this._db);
 
   /// Get the current open shift for a terminal.
   /// If cashierId is provided, only that cashier's open shift is returned.
@@ -70,6 +67,7 @@ class ShiftDao {
     required int saleCount,
     required OutboxEventsCompanion outboxEntry,
     required AuditLogCompanion auditLogEntry,
+    required DateTime closedAt,
     String? closingNotes,
   }) async {
     final summaryJson = DaoShiftCloseSummaryJson.encode(
@@ -93,7 +91,7 @@ class ShiftDao {
           actualCash: Value(actualCash),
           difference: Value(difference),
           status: const Value('closed'),
-          closedAt: Value(_clock.now()),
+          closedAt: Value(closedAt),
           closingNotes: Value(closingNotes),
           closeSummaryJson: Value(summaryJson),
         ),

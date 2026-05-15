@@ -7,11 +7,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
-import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/features/shift/application/shift_service.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
 import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
+import 'package:holol_POS/shared/refactor/pos_runtime_state.dart';
 
 typedef ActiveSessionReader = ActivePosSession? Function();
 
@@ -51,8 +51,10 @@ class ShiftDashboard {
 
   const ShiftDashboard({required this.shift, required this.totals});
 
-  double get expectedCash =>
-      shift.openingCash + totals.cashSales - totals.cashReturns;
+  double get expectedCash => PosShiftTotalsRules.expectedCash(
+    openingCash: shift.openingCash,
+    totals: totals,
+  );
 }
 
 /// Lightweight open-shift projection.
@@ -83,8 +85,15 @@ final activeShiftDashboardProvider =
       }
 
       final salesDao = ref.watch(salesDaoProvider);
+      final sales = await salesDao.getSalesForShift(shift.id);
+      final payments = await salesDao.getSalePaymentsForSales(
+        sales.map((sale) => sale.id),
+      );
 
-      final totals = await salesDao.getShiftSalesTotals(shift.id);
+      final totals = PosShiftTotalsRules.calculate(
+        sales: sales,
+        payments: payments,
+      );
 
       return ShiftDashboard(shift: shift, totals: totals);
     });
@@ -127,7 +136,7 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
 
       return ShiftCommandResult.failure(e.message);
     } catch (e) {
-      final message = _commandErrorMessage(e);
+      final message = PosRuntimeErrorText.commandMessage(e);
 
       state = state.copyWith(isLoading: false, errorMessage: message);
 
@@ -140,16 +149,6 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
     required double actualCash,
     String? closingNotes,
   }) async {
-    final normalizedShiftId = shiftId.trim();
-
-    if (normalizedShiftId.isEmpty) {
-      const message = 'No open shift to close.';
-
-      state = state.copyWith(errorMessage: message);
-
-      return const ShiftCommandResult.failure(message);
-    }
-
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
@@ -159,7 +158,7 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
           message: 'Select a cashier and POS machine before shift operations.',
           code: 'NO_ACTIVE_POS_SESSION',
         ),
-        localId: normalizedShiftId,
+        localId: shiftId,
         actualCash: actualCash,
         closingNotes: closingNotes,
       );
@@ -174,7 +173,7 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
 
       return ShiftCommandResult.failure(e.message);
     } catch (e) {
-      final message = _commandErrorMessage(e);
+      final message = PosRuntimeErrorText.commandMessage(e);
 
       state = state.copyWith(isLoading: false, errorMessage: message);
 
@@ -186,12 +185,6 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
     required String shiftId,
     int? overrideMinutes,
   }) async {
-    final normalizedShiftId = shiftId.trim();
-
-    if (normalizedShiftId.isEmpty) {
-      return const ShiftCommandResult.failure('No open shift to extend.');
-    }
-
     state = state.copyWith(isLoading: true, clearError: true);
 
     try {
@@ -201,7 +194,7 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
           message: 'Select a cashier and POS machine before shift operations.',
           code: 'NO_ACTIVE_POS_SESSION',
         ),
-        localId: normalizedShiftId,
+        localId: shiftId,
         overrideMinutes: overrideMinutes,
       );
 
@@ -211,7 +204,7 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
 
       return const ShiftCommandResult.success();
     } catch (e) {
-      final message = _commandErrorMessage(e);
+      final message = PosRuntimeErrorText.commandMessage(e);
 
       state = state.copyWith(isLoading: false, errorMessage: message);
 
@@ -225,22 +218,6 @@ class ShiftController extends StateNotifier<ShiftCommandState> {
 
   void setError(String message) {
     state = state.copyWith(isLoading: false, errorMessage: message);
-  }
-
-  String _commandErrorMessage(Object error) {
-    final mapped = ErrorMapper.userMessage(error);
-    final raw = error.toString().trim();
-
-    if (raw.isEmpty || raw.toLowerCase() == 'null' || raw == mapped) {
-      return mapped;
-    }
-
-    if (mapped == 'Something went wrong. Please try again.' ||
-        mapped == 'Enter a valid value.') {
-      return raw;
-    }
-
-    return '$mapped\n$raw';
   }
 }
 

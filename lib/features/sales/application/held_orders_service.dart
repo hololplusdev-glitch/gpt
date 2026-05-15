@@ -7,7 +7,6 @@ import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
 import 'package:holol_POS/core/persistence/daos/shift_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart';
 import 'package:holol_POS/core/persistence/pos_config_repository.dart';
-import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
 import 'package:holol_POS/core/services/time/clock.dart';
 import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/providers/core_providers.dart';
@@ -15,7 +14,7 @@ import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
 
 /// Held-order owner only.
 /// Held orders are stored as cart intent snapshots.
-/// Final prices/totals are always recalculated by PricingEngine and SaleCheckout.
+/// Final prices/totals are always recalculated by shared/refactor workflows.
 class HeldOrdersService {
   final SalesDao _salesDao;
   final ShiftDao _shiftDao;
@@ -23,7 +22,6 @@ class HeldOrdersService {
   final CatalogDao _catalogDao;
   final PosConfigRepository _config;
   final ActivePosSession? _activeSession;
-  final PricingEngine _pricingEngine;
   final Clock _clock;
 
   HeldOrdersService({
@@ -33,7 +31,6 @@ class HeldOrdersService {
     required CatalogDao catalogDao,
     required PosConfigRepository config,
     required ActivePosSession? activeSession,
-    PricingEngine pricingEngine = const PricingEngine(),
     Clock clock = const SystemClock(),
   }) : _salesDao = salesDao,
        _shiftDao = shiftDao,
@@ -41,7 +38,6 @@ class HeldOrdersService {
        _catalogDao = catalogDao,
        _config = config,
        _activeSession = activeSession,
-       _pricingEngine = pricingEngine,
        _clock = clock;
 
   PosHeldOrdersWorkflow get _workflow => PosHeldOrdersWorkflow(
@@ -51,11 +47,10 @@ class HeldOrdersService {
     catalogDao: _catalogDao,
     config: _config,
     activeSession: _activeSession,
-    pricingEngine: _pricingEngine,
     clock: _clock,
     exceptionFactory: SaleException.new,
   );
-  CheckoutQuote previewQuote({required List<SaleLineInput> lineItems}) {
+  PosCheckoutQuote previewQuote({required List<SaleLineInput> lineItems}) {
     return _workflow.previewQuote(lineItems: lineItems);
   }
 

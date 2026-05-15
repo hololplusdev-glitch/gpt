@@ -5,6 +5,7 @@
 import 'package:dio/dio.dart';
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/network/network_models.dart';
+import 'package:holol_POS/core/utils/text_normalizer.dart';
 
 class ApiPaths {
   static const data = '/data';
@@ -160,7 +161,7 @@ class LocalApiClient {
   }
 
   String _networkUserMessage(DioException e) {
-    final hint = _firstUsefulText([e.message, e.error]);
+    final hint = CoreText.firstUseful([e.message, e.error]);
 
     if (hint.isEmpty) {
       return 'تعذر الاتصال بالخادم. تحقق من الشبكة أو عنوان API ثم أعد المحاولة.';
@@ -170,7 +171,11 @@ class LocalApiClient {
   }
 
   String _unknownUserMessage(DioException e) {
-    final hint = _firstUsefulText([e.message, e.error, _dioTypeName(e.type)]);
+    final hint = CoreText.firstUseful([
+      e.message,
+      e.error,
+      _dioTypeName(e.type),
+    ]);
 
     if (hint.isEmpty) {
       return 'تعذر تنفيذ طلب الخادم بسبب خطأ غير معروف.';
@@ -181,7 +186,7 @@ class LocalApiClient {
 
   String _serverMessage(dynamic data) {
     if (data is Map) {
-      final message = _firstUsefulText([
+      final message = CoreText.firstUseful([
         data['message'],
         data['error'],
         data['details'],
@@ -190,7 +195,7 @@ class LocalApiClient {
       return message;
     }
 
-    return _cleanText(data);
+    return CoreText.cleanOrEmpty(data);
   }
 
   String _diagnostic(DioException e) {
@@ -199,28 +204,16 @@ class LocalApiClient {
       'type=${_dioTypeName(e.type)}',
       'method=${request.method}',
       'uri=${request.uri}',
-      if (_cleanText(e.message).isNotEmpty) 'message=${_cleanText(e.message)}',
-      if (_cleanText(e.error).isNotEmpty) 'error=${_cleanText(e.error)}',
+      if (CoreText.cleanOrEmpty(e.message).isNotEmpty)
+        'message=${CoreText.cleanOrEmpty(e.message)}',
+      if (CoreText.cleanOrEmpty(e.error).isNotEmpty)
+        'error=${CoreText.cleanOrEmpty(e.error)}',
       if (e.response?.statusCode != null) 'status=${e.response!.statusCode}',
-      if (_cleanText(e.response?.data).isNotEmpty)
-        'response=${_cleanText(e.response?.data)}',
+      if (CoreText.cleanOrEmpty(e.response?.data).isNotEmpty)
+        'response=${CoreText.cleanOrEmpty(e.response?.data)}',
     ];
 
     return parts.join(' | ');
-  }
-
-  String _firstUsefulText(Iterable<Object?> values) {
-    for (final value in values) {
-      final text = _cleanText(value);
-      if (text.isNotEmpty) return text;
-    }
-    return '';
-  }
-
-  String _cleanText(Object? value) {
-    final text = value?.toString().trim() ?? '';
-    if (text.isEmpty || text.toLowerCase() == 'null') return '';
-    return text;
   }
 
   String _dioTypeName(DioExceptionType type) {

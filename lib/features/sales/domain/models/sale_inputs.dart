@@ -1,5 +1,4 @@
 import 'package:holol_POS/shared/models/enums.dart';
-import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
 
 class SaleLineInput {
   final String itemId;
@@ -50,27 +49,6 @@ class SaleLineInput {
     'allowDiscount': allowDiscount,
     'notes': notes,
   };
-}
-
-extension SaleLineInputPricingMapper on SaleLineInput {
-  PricingLineInput toPricingLineInput() {
-    return PricingLineInput(
-      itemId: itemId,
-      unitId: unitId,
-      unitPrice: unitPrice,
-      quantity: quantity,
-      discountType: discountType,
-      discountValue: discountValue,
-      allowDiscount: allowDiscount,
-      taxRate: taxRate,
-    );
-  }
-}
-
-extension SaleLineInputListPricingMapper on Iterable<SaleLineInput> {
-  List<PricingLineInput> toPricingLineInputs() {
-    return map((line) => line.toPricingLineInput()).toList();
-  }
 }
 
 enum SaleTenderKind { cash, network, credit }

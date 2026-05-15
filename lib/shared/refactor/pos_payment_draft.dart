@@ -1,10 +1,19 @@
 import 'package:holol_POS/core/errors/app_exception.dart';
 import 'package:holol_POS/core/persistence/daos/active_pos_session_dao.dart';
 import 'package:holol_POS/core/persistence/daos/catalog_dao.dart';
+import 'package:holol_POS/core/persistence/daos/sales_dao.dart';
+import 'package:holol_POS/core/persistence/daos/shift_dao.dart';
 import 'package:holol_POS/core/persistence/database.dart';
+import 'package:holol_POS/core/persistence/pos_config_repository.dart';
 import 'package:holol_POS/core/services/payments/payment_method_resolver.dart';
+import 'package:holol_POS/core/services/invoice_number_service.dart';
+import 'package:holol_POS/core/services/invoices/invoice_document_builder.dart';
 import 'package:holol_POS/core/services/pos_devices/payment_profile_service.dart';
+import 'package:holol_POS/core/services/pos_devices/print_job_processor.dart';
+import 'package:holol_POS/core/services/pos_devices/print_queue.dart';
 import 'package:holol_POS/core/services/pricing/pricing_engine.dart';
+import 'package:holol_POS/core/services/sync/outbox_event_factory.dart';
+import 'package:holol_POS/core/services/time/clock.dart';
 import 'package:holol_POS/features/sales/domain/models/sale_inputs.dart';
 import 'package:holol_POS/shared/models/enums.dart';
 import 'package:holol_POS/shared/refactor/pos_business_rules.dart';
@@ -80,10 +89,16 @@ class PaymentDraftLineBuildResult {
 }
 
 abstract final class PaymentDraftRules {
+  static double totalFromQuote(PosCheckoutQuote? quote) {
+    return quote?.grandTotal ?? 0.0;
+  }
+
+  static bool isCreditPaymentType(PaymentMethodType type) {
+    return type == PaymentMethodType.customerCredit;
+  }
+
   static double parseMoney(String text) {
-    final normalized = text.trim().replaceAll(',', '.');
-    if (normalized.isEmpty) return 0.0;
-    return double.tryParse(normalized) ?? double.nan;
+    return PosNumericInputRules.parseDecimalInput(text) ?? 0.0;
   }
 
   static PaymentDraftTotals calculateTotals({
@@ -412,12 +427,13 @@ class CheckoutPaymentRequirements {
 
 CheckoutPaymentRequirements checkoutPaymentRequirements(
   ResolvedPaymentMethod method, {
+  bool requireCardReference = false,
   bool paymentProfileRequiresReference = false,
 }) {
-  final requiresReference = method.type.isManualCard
-      ? false
-      : method.requiresReference ||
-            (method.needsPaymentProfile && paymentProfileRequiresReference);
+  final requiresReference =
+      method.requiresReference ||
+      (method.type.isManualCard && requireCardReference) ||
+      (method.needsPaymentProfile && paymentProfileRequiresReference);
 
   return CheckoutPaymentRequirements(
     requiresReference: requiresReference,
@@ -425,16 +441,66 @@ CheckoutPaymentRequirements checkoutPaymentRequirements(
   );
 }
 
+abstract final class PosCheckoutPaymentMethodDefaults {
+  static const cash = ResolvedPaymentMethod(
+    methodId: PaymentMethodCodes.cash,
+    code: PaymentMethodCodes.cash,
+    displayName: 'كاش',
+    type: PaymentMethodType.cash,
+    requiresReference: false,
+    allowsChange: true,
+    isManual: false,
+    needsPaymentProfile: false,
+  );
+
+  static const manualCard = ResolvedPaymentMethod(
+    methodId: PaymentMethodCodes.manualCard,
+    code: PaymentMethodCodes.manualCard,
+    displayName: 'شبكة',
+    type: PaymentMethodType.manualCard,
+    requiresReference: false,
+    allowsChange: false,
+    isManual: true,
+    needsPaymentProfile: true,
+  );
+
+  static const customerCredit = ResolvedPaymentMethod(
+    methodId: PaymentMethodCodes.customerCredit,
+    code: PaymentMethodCodes.customerCredit,
+    displayName: 'آجل',
+    type: PaymentMethodType.customerCredit,
+    requiresReference: false,
+    allowsChange: false,
+    isManual: true,
+    needsPaymentProfile: false,
+  );
+}
+
+abstract final class PosCheckoutPaymentMasterDataPolicy {
+  static const bool allowBuiltInPaymentMethods = true;
+
+  static bool hasUsablePaymentMethods(int activePaymentMethodCount) {
+    return allowBuiltInPaymentMethods || activePaymentMethodCount > 0;
+  }
+
+  static List<String> readinessBlockers(int activePaymentMethodCount) {
+    if (hasUsablePaymentMethods(activePaymentMethodCount)) return const [];
+    return const ['No active payment methods'];
+  }
+}
+
 class PaymentInputResolver {
   final CatalogDao catalogDao;
   final PaymentProfileService paymentProfileService;
   final ActivePosSession? activeSession;
+  final bool requireCardReference;
   final PaymentRuleExceptionFactory? exceptionFactory;
 
   const PaymentInputResolver({
     required this.catalogDao,
     required this.paymentProfileService,
     required this.activeSession,
+    this.requireCardReference = false,
     this.exceptionFactory,
   });
 
@@ -468,15 +534,15 @@ class PaymentInputResolver {
       final profile = await paymentProfileService.getActivePaymentProfile(
         session.activeUserId,
       );
-      if (profile == null || !profile.enabled) {
-        effectiveType = PaymentMethodType.manualCard;
-      } else {
-        effectiveType = PaymentMethodType.manualCard;
-      }
+      effectiveType = PaymentMethodType.manualCard;
+      profileRequiresReference = profile == null || !profile.enabled
+          ? requireCardReference
+          : profile.requireReference;
     }
 
     final requirements = checkoutPaymentRequirements(
       resolved,
+      requireCardReference: requireCardReference,
       paymentProfileRequiresReference: profileRequiresReference,
     );
 
@@ -533,40 +599,25 @@ class PaymentInputResolver {
       );
     }
 
-    ResolvedPaymentMethod withoutReference(ResolvedPaymentMethod method) {
-      return ResolvedPaymentMethod(
-        methodId: method.methodId,
-        code: method.code,
-        displayName: method.displayName,
-        type: method.type,
-        bankId: method.bankId,
-        cardTypeId: method.cardTypeId,
-        requiresReference: false,
-        allowsChange: method.allowsChange,
-        isManual: method.isManual,
-        needsPaymentProfile: method.needsPaymentProfile,
-      );
-    }
-
     switch (intent.kind) {
       case SaleTenderKind.cash:
         final method = firstWhere((method) => typeOf(method)?.isCash ?? false);
-        if (method == null) return PaymentMethodResolver.builtInCash;
+        if (method == null) return PosCheckoutPaymentMethodDefaults.cash;
         return fromRow(method);
       case SaleTenderKind.network:
         final manual = firstWhere(
           (method) => typeOf(method) == PaymentMethodType.manualCard,
         );
-        if (manual != null) return withoutReference(fromRow(manual));
+        if (manual != null) return fromRow(manual);
         final card = firstWhere((method) => typeOf(method)?.isCard ?? false);
-        if (card != null) return withoutReference(fromRow(card));
-        return PaymentMethodResolver.builtInManualCard;
+        if (card != null) return fromRow(card);
+        return PosCheckoutPaymentMethodDefaults.manualCard;
       case SaleTenderKind.credit:
         final method = firstWhere(
           (method) => typeOf(method) == PaymentMethodType.customerCredit,
         );
         if (method != null) return fromRow(method);
-        return PaymentMethodResolver.builtInCustomerCredit;
+        return PosCheckoutPaymentMethodDefaults.customerCredit;
     }
   }
 
@@ -588,6 +639,7 @@ class PaymentPolicy {
   PaymentValidationResult validate({
     required CheckoutQuote quote,
     required List<SalePaymentInput> payments,
+    String? customerId,
   }) {
     if (payments.isEmpty) throw _exception('At least one payment is required.');
     if (quote.grandTotal < 0) throw _exception('Invalid sale total.');
@@ -596,13 +648,15 @@ class PaymentPolicy {
     var explicitChangeTotal = 0.0;
     var arrangementTotal = 0.0;
     var hasChangeCapablePayment = false;
+    var hasCustomerCreditPayment = false;
 
     for (final payment in payments) {
       final type = payment.resolvedType;
       arrangementTotal += payment.amount;
 
-      if (payment.amount <= 0)
+      if (payment.amount <= 0) {
         throw _exception('Payment amount must be greater than zero.');
+      }
 
       final cashTendered = payment.cashTendered;
       final changeGiven = payment.changeGiven ?? 0;
@@ -613,6 +667,7 @@ class PaymentPolicy {
 
       if (type.allowsChange) {
         hasChangeCapablePayment = true;
+
         if (cashTendered != null && cashTendered < payment.amount) {
           throw _exception('Cash tendered is less than payment amount.');
         }
@@ -620,14 +675,24 @@ class PaymentPolicy {
         throw _exception('Change is only allowed for cash payments.');
       }
 
-      if (payment.requiresReference && !payment.hasReference) {
+      if ((payment.requiresReference ||
+              (requireCardReference && type.isManualCard)) &&
+          !payment.hasReference) {
         throw _exception('Card payment reference is required.');
       }
 
-      if (type == PaymentMethodType.customerCredit) continue;
+      if (type == PaymentMethodType.customerCredit) {
+        hasCustomerCreditPayment = true;
+        continue;
+      }
 
       paidTotal += payment.amount;
       explicitChangeTotal += changeGiven;
+    }
+
+    if (hasCustomerCreditPayment &&
+        (customerId == null || customerId.trim().isEmpty)) {
+      throw _exception('Customer is required for credit sale.');
     }
 
     if ((arrangementTotal - quote.grandTotal).abs() >
@@ -636,10 +701,8 @@ class PaymentPolicy {
     }
 
     final remaining = quote.grandTotal - paidTotal;
-    if (remaining > 0 &&
-        !payments.any(
-          (payment) => payment.resolvedType == PaymentMethodType.customerCredit,
-        )) {
+
+    if (remaining > 0 && !hasCustomerCreditPayment) {
       throw _exception(
         'Payment of ${paidTotal.toStringAsFixed(2)} is insufficient for total ${quote.grandTotal.toStringAsFixed(2)}',
       );
@@ -648,6 +711,7 @@ class PaymentPolicy {
     final overpayment = paidTotal > quote.grandTotal
         ? paidTotal - quote.grandTotal
         : 0.0;
+
     if ((overpayment > 0 || explicitChangeTotal > 0) &&
         !hasChangeCapablePayment) {
       throw _exception('Overpayment requires a cash payment for change.');
@@ -664,4 +728,175 @@ class PaymentPolicy {
     return exceptionFactory?.call(message) ??
         BusinessException(message, code: 'payment_policy_error');
   }
+}
+
+/// SSOT checkout workflow for sale + payment + invoice orchestration.
+///
+/// This class intentionally lives in shared/refactor during the consolidation
+/// phase. Feature-level SaleCheckout must only delegate to this workflow.
+class PosSaleCheckoutWorkflow {
+  final SalesDao salesDao;
+  final ShiftDao shiftDao;
+  final CatalogDao catalogDao;
+  final PosConfigRepository config;
+  final InvoiceNumberService invoiceNumberService;
+  final InvoiceDocumentBuilder invoiceDocumentBuilder;
+  final OutboxEventFactory outboxEventFactory;
+  final PrintQueue printQueue;
+  final PrintJobProcessor printJobProcessor;
+  final PaymentProfileService paymentProfileService;
+  final ActivePosSession? activeSession;
+  final PricingEngine pricingEngine;
+  final Clock clock;
+
+  const PosSaleCheckoutWorkflow({
+    required this.salesDao,
+    required this.shiftDao,
+    required this.catalogDao,
+    required this.config,
+    required this.invoiceNumberService,
+    required this.invoiceDocumentBuilder,
+    required this.outboxEventFactory,
+    required this.printQueue,
+    required this.printJobProcessor,
+    required this.paymentProfileService,
+    required this.activeSession,
+    this.pricingEngine = const PricingEngine(),
+    this.clock = const SystemClock(),
+  });
+
+  Future<PosSaleCheckoutResult> complete(PosSaleCheckoutRequest request) async {
+    final session = PosBusinessGuards.requireActiveSession(
+      activeSession,
+      message: 'Select a cashier and POS machine before selling.',
+      exceptionFactory: PosSaleCheckoutException.new,
+    );
+
+    final shift = await PosBusinessGuards.requireOpenShift(
+      shiftDao: shiftDao,
+      session: session,
+      message: 'No open shift. Open a shift before selling.',
+      exceptionFactory: PosSaleCheckoutException.new,
+    );
+
+    if (request.cart.isEmpty) {
+      throw const PosSaleCheckoutException('No items in cart.');
+    }
+
+    final saleLines = request.cart.toSaleLineInputs();
+
+    SaleLineValidator.validateSaleLines(
+      saleLines,
+      exceptionFactory: PosSaleCheckoutException.new,
+      validatePricing: true,
+      pricingEngine: pricingEngine,
+      priceIncludesTax: session.priceIncludesTax,
+    );
+
+    final quote = PosSaleQuoteRules.quote(
+      pricingEngine: pricingEngine,
+      lines: saleLines,
+      useTax: session.activeUseTax,
+      priceIncludesTax: session.priceIncludesTax,
+      exceptionFactory: PosSaleCheckoutException.new,
+    );
+
+    final paymentInputResolver = PaymentInputResolver(
+      catalogDao: catalogDao,
+      paymentProfileService: paymentProfileService,
+      activeSession: session,
+      requireCardReference: config.requireCardReference,
+      exceptionFactory: PosSaleCheckoutException.new,
+    );
+
+    final payments = <SalePaymentInput>[];
+    PaymentMethodType? primaryType;
+
+    for (final intent in request.paymentIntents) {
+      final payment = await paymentInputResolver.build(intent);
+      payments.add(payment);
+      primaryType ??= payment.paymentMethodType;
+    }
+
+    final paymentResult =
+        PaymentPolicy(
+          requireCardReference: config.requireCardReference,
+          exceptionFactory: PosSaleCheckoutException.new,
+        ).validate(
+          quote: quote,
+          payments: payments,
+          customerId: request.customerId,
+        );
+
+    final persistenceResult =
+        await PosSaleCompletionWorkflow(
+          salesDao: salesDao,
+          config: config,
+          invoiceNumberService: invoiceNumberService,
+          invoiceDocumentBuilder: invoiceDocumentBuilder,
+          outboxEventFactory: outboxEventFactory,
+          printQueue: printQueue,
+          printJobProcessor: printJobProcessor,
+          clock: clock,
+        ).persistCompletedSale(
+          shiftId: shift.id,
+          session: session,
+          lines: saleLines,
+          payments: payments,
+          quote: quote,
+          paymentResult: paymentResult,
+          checkoutAttemptId: request.checkoutAttemptId,
+          customerId: request.customerId,
+          customerName: request.customerName,
+          customerTaxNumber: request.customerTaxNumber,
+        );
+
+    return PosSaleCheckoutResult(
+      saleId: persistenceResult.saleId,
+      localSaleNo: persistenceResult.localSaleNo,
+      selectedPaymentType: primaryType ?? PaymentMethodType.cash,
+      change: paymentResult.changeTotal,
+      uploadQueued: persistenceResult.uploadQueued,
+    );
+  }
+}
+
+class PosSaleCheckoutRequest {
+  final Cart cart;
+  final String checkoutAttemptId;
+  final List<SalePaymentIntent> paymentIntents;
+  final String? customerId;
+  final String? customerName;
+  final String? customerTaxNumber;
+
+  PosSaleCheckoutRequest({
+    required this.cart,
+    required this.checkoutAttemptId,
+    required this.paymentIntents,
+    this.customerId,
+    this.customerName,
+    this.customerTaxNumber,
+  });
+}
+
+class PosSaleCheckoutResult {
+  final String saleId;
+  final String localSaleNo;
+  final PaymentMethodType selectedPaymentType;
+  final double change;
+  final bool uploadQueued;
+
+  const PosSaleCheckoutResult({
+    required this.saleId,
+    required this.localSaleNo,
+    required this.selectedPaymentType,
+    required this.change,
+    required this.uploadQueued,
+  });
+
+  String get invoiceNo => localSaleNo;
+}
+
+class PosSaleCheckoutException extends BusinessException {
+  const PosSaleCheckoutException(super.message) : super(code: 'checkout_error');
 }

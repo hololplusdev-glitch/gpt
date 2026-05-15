@@ -1,8 +1,8 @@
+import 'package:holol_POS/core/utils/text_normalizer.dart';
+
 abstract final class BackendValueReader {
   static String? text(Object? value) {
-    if (value == null) return null;
-    final text = value.toString().trim();
-    return text.isEmpty ? null : text;
+    return CoreText.clean(value);
   }
 
   static bool parseBool(Object? value, {bool fallback = false}) {

@@ -56,17 +56,18 @@ class SalesHistoryService {
     String? query,
     int limit = 100,
   }) {
-    return _salesDao.searchSalesHistory(query: query, limit: limit);
+    return _workflow.searchSalesHistory(query: query, limit: limit);
   }
 
   Future<SaleDetail?> getSaleDetail(String saleId) async {
-    final sale = await _salesDao.getById(saleId);
-    if (sale == null) return null;
+    final detail = await _workflow.getSaleDetail(saleId);
+    if (detail == null) return null;
 
-    final items = await _salesDao.getSaleLines(saleId);
-    final payments = await _salesDao.getSalePayments(saleId);
-
-    return SaleDetail(sale: sale, items: items, payments: payments);
+    return SaleDetail(
+      sale: detail.sale,
+      items: detail.items,
+      payments: detail.payments,
+    );
   }
 
   Future<void> voidSale(String saleId) {

@@ -21,6 +21,8 @@ import 'package:holol_POS/shared/presentation/widgets/app_loading.dart';
 import 'package:holol_POS/shared/presentation/widgets/app_empty_state.dart';
 import 'package:holol_POS/shared/presentation/utils/app_snackbar.dart';
 import 'package:holol_POS/shared/presentation/dialogs/app_dialog.dart';
+import 'package:holol_POS/shared/refactor/pos_ui_widgets.dart';
+import 'package:holol_POS/shared/refactor/pos_runtime_state.dart';
 
 class ProductGrid extends ConsumerWidget {
   const ProductGrid({super.key});
@@ -47,7 +49,7 @@ class ProductGrid extends ConsumerWidget {
               ),
               child: Row(
                 children: [
-                  _CategoryChip(
+                  AppSelectableChip(
                     label: l10n.allCategories,
                     isSelected: selectedCategory == null,
                     onTap: () {
@@ -60,7 +62,7 @@ class ProductGrid extends ConsumerWidget {
                       padding: const EdgeInsetsDirectional.only(
                         start: AppSpacing.sm,
                       ),
-                      child: _CategoryChip(
+                      child: AppSelectableChip(
                         label: cat.name,
                         isSelected: isSelected,
                         onTap: () {
@@ -99,48 +101,14 @@ class ProductGrid extends ConsumerWidget {
                   final session = ref
                       .read(activePosSessionProvider)
                       .valueOrNull;
-                  return Center(
-                    child: Padding(
-                      padding: AppSpacing.paddingXl,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            width: 80,
-                            height: 80,
-                            decoration: BoxDecoration(
-                              color: AppColors.warningBg,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.warning_amber_rounded,
-                              size: 36,
-                              color: AppColors.warning,
-                            ),
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          Text(
-                            catalogState.emptyMessage ??
-                                l10n.noPricedProductsForDeviceStore,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppSpacing.sm),
-                          SelectableText(
-                            l10n.storeAndPriceLevelDetails(
-                              session?.activeStoreId ?? '',
-                              session?.activePriceLevelId ?? '',
-                            ),
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
+                  return AppEmptyDiagnostic(
+                    icon: Icons.warning_amber_rounded,
+                    title:
+                        catalogState.emptyMessage ??
+                        l10n.noPricedProductsForDeviceStore,
+                    subtitle: l10n.storeAndPriceLevelDetails(
+                      PosRuntimeContextRules.displayStoreId(session),
+                      PosRuntimeContextRules.displayPriceLevelId(session),
                     ),
                   );
                 }
@@ -203,53 +171,6 @@ class ProductGrid extends ConsumerWidget {
   }
 }
 
-class _CategoryChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _CategoryChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: AppSpacing.durationFast,
-      curve: AppSpacing.curveDefault,
-      decoration: BoxDecoration(
-        color: isSelected ? AppColors.primary : AppColors.surfaceVariant,
-        borderRadius: AppSpacing.borderRadiusLg,
-        boxShadow: isSelected ? AppSpacing.shadowSm : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: AppSpacing.borderRadiusLg,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: AppSpacing.borderRadiusLg,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.sm,
-            ),
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? AppColors.onPrimary : AppColors.textPrimary,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ProductCard extends ConsumerStatefulWidget {
   final ProductCardViewModel card;
 
@@ -295,6 +216,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
   @override
   Widget build(BuildContext context) {
     final units = widget.card.units;
+
     if (units.isEmpty) {
       return _buildCard(null, null, isEmpty: true);
     }
@@ -303,6 +225,7 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
       (u) => u.sellableItem.unitId == _selectedUnitId,
       orElse: () => widget.card.defaultUnit ?? units.first,
     );
+
     return _buildCard(selected, units, isEmpty: false);
   }
 
@@ -315,159 +238,82 @@ class _ProductCardState extends ConsumerState<_ProductCard> {
   }) {
     final l10n = AppLocalizations.of(context)!;
     final item = widget.card.item;
-    final unitPrice = selectedUnit?.sellableItem.unitPrice ?? 0;
-    final unitName = selectedUnit?.sellableItem.unitName ?? '';
+    final selectedSellable = selectedUnit?.sellableItem;
+    final unitPrice = selectedSellable?.unitPrice;
+    final unitName =
+        selectedSellable?.unitName ?? PosRuntimeContextRules.missingDisplayValue;
 
-    final isInteractive = !isEmpty && !isLoading && !isError;
+    Widget? unitControl;
+    Widget? price;
+    String? statusText;
+    Color? statusColor;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isEmpty ? AppColors.surfaceVariant : AppColors.cardSurface,
-        borderRadius: AppSpacing.borderRadiusMd,
-        border: Border.all(
-          color: isEmpty ? AppColors.border : AppColors.border,
-        ),
-        boxShadow: isInteractive ? AppSpacing.shadowSm : null,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: AppSpacing.borderRadiusMd,
-        child: InkWell(
-          onTap: isInteractive
-              ? () => _addToCart(selectedUnit!)
-              : (isEmpty ? _showNoPriceError : null),
-          borderRadius: AppSpacing.borderRadiusMd,
-          hoverColor: AppColors.cartItemHover,
-          child: Padding(
-            padding: AppSpacing.paddingMd,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Product image
-                Expanded(
-                  child: Center(
-                    child: ClipRRect(
-                      borderRadius: AppSpacing.borderRadiusSm,
-                      child:
-                          (item.imageUrl != null && item.imageUrl!.isNotEmpty)
-                          ? Image.network(
-                              item.imageUrl!,
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.contain,
-                              color: isEmpty
-                                  ? Colors.white.withValues(alpha: 0.5)
-                                  : null,
-                              colorBlendMode: isEmpty
-                                  ? BlendMode.modulate
-                                  : null,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _buildPlaceholder(isEmpty),
-                            )
-                          : _buildPlaceholder(isEmpty),
-                    ),
+    if (isEmpty) {
+      statusText = l10n.noPrice;
+      statusColor = AppColors.error;
+    } else if (isError) {
+      statusText = l10n.errorLoading;
+      statusColor = AppColors.error;
+    } else if (!isLoading) {
+      if (allUnits != null && allUnits.length > 1) {
+        unitControl = Container(
+          height: 34,
+          padding: const EdgeInsets.symmetric(horizontal: 6),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceVariant,
+            borderRadius: AppSpacing.borderRadiusXs,
+          ),
+          child: AppInlineDropdown<String>(
+            value: selectedUnit!.sellableItem.unitId,
+            items: allUnits
+                .map(
+                  (u) => DropdownMenuItem(
+                    value: u.sellableItem.unitId,
+                    child: Text(u.sellableItem.unitName),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
+                )
+                .toList(),
+            onChanged: (newId) {
+              setState(() => _selectedUnitId = newId);
+            },
+          ),
+        );
+      } else {
+        unitControl = Text(
+          unitName,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        );
+      }
 
-                // Product name
-                Text(
-                  item.name,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2,
-                    color: isEmpty ? AppColors.textHint : AppColors.textPrimary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-
-                if (isLoading)
-                  const LinearProgressIndicator(minHeight: 2)
-                else if (isEmpty)
-                  Text(
-                    l10n.noPrice,
-                    style: const TextStyle(
-                      color: AppColors.error,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  )
-                else if (isError)
-                  Text(
-                    l10n.errorLoading,
-                    style: const TextStyle(
-                      color: AppColors.error,
-                      fontSize: 12,
-                    ),
-                  )
-                else ...[
-                  // Unit Dropdown or Text
-                  if (allUnits != null && allUnits.length > 1)
-                    Container(
-                      height: 34,
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceVariant,
-                        borderRadius: AppSpacing.borderRadiusXs,
-                      ),
-                      child: AppInlineDropdown<String>(
-                        value: selectedUnit!.sellableItem.unitId,
-                        items: allUnits
-                            .map(
-                              (u) => DropdownMenuItem(
-                                value: u.sellableItem.unitId,
-                                child: Text(u.sellableItem.unitName),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (newId) {
-                          setState(() => _selectedUnitId = newId);
-                        },
-                      ),
-                    )
-                  else
-                    Text(
-                      unitName,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-
-                  const SizedBox(height: AppSpacing.xxs),
-                  // Price
-                  Text.rich(
-                    PosFormatters.amountRich(
-                      unitPrice,
-                      amountStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.secondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+      price = Text.rich(
+        PosFormatters.amountRich(
+          unitPrice!,
+          amountStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: AppColors.secondary,
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 
-  Widget _buildPlaceholder(bool isEmpty) {
-    return Opacity(
-      opacity: isEmpty ? 0.5 : 1.0,
-      child: Image.asset(
-        'assets/images/placeholder.jpg',
-        width: double.infinity,
-        height: double.infinity,
-        fit: BoxFit.cover,
-      ),
+    return AppCatalogItemCard(
+      title: item.name,
+      imageUrl: item.imageUrl,
+      isEmpty: isEmpty,
+      isLoading: isLoading,
+      isError: isError,
+      statusText: statusText,
+      statusColor: statusColor,
+      unitControl: unitControl,
+      price: price,
+      onTap: !isLoading && !isError
+          ? (isEmpty ? _showNoPriceError : () => _addToCart(selectedUnit!))
+          : null,
     );
   }
 }
